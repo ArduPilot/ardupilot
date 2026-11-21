@@ -22928,6 +22928,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.DualTuningChannels,
             self.AutoRTL,
             self.AutoRTLReturnPathTrack,
+            self.AutoRTLRefusedInFenceRecovery,
+            self.AutoRTLRefusedByGCSBlock,
             self.GripperReleaseOnThrustLoss,
             self.ScriptingAHRSSource,
             self.CompassLearnCopyFromSIM,
@@ -24661,6 +24663,103 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # the test must finish at home
         self.do_RTL()
+
+    def upload_auto_rtl_away_from_home_mission(self, alt):
+        '''return path and landing sequence well away from home, to the west'''
+        # pymavlink does not understand the return path command yet
+        cmd_return_path_start = 188  # mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START
+        self.upload_simple_relhome_mission([
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),   # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -400, alt),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -450, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, alt),    # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -500, alt),  # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, -500, 0),        # 6
+        ])
+
+    def assert_auto_rtl_refused_in_rtl(self):
+        '''refused Auto RTL requests must leave RTL flying home'''
+        cmd_return_path_start = 188  # mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START
+        home = self.poll_home_position()
+
+        def assert_near_home(mav, m):
+            if m.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            distance = self.get_distance_int(home, m)
+            if distance > 150:
+                raise NotAchievedException(f"RTL flew {distance:.0f}m from home")
+
+        mission_current = self.assert_receive_message('MISSION_CURRENT').seq
+
+        def assert_mission_not_moved():
+            seq = self.assert_receive_message('MISSION_CURRENT').seq
+            if seq != mission_current:
+                raise NotAchievedException(f"Refused Auto RTL moved the mission from item {mission_current} to {seq}")
+
+        self.context_push()
+        self.install_message_hook_context(assert_near_home)
+
+        self.run_cmd_do_set_mode("AUTO_RTL", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd_int(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_mode_is("RTL")
+        assert_mission_not_moved()
+
+        self.progress("RTL must still return home")
+        self.wait_distance_to_home(0, 10, timeout=120)
+        self.wait_disarmed(timeout=120)
+        self.assert_mode_is("RTL")
+        assert_mission_not_moved()
+        self.context_pop()
+        self.zero_throttle()
+
+    def AutoRTLRefusedInFenceRecovery(self):
+        '''Test a refused Auto RTL does not move RTL's destination'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 2,        # circle
+            "FENCE_RADIUS": 100,
+            "FENCE_ACTION": 1,      # RTL
+            "FENCE_OPTIONS": 1,     # disable mode change until breach cleared
+            "AVOID_ENABLE": 0,
+        })
+
+        alt = 20
+        self.upload_auto_rtl_away_from_home_mission(alt)
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.poll_home_position(quiet=False)
+        self.takeoff(alt, mode="LOITER")
+        self.progress("Flying north until the fence is breached")
+        self.set_rc(2, 1100)
+        self.wait_mode("RTL", timeout=60)
+        self.set_rc(2, 1500)
+
+        self.progress("Auto RTL must be refused during fence recovery")
+        self.assert_auto_rtl_refused_in_rtl()
+
+    def AutoRTLRefusedByGCSBlock(self):
+        '''Test Auto RTL refused by FLTMODE_GCSBLOCK does not move RTL's destination'''
+        self.set_parameters({
+            "FLTMODE_GCSBLOCK": 8,  # AUTO
+        })
+
+        alt = 20
+        self.upload_auto_rtl_away_from_home_mission(alt)
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.poll_home_position(quiet=False)
+        self.takeoff(alt, mode="LOITER")
+        self.progress("Flying north away from home")
+        self.set_rc(2, 1100)
+        self.wait_distance_to_home(60, 1000, timeout=60)
+        self.set_rc(2, 1500)
+        self.change_mode("RTL")
+
+        self.progress("Auto RTL must be refused with AUTO blocked from the GCS")
+        self.assert_auto_rtl_refused_in_rtl()
 
     def EK3_OGN_HGT_MASK(self):
         '''test baraometer-alt-compensation based on long-term GPS readings'''
