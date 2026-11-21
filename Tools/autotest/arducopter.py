@@ -14966,9 +14966,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         def target_loc(t):
             return self.offset_location_ne(start_loc, target_speed * (t - traj_t0), 0)
 
-        def fly_target(duration, delay_s, time_messages=True, duplicate_after_s=None):
+        def fly_target(duration, delay_s, time_messages=True, duplicate_after_s=None, clock_ahead_s=0.0):
             '''send a target delayed by delay_s, optionally with SYSTEM_TIME and GPS_RAW_INT at
-            the recommended 0.2 Hz, and optionally sending each position again duplicate_after_s later'''
+            the recommended 0.2 Hz, optionally sending each position again duplicate_after_s later,
+            and optionally with the target's UTC clock_ahead_s ahead of GPS time'''
             next_pos = 0
             next_time = 0
             tstart = None
@@ -15006,7 +15007,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 if time_messages and t >= next_time:
                     next_time = t + 5
                     self.mav.mav.system_time_send(
-                        int(sample_t * 1e6) + vehicle_offset_us,
+                        int((sample_t + clock_ahead_s) * 1e6) + vehicle_offset_us,
                         target_boot_ms)
                     loc = target_loc(sample_t)
                     self.mav.mav.gps_raw_int_send(
@@ -15027,6 +15028,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         windows['rebooted'] = fly_target(20, 1.0, time_messages=False)
         self.start_subtest("Target clock acquired again under the 1 s delay")
         windows['reacquired'] = fly_target(30, 1.0)
+        self.start_subtest("A target clock further ahead than the link delay is rejected")
+        windows['ahead'] = fly_target(25, 1.0, clock_ahead_s=1.5)
 
         self.context_pop()
 
@@ -15110,6 +15113,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # the reacquired clock is used even though the 1 s delay is still present
         assert_source('reacquired', 20, 1)
         assert_tracking('reacquired', 25)
+
+        # its SYSTEM_TIME would arrive before it was sent, so the clock is not used
+        assert_source('ahead', 1, 0)
+        ahead_err = median(estimate_errors(windows['ahead'], 10))
+        self.progress("ahead: estimate median error %.2f m" % ahead_err)
+        if ahead_err < 0.5 * target_speed * 1.0:
+            raise NotAchievedException("ahead estimate only %.1f m behind; the test no longer shows the delay" % ahead_err)
 
     def get_global_position_int(self, timeout=30):
         tstart = self.get_sim_time()
