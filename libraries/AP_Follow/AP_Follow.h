@@ -184,16 +184,10 @@ private:
     // Checks whether the current estimate should be reset based on position and velocity errors.
     bool estimate_error_too_large() const;
 
-    // Position error above which the estimate is reset, for a given acceleration limit.
-    float reset_pos_thresh_m(float accel_max_mss) const;
-
     // Returns the local time a target sample was taken, from its remote timestamp.
     uint32_t sample_time_ms(const mavlink_message_t &msg, uint32_t remote_ms);
 
 #if AP_RTC_REMOTE_CLOCKS_ENABLED
-    // Returns true if moving the latest sample's time earlier by step_s moves it less than half the reset threshold.
-    bool sample_time_step_small(float step_s) const;
-
     // Tracks the clock of the component supplying target data; sysid 0 stops tracking.
     void update_clock_registration(uint8_t sysid, uint8_t compid);
 #endif
@@ -272,7 +266,6 @@ private:
     bool        _using_follow_target;           // True if FOLLOW_TARGET messages are being used instead of GLOBAL_POSITION_INT
 
 #if AP_RTC_REMOTE_CLOCKS_ENABLED
-    bool        _sample_time_from_clock;        // True if the latest sample was timed from the target's GPS-disciplined clock
     uint8_t     _clock_sysid;                   // sysid whose clock is registered for sample timing, 0 = none
     uint8_t     _clock_compid;                  // compid whose clock is registered for sample timing
 #endif
