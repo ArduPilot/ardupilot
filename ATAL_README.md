@@ -16,6 +16,7 @@ g++ -std=c++11 -Wall -Wextra -Werror -I integration integration/test_actuator_gu
 .atal-baseline/test_actuator_guard
 python3 integration/test_depth_native_replay.py
 python3 integration/test_dvl_native_chain.py
+python3 integration/test_dashboard_native_replay.py
 ```
 
 The native replays use loopback links and pseudo-terminals. They do not open vehicle serial ports. The full test matrix and limitations are in [testing and validation](docs/ardusub_migration/08_testing_and_validation.md).

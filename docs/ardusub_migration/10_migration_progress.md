@@ -26,6 +26,7 @@ M1 reference baseline: complete. M2 native build and software-test runtime: comp
 
 - Committed an isolated eight-channel command guard and frame encoder. C++ and Python checks cover frame CRC, sequence overflow, replay, malformed/partial commands, 250 ms stale-command fault, neutral outputs, reset, and explicit re-arm. No serial, GPIO, firmware flashing or actuator path was used. The existing deployed firmware still lacks these rules.
 - Added a local read-only MAVLink `/api/state` and `/api/health` adapter that can feed the eventual dashboard. Unit and UDP loopback tests passed for heartbeat, attitude, pressure and freshness mapping. The existing UI and its control/mission/camera functions have not been ported.
+- Proved a second native ArduSub MAVLink stream on `SERIAL3` can supply the dashboard adapter with heartbeat, attitude and Bar30 pressure while `SERIAL0` remains separate. The test used virtual sensors and a temporary stream-rate parameter file.
 - Mapped the ROS 2 nodes that must remain outside the ArduSub runtime and the candidate high-level gate-guidance path in `11_ros_dashboard_coexistence.md`. The old `control_system.launch.py` is not a companion launch because it starts competing controllers and an ESP32 bridge.
 
 ## Next evidence
