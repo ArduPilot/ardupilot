@@ -21,6 +21,13 @@ int main() {
     ActuatorGuard guard(0x1234ABCD);
     neutral(guard);
     assert(guard.state() == ActuatorGuard::State::Disarmed);
+    ActuatorGuard overflow_guard(0x1234ABCD);
+    assert(!overflow_guard.accept(frame("A1,ARM,1234ABCD,4294967296").c_str(), 1));
+    assert(overflow_guard.state() == ActuatorGuard::State::Fault);
+    neutral(overflow_guard);
+    ActuatorGuard crc_guard(0x1234ABCD);
+    assert(!crc_guard.accept("A1,ARM,1234ABCD,1,0000", 1));
+    assert(crc_guard.state() == ActuatorGuard::State::Fault);
     assert(!guard.accept(frame("A1,PWM,1234ABCD,1,1500,1500,1500,1500,1500,1500,1500,1500").c_str(), 10));
     assert(guard.state() == ActuatorGuard::State::Fault);
     assert(guard.accept(frame("A1,RESET,1234ABCD,2").c_str(), 11));

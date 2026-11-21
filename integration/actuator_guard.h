@@ -3,7 +3,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
 class ActuatorGuard {
@@ -138,13 +137,14 @@ public:
 private:
     static bool decimal32(const char *text, uint32_t &value) {
         if (*text == '\0') return false;
+        uint32_t parsed = 0;
         for (const char *p = text; *p; ++p) {
             if (*p < '0' || *p > '9') return false;
+            const uint32_t digit = uint32_t(*p - '0');
+            if (parsed > (0xFFFFFFFFUL - digit) / 10) return false;
+            parsed = parsed * 10 + digit;
         }
-        char *end;
-        const unsigned long parsed = strtoul(text, &end, 10);
-        if (*end != '\0' || parsed > 0xFFFFFFFFUL) return false;
-        value = uint32_t(parsed);
+        value = parsed;
         return true;
     }
 
@@ -154,10 +154,13 @@ private:
             if (!((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'f') ||
                   (*p >= 'A' && *p <= 'F'))) return false;
         }
-        char *end;
-        const unsigned long parsed = strtoul(text, &end, 16);
-        if (*end != '\0' || parsed > 0xFFFFFFFFUL) return false;
-        value = uint32_t(parsed);
+        uint32_t parsed = 0;
+        for (const char *p = text; *p; ++p) {
+            const uint32_t digit = (*p <= '9') ? uint32_t(*p - '0') :
+                uint32_t((*p | 0x20) - 'a' + 10);
+            parsed = (parsed << 4) | digit;
+        }
+        value = parsed;
         return true;
     }
 
@@ -166,10 +169,13 @@ private:
             if (!((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'f') ||
                   (*p >= 'A' && *p <= 'F'))) return false;
         }
-        char *end;
-        const unsigned long parsed = strtoul(text, &end, 16);
-        if (*end != '\0' || parsed > 0xFFFFUL) return false;
-        value = uint16_t(parsed);
+        uint16_t parsed = 0;
+        for (const char *p = text; *p; ++p) {
+            const uint16_t digit = (*p <= '9') ? uint16_t(*p - '0') :
+                uint16_t((*p | 0x20) - 'a' + 10);
+            parsed = uint16_t((parsed << 4) | digit);
+        }
+        value = parsed;
         return true;
     }
 
