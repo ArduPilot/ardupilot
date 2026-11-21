@@ -2786,6 +2786,79 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "Fence test failed to reach home (%fm distance) - "
             "timed out after %u seconds" % (home_distance, timeout,))
 
+    def FenceActionAutoRTL(self):
+        '''Test FENCE_ACTION 9: Auto RTL, else RTL, else Land'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 2,        # circle
+            "FENCE_RADIUS": 100,
+            "FENCE_ACTION": 9,
+            "FENCE_OPTIONS": 1,     # disable mode change until breach cleared
+            "AVOID_ENABLE": 0,
+            "AUTO_OPTIONS": 3,
+        })
+
+        alt = 10
+        mission = [
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),        # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, alt),     # 2
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, alt),      # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, alt),      # 4
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),  # 5
+        ]
+
+        def fly_loiter_into_fence(want_mode):
+            self.takeoff(alt, mode="LOITER")
+            self.progress("Flying north until the fence is breached")
+            self.set_rc(2, 1100)
+            self.wait_mode(want_mode, timeout=60)
+            self.set_rc(2, 1500)
+
+        def assert_mode_change_locked(mode="AUTO_RTL"):
+            self.progress("Mode change must be refused during fence recovery")
+            self.run_cmd_do_set_mode("LOITER", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is(mode)
+            self.progress("Re-selecting the current mode must not release the lock")
+            self.run_cmd_do_set_mode(mode)
+            self.run_cmd_do_set_mode("LOITER", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is(mode)
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.poll_home_position(quiet=False)
+
+        self.start_subtest("No landing sequence: falls back to RTL")
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        fly_loiter_into_fence("RTL")
+        assert_mode_change_locked("RTL")
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.end_subtest("No landing sequence: falls back to RTL")
+
+        self.start_subtest("Breach in LOITER enters AUTO_RTL")
+        self.upload_simple_relhome_mission(mission)
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        fly_loiter_into_fence("AUTO_RTL")
+        self.assert_current_waypoint(4)
+        assert_mode_change_locked()
+        self.progress("DO_LAND_START must not release the lock")
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_LAND_START)
+        assert_mode_change_locked()
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.end_subtest("Breach in LOITER enters AUTO_RTL")
+
+        self.start_subtest("Breach in AUTO enters AUTO_RTL")
+        self.start_flying_simple_relhome_mission(mission)
+        self.wait_current_waypoint(2)
+        self.wait_mode("AUTO_RTL", timeout=60)
+        self.assert_current_waypoint(4)
+        assert_mode_change_locked()
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.end_subtest("Breach in AUTO enters AUTO_RTL")
+
     # MaxAltFence - fly up until you hit the fence ceiling
     def max_alt_fence_frame(self, frame, alt, expected_breach_alt, terrain=0):
         self.start_subtest("Test Max Alt Fence in frame %u" % frame)
@@ -21145,6 +21218,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowDoubleDrop,
             self.HorizontalFence,
             self.FenceTypeChangeTakesEffect,
+            self.FenceActionAutoRTL,
             self.MaxAltFence,
             self.ModeAltHold,
             self.OpticalFlow,
@@ -21250,6 +21324,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_NAV_TAKEOFF_no_location,
             self.DualTuningChannels,
             self.AutoRTL,
+            self.AutoRTLReturnPathTrack,
+            self.AutoRTLRefusedInFenceRecovery,
+            self.AutoRTLRefusedByGCSBlock,
             self.GripperReleaseOnThrustLoss,
             self.ScriptingAHRSSource,
             self.CompassLearnCopyFromSIM,
@@ -22672,6 +22749,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.drain_mav()
         self.assert_current_waypoint(4)
 
+        # editing the mission in the landing sequence keeps Auto RTL
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  750, 0, alt), # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, alt),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 260, 0, alt),  # 5
+        ])
+        self.delay_sim_time(2, reason="let the mission change be handled")
+        self.assert_mode_is('AUTO_RTL')
+        self.assert_current_waypoint(4)
+
         # Back to guided location
         self.change_mode('GUIDED')
         self.fly_guided_move_to(guided_loc)
@@ -22715,10 +22804,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('GUIDED')
         self.fly_guided_move_to(return_path_test, timeout=100)
 
-        # check the mission is joined further along
+        # check the mission is joined further along, part way along the
+        # leg from waypoint 4 so waypoint 4 may be current briefly
         self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
-        self.drain_mav()
-        self.assert_current_waypoint(5)
+        self.wait_current_waypoint(5, timeout=30)
 
         # fly over home
         home = self.home_position_as_location()
@@ -22733,6 +22822,345 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # Done
         self.land_and_disarm()
+
+    def AutoRTLReturnPathTrack(self):
+        '''Test Auto RTL rejoins a return path at the closest point and then follows the track'''
+        alt = 50
+        self.context_push()
+        self.context_set_message_rate_hz('LOCAL_POSITION_NED', 10)
+
+        # pymavlink does not understand the new return path command yet, at some point it will
+        cmd_return_path_start = 188 # mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START
+
+        def fly_return_path_from(north, east, track_north_max=None, no_backtrack=False, min_alt=None, edit_mission=None):
+            # the return path runs down the north axis towards home, so any
+            # east offset south of track_north_max is a cross track error
+            start_loc = self.offset_location_ne(self.home_position_as_location(), north, east)
+            start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+            self.change_mode('GUIDED')
+            self.fly_guided_move_to(start_loc, timeout=240)
+
+            self.change_mode('AUTO_RTL')
+            max_cross_track = 0
+            max_north = north
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 300:
+                    raise NotAchievedException("Did not fly the return path")
+                if edit_mission is not None and self.get_sim_time_cached() - tstart > 2:
+                    edit_mission()
+                    edit_mission = None
+                m = self.assert_receive_message('LOCAL_POSITION_NED')
+                if m.x < 100:
+                    break
+                max_north = max(max_north, m.x)
+                if min_alt is not None and -m.z < min_alt:
+                    raise NotAchievedException(f"Descended to {-m.z:.1f}m before the end of the leg")
+                if track_north_max is not None and m.x < track_north_max:
+                    max_cross_track = max(max_cross_track, abs(m.y))
+            if no_backtrack and max_north > north + 20:
+                raise NotAchievedException(f"Flew back up the return path to {max_north:.0f}m north")
+            if track_north_max is not None:
+                self.progress(f"maximum cross track error {max_cross_track:.1f}m")
+                if max_cross_track > 10:
+                    raise NotAchievedException(f"Did not follow the return path track (cross track {max_cross_track:.1f}m)")
+
+        self.takeoff(alt, mode='GUIDED')
+
+        # the closest point on the mission is part way along the leg
+        # from waypoint 3 to waypoint 4, not either waypoint.  Nothing
+        # is placed exactly at home as a zero offset uploads as a zero
+        # latitude and longitude, which means the current location
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 4
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 6
+        ])
+        fly_return_path_from(600, 200, 450)
+        self.wait_current_waypoint(4)
+
+        # a located command that is not navigated to, such as an ROI,
+        # is not part of the track.  Leave AUTO so the upload does not
+        # restart the running mission
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION, 400, 400, alt), # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 5
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 6
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 7
+        ])
+        fly_return_path_from(400, 300, 350)
+        self.wait_current_waypoint(5)
+
+        # a repeated waypoint starts the next leg, so the vehicle does not
+        # fly back up the path to it after the rejoin point
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 5
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 6
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 7
+        ])
+        fly_return_path_from(400, 200, 350, no_backtrack=True)
+        self.wait_current_waypoint(5)
+
+        # moving the leg start during the rejoin continues to the leg end in
+        # Auto RTL rather than flying back up the path to the moved leg start
+        def return_path_mission(leg_start_north):
+            return [
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+                self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, leg_start_north, 0, alt),  # 3
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 4
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 5
+                (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 6
+            ]
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        fly_return_path_from(600, 200, no_backtrack=True,
+                             edit_mission=lambda: self.upload_simple_relhome_mission(return_path_mission(850)))
+        self.wait_current_waypoint(4)
+        self.assert_mode_is('AUTO_RTL')
+
+        # leaving AUTO during the rejoin and flying past the rejoin point
+        # continues to the leg end rather than back to the rejoin point
+        start_loc = self.offset_location_ne(self.home_position_as_location(), 300, 150)
+        start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        past_loc = self.offset_location_ne(self.home_position_as_location(), 200, 0)
+        past_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        self.change_mode('GUIDED')
+        self.fly_guided_move_to(past_loc, timeout=120)
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(4, timeout=5)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 3:
+            m = self.assert_receive_message('LOCAL_POSITION_NED')
+            if m.x > 210:
+                raise NotAchievedException(f"Flew back to the rejoin point, {m.x:.0f}m north")
+
+        # a rejected MISSION_SET_CURRENT during the rejoin keeps the rejoin, so
+        # leaving and re-entering AUTO continues to the leg end, not the leg start
+        start_loc = self.offset_location_ne(self.home_position_as_location(), 600, 200)
+        start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        self.mav.mav.mission_set_current_send(1, 1, 99)
+        self.delay_sim_time(2, reason="let the rejected request be handled")
+        self.change_mode('GUIDED')
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(4, timeout=5)
+
+        # removing the leg end in AUTO during the rejoin keeps the return path,
+        # and leaving and re-entering AUTO then restarts the new mission
+        start_loc = self.offset_location_ne(self.home_position_as_location(), 150, 150)
+        start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        self.upload_simple_relhome_mission(return_path_mission(800)[:3])
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            m = self.assert_receive_message('LOCAL_POSITION_NED')
+            if m.x > 170:
+                raise NotAchievedException(f"Flew back up the return path to {m.x:.0f}m north")
+        self.assert_mode_is('AUTO_RTL')
+        self.change_mode('GUIDED')
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(1, timeout=10)
+
+        # replacing the mission during the rejoin with one without a return path
+        # leaves Auto RTL, so a later Auto RTL request is not taken as a no-op
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 900, 0, alt),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 4
+        ])
+        self.wait_mode('AUTO', timeout=5)
+
+        # editing the restarted item into a takeoff leaves Auto RTL, as a takeoff
+        # clears the return path
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        takeoff_mission = return_path_mission(800)
+        takeoff_mission[3] = (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt + 10)  # 4
+        self.upload_simple_relhome_mission(takeoff_mission)
+        self.wait_mode('AUTO', timeout=5)
+
+        # a return path with only a located DO_LAND_START still joins at it
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 50, 0, 0),    # 3
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 4
+        ])
+        self.run_cmd(cmd_return_path_start)
+        self.assert_mode_is('AUTO_RTL')
+        self.wait_current_waypoint(4, timeout=10)
+
+        # a leg end with a zero latitude and longitude is flown at the current
+        # position, so the rejoin point is not interpolated towards 0,0
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, alt),    # 4
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 6
+        ])
+        fly_return_path_from(600, -200, no_backtrack=True)
+
+        # a waypoint after one with a zero latitude and longitude has no leg to
+        # rejoin part way along, so it is joined directly rather than through a
+        # rejoin point on an earlier leg
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 0, alt),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, alt),    # 5
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 6
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 7
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 8
+        ])
+        start_loc = self.offset_location_ne(self.home_position_as_location(), 600, 200)
+        start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(6, timeout=5)
+
+        # a leg into a landing is flown at the current altitude, so the
+        # rejoin altitude is not interpolated down towards the landing
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 4
+        ])
+        fly_return_path_from(400, 200, min_alt=alt - 5)
+
+        # the test must finish at home
+        self.context_pop()
+        self.do_RTL()
+
+    def upload_auto_rtl_away_from_home_mission(self, alt):
+        '''return path and landing sequence well away from home, to the west'''
+        # pymavlink does not understand the return path command yet
+        cmd_return_path_start = 188  # mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START
+        self.upload_simple_relhome_mission([
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),   # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -400, alt),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -450, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, alt),    # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -500, alt),  # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, -500, 0),        # 6
+        ])
+
+    def assert_auto_rtl_refused_in_rtl(self):
+        '''refused Auto RTL requests must leave RTL flying home'''
+        cmd_return_path_start = 188  # mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START
+        home = self.poll_home_position()
+
+        def assert_near_home(mav, m):
+            if m.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            distance = self.get_distance_int(home, m)
+            if distance > 150:
+                raise NotAchievedException(f"RTL flew {distance:.0f}m from home")
+
+        self.context_push()
+        self.install_message_hook_context(assert_near_home)
+
+        self.run_cmd_do_set_mode("AUTO_RTL", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd_int(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_mode_is("RTL")
+
+        self.progress("RTL must still return home")
+        self.wait_distance_to_home(0, 10, timeout=120)
+        self.wait_disarmed(timeout=120)
+        self.assert_mode_is("RTL")
+        self.context_pop()
+        self.zero_throttle()
+
+    def AutoRTLRefusedInFenceRecovery(self):
+        '''Test a refused Auto RTL does not move RTL's destination'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 2,        # circle
+            "FENCE_RADIUS": 100,
+            "FENCE_ACTION": 1,      # RTL
+            "FENCE_OPTIONS": 1,     # disable mode change until breach cleared
+            "AVOID_ENABLE": 0,
+        })
+
+        alt = 20
+        self.upload_auto_rtl_away_from_home_mission(alt)
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.poll_home_position(quiet=False)
+        self.takeoff(alt, mode="LOITER")
+        self.progress("Flying north until the fence is breached")
+        self.set_rc(2, 1100)
+        self.wait_mode("RTL", timeout=60)
+        self.set_rc(2, 1500)
+
+        self.progress("Auto RTL must be refused during fence recovery")
+        self.assert_auto_rtl_refused_in_rtl()
+
+    def AutoRTLRefusedByGCSBlock(self):
+        '''Test Auto RTL refused by FLTMODE_GCSBLOCK does not move RTL's destination'''
+        self.set_parameters({
+            "FLTMODE_GCSBLOCK": 8,  # AUTO
+        })
+
+        alt = 20
+        self.upload_auto_rtl_away_from_home_mission(alt)
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.poll_home_position(quiet=False)
+        self.takeoff(alt, mode="LOITER")
+        self.progress("Flying north away from home")
+        self.set_rc(2, 1100)
+        self.wait_distance_to_home(60, 1000, timeout=60)
+        self.set_rc(2, 1500)
+        self.change_mode("RTL")
+
+        self.progress("Auto RTL must be refused with AUTO blocked from the GCS")
+        self.assert_auto_rtl_refused_in_rtl()
 
     def EK3_OGN_HGT_MASK(self):
         '''test baraometer-alt-compensation based on long-term GPS readings'''

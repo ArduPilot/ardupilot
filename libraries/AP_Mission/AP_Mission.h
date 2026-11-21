@@ -715,7 +715,8 @@ public:
     bool jump_to_abort_landing_sequence(void);
 #endif
 
-    // find the closest point on the mission after a DO_RETURN_PATH_START and before DO_LAND_START or landing
+    // join the mission at the closest point after a DO_RETURN_PATH_START and before DO_LAND_START or landing
+    // if that point is part way along a leg the vehicle flies to it and then follows the leg
     bool jump_to_closest_mission_leg(const Location &current_loc);
 
     // check which is the shortest route to landing an RTL via a DO_LAND_START or continuing on the current mission plan
@@ -849,6 +850,7 @@ private:
         bool in_landing_sequence;   // true if the mission has jumped to a landing
         bool resuming_mission;      // true if the mission is resuming and set false once the aircraft attains the interrupted WP
         bool in_return_path;        // true if the mission has passed a DO_RETURN_PATH_START waypoint either in the course of the mission or via a `jump_to_closest_mission_leg` call
+        bool rejoining_return_path; // true while the current nav command is _rejoin_cmd, the virtual wp where the vehicle rejoins a return path leg
     } _flags;
 
     // mission WP resume history
@@ -923,12 +925,22 @@ private:
     // check if command is a landing type command.  Asside the obvious, MAV_CMD_DO_PARACHUTE is considered a type of landing
     bool is_landing_type_cmd(uint16_t id) const;
 
+    // true if start_id is at or before index with no takeoff in between
+    bool start_item_before(uint16_t index, uint16_t start_id) const;
+
     // approximate the distance travelled to get to a landing.  DO_JUMP commands are observed in look forward.
     bool distance_to_landing(uint16_t index, float &tot_distance,Location current_loc);
 
     // Approximate the distance traveled to return to the mission path. DO_JUMP commands are observed in look forward.
     // Stop searching once reaching a landing or do-land-start
-    bool distance_to_mission_leg(uint16_t index, uint16_t &search_remaining, float &rejoin_distance, uint16_t &rejoin_index, const Location& current_loc);
+    // If the closest point is part way along a leg, rejoin_leg_start_index is the index of the leg's first wp and rejoin_loc is the point, otherwise rejoin_leg_start_index is AP_MISSION_CMD_INDEX_NONE
+    bool distance_to_mission_leg(uint16_t index, uint16_t &search_remaining, float &rejoin_distance, uint16_t &rejoin_index, uint16_t &rejoin_leg_start_index, Location &rejoin_loc, const Location& current_loc);
+
+    // calculate the point the given proportion along the leg from start to end, returns false if the leg can not be rejoined part way
+    bool calc_rejoin_loc(const Location &start, const Mission_Command &end, const Vector3f &leg, float proportion, Location &rejoin_loc) const;
+
+    // start the mission from a virtual wp at rejoin_loc on the leg from leg_start_index to leg_end_index
+    bool start_return_path_rejoin(uint16_t leg_start_index, uint16_t leg_end_index, const Location &rejoin_loc);
 
     // calculate the location of a resume cmd wp
     bool calc_rewind_pos(Mission_Command& rewind_cmd);
@@ -964,6 +976,9 @@ private:
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
     struct Mission_Command  _resume_cmd;  // virtual wp command that is used to resume mission if the mission needs to be rewound on resume.
+    struct Mission_Command  _rejoin_cmd;  // virtual wp command at the point where the vehicle rejoins a return path leg
+    uint16_t                _rejoin_leg_end_index;  // leg end to continue to if the mission changes during the rejoin
+    uint32_t                _rejoin_change_time_ms; // mission change time when the rejoin point was calculated
     uint16_t                _prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
