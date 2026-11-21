@@ -606,6 +606,7 @@ def configure(cfg):
     cfg.recurse('libraries/AP_Scripting')
 
     cfg.recurse('libraries/AP_GPS')
+    cfg.recurse('libraries/AP_RTC')
     cfg.recurse('libraries/AP_HAL_SITL')
     cfg.recurse('libraries/SITL')
 

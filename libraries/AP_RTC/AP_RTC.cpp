@@ -44,24 +44,34 @@ const AP_Param::GroupInfo AP_RTC::var_info[] = {
     AP_GROUPEND
 };
 
+// GPS time error above which a disarmed clock is stepped rather than slewed
+static constexpr float RTC_STEP_THRESHOLD_S = 0.05;
+// largest clock rate trim, kept well above crystal tolerances
+static constexpr float RTC_RATE_MAX = 500.0e-6;
+// time constants of the rate trim's proportional and integral terms
+static constexpr float RTC_SLEW_TC_S = 30.0;
+static constexpr float RTC_DRIFT_TC_S = 300.0;
+// the full rate trim lasts this long after a GPS sample, covering GPS rates down to 1Hz
+static constexpr uint64_t RTC_TRIM_HOLD_US = 2000000;
+// gps_locked() requirements
+static constexpr float RTC_LOCK_ERR_S = 0.002;
+// a locked clock stays locked until its filtered error exceeds this
+static constexpr float RTC_UNLOCK_ERR_S = 0.02;
+static constexpr uint8_t RTC_LOCK_SAMPLES = 10;
+// the lock is held this long after the last GPS sample; the clock runs on
+// its learned rate trim meanwhile, so it stays within a few milliseconds
+static constexpr uint64_t RTC_LOCK_TIMEOUT_US = 600000000;
+// interval at which a slewing clock updates the hardware RTC and signing timestamp
+static constexpr uint64_t RTC_SLEW_SIDE_EFFECTS_INTERVAL_US = 60000000;
+
 void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 {
-    const uint64_t oldest_acceptable_date_us = 1640995200ULL*1000*1000; // 2022-01-01 0:00
+    set_utc_usec_at(time_utc_usec, type, AP_HAL::micros64());
+}
 
-    // only allow time to be moved forward from the same sourcetype
-    // while the vehicle is disarmed:
-    if (hal.util->get_soft_armed()) {
-        if (type >= rtc_source_type) {
-            // e.g. system-time message when we've been set by the GPS
-            return;
-        }
-    } else {
-        // vehicle is disarmed; accept (e.g.) GPS time source updates
-        if (type > rtc_source_type) {
-            // e.g. system-time message when we've been set by the GPS
-            return;
-        }
-    }
+void AP_RTC::set_utc_usec_at(uint64_t time_utc_usec, source_type type, uint64_t local_us)
+{
+    const uint64_t oldest_acceptable_date_us = 1640995200ULL*1000*1000; // 2022-01-01 0:00
 
     // check it's from an allowed sources:
     if (!(allowed_types & (1<<type))) {
@@ -73,43 +83,235 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
         return;
     }
 
-    const uint64_t now = AP_HAL::micros64();
-    const int64_t tmp = int64_t(time_utc_usec) - int64_t(now);
-    if (tmp < rtc_shift) {
-        // can't allow time to go backwards, ever
-        return;
+    bool changed = false;   // stepped, or changed source
+    bool slew_side_effects = false;
+    uint64_t utc_now = time_utc_usec;
+#if AP_RTC_LOGGING_ENABLED
+    bool log_slew = false;
+    float log_err_s = 0;
+    float log_rate = 0;
+    float log_drift = 0;
+    bool log_locked = false;
+#endif
+
+    {
+        WITH_SEMAPHORE(rsem);
+
+        // another thread may have re-anchored the clock after local_us was read
+        if (rtc_source_type != SOURCE_NONE && local_us < anchor_local_us) {
+            local_us = anchor_local_us;
+        }
+
+        const bool armed = hal.util->get_soft_armed();
+
+        // a GPS time always trims a clock already set by the GPS, armed or
+        // disarmed, because slewing never makes the clock jump
+        const bool slewing_source = (type == SOURCE_GPS) && (rtc_source_type == SOURCE_GPS);
+
+        // only allow time to be moved forward from the same sourcetype
+        // while the vehicle is disarmed:
+        if (!slewing_source) {
+            if (armed) {
+                if (type >= rtc_source_type) {
+                    // e.g. system-time message when we've been set by the GPS
+                    return;
+                }
+            } else {
+                // vehicle is disarmed; accept (e.g.) HW time source updates
+                if (type > rtc_source_type) {
+                    // e.g. system-time message when we've been set by the GPS
+                    return;
+                }
+            }
+        }
+
+        const bool have_time = (rtc_source_type != SOURCE_NONE);
+        const uint64_t clock_utc = have_time ? utc_at(local_us) : 0;
+        const bool forward = !have_time || (time_utc_usec >= clock_utc);
+
+        // while disarmed a large error from the GPS is stepped out in either
+        // direction; the GPS is the only source trusted to move time backwards
+        const int64_t gps_err_us = int64_t(time_utc_usec - clock_utc);
+        const int64_t step_threshold_us = int64_t(RTC_STEP_THRESHOLD_S * 1.0e6);
+        const bool gps_step = (type == SOURCE_GPS) && have_time && !armed &&
+                              ((gps_err_us >= step_threshold_us) || (gps_err_us <= -step_threshold_us));
+
+        if (slewing_source && !gps_step) {
+            slew_towards(time_utc_usec, local_us);
+        } else if (forward || gps_step) {
+            step_to(time_utc_usec, local_us);
+            rtc_source_type = type;
+            changed = true;
+        } else if (type == SOURCE_GPS) {
+            // the GPS is better than the source that set this clock, but the
+            // clock is ahead of it.  Time can't go backwards while armed, so slew to it
+            rtc_source_type = SOURCE_GPS;
+            gps_samples = 0;
+            gps_lock = false;
+            last_gps_local_us = local_us;
+            slew_towards(time_utc_usec, local_us);
+            changed = true;
+            utc_now = clock_utc;
+        } else {
+            // can't allow time to go backwards, ever
+            return;
+        }
+
+        if (!changed) {
+            utc_now = utc_at(local_us);
+            if (local_us - last_slew_side_effects_us >= RTC_SLEW_SIDE_EFFECTS_INTERVAL_US) {
+                last_slew_side_effects_us = local_us;
+                slew_side_effects = true;
+            }
+#if AP_RTC_LOGGING_ENABLED
+            if (local_us - last_slew_log_us >= 1000000) {
+                last_slew_log_us = local_us;
+                log_slew = true;
+                log_err_s = err_filt_s;
+                log_rate = rate;
+                log_drift = drift;
+                log_locked = gps_locked_at(local_us);
+            }
+#endif
+        } else {
+            last_slew_side_effects_us = local_us;
+        }
     }
 
+    // the logger and storage take their own locks, so these run outside rsem
+
 #if AP_RTC_LOGGING_ENABLED
-    if (rtc_source_type != type || tmp != rtc_shift) {
+    if (changed) {
         AP::logger().Write_RTC();
+    }
+    if (log_slew) {
+        // @LoggerMessage: RTCD
+        // @Description: RTC rate trim that keeps the clock following GPS time
+        // @Field: TimeUS: Time since system startup
+        // @Field: Err: filtered GPS time minus RTC time
+        // @Field: Rate: RTC rate trim
+        // @Field: Drift: integrated rate trim, the estimated local crystal error
+        // @Field: Lck: true if the RTC is following GPS time closely
+        AP::logger().WriteStreaming("RTCD", "TimeUS,Err,Rate,Drift,Lck",
+                                    "ss---", "F0---", "QfffB",
+                                    local_us,
+                                    double(log_err_s),
+                                    double(log_rate * 1.0e6),
+                                    double(log_drift * 1.0e6),
+                                    uint8_t(log_locked));
     }
 #endif  // AP_RTC_LOGGING_ENABLED
 
-    WITH_SEMAPHORE(rsem);
-
-    rtc_shift = tmp;
+    if (!changed && !slew_side_effects) {
+        return;
+    }
 
     // update hardware clock:
     if (type != SOURCE_HW) {
-        hal.util->set_hw_rtc(time_utc_usec);
+        hal.util->set_hw_rtc(utc_now);
     }
-
-    rtc_source_type = type;
 
 #if AP_MAVLINK_SIGNING_ENABLED
     // update signing timestamp
-    GCS_MAVLINK::update_signing_timestamp(time_utc_usec);
+    GCS_MAVLINK::update_signing_timestamp(utc_now);
 #endif  // AP_MAVLINK_SIGNING_ENABLED
+}
+
+// clock reading at a local time; rsem must be held
+uint64_t AP_RTC::utc_at(uint64_t local_us) const
+{
+    // the full trim, which corrects the current error, only applies until the
+    // next GPS sample is due.  After that the clock runs on the drift estimate,
+    // so a GPS outage doesn't carry the last sample's noise forward
+    const int64_t dt_us = int64_t(local_us - anchor_local_us);
+    const int64_t trim_us = MIN(dt_us, int64_t(RTC_TRIM_HOLD_US));
+    return anchor_utc_us + dt_us + int64_t(float(trim_us) * rate + float(dt_us - trim_us) * drift);
+}
+
+// jump the clock to a time; rsem must be held
+void AP_RTC::step_to(uint64_t time_utc_usec, uint64_t local_us)
+{
+    anchor_utc_us = time_utc_usec;
+    anchor_local_us = local_us;
+    rate = drift;
+    err_filt_s = 0;
+    gps_samples = 0;
+    gps_lock = false;
+    last_gps_local_us = local_us;
+}
+
+// trim the clock rate towards a GPS time; rsem must be held
+void AP_RTC::slew_towards(uint64_t time_utc_usec, uint64_t local_us)
+{
+    // re-anchor at the current reading so the rate change is continuous
+    const uint64_t clock_utc = utc_at(local_us);
+    anchor_utc_us = clock_utc;
+    anchor_local_us = local_us;
+
+    const float err_s = int64_t(time_utc_usec - clock_utc) * 1.0e-6;
+    if (fabsf(err_s) < RTC_STEP_THRESHOLD_S) {
+        // a large error saturates the trim, so only a small one updates the drift estimate
+        const float dt_s = constrain_float((local_us - last_gps_local_us) * 1.0e-6, 0.0, 10.0);
+        drift = constrain_float(drift + err_s * dt_s / (RTC_SLEW_TC_S * RTC_DRIFT_TC_S), -RTC_RATE_MAX, RTC_RATE_MAX);
+        err_filt_s += (err_s - err_filt_s) * 0.1;
+    } else {
+        err_filt_s = err_s;
+    }
+    rate = constrain_float(drift + err_s / RTC_SLEW_TC_S, -RTC_RATE_MAX, RTC_RATE_MAX);
+
+    if (gps_samples < UINT8_MAX) {
+        gps_samples++;
+    }
+
+    // latch the lock, with hysteresis so noise near the threshold doesn't toggle it
+    if (!gps_lock && (gps_samples >= RTC_LOCK_SAMPLES) && (fabsf(err_filt_s) < RTC_LOCK_ERR_S)) {
+        gps_lock = true;
+    } else if (gps_lock && (fabsf(err_filt_s) > RTC_UNLOCK_ERR_S)) {
+        gps_lock = false;
+    }
+    last_gps_local_us = local_us;
 }
 
 bool AP_RTC::get_utc_usec(uint64_t &usec) const
 {
+    uint64_t local_us;
+    return get_utc_and_local_usec(usec, local_us);
+}
+
+bool AP_RTC::get_utc_and_local_usec(uint64_t &utc_usec, uint64_t &local_usec) const
+{
+    WITH_SEMAPHORE(rsem);
     if (rtc_source_type == SOURCE_NONE) {
         return false;
     }
-    usec = AP_HAL::micros64() + rtc_shift;
+    local_usec = AP_HAL::micros64();
+    utc_usec = utc_at(local_usec);
     return true;
+}
+
+bool AP_RTC::get_utc_usec_at(uint64_t local_us, uint64_t &usec) const
+{
+    WITH_SEMAPHORE(rsem);
+    if (rtc_source_type == SOURCE_NONE) {
+        return false;
+    }
+    usec = utc_at(local_us);
+    return true;
+}
+
+bool AP_RTC::gps_locked() const
+{
+    // read the time under the lock so it can't predate last_gps_local_us
+    WITH_SEMAPHORE(rsem);
+    return gps_locked_at(AP_HAL::micros64());
+}
+
+bool AP_RTC::gps_locked_at(uint64_t local_us) const
+{
+    WITH_SEMAPHORE(rsem);
+    return (rtc_source_type == SOURCE_GPS) &&
+           gps_lock &&
+           (local_us - last_gps_local_us < RTC_LOCK_TIMEOUT_US);
 }
 
 void AP_RTC::clock_ms_to_hms_fields(const uint64_t time_ms, uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms) const

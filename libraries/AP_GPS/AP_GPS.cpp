@@ -995,10 +995,18 @@ void AP_GPS::update_instance(uint8_t instance)
 #endif
 
 #if AP_RTC_ENABLED
-    if (state[instance].status >= AP_GPS_FixType::FIX_3D) {
-        const uint64_t now = time_epoch_usec(instance);
-        if (now != 0) {
-            AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
+    // the RTC follows one GPS, once per message, so it sees one receiver's time bias
+    if (result && (instance == rtc_instance) && (state[instance].status >= AP_GPS_FixType::FIX_3D)) {
+        const uint64_t fix_time_usec = time_epoch_usec(instance);
+        if (fix_time_usec != 0) {
+            // the fix's time is given to when its message arrived, but it was measured
+            // the receiver's lag earlier, unless it is given to the PPS edge.  get_lag()
+            // always provides a lag, returning false when it is a default guess
+            float lag_s = 0;
+            if (!drivers[instance]->corrected_time_from_pps()) {
+                UNUSED_RESULT(get_lag(instance, lag_s));
+            }
+            AP::rtc().set_utc_usec(fix_time_usec + uint64_t(lag_s * 1.0e6f), AP_RTC::SOURCE_GPS);
         }
     }
 #endif
@@ -1075,6 +1083,10 @@ void AP_GPS::update(void)
         }
     }
 
+#if AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
+    update_rtc_instance();
+#endif
+
 #if GPS_MAX_RECEIVERS > 1
 #if HAL_LOGGING_ENABLED
     const uint8_t old_primary = primary_instance;
@@ -1093,6 +1105,39 @@ void AP_GPS::update(void)
     AP_Notify::flags.gps_num_sats = state[primary_instance].num_sats;
 #endif
 }
+
+#if AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
+// choose the GPS that sets the RTC: the lowest latency one with a 3D fix and the
+// GPS week.  It is kept unless it loses either or another is clearly lower, so the
+// RTC doesn't follow receivers with different time biases in turn
+void AP_GPS::update_rtc_instance()
+{
+    // a receiver without the week, such as GPS_INPUT without time, can't set the RTC
+    const auto can_set_rtc = [this](uint8_t i) {
+        return (state[i].status >= AP_GPS_FixType::FIX_3D) && (state[i].time_week != 0);
+    };
+
+    // get_lag() always provides a lag, returning false when it is a default guess
+    float current_lag_s;
+    UNUSED_RESULT(get_lag(rtc_instance, current_lag_s));
+    const bool current_ok = can_set_rtc(rtc_instance);
+
+    uint8_t best = rtc_instance;
+    float best_lag_s = current_ok ? (current_lag_s - 0.02f) : FLT_MAX;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if ((i == rtc_instance) || !can_set_rtc(i)) {
+            continue;
+        }
+        float lag_s;
+        UNUSED_RESULT(get_lag(i, lag_s));
+        if (lag_s < best_lag_s) {
+            best = i;
+            best_lag_s = lag_s;
+        }
+    }
+    rtc_instance = best;
+}
+#endif  // AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
 
 #if GPS_MAX_RECEIVERS > 1
 uint8_t AP_GPS::fix_type_priority(AP_GPS_FixType status)

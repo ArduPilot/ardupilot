@@ -14942,6 +14942,186 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.do_RTL()
 
+    def ModeFollow_TransportDelay(self):
+        '''check follow times target samples with the target's GPS-disciplined clock'''
+        self.set_parameters({
+            "FOLL_ENABLE": 1,
+            "FOLL_SYSID": self.mav.source_system,
+            "FOLL_ALT_TYPE": 1,  # relative to home
+            "FOLL_DIST_MAX": 0,  # the target travels well beyond the default 100 m
+        })
+        self.wait_ready_to_arm()
+        self.context_push()
+        self.context_set_speedup(1)
+        # SYSTEM_TIME paces the loop below and gives this vehicle's UTC minus boot time
+        self.set_message_rate_hz('SYSTEM_TIME', 50)
+
+        target_speed = 10  # m/s north
+        start_loc = self.get_location(frame=AltFrame.ABOVE_HOME)
+        traj_t0 = self.get_sim_time()
+        # the target's boot time at a vehicle boot time; the target booted
+        # long before the vehicle, and may reboot during the test
+        target_boot = {'start_t': traj_t0 - 1234.567}
+
+        def target_loc(t):
+            return self.offset_location_ne(start_loc, target_speed * (t - traj_t0), 0)
+
+        def fly_target(duration, delay_s, time_messages=True, duplicate_after_s=None, clock_ahead_s=0.0):
+            '''send a target delayed by delay_s, optionally with SYSTEM_TIME and GPS_RAW_INT at
+            the recommended 0.2 Hz, optionally sending each position again duplicate_after_s later,
+            and optionally with the target's UTC clock_ahead_s ahead of GPS time'''
+            next_pos = 0
+            next_time = 0
+            tstart = None
+            duplicates = []
+            while True:
+                m = self.assert_receive_message('SYSTEM_TIME', timeout=2)
+                if m.time_unix_usec == 0:
+                    raise NotAchievedException("vehicle does not know the time")
+                t = m.time_boot_ms * 0.001
+                if tstart is None:
+                    tstart = t
+                if t - tstart > duration:
+                    return (tstart, t)
+                vehicle_offset_us = m.time_unix_usec - m.time_boot_ms * 1000
+                # the target's boot and GPS time when the sample was taken
+                sample_t = t - delay_s
+                target_boot_ms = int((sample_t - target_boot['start_t']) * 1000)
+                # the first position message registers the target's clock
+                if t >= next_pos:
+                    next_pos = t + 0.1
+                    loc = target_loc(sample_t)
+                    position = (
+                        target_boot_ms,
+                        int(loc.lat * 1e7),
+                        int(loc.lng * 1e7),
+                        0,      # alt (mm), unused with FOLL_ALT_TYPE=1
+                        0,      # relative_alt (mm)
+                        target_speed * 100, 0, 0,  # vx, vy, vz (cm/s)
+                        0)      # heading (cdeg)
+                    self.mav.mav.global_position_int_send(*position)
+                    if duplicate_after_s is not None:
+                        duplicates.append((t + duplicate_after_s, position))
+                while len(duplicates) and duplicates[0][0] <= t:
+                    self.mav.mav.global_position_int_send(*duplicates.pop(0)[1])
+                if time_messages and t >= next_time:
+                    next_time = t + 5
+                    self.mav.mav.system_time_send(
+                        int((sample_t + clock_ahead_s) * 1e6) + vehicle_offset_us,
+                        target_boot_ms)
+                    loc = target_loc(sample_t)
+                    self.mav.mav.gps_raw_int_send(
+                        0, 3, int(loc.lat * 1e7), int(loc.lng * 1e7), 0,
+                        65535, 65535, target_speed * 100, 0, 10)
+
+        windows = {}
+        self.start_subtest("Clean link: the target's clock locks")
+        windows['clean'] = fly_target(20, 0.0)
+        self.start_subtest("1 s link delay timed from the target's clock")
+        windows['delayed'] = fly_target(20, 1.0)
+        self.start_subtest("1 s link delay with SYSTEM_TIME and GPS_RAW_INT starved")
+        windows['starved'] = fly_target(30, 1.0, time_messages=False)
+        self.start_subtest("Every position also arrives 2 s late over a second link")
+        windows['duplicated'] = fly_target(20, 1.0, duplicate_after_s=2.0)
+        self.start_subtest("Target reboot while starved falls back to JitterCorrection")
+        target_boot['start_t'] = self.get_sim_time() - 1.0 - 1.0
+        windows['rebooted'] = fly_target(20, 1.0, time_messages=False)
+        self.start_subtest("Target clock acquired again under the 1 s delay")
+        windows['reacquired'] = fly_target(30, 1.0)
+        self.start_subtest("A target clock further ahead than the link delay is rejected")
+        windows['ahead'] = fly_target(25, 1.0, clock_ahead_s=1.5)
+
+        self.context_pop()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        ftim = []
+        foll = []
+        while True:
+            m = dfreader.recv_match(type=['FTIM', 'FOLL'])
+            if m is None:
+                break
+            if m.get_type() == 'FTIM':
+                ftim.append(m)
+            else:
+                foll.append(m)
+
+        def rows_in(rows, window, skip_s):
+            (tstart, tend) = window
+            return [r for r in rows if (tstart + skip_s) * 1e6 <= r.TimeUS <= tend * 1e6]
+
+        def estimate_errors(window, skip_s):
+            ret = []
+            for r in rows_in(foll, window, skip_s):
+                if r.LatE == 0:
+                    # the estimate has just been reset
+                    continue
+                est = Location.latlon_only(r.LatE, r.LonE)
+                ret.append(self.get_distance(est, target_loc(r.TimeUS * 1e-6)))
+            return sorted(ret)
+
+        def median(values):
+            if len(values) == 0:
+                raise NotAchievedException("no log rows in window")
+            return values[len(values)//2]
+
+        def assert_source(name, skip_s, want):
+            rows = rows_in(ftim, windows[name], skip_s)
+            if len(rows) == 0:
+                raise NotAchievedException("%s: no FTIM rows" % name)
+            if not all(r.Src == want for r in rows):
+                raise NotAchievedException("%s: want Src=%u, got %s" % (name, want, str([r.Src for r in rows])))
+            return rows
+
+        def assert_tracking(name, skip_s):
+            err = median(estimate_errors(windows[name], skip_s))
+            self.progress("%s: estimate median error %.2f m" % (name, err))
+            if err > 1.0:
+                raise NotAchievedException("%s: estimate %.1f m from the target" % (name, err))
+
+        # the clock offset needs three 0.2 Hz SYSTEM_TIME samples
+        assert_source('clean', 15, 1)
+
+        delayed = assert_source('delayed', 2, 1)
+        ages = sorted(r.Age for r in delayed)
+        self.progress("delayed: sample age min=%d median=%d max=%d ms" % (ages[0], median(ages), ages[-1]))
+        if ages[0] < 950 or ages[-1] > 1150:
+            raise NotAchievedException("delayed sample age %d-%d ms, want about 1000" % (ages[0], ages[-1]))
+        assert_tracking('delayed', 5)
+
+        # missing time messages don't drop the held offset
+        assert_source('starved', 0, 1)
+        assert_tracking('starved', 0)
+
+        # late copies are ignored before they are timed, so they neither log nor disturb the estimate
+        duplicated = assert_source('duplicated', 0, 1)
+        (tstart, tend) = windows['duplicated']
+        rate = len(duplicated) / (tend - tstart)
+        self.progress("duplicated: %.1f timed samples per second" % rate)
+        if rate > 12:
+            raise NotAchievedException("late copies were timed as samples (%.1f/s)" % rate)
+        if any(r.LatE == 0 for r in rows_in(foll, windows['duplicated'], 0)):
+            raise NotAchievedException("late copies reset the estimate")
+        assert_tracking('duplicated', 0)
+
+        # JitterCorrection treats the delay as zero, so the estimate trails by about speed x delay
+        assert_source('rebooted', 1, 0)
+        rebooted_err = median(estimate_errors(windows['rebooted'], 10))
+        self.progress("rebooted: estimate median error %.2f m" % rebooted_err)
+        if rebooted_err < 0.5 * target_speed * 1.0:
+            raise NotAchievedException(
+                "rebooted estimate only %.1f m behind; the test no longer shows the delay" % rebooted_err)
+
+        # the reacquired clock is used even though the 1 s delay is still present
+        assert_source('reacquired', 20, 1)
+        assert_tracking('reacquired', 25)
+
+        # its SYSTEM_TIME would arrive before it was sent, so the clock is not used
+        assert_source('ahead', 1, 0)
+        ahead_err = median(estimate_errors(windows['ahead'], 10))
+        self.progress("ahead: estimate median error %.2f m" % ahead_err)
+        if ahead_err < 0.5 * target_speed * 1.0:
+            raise NotAchievedException("ahead estimate only %.1f m behind; the test no longer shows the delay" % ahead_err)
+
     def get_global_position_int(self, timeout=30):
         tstart = self.get_sim_time()
         while True:
@@ -21105,6 +21285,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AutoYawDO_MOUNT_CONTROL,
             self.ParameterChecks,
             self.ModeFollow_with_FOLLOW_TARGET,
+            self.ModeFollow_TransportDelay,
             self.MAVLinkRangeFinderIDs,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.FenceRelativePreArms,
