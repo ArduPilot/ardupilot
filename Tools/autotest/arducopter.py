@@ -22808,8 +22808,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         fly_return_path_from(400, 200, 350, no_backtrack=True)
         self.wait_current_waypoint(5)
 
-        # moving the leg start during the rejoin continues to the leg end
-        # rather than flying back up the path to the moved leg start
+        # moving the leg start during the rejoin continues to the leg end in
+        # Auto RTL rather than flying back up the path to the moved leg start
         def return_path_mission(leg_start_north):
             return [
                 (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
@@ -22824,6 +22824,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         fly_return_path_from(600, 200, no_backtrack=True,
                              edit_mission=lambda: self.upload_simple_relhome_mission(return_path_mission(850)))
         self.wait_current_waypoint(4)
+        self.assert_mode_is('AUTO_RTL')
 
         # leaving AUTO during the rejoin and flying past the rejoin point
         # continues to the leg end rather than back to the rejoin point
