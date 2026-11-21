@@ -34,10 +34,22 @@ public:
      */
     bool get_utc_usec(uint64_t &usec) const;
 
+    // get the UTC clock and the local AP_HAL::micros64() time it was read at
+    bool get_utc_and_local_usec(uint64_t &utc_usec, uint64_t &local_usec) const;
+
     // set the system time.  If the time has already been set by
     // something better (according to source_type), this set will be
-    // ignored.
+    // ignored.  Once set by the GPS, further GPS times trim the clock
+    // rate so it follows GPS time without ever stepping backwards.
     void set_utc_usec(uint64_t time_utc_usec, source_type type);
+
+    // true when the clock is following GPS time to within a few milliseconds
+    bool gps_locked() const;
+
+    // as above, at an explicit local time; used by the unit tests
+    void set_utc_usec_at(uint64_t time_utc_usec, source_type type, uint64_t local_us);
+    bool get_utc_usec_at(uint64_t local_us, uint64_t &usec) const;
+    bool gps_locked_at(uint64_t local_us) const;
 
     // return source type currently in use
     source_type get_source_type() const { return rtc_source_type; }
@@ -74,10 +86,26 @@ public:
 private:
 
     static AP_RTC *_singleton;
-    HAL_Semaphore rsem;
+    mutable HAL_Semaphore rsem;
 
     source_type rtc_source_type = SOURCE_NONE;
-    int64_t rtc_shift;
+
+    // UTC = anchor_utc_us + dt + dt * rate, dt = local time since anchor_local_us
+    uint64_t anchor_local_us;
+    uint64_t anchor_utc_us;
+    float rate;                 // clock rate trim (fraction)
+    float drift;                // integrated rate trim, the local crystal error (fraction)
+    float err_filt_s;           // filtered GPS minus clock error
+    uint8_t gps_samples;        // GPS samples since the last step, saturating
+    uint64_t last_gps_local_us;
+    uint64_t last_slew_side_effects_us;
+#if AP_RTC_LOGGING_ENABLED
+    uint64_t last_slew_log_us;
+#endif
+
+    uint64_t utc_at(uint64_t local_us) const;
+    void step_to(uint64_t time_utc_usec, uint64_t local_us);
+    void slew_towards(uint64_t time_utc_usec, uint64_t local_us);
 
     void clock_ms_to_hms_fields(const uint64_t time_ms, uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms) const;
 
