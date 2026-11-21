@@ -157,16 +157,14 @@ void AP_RTC_RemoteClocks::restart_acquisition(Source &s)
 
 void AP_RTC_RemoteClocks::handle_system_time(uint8_t sysid, uint8_t compid, uint64_t time_unix_usec, uint32_t time_boot_ms, uint32_t now_ms)
 {
-    // UTC minus boot time doesn't depend on when it is read
     const AP_RTC &rtc = AP::rtc();
     uint64_t utc_us, local_us;
     const bool locked = rtc.gps_locked() && rtc.get_utc_and_local_usec(utc_us, local_us);
-    handle_system_time_at(sysid, compid, time_unix_usec, time_boot_ms, now_ms,
-                          locked, locked ? int64_t(utc_us) - int64_t(local_us) : 0);
+    handle_system_time_at(sysid, compid, time_unix_usec, time_boot_ms, now_ms, locked, locked ? utc_us : 0);
 }
 
 void AP_RTC_RemoteClocks::handle_system_time_at(uint8_t sysid, uint8_t compid, uint64_t time_unix_usec, uint32_t time_boot_ms,
-                                                uint32_t now_ms, bool local_locked, int64_t local_offset_us)
+                                                uint32_t now_ms, bool local_locked, uint64_t local_utc_us)
 {
     WITH_SEMAPHORE(sem);
 
@@ -188,7 +186,7 @@ void AP_RTC_RemoteClocks::handle_system_time_at(uint8_t sysid, uint8_t compid, u
     }
 
     // a sample sent after it arrived comes from a remote clock running ahead of GPS time
-    const int64_t ahead_us = int64_t(time_unix_usec) - (int64_t(now_ms) * 1000 + local_offset_us);
+    const int64_t ahead_us = int64_t(time_unix_usec) - int64_t(local_utc_us);
     if (ahead_us > int64_t(AP_RTC_REMOTE_CLOCK_TOLERANCE_MS) * 1000) {
         restart_acquisition(*s);
         return;
@@ -250,12 +248,11 @@ bool AP_RTC_RemoteClocks::remote_to_local_ms(uint8_t sysid, uint8_t compid, uint
         }
         return false;
     }
-    return remote_to_local_ms_at(sysid, compid, remote_boot_ms, uint32_t(local_us / 1000U),
-                                 int64_t(utc_us) - int64_t(local_us), local_ms);
+    return remote_to_local_ms_at(sysid, compid, remote_boot_ms, uint32_t(local_us / 1000U), utc_us, local_ms);
 }
 
 bool AP_RTC_RemoteClocks::remote_to_local_ms_at(uint8_t sysid, uint8_t compid, uint32_t remote_boot_ms,
-                                                uint32_t now_ms, int64_t local_offset_us, uint32_t &local_ms)
+                                                uint32_t now_ms, uint64_t local_utc_us, uint32_t &local_ms)
 {
     WITH_SEMAPHORE(sem);
 
@@ -274,18 +271,23 @@ bool AP_RTC_RemoteClocks::remote_to_local_ms_at(uint8_t sysid, uint8_t compid, u
     }
     const int64_t offset_us = drift_fitted ? offset_at(*s, remote_boot_ms) : s->newest_offset_us;
 
-    const int64_t local_us = int64_t(remote_boot_ms) * 1000 + offset_us - local_offset_us;
-    if (local_us < 0) {
-        return false;
-    }
+    // when the message was sent relative to now, by the two GPS-disciplined clocks.
+    // Comparing UTC times keeps this correct when the 32 bit local time wraps
+    const int64_t sent_after_now_us = int64_t(remote_boot_ms) * 1000 + offset_us - int64_t(local_utc_us);
 
     // a message can't arrive before it was sent, so an offset putting it in the future is wrong
-    if (local_us - int64_t(now_ms) * 1000 > int64_t(AP_RTC_REMOTE_CLOCK_TOLERANCE_MS) * 1000) {
+    if (sent_after_now_us > int64_t(AP_RTC_REMOTE_CLOCK_TOLERANCE_MS) * 1000) {
         restart_acquisition(*s);
         return false;
     }
 
-    local_ms = uint32_t(local_us / 1000);
+    // round down to whole milliseconds, wrapping like AP_HAL::millis()
+    const int64_t local_us = int64_t(now_ms) * 1000 + sent_after_now_us;
+    int64_t local_ms64 = local_us / 1000;
+    if ((local_us % 1000) < 0) {
+        local_ms64--;
+    }
+    local_ms = uint32_t(local_ms64);
     return true;
 }
 

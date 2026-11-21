@@ -16,6 +16,12 @@ static constexpr uint8_t TARGET_COMPID = 1;
 // local UTC minus local boot time
 static constexpr int64_t LOCAL_OFFSET_US = 1760000000000000LL;
 
+// our UTC at local time now_ms
+static uint64_t local_utc_us(uint32_t now_ms)
+{
+    return uint64_t(int64_t(now_ms) * 1000 + LOCAL_OFFSET_US);
+}
+
 // tests start this long after our boot
 static constexpr uint32_t START_MS = 2000000;
 
@@ -34,7 +40,7 @@ struct Remote {
     // following GPS time (unless local_locked is false)
     void send_time(AP_RTC_RemoteClocks &clocks, uint32_t local_ms, int64_t error_us=0, uint32_t rx_ms=0, bool local_locked=true) const {
         clocks.handle_system_time_at(sysid, compid, unix_usec(local_ms) + error_us, boot_ms(local_ms),
-                                     rx_ms != 0 ? rx_ms : local_ms, local_locked, LOCAL_OFFSET_US);
+                                     rx_ms != 0 ? rx_ms : local_ms, local_locked, local_utc_us(rx_ms != 0 ? rx_ms : local_ms));
     }
 };
 
@@ -43,7 +49,7 @@ static const Remote target { TARGET_SYSID, TARGET_COMPID, START_MS - 1234567, 0.
 
 static bool convert(AP_RTC_RemoteClocks &clocks, uint32_t remote_boot_ms, uint32_t now_ms, uint32_t &local_ms)
 {
-    return clocks.remote_to_local_ms_at(TARGET_SYSID, TARGET_COMPID, remote_boot_ms, now_ms, LOCAL_OFFSET_US, local_ms);
+    return clocks.remote_to_local_ms_at(TARGET_SYSID, TARGET_COMPID, remote_boot_ms, now_ms, local_utc_us(now_ms), local_ms);
 }
 
 // three consistent samples and a GPS fix make the conversion available
@@ -119,7 +125,7 @@ TEST(AP_RTC_RemoteClocks, unknown_remote_time_ignored)
     uint32_t now_ms = START_MS;
     clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
     for (uint8_t i=0; i<5; i++) {
-        clocks.handle_system_time_at(TARGET_SYSID, TARGET_COMPID, 0, target.boot_ms(now_ms), now_ms, true, LOCAL_OFFSET_US);
+        clocks.handle_system_time_at(TARGET_SYSID, TARGET_COMPID, 0, target.boot_ms(now_ms), now_ms, true, local_utc_us(now_ms));
         now_ms += 1000;
     }
     uint32_t local_ms;
@@ -445,6 +451,41 @@ TEST(AP_RTC_RemoteClocks, keyed_by_component)
     uint32_t local_ms;
     ASSERT_TRUE(convert(clocks, target.boot_ms(now_ms - 5000), now_ms - 5000, local_ms));
     EXPECT_EQ(now_ms - 5000, local_ms);
+}
+
+// our 32 bit boot time in milliseconds wraps after 49.7 days of uptime, and
+// samples and conversions either side of the wrap must still be consistent
+TEST(AP_RTC_RemoteClocks, local_boot_time_wrap)
+{
+    AP_RTC_RemoteClocks clocks;
+    ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
+
+    // local times here are 64 bit; the target booted an hour before them
+    const uint64_t wrap_ms = uint64_t(1) << 32;
+    const uint64_t target_boot_start_ms = wrap_ms - 3600000;
+    const auto utc_us = [](uint64_t t_ms) { return t_ms * 1000 + uint64_t(LOCAL_OFFSET_US); };
+    const auto target_boot_ms = [&](uint64_t t_ms) { return uint32_t(t_ms - target_boot_start_ms); };
+
+    // acquire before the wrap and keep receiving samples past it; the
+    // samples are close enough that no late message looks like a reboot
+    uint64_t t_ms = wrap_ms - 12000;
+    for (uint8_t i=0; i<6; i++) {
+        clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, uint32_t(t_ms));
+        clocks.handle_system_time_at(TARGET_SYSID, TARGET_COMPID, utc_us(t_ms), target_boot_ms(t_ms),
+                                     uint32_t(t_ms), true, utc_us(t_ms));
+        t_ms += 3000;
+    }
+
+    // a message sent a second ago, after the wrap
+    uint32_t local_ms;
+    ASSERT_TRUE(clocks.remote_to_local_ms_at(TARGET_SYSID, TARGET_COMPID, target_boot_ms(t_ms - 1000),
+                                             uint32_t(t_ms), utc_us(t_ms), local_ms));
+    EXPECT_EQ(uint32_t(t_ms - 1000), local_ms);
+
+    // a message sent just before the wrap
+    ASSERT_TRUE(clocks.remote_to_local_ms_at(TARGET_SYSID, TARGET_COMPID, target_boot_ms(wrap_ms - 500),
+                                             uint32_t(t_ms), utc_us(t_ms), local_ms));
+    EXPECT_EQ(uint32_t(wrap_ms - 500), local_ms);
 }
 
 #endif  // AP_RTC_REMOTE_CLOCKS_ENABLED

@@ -41,13 +41,13 @@ public:
     bool remote_to_local_ms(uint8_t sysid, uint8_t compid, uint32_t remote_boot_ms, uint32_t &local_ms);
 
     // as above, given the local time, whether this clock follows GPS time and
-    // the local UTC minus boot time; used by the unit tests
+    // the local UTC at now_ms; used by the unit tests
     void handle_system_time_at(uint8_t sysid, uint8_t compid, uint64_t time_unix_usec, uint32_t time_boot_ms,
-                               uint32_t now_ms, bool local_locked, int64_t local_offset_us);
+                               uint32_t now_ms, bool local_locked, uint64_t local_utc_us);
 
-    // as above, given the local time and the local UTC minus boot time; used by the unit tests
+    // as above, given the local time and the local UTC at now_ms; used by the unit tests
     bool remote_to_local_ms_at(uint8_t sysid, uint8_t compid, uint32_t remote_boot_ms,
-                               uint32_t now_ms, int64_t local_offset_us, uint32_t &local_ms);
+                               uint32_t now_ms, uint64_t local_utc_us, uint32_t &local_ms);
 
 private:
 
