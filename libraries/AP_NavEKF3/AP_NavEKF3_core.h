@@ -1448,7 +1448,7 @@ private:
     static const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
     uint32_t flowVelResetTimes_ms[FLOW_RESET_MAX_IN_WINDOW]; // times of the latest optical-flow velocity resets, 0 if none
     uint8_t flowVelResetNext;       // slot in flowVelResetTimes_ms the next reset overwrites, holding the oldest
-    uint32_t flowVelResetDeferTime_ms; // last report of a recovery deferred for a stale range
+    uint32_t flowVelResetDeferTime_ms[uint8_t(FlowResetRange::Step)]; // last report of a recovery deferred, for each FlowResetRange but Good
     uint32_t flowVelResetPauseStart_ms; // start of a pause in flow velocity resets after a burst of them, 0 if none
     uint32_t flowVelResetPause_ms;  // length of that pause, doubled on each burst unless it follows a quiet spell
     bool flowVelResetUnhealthy;     // true when the flow sensor reports a lockout sample too poor to recover from

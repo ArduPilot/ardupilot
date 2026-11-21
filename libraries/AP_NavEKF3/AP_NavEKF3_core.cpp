@@ -228,7 +228,7 @@ void NavEKF3_core::InitialiseVariables()
     flowVelResetNext = 0;
     flowVelResetPauseStart_ms = 0;
     flowVelResetPause_ms = 0;
-    flowVelResetDeferTime_ms = 0;
+    memset(flowVelResetDeferTime_ms, 0, sizeof(flowVelResetDeferTime_ms));
     flowVelResetUnhealthy = false;
     aglKfRestartConfirm = 0;
     rngNewReadingTime_ms = 0;

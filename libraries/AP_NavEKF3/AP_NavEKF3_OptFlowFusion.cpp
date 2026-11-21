@@ -845,10 +845,12 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         if (axisLockout && rangeState != FlowResetRange::Good) {
             // deferred, not refused: the axis timers are left alone so the first sample after a
             // range fusion returns still recovers, and nothing latches on a lockout this path
-            // could not have acted on. Report it, because otherwise the divergence is silent.
-            if (flowVelResetDeferTime_ms == 0 ||
-                (imuSampleTime_ms - flowVelResetDeferTime_ms) > FLOW_RESET_DEFER_REPORT_MS) {
-                flowVelResetDeferTime_ms = imuSampleTime_ms;
+            // could not have acted on. Report it, because otherwise the divergence is silent. Each
+            // reason has its own timer, as a range that goes stale and then restarts is two events
+            uint32_t &deferReportTime_ms = flowVelResetDeferTime_ms[uint8_t(rangeState) - 1];
+            if (deferReportTime_ms == 0 ||
+                (imuSampleTime_ms - deferReportTime_ms) > FLOW_RESET_DEFER_REPORT_MS) {
+                deferReportTime_ms = imuSampleTime_ms;
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow recovery deferred, range %s",
                               (unsigned)imu_index, rangeState == FlowResetRange::Stale ? "stale" :
                               (rangeState == FlowResetRange::Restarted ? "restarted" : "step"));
