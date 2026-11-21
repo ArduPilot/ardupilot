@@ -963,8 +963,11 @@ class ChibiOSHWDef(hwdef.HWDef):
                 f.write("#ifndef %s\n#define %s %s\n#endif\n" % (d, d, v))
         else:
             defines = {}
-        # enable RNG for all H7 chips
-        if self.mcu_series.startswith("STM32H7") and 'HAL_USE_HW_RNG' not in defines.keys():
+        # Signed firmware needs true randomness for key management. The HAL
+        # implementation remains unavailable on MCUs with no RNG peripheral.
+        if ((self.mcu_series.startswith("STM32H7") or
+             (self.signed_fw and self.is_normal_fw())) and
+                'HAL_USE_HW_RNG' not in defines.keys()):
             f.write("#define HAL_USE_HW_RNG TRUE\n")
         elif 'HAL_USE_HW_RNG' not in defines.keys():
             f.write("#define HAL_USE_HW_RNG FALSE\n")
