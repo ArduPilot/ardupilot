@@ -912,7 +912,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     const ftype FLOW_FLOOR_RANGE_MARGIN_M = 0.1f;   // a range this far above the ground clearance reads takeoff, as detectOptFlowTakeoff() takes it
     if (really_fuse && motorsArmed && dal.get_vehicle_landed() && !takeOffDetected &&
         flowResetHeight(resetHgt) && (flowResetRangeState(ofDataDelayed, range, resetHgt) != FlowResetRange::Stale) &&
-        (rangeDataDelayed.rng * prevTnb.c.z < rngOnGnd + FLOW_FLOOR_RANGE_MARGIN_M)) {
+        (rngAtSensor_m * prevTnb.c.z < rngOnGnd + FLOW_FLOOR_RANGE_MARGIN_M)) {
         // within the NE velocity variance limit ConstrainVariances() applies
         const ftype landedVelVar = MIN(MAX(sq(MIN(frontend->_noaidHorizNoise, 1.0f)), stateStruct.velocity.xy().length_squared()), 1.0e3f);
         Pmut[4][4] = MAX(P[4][4], landedVelVar);

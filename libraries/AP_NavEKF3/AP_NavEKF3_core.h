@@ -1465,6 +1465,7 @@ private:
     static constexpr ftype aglKfRestartConfirmSigma = 3.0f;
     uint8_t aglKfRestartConfirm;
     uint32_t rngNewReadingTime_ms;  // time a range sample that was not a copy of an earlier reading last reached the fusion time horizon
+    ftype rngAtSensor_m;            // rangeDataDelayed.rng before it is moved to the IMU, as the sensor's ground clearance is measured (m)
     uint8_t rngHgtRestartConfirm;  // as aglKfRestartConfirm, for the terrain estimate, or the main filter's height while the range finder is its source
     bool flowVelInitPending;        // relative aiding started in flight, so its zero velocity is to be set from the flow
     uint32_t flowVelInitStart_ms;   // time that relative aiding started
