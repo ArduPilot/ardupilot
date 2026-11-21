@@ -422,14 +422,11 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
 }
 
 // sets the local NED origin using a LLH location (latitude, longitude, height)
-// returns false if absolute aiding and GPS is being used or if the origin is already set
+// returns false if the origin is already set.  The frontend only gives
+// a core the origin it was first given, so a core can not be moved
+// from an origin it is navigating against
 bool NavEKF2_core::setOriginLLH(const Location &loc)
 {
-    if (PV_AidingMode == AID_ABSOLUTE && !extNavUsedForPos) {
-        // reject attempts to set the origin if GPS is being used
-        return false;
-    }
-
     return setOrigin(loc);
 }
 
@@ -447,12 +444,32 @@ bool NavEKF2_core::setOrigin(const Location &loc)
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, EKF_origin.lat);
     validOrigin = true;
+
+    // if we offered an origin, we were about to align to it: set the
+    // NE earth magnetic field states using the published declination,
+    // and take the origin height uncertainty and the height of our
+    // height datum from it
+    if (originCandidate.valid) {
+        alignMagStateDeclination();
+        ekfOriginHgtVar = originCandidate.hgtVar;
+        if (originCandidate.have_gpsRefHgt) {
+            ekfGpsRefHgt = originCandidate.gpsRefHgt;
+        }
+        originCandidate.valid = false;
+    }
+
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u origin set",(unsigned)imu_index);
 
-    // put origin in frontend as well to ensure it stays in sync between lanes
-    frontend->common_EKF_origin = EKF_origin;
-    frontend->common_origin_valid = true;
+    return true;
+}
 
+// before this core has an origin, the origin it would set
+bool NavEKF2_core::getOriginCandidate(Location &origin) const
+{
+    if (validOrigin || !originCandidate.valid) {
+        return false;
+    }
+    origin = originCandidate.origin;
     return true;
 }
 

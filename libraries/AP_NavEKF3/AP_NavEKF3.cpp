@@ -884,8 +884,8 @@ bool NavEKF3::InitialiseFilter(void)
     // Set the primary initially to be users selected primary
     primary = _primary_core < num_cores? _primary_core : 0;
 
-    // invalidate shared origin
-    common_origin_valid = false;
+    // the origin is given to us again once the cores are initialised
+    public_origin_valid = false;
 
     // initialise the cores. We return success only if all cores
     // initialise successfully
@@ -1447,39 +1447,85 @@ bool NavEKF3::getLLH(Location &loc) const
 // Returns false if the origin has not been set
 bool NavEKF3::getOriginLLH(Location &loc) const
 {
-    if (!core) {
+    if (!core || !public_origin_valid) {
         return false;
     }
-    if (common_origin_valid) {
-        loc = common_EKF_origin;
-        return true;
-    }
-    return core[primary].getOriginLLH(loc);
+    loc = public_origin;
+    return true;
 }
 
-// set the latitude and longitude and height used to set the NED origin
-// All NED positions calculated by the filter will be relative to this location
-// The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-// Returns false if the filter has rejected the attempt to set the origin
-bool NavEKF3::setOriginLLH(const Location &loc)
+// set the origin all NED positions are relative to; see the header
+void NavEKF3::setOriginLLH(const Location &loc)
 {
+    if (!core) {
+        return;
+    }
+    if (public_origin_valid) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !APM_BUILD_TYPE(APM_BUILD_Replay)
+        // AP_AHRS only ever gives us the one common origin
+        if (!public_origin.same_loc_as(loc)) {
+            AP_HAL::panic("EKF3: given a different origin");
+        }
+#endif
+        if (!originNeeded()) {
+            // every core has it already.  If logging started after
+            // the origin was logged, log it now, so that Replay of
+            // this log is given it:
+            if (dal.origin_log_needed3()) {
+                dal.log_SetOriginLLH3(public_origin);
+            }
+            return;
+        }
+    }
+    // log only the calls which give a core its origin, so Replay is
+    // given each of them without a record every update:
     dal.log_SetOriginLLH3(loc);
+    if (!public_origin_valid) {
+        public_origin = loc;
+        public_origin_valid = true;
+    }
+    // cores which already have the origin ignore it:
+    for (uint8_t i=0; i<num_cores; i++) {
+        IGNORE_RETURN(core[i].setOriginLLH(public_origin));
+    }
+}
 
+// true if the filter has no origin yet, or a core has been reset
+// and needs it again
+bool NavEKF3::originNeeded() const
+{
     if (!core) {
         return false;
     }
-    if (common_origin_valid) {
-        // we don't allow setting the EKF origin if it has already been set
-        // this is to prevent causing upsets from a shifting origin.
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3: origin already set");
+    if (!public_origin_valid) {
+        return true;
+    }
+    for (uint8_t i=0; i<num_cores; i++) {
+        if (!core[i].haveOrigin()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// before the filter has an origin it offers one; see the header
+bool NavEKF3::getOriginCandidate(Location &origin) const
+{
+    if (!core || public_origin_valid) {
         return false;
     }
-    bool ret = false;
-    for (uint8_t i=0; i<num_cores; i++) {
-        ret |= core[i].setOriginLLH(loc);
+    // prefer the primary core's, but any core can offer one: with
+    // GPS affinity a core using another GPS may be ready first, and
+    // before the origin was given to us it would have set its own
+    if (core[primary].getOriginCandidate(origin)) {
+        return true;
     }
-    // return true if any core accepts the new origin
-    return ret;
+    for (uint8_t i=0; i<num_cores; i++) {
+        if (core[i].getOriginCandidate(origin)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
