@@ -283,6 +283,54 @@ def sign_firmware(img1, img2, extf_img, private_keyfile):
     return signed_descriptor, extf_signature
 
 
+def add_elf_load_segment(elf_path, address, size):
+    '''make an ELF section at address available to segment-based loaders'''
+    elf = bytearray(open(elf_path, 'rb').read())
+    if len(elf) < 52 or elf[:6] != b'\x7fELF\x01\x01':
+        raise Errors.WafError("expected a 32-bit little-endian ELF")
+
+    phoff, shoff = struct.unpack_from('<II', elf, 28)
+    phentsize, phnum = struct.unpack_from('<HH', elf, 42)
+    shentsize, shnum = struct.unpack_from('<HH', elf, 46)
+    if phentsize != 32 or shentsize != 40:
+        raise Errors.WafError("unexpected ELF header sizes")
+    if (phoff + phentsize * phnum > len(elf) or
+            shoff + shentsize * shnum > len(elf)):
+        raise Errors.WafError("ELF headers extend past end of file")
+
+    section_offset = None
+    section_header_offset = None
+    first_section_offset = len(elf)
+    for index in range(shnum):
+        header_offset = shoff + index * shentsize
+        section = struct.unpack_from('<IIIIIIIIII', elf, header_offset)
+        section_type, section_address = section[1], section[3]
+        file_offset, section_size = section[4], section[5]
+        if section_type != 8 and section_size != 0:
+            first_section_offset = min(first_section_offset, file_offset)
+        if section_type == 1 and section_address == address and section_size == size:
+            if section_offset is not None:
+                raise Errors.WafError("multiple matching ELF signature sections")
+            section_offset = file_offset
+            section_header_offset = header_offset
+    if section_offset is None:
+        raise Errors.WafError("ELF signature section not found")
+
+    # SHF_ALLOC makes section-based loaders such as GDB include the trailer.
+    section_flags = struct.unpack_from('<I', elf, section_header_offset + 8)[0]
+    struct.pack_into('<I', elf, section_header_offset + 8, section_flags | 2)
+
+    # Segment-based loaders such as OpenOCD only consider PT_LOAD entries.
+    new_header_offset = phoff + phentsize * phnum
+    if new_header_offset + phentsize > first_section_offset:
+        raise Errors.WafError("no room for ELF signature program header")
+    struct.pack_into(
+        '<IIIIIIII', elf, new_header_offset,
+        1, section_offset, address, address, size, size, 4, 1)
+    struct.pack_into('<H', elf, 44, phnum + 1)
+    open(elf_path, 'wb').write(elf)
+
+
 class set_app_descriptor(Task.Task):
     '''setup app descriptor in bin file'''
     color='BLUE'
@@ -372,7 +420,7 @@ class set_app_descriptor(Task.Task):
                     self.env.get_flat('OBJCOPY'),
                     '--add-section', '.extf_signature=' + signature_path,
                     '--set-section-flags',
-                    '.extf_signature=alloc,load,readonly,data,contents',
+                    '.extf_signature=readonly,data,contents',
                     '--change-section-address',
                     '.extf_signature=0x%08x' % signature_address,
                     elf_out.abspath(), elf_out.abspath(),
@@ -380,6 +428,8 @@ class set_app_descriptor(Task.Task):
                 ret = self.exec_command(command)
                 if ret != 0:
                     return ret
+                add_elf_load_segment(
+                    elf_out.abspath(), signature_address, len(extf_signature))
             finally:
                 os.unlink(signature_path)
 
