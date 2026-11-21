@@ -6241,10 +6241,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # the legs after these land and wait for the auto-disarm, so the delay comes back each time
         disarm_delay = self.get_parameter("DISARM_DELAY")
-        for options in (0, 8):
-            self.start_subtest("Landed: an accel bias does not walk the velocity away, EK3_OPTIONS %u" % options)
+        gnd_clearance = self.get_parameter("RNGFND1_GNDCLR")
+        # the EKF moves a range to the IMU, while RNGFND1_GNDCLR is what the sensor reads on the ground,
+        # so the last leg mounts it further below the IMU than the hold's 0.1 m margin. The IMU is twice
+        # that above the floor, leaving the sensor reading its clearance
+        for (options, below_imu_m) in ((0, 0), (8, 0), (8, 0.15)):
+            self.start_subtest("Landed: an accel bias does not walk the velocity away, EK3_OPTIONS %u, "
+                               "range finder %.2f m below the IMU" % (options, below_imu_m))
             self.context_clear_collection('STATUSTEXT')
             self.set_parameter("DISARM_DELAY", 0)  # stay armed once landed
+            self.set_parameters({
+                "RNGFND1_POS_Z": below_imu_m,
+                "SIM_SONAR_POS_Z": below_imu_m,
+                "SIM_SONAR_OFFSET": 2 * below_imu_m,
+                "RNGFND1_GNDCLR": below_imu_m if below_imu_m > 0 else gnd_clearance,
+            })
             fly_with_stuck_flow_axis(options, inject=False)
             self.set_rc(3, 1000)
             self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
@@ -6262,6 +6273,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.delay_sim_time(12, "the residual bias acting on the ground")
             self.set_parameters({"SIM_ACC1_BIAS_X": 0, "SIM_ACC2_BIAS_X": 0, "DISARM_DELAY": disarm_delay})
             self.disarm_vehicle(force=True)
+            self.set_parameters({"RNGFND1_POS_Z": 0, "SIM_SONAR_POS_Z": 0, "SIM_SONAR_OFFSET": 0,
+                                 "RNGFND1_GNDCLR": gnd_clearance})
             # the pulse and the residual were sent without read-back, so check the log saw them
             biases = set()
             shut_out = 0
