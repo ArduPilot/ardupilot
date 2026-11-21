@@ -51,10 +51,14 @@ static constexpr float RTC_RATE_MAX = 500.0e-6;
 // time constants of the rate trim's proportional and integral terms
 static constexpr float RTC_SLEW_TC_S = 30.0;
 static constexpr float RTC_DRIFT_TC_S = 300.0;
+// the full rate trim lasts this long after a GPS sample, covering GPS rates down to 1Hz
+static constexpr uint64_t RTC_TRIM_HOLD_US = 2000000;
 // gps_locked() requirements
 static constexpr float RTC_LOCK_ERR_S = 0.002;
 static constexpr uint8_t RTC_LOCK_SAMPLES = 10;
-static constexpr uint64_t RTC_LOCK_TIMEOUT_US = 60000000;
+// the lock is held this long after the last GPS sample; the clock runs on
+// its learned rate trim meanwhile, so it stays within a few milliseconds
+static constexpr uint64_t RTC_LOCK_TIMEOUT_US = 600000000;
 // interval at which a slewing clock updates the hardware RTC and signing timestamp
 static constexpr uint64_t RTC_SLEW_SIDE_EFFECTS_INTERVAL_US = 60000000;
 
@@ -211,8 +215,12 @@ void AP_RTC::set_utc_usec_at(uint64_t time_utc_usec, source_type type, uint64_t 
 // clock reading at a local time; rsem must be held
 uint64_t AP_RTC::utc_at(uint64_t local_us) const
 {
+    // the full trim, which corrects the current error, only applies until the
+    // next GPS sample is due.  After that the clock runs on the drift estimate,
+    // so a GPS outage doesn't carry the last sample's noise forward
     const int64_t dt_us = int64_t(local_us - anchor_local_us);
-    return anchor_utc_us + dt_us + int64_t(float(dt_us) * rate);
+    const int64_t trim_us = MIN(dt_us, int64_t(RTC_TRIM_HOLD_US));
+    return anchor_utc_us + dt_us + int64_t(float(trim_us) * rate + float(dt_us - trim_us) * drift);
 }
 
 // jump the clock to a time; rsem must be held

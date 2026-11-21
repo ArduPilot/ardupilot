@@ -100,10 +100,11 @@ private:
 
     source_type rtc_source_type = SOURCE_NONE;
 
-    // UTC = anchor_utc_us + dt + dt * rate, dt = local time since anchor_local_us
+    // UTC = anchor_utc_us + dt + rate * min(dt, RTC_TRIM_HOLD_US) + drift * (rest of dt),
+    // dt = local time since anchor_local_us
     uint64_t anchor_local_us;
     uint64_t anchor_utc_us;
-    float rate;                 // clock rate trim (fraction)
+    float rate;                 // clock rate trim for RTC_TRIM_HOLD_US after the anchor (fraction)
     float drift;                // integrated rate trim, the local crystal error (fraction)
     float err_filt_s;           // filtered GPS minus clock error
     uint8_t gps_samples;        // GPS samples since the last step, saturating

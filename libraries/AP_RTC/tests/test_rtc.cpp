@@ -568,4 +568,20 @@ TEST(AP_RTC, never_steps_back)
     EXPECT_FALSE(AP::rtc().gps_locked_at(sim.local_at(160.0)));
 }
 
+// without GPS the clock runs on its learned trim, so the lock is held for 10 minutes
+TEST(AP_RTC, lock_held_without_gps)
+{
+    const ClockSim sim = start_sim(50.0e-6);
+    feed_gps(sim, 0.2, 900.0);
+    ASSERT_TRUE(AP::rtc().gps_locked_at(sim.local_at(900.0)));
+    EXPECT_TRUE(AP::rtc().gps_locked_at(sim.local_at(1200.0)));
+    EXPECT_TRUE(AP::rtc().gps_locked_at(sim.local_at(1499.0)));
+    EXPECT_FALSE(AP::rtc().gps_locked_at(sim.local_at(1501.0)));
+
+    // and the clock is still close to GPS time after 5 minutes without it
+    uint64_t now;
+    ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(1200.0), now));
+    EXPECT_NEAR(0.0, (int64_t(now) - int64_t(sim.utc_at(1200.0))) * 1.0e-6, 0.005);
+}
+
 AP_GTEST_MAIN()
