@@ -301,6 +301,8 @@ class set_app_descriptor(Task.Task):
         elf_out, bin_out = self.outputs
 
         img = bytearray(open(bin_in.abspath(), 'rb').read())
+        extf_signature = None
+        image_size = 0
         offset = img.find(descriptor)
         if offset == -1:
             Logs.info("No APP_DESCRIPTOR found")
@@ -328,7 +330,6 @@ class set_app_descriptor(Task.Task):
             crc1 = to_unsigned(crc32(img1))
             crc2 = to_unsigned(crc32(img2))
             githash = to_unsigned(int('0x' + self.env.APP_DESCRIPTOR_GITHASH, 16))
-            extf_signature = None
             if self.generator.bld.env.AP_SIGNED_FIRMWARE:
                 sig = bytearray([0 for i in range(76)])
                 if self.generator.bld.env.PRIVATE_KEY:
@@ -338,7 +339,8 @@ class set_app_descriptor(Task.Task):
                         sig = sig_signed
                     else:
                         self.generator.bld.fatal("Signing failed")
-                desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
+                image_size = len(img)
+                desc = struct.pack('<IIII76s', crc1, crc2, image_size, githash, sig)
             else:
                 desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
             img[offset:offset+desc_len] = desc
@@ -359,6 +361,27 @@ class set_app_descriptor(Task.Task):
                 struct.pack_into('<I', elf_img, elf_ofs+desc_len+4, len(extf_img))
                 Logs.info("Applying APP_DESCRIPTOR %08x%08x to elf" % (crc1, crc2))
         open(elf_out.abspath(), 'wb').write(elf_img)
+        if extf_signature:
+            # Keep direct ELF loading equivalent to loading the BIN: the
+            # bootloader reads this trailer immediately after the image.
+            signature_path = elf_out.abspath() + '.extf_signature'
+            open(signature_path, 'wb').write(extf_signature)
+            try:
+                signature_address = 0x08000000 + int(self.env.FLASH_RESERVE_START_KB) * 1024 + image_size
+                command = [
+                    self.env.get_flat('OBJCOPY'),
+                    '--add-section', '.extf_signature=' + signature_path,
+                    '--set-section-flags',
+                    '.extf_signature=alloc,load,readonly,data,contents',
+                    '--change-section-address',
+                    '.extf_signature=0x%08x' % signature_address,
+                    elf_out.abspath(), elf_out.abspath(),
+                ]
+                ret = self.exec_command(command)
+                if ret != 0:
+                    return ret
+            finally:
+                os.unlink(signature_path)
 
 
 class generate_apj(Task.Task):
