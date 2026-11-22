@@ -675,6 +675,17 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     GSCALAR(rangefinder_signal_min, "RNGFND_SQ_MIN", RANGEFINDER_SIGNAL_MIN_DEFAULT),
 
+#if AP_RANGEFINDER_MAVLINK_ENABLED
+    // @Param: RNGFND_MAV_TMO
+    // @DisplayName: MAVLink rangefinder timeout
+    // @Description: Maximum time in seconds between MAVLink DISTANCE_SENSOR messages before the rangefinder status changes to NoData
+    // @Units: s
+    // @Range: 0.1 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    GSCALAR(rangefinder_mavlink_timeout, "RNGFND_MAV_TMO", RANGEFINDER_MAVLINK_TIMEOUT_DEFAULT),
+#endif
+
     // @Param: SURFTRAK_DEPTH
     // @DisplayName: SURFTRAK minimum depth
     // @Description: Minimum depth to engage SURFTRAK mode
