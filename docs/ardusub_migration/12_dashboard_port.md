@@ -4,6 +4,8 @@ The final ArduSub dashboard should closely retain the UI from the read-only ROS 
 
 The reference presentation lives in `web_dashboard/templates/index.html`, companion templates for autotune, timed missions, and Control Lab, and `web_dashboard/static/dashboard.css`, `style.css`, scripts, and logos. Its navigation includes Dashboard, Throttle Control, Flight Plan, Mission Builder, Nano Perception, Gate Guidance, Waypoint Navigation, Plots, Raw Data, Tuning Guide, Debug, and Autotune. Keep this structure and its dark/light theme when porting the frontend; replace ROS-specific data and command assumptions behind it. Copying the original Flask `app.py` unchanged would also copy ROS node control, firmware flashing, and motor commands, so that backend needs deliberate replacement.
 
+The per-field comparison for the reference `updateUI(s)` is in [13_dashboard_field_map.md](13_dashboard_field_map.md).
+
 | Existing dashboard contract | ArduSub migration state | Next implementation boundary |
 |---|---|---|
 | `GET /api/state` and `GET /api/stream` | Implemented as read-only MAVLink snapshots and Server-Sent Events in `integration/dashboard_api.py`; native `SERIAL3` → API → HTTP replay passes | Compare every field used by the original `updateUI()` with the new mapper; display unavailable fields honestly |
