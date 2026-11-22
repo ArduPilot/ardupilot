@@ -432,7 +432,7 @@ def firmware_format(source):
              '(expected APJ, BIN, HEX, or ELF)' % source)
 
 
-def _decode_apj(source, maximum_size, expected_board_id):
+def _read_apj(source, expected_board_id):
     try:
         descriptor = json.loads(source.read_text())
         if not isinstance(descriptor, dict):
@@ -444,14 +444,22 @@ def _decode_apj(source, maximum_size, expected_board_id):
             raise ValueError(
                 'APJ board ID %u does not match target board ID %u' %
                 (board_id, expected_board_id))
-        compressed = base64.b64decode(descriptor['image'], validate=True)
+        return descriptor
+    except (KeyError, OSError, TypeError, ValueError,
+            binascii.Error, zlib.error) as error:
+        sys.exit('failed to decode firmware %s: %s' % (source, error))
+
+
+def _decode_apj_field(source, descriptor, field, size_field, maximum_size):
+    try:
+        compressed = base64.b64decode(descriptor[field], validate=True)
         decompressor = zlib.decompressobj()
         firmware = decompressor.decompress(compressed, maximum_size + 1)
         if len(firmware) > maximum_size or not decompressor.eof:
             raise ValueError('expanded APJ image exceeds target flash')
         if decompressor.unused_data:
             raise ValueError('APJ image has trailing compressed data')
-        image_size = int(descriptor['image_size'])
+        image_size = int(descriptor[size_field])
         if image_size != len(firmware):
             raise ValueError(
                 'APJ image_size is %u but image contains %u bytes' %
@@ -460,6 +468,24 @@ def _decode_apj(source, maximum_size, expected_board_id):
     except (KeyError, OSError, TypeError, ValueError,
             binascii.Error, zlib.error) as error:
         sys.exit('failed to decode firmware %s: %s' % (source, error))
+
+
+def _decode_apj(source, maximum_size, expected_board_id):
+    descriptor = _read_apj(source, expected_board_id)
+    return _decode_apj_field(
+        source, descriptor, 'image', 'image_size', maximum_size)
+
+
+def make_apj_external_binary(source, destination, maximum_size,
+                             expected_board_id=None):
+    '''Decode an APJ external-flash image, returning None when absent.'''
+    descriptor = _read_apj(Path(source), expected_board_id)
+    if 'extf_image' not in descriptor:
+        return None
+    firmware = _decode_apj_field(
+        source, descriptor, 'extf_image', 'extf_image_size', maximum_size)
+    Path(destination).write_bytes(firmware)
+    return Path(destination)
 
 
 def elf_sections_from(path, address):
@@ -1139,6 +1165,16 @@ def main():
         'sysbus LoadBinary @%s 0x08000000' % flash_img,
         'sysbus LoadBinary @%s 0x%08X' % (mcu_id_bin, generated['uid_address']),
     ]
+    ext_flash_mb = hwdef_value(generated['hwdef_h'], 'EXT_FLASH_SIZE_MB') or 0
+    if image_format == 'apj' and ext_flash_mb:
+        external_bin = make_apj_external_binary(
+            firmware, outdir / 'current-external-firmware.bin',
+            ext_flash_mb << 20,
+            hwdef_value(generated['hwdef_h'], 'APJ_BOARD_ID'))
+        if external_bin is not None:
+            initial_loads.append(
+                'sysbus LoadBinary @%s 0x%08X' %
+                (external_bin, EXT_FLASH_BASE))
     persistent_regions = [
         ('persistentFlash', flash_img, 0x08000000, flash_size),
     ]

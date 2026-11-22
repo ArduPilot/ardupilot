@@ -7,6 +7,7 @@ import argparse
 import base64
 import importlib.util
 import os
+import re
 import shutil
 import signal
 import socket
@@ -70,7 +71,7 @@ def provision_bootloader(source, public_key, destination):
 
 
 def build_signed_copter(board, private_key, extra_hwdef=None,
-                        artifact_name=None, configure=True):
+                        artifact_name=None, configure=True, elf=False):
     options = ['--signed-fw', '--private-key', str(private_key)]
     if extra_hwdef is not None:
         options += ['--extra-hwdef', str(extra_hwdef)]
@@ -78,8 +79,10 @@ def build_signed_copter(board, private_key, extra_hwdef=None,
         configure_and_build(board, 'copter', *options)
     else:
         run_checked([sys.executable, ROOT / 'waf', 'copter'])
-    destination = OUTPUT / (artifact_name or '%s-arducopter.apj' % board)
-    shutil.copyfile(ROOT / 'build' / board / 'bin' / 'arducopter.apj', destination)
+    extension = 'elf' if elf else 'apj'
+    source_name = 'arducopter' if elf else 'arducopter.apj'
+    destination = OUTPUT / (artifact_name or '%s-arducopter.%s' % (board, extension))
+    shutil.copyfile(ROOT / 'build' / board / 'bin' / source_name, destination)
     return destination
 
 
@@ -134,7 +137,7 @@ class SocketWriter:
 
 class RenodeBoard:
     def __init__(self, dialect, renode, board, firmware, bootloader,
-                 name, timeout):
+                 name, timeout, expect_heartbeat=True):
         self.dialect = dialect
         self.timeout = timeout
         self.uart_port = free_port()
@@ -164,7 +167,8 @@ class RenodeBoard:
         self.pending_messages = []
         try:
             self._connect()
-            self.wait_message('HEARTBEAT', timeout)
+            if expect_heartbeat:
+                self.wait_message('HEARTBEAT', timeout)
         except BaseException:
             self.close()
             raise
@@ -250,6 +254,42 @@ class RenodeBoard:
         finally:
             monitor.close()
 
+    def monitor_value(self, command):
+        return self.monitor_values([command])[0]
+
+    def monitor_values(self, commands):
+        monitor = socket.create_connection(
+            ('127.0.0.1', self.monitor_port), timeout=5)
+        monitor.settimeout(1)
+        try:
+            deadline = time.monotonic() + 10
+            response = b''
+            while time.monotonic() < deadline and b'(ardupilot)' not in response:
+                try:
+                    response += monitor.recv(4096)
+                except socket.timeout:
+                    continue
+            results = []
+            for command in commands:
+                monitor.sendall(command.encode('ascii') + b'\n')
+                deadline = time.monotonic() + 10
+                response = b''
+                while time.monotonic() < deadline:
+                    try:
+                        response += monitor.recv(4096)
+                    except socket.timeout:
+                        continue
+                    values = re.findall(rb'0x[0-9A-Fa-f]+', response)
+                    if values and b'(ardupilot)' in response:
+                        results.append(int(values[-1], 16))
+                        break
+                else:
+                    raise TimeoutError(
+                        'timed out reading Renode monitor value for %s' % command)
+            return results
+        finally:
+            monitor.close()
+
     def close(self):
         if self.sock is not None:
             self.sock.close()
@@ -273,6 +313,35 @@ class RenodeBoard:
 def signed_command(private_key, sequence, operation, data=b'', session_key=b''):
     transcript = struct.pack('<II', sequence, operation) + data + session_key
     return monocypher.signature_sign(private_key, transcript)
+
+
+def external_elf_image(path):
+    data = path.read_bytes()
+    phoff, = struct.unpack_from('<I', data, 0x1C)
+    phentsize, phnum = struct.unpack_from('<HH', data, 0x2A)
+    for index in range(phnum):
+        offset = phoff + index * phentsize
+        p_type, p_offset, p_vaddr, _p_paddr, p_filesz = struct.unpack_from(
+            '<IIIII', data, offset)
+        if p_type == 1 and p_vaddr == 0x90000000 and p_filesz:
+            return data[p_offset:p_offset + p_filesz], p_offset
+    raise ValueError('%s has no external-flash ELF segment' % path)
+
+
+def fnv1a64(data):
+    value = 14695981039346656037
+    for byte in data:
+        value = ((value ^ byte) * 1099511628211) & 0xFFFFFFFFFFFFFFFF
+    return value
+
+
+def tamper_external_elf(source, destination):
+    data = bytearray(source.read_bytes())
+    external, offset = external_elf_image(source)
+    tamper_offset = len(external) // 2
+    data[offset + tamper_offset] ^= 1
+    destination.write_bytes(data)
+    return bytes(data[offset:offset + len(external)])
 
 
 def test_cubeorange_commands(dialect, renode, firmware, bootloader,
@@ -361,6 +430,54 @@ def test_uncompressed_bootloader_update(dialect, renode, firmware,
             raise AssertionError('uncompressed bootloader update corrupted flash')
 
 
+def test_cubered_external_flash(dialect, renode, firmware, bootloader, timeout):
+    external, _offset = external_elf_image(firmware)
+    expected_hash = fnv1a64(external)
+    with RenodeBoard(
+            dialect, renode, 'CubeRedPrimary', firmware, bootloader,
+            'cubered-signed-external-flash', timeout) as board:
+        read_count, read_hash, mdma_bytes, workaround_count = board.monitor_values([
+            'qspiModel.qspiFlash CurrentReadCount',
+            'qspiModel.qspiFlash CurrentReadHash',
+            'mdma BytesTransferred',
+            'qspi WorkaroundCount',
+        ])
+        if read_count != len(external):
+            raise AssertionError('secure boot did not read the complete external image')
+        if read_hash != expected_hash:
+            raise AssertionError('QuadSPI returned data different from the signed image')
+        if mdma_bytes < len(external):
+            raise AssertionError('external image did not pass through MDMA')
+        if workaround_count == 0:
+            raise AssertionError('H757 command-only QSPI workaround was not exercised')
+
+    tampered = OUTPUT / 'CubeRedPrimary-external-tampered-arducopter.elf'
+    tampered_external = tamper_external_elf(firmware, tampered)
+    with RenodeBoard(
+            dialect, renode, 'CubeRedPrimary', tampered, bootloader,
+            'cubered-tampered-external-flash', timeout,
+            expect_heartbeat=False) as board:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            read_count, read_hash = board.monitor_values([
+                'qspiModel.qspiFlash CurrentReadCount',
+                'qspiModel.qspiFlash CurrentReadHash',
+            ])
+            if read_count == len(tampered_external):
+                break
+            time.sleep(1)
+        else:
+            raise AssertionError('secure boot did not verify the tampered external image')
+        if read_hash != fnv1a64(tampered_external):
+            raise AssertionError('tampered external image was not read faithfully')
+        try:
+            board.wait_message('HEARTBEAT', 5)
+        except TimeoutError:
+            pass
+        else:
+            raise AssertionError('firmware with tampered external flash booted')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--renode', required=True)
@@ -417,6 +534,18 @@ def main():
             dialect, args.renode, cubeorangeplus_firmware,
             ROOT / 'Tools' / 'bootloaders' / 'CubeOrangePlus_bl.bin',
             candidate_path, args.timeout)
+
+        cubered_bootloader = OUTPUT / 'CubeRedPrimary-key-a_bl.bin'
+        cubered_base = build_bootloader('CubeRedPrimary')
+        cubered_base_copy = OUTPUT / 'CubeRedPrimary-base_bl.bin'
+        shutil.copyfile(cubered_base, cubered_base_copy)
+        provision_bootloader(
+            cubered_base_copy, public_a_path, cubered_bootloader)
+        cubered_firmware = build_signed_copter(
+            'CubeRedPrimary', private_a_path, elf=True)
+        test_cubered_external_flash(
+            dialect, args.renode, cubered_firmware,
+            cubered_bootloader, args.timeout)
     finally:
         candidate_path.unlink(missing_ok=True)
 

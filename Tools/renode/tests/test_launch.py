@@ -841,6 +841,29 @@ def test_unknown_named_imu_is_rejected(tmp_path):
             state_dir=tmp_path, imu_names=['absent'])
 
 
+def test_cubered_uses_qspi_and_mdma_models(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeRedPrimary', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    assert 'qspi: Miscellaneous.AP_STM32H7_QuadSPI @ sysbus 0x52005000' in repl
+    assert 'qspiFlash: Miscellaneous.AP_W25QFlash @ qspiModel' in repl
+    assert 'manufacturerId: 0xEF' in repl
+    assert 'memoryType: 0x70' in repl
+    assert 'mdma: DMA.AP_STM32H7_MDMA @ sysbus 0x52000000' in repl
+
+
+def test_unmodelled_external_flash_remains_mapped(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'H757I_EVAL', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    assert 'extFlash: Memory.MappedMemory @ sysbus 0x90000000' in repl
+    assert 'qspi: Miscellaneous.AP_STM32H7_QuadSPI' not in repl
+
+
 def test_duplicate_i2c_address_is_rejected(tmp_path):
     with pytest.raises(ValueError, match='already has a device at 0x0E'):
         gen_board.generate(
