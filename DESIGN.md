@@ -40,3 +40,4 @@ Show link, arming, IMU, pressure, position, and output freshness in text as well
 The depth gauge's 10 m range is a display-only default in `operator_dashboard.html` (`data-display-range-m`); edit it when the operator's useful scale is known. It is not a pressure sensor calibration or depth limit. Motor channel names remain SERVO 1–8 until physical wiring is verified. No browser action can command or arm the vehicle yet.
 
 The Mission Status card follows the same read-only instrument style. It reads ArduSub `MISSION_CURRENT` only; unknown or stale state and counts appear unavailable. It never starts a mission or establishes navigation validity.
+The System Control card shows the reported ArduSub flight mode beside link and arming state; the mode clears when heartbeat is stale.

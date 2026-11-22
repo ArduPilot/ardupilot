@@ -41,7 +41,7 @@ def main():
                 raise AssertionError(f"dashboard API exited: {process.returncode}")
             sender.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_SUBMARINE,
                                       mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA,
-                                      0, 0, 4)
+                                      1, 0, 4)
             sender.mav.attitude_send(0, 0.1, 0.2, 0.3, 0, 0, 0)
             sender.mav.scaled_pressure_send(0, 1025.5, 0, 2340)
             sender.mav.mission_current_send(2, 4, 3, 1)
@@ -51,6 +51,7 @@ def main():
                 if state["link_alive"] and state["imu_alive"] and state["pressure_alive"] and state["mission_alive"]:
                     assert abs(state["pressure_mbar"] - 1025.5) < 0.2
                     assert abs(state["roll"] - 5.72958) < 0.01
+                    assert state["vehicle_mode"] == "STABILIZE"
                     assert (state["mission_seq"], state["mission_total"], state["mission_state"]) == (2, 4, "Active")
                     with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/", timeout=0.5) as response:
                         page = response.read().decode("utf-8")

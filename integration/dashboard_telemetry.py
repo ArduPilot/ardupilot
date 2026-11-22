@@ -7,6 +7,13 @@ import math
 import time
 
 
+SUB_MODES = {
+    0: "STABILIZE", 1: "ACRO", 2: "ALT_HOLD", 3: "AUTO", 4: "GUIDED",
+    7: "CIRCLE", 9: "SURFACE", 16: "POSHOLD", 19: "MANUAL",
+    20: "MOTOR_DETECT", 21: "SURFTRAK",
+}
+
+
 class DashboardTelemetry:
     def __init__(self, now=time.monotonic, system_id=1):
         self._now = now
@@ -21,6 +28,7 @@ class DashboardTelemetry:
             "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
             "gyro": [0.0, 0.0, 0.0], "pwm": [1500] * 8,
             "armed": False, "armed_known": False,
+            "vehicle_mode": None,
             "pressure_mbar": None, "water_temp": None, "depth_m": None,
             "pos_n": None, "pos_e": None, "vel_fwd": None,
             "vel_lat": None, "vel_z": None, "dvl_locked": None,
@@ -40,6 +48,7 @@ class DashboardTelemetry:
         if kind == "HEARTBEAT":
             self._heartbeat_at = now
             s["armed"] = bool(msg.base_mode & 128)
+            s["vehicle_mode"] = SUB_MODES.get(getattr(msg, "custom_mode", None)) if msg.base_mode & 1 else None
         elif kind == "ATTITUDE":
             values = (msg.roll, msg.pitch, msg.yaw, msg.rollspeed, msg.pitchspeed, msg.yawspeed)
             if not all(math.isfinite(v) for v in values):
@@ -96,6 +105,7 @@ class DashboardTelemetry:
         s["armed_known"] = s["link_alive"]
         if not s["link_alive"]:
             s["armed"] = None
+            s["vehicle_mode"] = None
         s["imu_age"] = now - self._attitude_at if self._attitude_at is not None else None
         s["imu_alive"] = s["imu_age"] is not None and s["imu_age"] < 2.5
         if not s["imu_alive"]:

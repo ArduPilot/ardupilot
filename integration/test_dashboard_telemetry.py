@@ -34,7 +34,7 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.telemetry.ingest(Message("HEARTBEAT", component=100, base_mode=128))
         self.assertFalse(self.telemetry.snapshot()["armed_known"])
         self.assertIsNone(self.telemetry.snapshot()["armed"])
-        self.telemetry.ingest(Message("HEARTBEAT", base_mode=128))
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=129, custom_mode=3))
         self.telemetry.ingest(Message("ATTITUDE", roll=0.1, pitch=0, yaw=math.pi / 2,
                                       rollspeed=0.01, pitchspeed=0, yawspeed=0))
         self.telemetry.ingest(Message("SCALED_PRESSURE", press_abs=1025.5, temperature=2340))
@@ -43,6 +43,7 @@ class DashboardTelemetryTests(unittest.TestCase):
         snapshot = self.telemetry.snapshot()
         self.assertTrue(snapshot["armed"])
         self.assertTrue(snapshot["armed_known"])
+        self.assertEqual(snapshot["vehicle_mode"], "AUTO")
         self.assertAlmostEqual(snapshot["yaw"], 90)
         self.assertTrue(snapshot["imu_alive"])
         self.assertEqual(snapshot["pressure_mbar"], 1025.5)
@@ -52,6 +53,7 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.assertFalse(stale["link_alive"])
         self.assertFalse(stale["armed_known"])
         self.assertIsNone(stale["armed"])
+        self.assertIsNone(stale["vehicle_mode"])
         self.assertFalse(stale["imu_alive"])
         self.assertIsNone(stale["roll"])
         self.assertIsNone(stale["imu_hz"])
@@ -80,6 +82,12 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.assertFalse(stale["position_alive"])
         self.assertIsNone(stale["depth_m"])
         self.assertIsNone(stale["vel_fwd"])
+
+    def test_mode_requires_custom_mode_flag(self):
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=0, custom_mode=3))
+        self.assertIsNone(self.telemetry.snapshot()["vehicle_mode"])
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=1, custom_mode=99))
+        self.assertIsNone(self.telemetry.snapshot()["vehicle_mode"])
 
     def test_api_is_read_only(self):
         client = make_app(self.telemetry, threading.Lock()).test_client()

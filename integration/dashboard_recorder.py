@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 FIELDS = (
-    "timestamp_utc", "link_alive", "armed_known", "armed", "imu_alive", "roll", "pitch", "yaw",
+    "timestamp_utc", "link_alive", "armed_known", "armed", "vehicle_mode", "imu_alive", "roll", "pitch", "yaw",
     "pressure_alive", "pressure_mbar", "water_temp", "position_alive", "depth_m", "pos_n", "pos_e",
     "vel_fwd", "vel_lat", "vel_z", "mission_alive", "mission_seq", "mission_total",
     "mission_state", "mission_mode", "output_alive", *(f"pwm_{i}" for i in range(1, 9)),
@@ -64,6 +64,7 @@ class DashboardRecorder:
             row["timestamp_utc"] = timestamp.isoformat(timespec="milliseconds")
             if not snapshot.get("armed_known"):
                 row["armed"] = None
+                row["vehicle_mode"] = None
             if not snapshot.get("imu_alive"):
                 for key in ("roll", "pitch", "yaw"):
                     row[key] = None

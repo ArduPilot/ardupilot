@@ -71,6 +71,7 @@ function render(s, requestFailed = false) {
   const linkText = requestFailed ? 'Connection error' : s.link_alive ? 'Live' : hadLink ? 'Lost' : 'Waiting';
   status('link-status', linkText, s.link_alive ? 'good' : hadLink || requestFailed ? 'danger' : 'warn');
   status('arming-status', !s.armed_known ? 'Unknown' : s.armed ? 'Armed' : 'Disarmed', !s.armed_known ? 'warn' : s.armed ? 'danger' : 'good');
+  status('mode-status', s.link_alive && s.vehicle_mode ? s.vehicle_mode : 'Unavailable', s.link_alive && s.vehicle_mode ? 'good' : 'warn');
   for (const [name, alive] of [['imu', s.imu_alive], ['pressure', s.pressure_alive], ['position', s.position_alive], ['motor', s.output_alive]]) {
     status(`${name}-status`, alive ? 'Fresh' : 'Unavailable', alive ? 'good' : 'warn');
   }

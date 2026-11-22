@@ -38,6 +38,7 @@ class DashboardRecorderTests(unittest.TestCase):
             self.assertEqual(len(rows), 2)
             self.assertEqual(rows[0]["armed_known"], "False")
             self.assertEqual(rows[0]["armed"], "")
+            self.assertEqual(rows[0]["vehicle_mode"], "")
             self.assertEqual(rows[0]["roll"], "")
             self.assertEqual(rows[0]["pressure_mbar"], "")
             self.assertEqual(rows[0]["depth_m"], "")
