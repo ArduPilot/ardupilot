@@ -1077,6 +1077,11 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     // AN-000364 erratum 2.5: 6.4kHz ODR with CLKIN can corrupt sensor data,
     // so run from the internal clock when 6.4kHz is selected
     const bool use_clkin = sampling_rate_hz <= 3200;
+    if (use_clkin) {
+        // in RTC mode the ODR is derived from the 32.768kHz CLKIN rather
+        // than the internal 32kHz clock, so 3200Hz becomes 3276.8Hz
+        sampling_rate_hz = 3277;
+    }
 #endif
 
     // Disable FIFO first. ICM-56686 FIFO_DEPTH 000111 is 2K; 000000 is reserved.
