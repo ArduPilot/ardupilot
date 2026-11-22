@@ -40,3 +40,7 @@ Next, keep working in software: decide the documented ROS-versus-ArduSub saturat
 
 - Made the first read-only port of the ROS dashboard shell the `/` route and retained the previous compact instrument page at `/diagnostics`. The new page uses a preserved copy of the ROS stylesheet and logo assets, familiar topbar and navigation, dark/light theme, dashboard instruments, 60-second plots, and raw telemetry view. ROS-only command destinations are visibly unavailable. The depth gauge has an editable presentation range, not a sensor calibration.
 - Synthetic loopback and native `SERIAL3` dashboard replay pass. Browser checks covered waiting, live, and stale telemetry; tab and theme keyboard controls; and light-mode persistence after reload. No command route or physical interface was introduced.
+
+## 2026-11-22 actuator software continuation
+
+- Added an isolated stdin/stdout harness for the existing ESP32 command guard. A native virtual-sensor ArduSub replay now feeds observed armed mixer output through the checked AP-to-ESP32 permutation, frame encoder, and guard simulator; disarm and stale-command cases return neutral. Separate unit tests cover malformed-frame fault and explicit reset. This closes a software-only observation-to-guard replay, not a real transport or firmware integration. The configured session is a test fixture, and the physical output path remains disabled.
