@@ -20010,17 +20010,15 @@ switch value'''
 
         Replay consumes the DAL records, so count those: the log with the
         most replay frames in it is the one worth replaying.
+
+        Only use this where the other logs are startup stubs.  Where they
+        are flights in their own right the choice is arbitrary - see
+        logs_with_replay_data().
         '''
         best = None
         best_frames = 0
         for log in logs:
-            frames = 0
-            dfreader = self.dfreader_for_path(log)
-            while True:
-                m = dfreader.recv_match(type=['RFRH'])
-                if m is None:
-                    break
-                frames += 1
+            frames = self.replay_frame_count(log)
             self.progress("%s: %u replay frame(s)" % (log, frames))
             if frames > best_frames:
                 best_frames = frames
@@ -20029,6 +20027,57 @@ switch value'''
             raise NotAchievedException(
                 "No replay data in any of (%s)" % str(logs))
         return best
+
+    def replay_frame_count(self, log):
+        '''return the number of replay frames in log'''
+        frames = 0
+        dfreader = self.dfreader_for_path(log)
+        while True:
+            m = dfreader.recv_match(type=['RFRH'])
+            if m is None:
+                break
+            frames += 1
+        # read to EOF and no message escapes, so do not leave the reader
+        # (and its mmap) open for the rest of the test
+        self.close_dfreader(dfreader)
+        return frames
+
+    # a log holding less than this share of the frames of the fullest log
+    # is a stub rather than a flight; see logs_with_replay_data()
+    REPLAY_LOG_MIN_SHARE = 0.25
+
+    def logs_with_replay_data(self, logs):
+        '''return those of logs which hold a flight worth replaying, in log order
+
+        Where more than one of the logs a test leaves behind is a flight,
+        picking the fullest is arbitrary: Copter's beacon test flies each
+        beacon backend in turn, and one run left two flights of 48873 and
+        48987 frames - a margin of 0.23%, so which backend got its replay
+        checked was decided by noise.  Replay all of them instead.
+
+        The same run also left a 358-frame stub.  Replaying one of those is
+        worse than useless: there is not enough in it for the EKF to
+        initialise, and check_replay then reports the all-zero estimator
+        state as a divergence (which is how ReplayOpticalFlow used to fail).
+        So take only the logs holding a comparable amount of data, and
+        leave the stubs out.
+        '''
+        frames_for_log = {}
+        for log in logs:
+            frames_for_log[log] = self.replay_frame_count(log)
+            self.progress("%s: %u replay frame(s)" % (log, frames_for_log[log]))
+        most = max(frames_for_log.values(), default=0)
+        if most == 0:
+            raise NotAchievedException(
+                "No replay data in any of (%s)" % str(logs))
+        ret = []
+        for log in logs:
+            if frames_for_log[log] >= most * self.REPLAY_LOG_MIN_SHARE:
+                ret.append(log)
+            else:
+                self.progress("%s: too little to replay (%u of %u frames)" %
+                              (log, frames_for_log[log], most))
+        return ret
 
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''

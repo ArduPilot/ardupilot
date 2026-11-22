@@ -18525,9 +18525,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         log_difference = [x for x in new_onboard_logs if x not in old_onboard_logs]
-        # BeaconPosition reboots more than once, so pick the log by what is
-        # in it rather than by its position in this list
-        return self.log_with_most_replay_data(log_difference)
+        # BeaconPosition flies each beacon backend in turn, so each of these
+        # logs holds a flight of its own.  Replay them all: taking the one
+        # with the most frames left the backend which got covered to a
+        # couple of percent of frame count, and so to chance.
+        return self.logs_with_replay_data(log_difference)
 
     def test_replay_optical_flow_bit(self):
         self.set_parameters({
@@ -19223,35 +19225,42 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def test_replay_bit(self, bit):
 
         self.context_push()
-        current_log_filepath = bit()
+        # a bit which leaves behind more than one flight worth replaying
+        # returns them all; most return the single log they produced
+        current_log_filepaths = bit()
+        if isinstance(current_log_filepaths, str):
+            current_log_filepaths = [current_log_filepaths]
 
-        self.progress("Running replay on (%s) (%u bytes)" % (
-            (current_log_filepath, os.path.getsize(current_log_filepath))
-        ))
+        replay_log_filepaths = []
+        for current_log_filepath in current_log_filepaths:
+            self.progress("Running replay on (%s) (%u bytes)" % (
+                (current_log_filepath, os.path.getsize(current_log_filepath))
+            ))
 
-        # a log with dropped blocks is incomplete and cannot be replayed
-        # faithfully, so check before wasting time on the replay itself:
-        self.assert_log_has_no_dropped_blocks(current_log_filepath)
+            # a log with dropped blocks is incomplete and cannot be replayed
+            # faithfully, so check before wasting time on the replay itself:
+            self.assert_log_has_no_dropped_blocks(current_log_filepath)
 
-        self.zero_throttle()
-        replay_log_filepath = self.run_replay(current_log_filepath)
+            self.zero_throttle()
+            replay_log_filepaths.append(self.run_replay(current_log_filepath))
 
         self.context_pop()
 
-        self.progress("Replay log path: %s" % str(replay_log_filepath))
-
         check_replay = util.load_local_module("Tools/Replay/check_replay.py")
 
-        ok = check_replay.check_log(replay_log_filepath, self.progress, verbose=True)
-        if not ok:
-            # the tool and the vehicle must be compiled identically for the
-            # replay to match; say whether they were before blaming the EKF
-            self.report_replay_build_configuration()
-            # name the log which was checked, not the one Replay read:
-            # reporting the input sends whoever reads the failure to a
-            # flight log, which has no replayed messages in it at all
-            # and so "fails" the check however healthy the replay was.
-            raise NotAchievedException("check_replay (%s) failed" % replay_log_filepath)
+        for replay_log_filepath in replay_log_filepaths:
+            self.progress("Replay log path: %s" % str(replay_log_filepath))
+
+            ok = check_replay.check_log(replay_log_filepath, self.progress, verbose=True)
+            if not ok:
+                # the tool and the vehicle must be compiled identically for the
+                # replay to match; say whether they were before blaming the EKF
+                self.report_replay_build_configuration()
+                # name the log which was checked, not the one Replay read:
+                # reporting the input sends whoever reads the failure to a
+                # flight log, which has no replayed messages in it at all
+                # and so "fails" the check however healthy the replay was.
+                raise NotAchievedException("check_replay (%s) failed" % replay_log_filepath)
 
     def DefaultIntervalsFromFiles(self):
         '''Test setting default mavlink message intervals from files'''
