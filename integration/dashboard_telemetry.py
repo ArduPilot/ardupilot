@@ -50,7 +50,12 @@ class DashboardTelemetry:
 
     def ingest_gate_guidance(self, msg):
         values = (msg.forward, msg.lateral, msg.vertical, msg.yaw)
-        if not all(math.isfinite(value) for value in values):
+        limits = (msg.forward_limit, msg.lateral_limit, msg.vertical_limit, msg.yaw_limit)
+        if not all(math.isfinite(value) for value in values + limits):
+            self._gate_guidance_at = None
+            return
+        if not all(0 <= limit <= 1 and abs(value) <= limit for value, limit in zip(values, limits)):
+            self._gate_guidance_at = None
             return
         self._gate_guidance_at = self._now()
         self._state["gate_state"] = str(msg.state)

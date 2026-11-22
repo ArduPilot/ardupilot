@@ -92,17 +92,30 @@ class DashboardTelemetryTests(unittest.TestCase):
     def test_gate_proposals_require_fresh_link_and_validity(self):
         self.telemetry.ingest_gate_link(True)
         self.telemetry.ingest_gate_guidance(Message("GATE", state="ALIGN", command_valid=True,
-                                                   forward=0.1, lateral=-0.05, vertical=0.0, yaw=0.02))
+                                                   forward=0.1, lateral=-0.05, vertical=0.0, yaw=0.02,
+                                                   forward_limit=0.15, lateral_limit=0.1,
+                                                   vertical_limit=0.1, yaw_limit=0.2))
         live = self.telemetry.snapshot()
         self.assertTrue(live["gate_proposal_valid"])
         self.assertEqual(live["gate_lateral"], -0.05)
+        self.telemetry.ingest_gate_guidance(Message("GATE", state="ALIGN", command_valid=True,
+                                                   forward=2.0, lateral=0.0, vertical=0.0, yaw=0.0,
+                                                   forward_limit=0.15, lateral_limit=0.1,
+                                                   vertical_limit=0.1, yaw_limit=0.2))
+        self.assertFalse(self.telemetry.snapshot()["gate_guidance_alive"])
+        self.telemetry.ingest_gate_guidance(Message("GATE", state="ALIGN", command_valid=True,
+                                                   forward=0.1, lateral=-0.05, vertical=0.0, yaw=0.02,
+                                                   forward_limit=0.15, lateral_limit=0.1,
+                                                   vertical_limit=0.1, yaw_limit=0.2))
         self.time[0] = 0.6
         stale = self.telemetry.snapshot()
         self.assertIsNone(stale["gate_link_ok"])
         self.assertIsNone(stale["gate_forward"])
         self.telemetry.ingest_gate_link(False)
         self.telemetry.ingest_gate_guidance(Message("GATE", state="SEARCH", command_valid=True,
-                                                   forward=0.1, lateral=0.0, vertical=0.0, yaw=0.0))
+                                                   forward=0.1, lateral=0.0, vertical=0.0, yaw=0.0,
+                                                   forward_limit=0.15, lateral_limit=0.1,
+                                                   vertical_limit=0.1, yaw_limit=0.2))
         invalid = self.telemetry.snapshot()
         self.assertFalse(invalid["gate_proposal_valid"])
         self.assertIsNone(invalid["gate_forward"])
