@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
   <link rel="stylesheet" href="/static/ros_dashboard.css">
   <link rel="stylesheet" href="/static/operator_dashboard.css">
-  <script src="/static/operator_dashboard.js" defer></script>
+  <script src="/static/operator_dashboard.js?v=2" defer></script>
 </head>
 <body>
   <div class="topbar">
@@ -100,6 +100,15 @@
             <h2 class="ct" id="outputs-heading">Motor output / SERVO channels 1–8</h2>
             <div class="motor-grid" id="motor-grid"></div>
             <p class="fineprint">Reported PWM in µs. Channel mapping is provisional until wiring is checked.</p>
+          </section>
+          <section class="card" aria-labelledby="camera-heading">
+            <h2 class="ct" id="camera-heading">Subsea Camera</h2>
+            <div class="camera-view"><img id="camera-image" alt="Live subsea camera feed" hidden><span id="camera-placeholder">No camera stream connected</span></div>
+            <form id="camera-form" class="camera-controls">
+              <label for="camera-url">HTTP/MJPEG stream URL</label>
+              <div><input id="camera-url" type="url" placeholder="http://localhost:8080/stream?topic=/camera/image_raw" autocomplete="url"><button type="submit">Connect</button><button type="button" id="camera-disconnect">Disconnect</button></div>
+            </form>
+            <p class="fineprint" id="camera-status" role="status" aria-live="polite">Enter a browser-reachable camera URL. RTSP needs a web-stream bridge.</p>
           </section>
         </div>
         <div class="sum-col">

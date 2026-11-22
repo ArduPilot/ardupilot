@@ -72,6 +72,15 @@ main { padding: 16px 22px 32px; }
 .recording-toggle:hover { border-color: var(--ac); }
 .recording-toggle:disabled { opacity: .6; cursor: wait; }
 #recording-download[hidden] { display: none; }
+.camera-view { display: grid; place-items: center; min-height: 240px; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--bd2); border-radius: var(--rad-sm); background: var(--bg0); color: var(--tx3); font-size: 12px; }
+.camera-view img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.camera-view img[hidden] { display: none; }
+.camera-controls { margin-top: 12px; }
+.camera-controls label { display: block; margin-bottom: 6px; color: var(--tx2); font-size: 11px; }
+.camera-controls div { display: flex; flex-wrap: wrap; gap: 6px; }
+.camera-controls input { flex: 1 1 220px; min-width: 0; padding: 8px; border: 1px solid var(--bd2); border-radius: var(--rad-sm); background: var(--bg0); color: var(--tx); font: 11px ui-monospace, monospace; }
+.camera-controls button { padding: 8px 10px; border: 1px solid var(--bd2); border-radius: var(--rad-sm); background: var(--bg3); color: var(--tx); cursor: pointer; }
+.camera-controls button:hover { border-color: var(--ac); }
 .tab-card { max-width: 1400px; margin: 0 auto; }
 .plot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
 .plot-grid > div { min-width: 0; background: var(--bg0); border: 1px solid var(--bd); border-radius: var(--rad-sm); padding: 12px; }

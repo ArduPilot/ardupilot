@@ -220,6 +220,47 @@ function toggleTheme() {
 }
 window.addEventListener('resize', () => { if (selectedTab === 'plots') drawPlots(); });
 
+const cameraImage = $('camera-image');
+const cameraUrl = $('camera-url');
+const cameraPlaceholder = $('camera-placeholder');
+const cameraStatus = $('camera-status');
+try { cameraUrl.value = localStorage.getItem('atal-camera-url') || ''; } catch (_) { /* storage may be disabled */ }
+function disconnectCamera() {
+  cameraImage.removeAttribute('src');
+  cameraImage.hidden = true;
+  cameraPlaceholder.hidden = false;
+  cameraPlaceholder.textContent = 'No camera stream connected';
+  cameraStatus.textContent = 'Camera disconnected.';
+}
+$('camera-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const url = cameraUrl.value.trim();
+  if (!url) { cameraStatus.textContent = 'Enter a camera stream URL.'; return; }
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('HTTP only');
+    if (location.protocol === 'https:' && parsed.protocol !== 'https:') throw new Error('Mixed content');
+  } catch (_) { cameraStatus.textContent = 'Use a browser-reachable HTTP(S) image or MJPEG URL.'; return; }
+  try { localStorage.setItem('atal-camera-url', url); } catch (_) { /* storage may be disabled */ }
+  cameraImage.hidden = true;
+  cameraPlaceholder.hidden = false;
+  cameraPlaceholder.textContent = 'Connecting to camera…';
+  cameraStatus.textContent = 'Waiting for the first frame…';
+  cameraImage.src = url;
+});
+cameraImage.addEventListener('load', () => {
+  cameraImage.hidden = false;
+  cameraPlaceholder.hidden = true;
+  cameraStatus.textContent = 'Camera stream connected.';
+});
+cameraImage.addEventListener('error', () => {
+  cameraImage.hidden = true;
+  cameraPlaceholder.hidden = false;
+  cameraPlaceholder.textContent = 'Camera stream unavailable';
+  cameraStatus.textContent = 'Check the stream URL and camera server.';
+});
+$('camera-disconnect').addEventListener('click', disconnectCamera);
+
 async function refresh() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2000);
