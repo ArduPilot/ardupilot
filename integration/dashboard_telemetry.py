@@ -83,7 +83,12 @@ class DashboardTelemetry:
             s["armed"] = None
         s["imu_age"] = now - self._attitude_at if self._attitude_at is not None else None
         s["imu_alive"] = s["imu_age"] is not None and s["imu_age"] < 2.5
+        if not s["imu_alive"]:
+            for key in ("roll", "pitch", "yaw", "gyro", "imu_hz"):
+                s[key] = None
         s["pressure_alive"] = self._pressure_at is not None and now - self._pressure_at < 2.5
+        if not s["pressure_alive"]:
+            s["pressure_mbar"] = s["water_temp"] = None
         s["position_alive"] = self._position_at is not None and now - self._position_at < 2.5
         if not s["position_alive"]:
             for key in ("pos_n", "pos_e", "depth_m", "vel_fwd", "vel_lat", "vel_z"):
@@ -91,5 +96,7 @@ class DashboardTelemetry:
         elif not s["imu_alive"]:
             s["vel_fwd"] = s["vel_lat"] = None
         s["output_alive"] = self._servo_at is not None and now - self._servo_at < 2.5
+        if not s["output_alive"]:
+            s["pwm"] = [None] * 8
         s["source"] = "ardusub_mavlink"
         return s

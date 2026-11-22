@@ -37,17 +37,26 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.telemetry.ingest(Message("HEARTBEAT", base_mode=128))
         self.telemetry.ingest(Message("ATTITUDE", roll=0.1, pitch=0, yaw=math.pi / 2,
                                       rollspeed=0.01, pitchspeed=0, yawspeed=0))
+        self.telemetry.ingest(Message("SCALED_PRESSURE", press_abs=1025.5, temperature=2340))
+        self.telemetry.ingest(Message("SERVO_OUTPUT_RAW", port=0,
+                                      **{f"servo{i}_raw": 1500 for i in range(1, 9)}))
         snapshot = self.telemetry.snapshot()
         self.assertTrue(snapshot["armed"])
         self.assertTrue(snapshot["armed_known"])
         self.assertAlmostEqual(snapshot["yaw"], 90)
         self.assertTrue(snapshot["imu_alive"])
+        self.assertEqual(snapshot["pressure_mbar"], 1025.5)
+        self.assertEqual(snapshot["pwm"][0], 1500)
         self.time[0] = 4.0
         stale = self.telemetry.snapshot()
         self.assertFalse(stale["link_alive"])
         self.assertFalse(stale["armed_known"])
         self.assertIsNone(stale["armed"])
         self.assertFalse(stale["imu_alive"])
+        self.assertIsNone(stale["roll"])
+        self.assertIsNone(stale["imu_hz"])
+        self.assertIsNone(stale["pressure_mbar"])
+        self.assertIsNone(stale["pwm"][0])
 
     def test_body_velocity_and_bad_data(self):
         self.telemetry.ingest(Message("ATTITUDE", roll=0, pitch=0, yaw=math.pi / 2,

@@ -4,11 +4,11 @@ This inventory comes from the reference `web_dashboard/templates/index.html` `up
 
 | Reference fields | Current source or status | Operator presentation |
 |---|---|---|
-| `roll`, `pitch`, `yaw`, `gyro`, `imu_hz`, `imu_alive` | `ATTITUDE` and freshness in `DashboardTelemetry` | Orientation and readouts appear only while IMU data is fresh |
+| `roll`, `pitch`, `yaw`, `gyro`, `imu_hz`, `imu_alive` | `ATTITUDE` and freshness in `DashboardTelemetry` | Values become `null` when IMU data expires; orientation and readouts appear only while fresh |
 | `armed` | `HEARTBEAT`; use `armed_known` as well | Unknown, armed, or disarmed; a missing heartbeat never implies known disarmed |
-| `pwm` | `SERVO_OUTPUT_RAW` channels 1–8; channel-to-motor wiring provisional | Show reported µs values only while output data is fresh |
+| `pwm` | `SERVO_OUTPUT_RAW` channels 1–8; channel-to-motor wiring provisional | Channel values become `null` when output data expires; show µs only while fresh |
 | `pos_n`, `pos_e`, `depth_m`, `vel_fwd`, `vel_lat`, `vel_z` | `LOCAL_POSITION_NED`; body velocity also needs fresh attitude | Show while fresh; freshness alone does not establish valid navigation |
-| Water pressure and temperature | `SCALED_PRESSURE` (`pressure_mbar`, `water_temp` in new API) | Show only while pressure data is fresh; these are not the ROS `depth` controller value |
+| Water pressure and temperature | `SCALED_PRESSURE` (`pressure_mbar`, `water_temp` in new API) | Values become `null` when pressure data expires; these are not the ROS `depth` controller value |
 | `dvl_locked`, `dvl_hz`, `dvl_altitude`, `dvl_fom`, `dvl_simulating` | Not available from the current ArduSub telemetry stream; new API sets `dvl_locked: null` | Do not show a healthy or failed DVL state until a companion/A50 source publishes it |
 | `target_roll`, `target_pitch`, `target_yaw`, `target_depth`, `target_pos_n`, `target_pos_e` | ROS controller targets; no ArduSub dashboard adapter yet | Do not render target markers or setpoint controls |
 | `ctrl_mode`, `ctrl_output`, `depth_output`, `fwd_effort`, `lat_effort`, `pid_debug` | ROS controller internals; direct equivalent needs a defined ArduSub message/log contract | PID and control panels remain unavailable |
