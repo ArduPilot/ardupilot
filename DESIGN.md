@@ -41,3 +41,4 @@ The depth gauge's 10 m range is a display-only default in `operator_dashboard.ht
 
 The Mission Status card follows the same read-only instrument style. It reads ArduSub `MISSION_CURRENT` only; unknown or stale state and counts appear unavailable. It never starts a mission or establishes navigation validity.
 The System Control card shows the reported ArduSub flight mode beside link and arming state; the mode clears when heartbeat is stale.
+The Gate Guidance card shows fresh ROS link health and proposal values only when the optional ROS subscriber is enabled. Guidance is advisory telemetry and never an ArduSub command. Missing, expired, or invalid proposals have no numeric output.

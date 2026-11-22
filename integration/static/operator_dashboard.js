@@ -97,6 +97,13 @@ function render(s, requestFailed = false) {
   $('mission-item').textContent = missionFresh && Number.isInteger(s.mission_seq) ? String(s.mission_seq) : '—';
   $('mission-total').textContent = missionFresh && Number.isInteger(s.mission_total) ? String(s.mission_total) : '—';
   $('mission-mode').textContent = missionFresh ? s.mission_mode || '—' : '—';
+  const gateLink = s.gate_link_alive ? s.gate_link_ok : null;
+  const gateValid = gateLink && s.gate_guidance_alive && s.gate_proposal_valid;
+  status('gate-link', gateLink === null ? 'Unavailable' : gateLink ? 'Live' : 'Unhealthy', gateLink ? 'good' : 'warn');
+  status('gate-proposal', !s.gate_guidance_alive || gateLink === null ? 'Unavailable' : gateValid ? 'Valid' : 'Inactive', gateValid ? 'good' : 'warn');
+  $('gate-state').textContent = s.gate_guidance_alive ? s.gate_state || '—' : '—';
+  $('gate-horizontal').textContent = gateValid ? `${number(s.gate_forward, 2)} / ${number(s.gate_lateral, 2)}` : '—';
+  $('gate-vertical').textContent = gateValid ? `${number(s.gate_vertical, 2)} / ${number(s.gate_yaw, 2)}` : '—';
   const depth = s.position_alive ? s.depth_m : null;
   $('depth-reading').textContent = $('depth-small').textContent = number(depth, 2);
   const displayRange = Number(document.querySelector('.depth-track').dataset.displayRangeM);

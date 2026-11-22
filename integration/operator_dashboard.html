@@ -126,6 +126,17 @@
             </div>
             <p class="fineprint">Reported by ArduSub. This display does not start or control a mission.</p>
           </section>
+          <section class="card" aria-labelledby="gate-heading">
+            <h2 class="ct" id="gate-heading">Gate Guidance</h2>
+            <div class="status-list">
+              <div><span>Detection link</span><strong id="gate-link">Unavailable</strong></div>
+              <div><span>Proposal</span><strong id="gate-proposal">Unavailable</strong></div>
+              <div><span>State</span><strong id="gate-state">—</strong></div>
+              <div><span>Forward / lateral</span><strong id="gate-horizontal">—</strong></div>
+              <div><span>Vertical / yaw</span><strong id="gate-vertical">—</strong></div>
+            </div>
+            <p class="fineprint">ROS guidance proposal only. No command reaches ArduSub from this display.</p>
+          </section>
           <section class="card" aria-labelledby="recording-heading">
             <h2 class="ct" id="recording-heading">Telemetry Recording</h2>
             <p class="fineprint">Save normalized ArduSub snapshots to a local CSV at 10 Hz. Recording does not control the vehicle.</p>

@@ -89,11 +89,32 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.telemetry.ingest(Message("HEARTBEAT", base_mode=1, custom_mode=99))
         self.assertIsNone(self.telemetry.snapshot()["vehicle_mode"])
 
+    def test_gate_proposals_require_fresh_link_and_validity(self):
+        self.telemetry.ingest_gate_link(True)
+        self.telemetry.ingest_gate_guidance(Message("GATE", state="ALIGN", command_valid=True,
+                                                   forward=0.1, lateral=-0.05, vertical=0.0, yaw=0.02))
+        live = self.telemetry.snapshot()
+        self.assertTrue(live["gate_proposal_valid"])
+        self.assertEqual(live["gate_lateral"], -0.05)
+        self.time[0] = 0.6
+        stale = self.telemetry.snapshot()
+        self.assertIsNone(stale["gate_link_ok"])
+        self.assertIsNone(stale["gate_forward"])
+        self.telemetry.ingest_gate_link(False)
+        self.telemetry.ingest_gate_guidance(Message("GATE", state="SEARCH", command_valid=True,
+                                                   forward=0.1, lateral=0.0, vertical=0.0, yaw=0.0))
+        invalid = self.telemetry.snapshot()
+        self.assertFalse(invalid["gate_proposal_valid"])
+        self.assertIsNone(invalid["gate_forward"])
+        self.telemetry.ingest_gate_link(True)
+        self.assertFalse(self.telemetry.snapshot()["gate_guidance_alive"])
+
     def test_api_is_read_only(self):
         client = make_app(self.telemetry, threading.Lock()).test_client()
         self.assertEqual(client.get("/api/state").json["source"], "ardusub_mavlink")
         self.assertIsNone(client.get("/api/state").json["dvl_locked"])
         self.assertFalse(client.get("/api/health").json["mission_alive"])
+        self.assertFalse(client.get("/api/health").json["gate_link_alive"])
         stream = client.get("/api/stream", buffered=False)
         self.assertEqual(stream.mimetype, "text/event-stream")
         event = next(iter(stream.response)).decode("utf-8")

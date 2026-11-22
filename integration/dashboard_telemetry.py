@@ -24,6 +24,8 @@ class DashboardTelemetry:
         self._position_at = None
         self._servo_at = None
         self._mission_at = None
+        self._gate_link_at = None
+        self._gate_guidance_at = None
         self._state = {
             "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
             "gyro": [0.0, 0.0, 0.0], "pwm": [1500] * 8,
@@ -35,7 +37,26 @@ class DashboardTelemetry:
             "timestamp": 0.0, "imu_hz": 0.0,
             "mission_seq": None, "mission_total": None,
             "mission_state": None, "mission_mode": None,
+            "gate_link_ok": None, "gate_state": None, "gate_proposal_valid": None,
+            "gate_forward": None, "gate_lateral": None, "gate_vertical": None, "gate_yaw": None,
         }
+
+    def ingest_gate_link(self, ok):
+        was_ok = self._state["gate_link_ok"]
+        self._gate_link_at = self._now()
+        self._state["gate_link_ok"] = bool(ok)
+        if not ok or was_ok is not True:
+            self._gate_guidance_at = None
+
+    def ingest_gate_guidance(self, msg):
+        values = (msg.forward, msg.lateral, msg.vertical, msg.yaw)
+        if not all(math.isfinite(value) for value in values):
+            return
+        self._gate_guidance_at = self._now()
+        self._state["gate_state"] = str(msg.state)
+        self._state["gate_proposal_valid"] = bool(msg.command_valid)
+        for key, value in zip(("gate_forward", "gate_lateral", "gate_vertical", "gate_yaw"), values):
+            self._state[key] = float(value)
 
     def ingest(self, msg):
         if hasattr(msg, "get_srcSystem") and msg.get_srcSystem() != self._system_id:
@@ -126,6 +147,17 @@ class DashboardTelemetry:
         s["mission_alive"] = s["link_alive"] and self._mission_at is not None and now - self._mission_at < 3.0
         if not s["mission_alive"]:
             for key in ("mission_seq", "mission_total", "mission_state", "mission_mode"):
+                s[key] = None
+        s["gate_link_alive"] = self._gate_link_at is not None and now - self._gate_link_at < 0.5
+        s["gate_guidance_alive"] = self._gate_guidance_at is not None and now - self._gate_guidance_at < 0.5
+        if not s["gate_link_alive"]:
+            s["gate_link_ok"] = None
+        if not s["gate_guidance_alive"]:
+            for key in ("gate_state", "gate_proposal_valid", "gate_forward", "gate_lateral", "gate_vertical", "gate_yaw"):
+                s[key] = None
+        elif not s["gate_link_ok"] or not s["gate_proposal_valid"]:
+            s["gate_proposal_valid"] = False
+            for key in ("gate_forward", "gate_lateral", "gate_vertical", "gate_yaw"):
                 s[key] = None
         s["source"] = "ardusub_mavlink"
         return s

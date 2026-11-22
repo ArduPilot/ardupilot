@@ -7,6 +7,7 @@ This inventory comes from the reference `web_dashboard/templates/index.html` `up
 | `roll`, `pitch`, `yaw`, `gyro`, `imu_hz`, `imu_alive` | `ATTITUDE` and freshness in `DashboardTelemetry` | Values become `null` when IMU data expires; orientation and readouts appear only while fresh |
 | `armed` | `HEARTBEAT`; use `armed_known` as well | Unknown, armed, or disarmed; a missing heartbeat never implies known disarmed |
 | Flight mode | `HEARTBEAT.custom_mode`, mapped from ArduSub `Mode::Number` | Read-only mode name while heartbeat is fresh; unknown mode numbers remain unavailable |
+| Gate link and guidance proposal | Optional ROS 2 subscriptions to `/auv/perception/gate_link_ok` and `/auv/mission/gate_guidance` | Read-only card; proposal axes clear when the link, message, or validity expires. These are never sent as ArduSub commands. |
 | `pwm` | `SERVO_OUTPUT_RAW` channels 1–8; channel-to-motor wiring provisional | Channel values become `null` when output data expires; show µs only while fresh |
 | `pos_n`, `pos_e`, `depth_m`, `vel_fwd`, `vel_lat`, `vel_z` | `LOCAL_POSITION_NED`; body velocity also needs fresh attitude | Show while fresh; freshness alone does not establish valid navigation |
 | Water pressure and temperature | `SCALED_PRESSURE` (`pressure_mbar`, `water_temp` in new API) | Values become `null` when pressure data expires; these are not the ROS `depth` controller value |

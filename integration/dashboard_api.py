@@ -38,7 +38,8 @@ def make_app(telemetry, lock, recorder=None):
         with lock:
             snapshot = telemetry.snapshot()
         return jsonify({key: snapshot[key] for key in (
-            "link_alive", "imu_alive", "pressure_alive", "position_alive", "mission_alive", "armed_known", "source"
+            "link_alive", "imu_alive", "pressure_alive", "position_alive", "mission_alive",
+            "gate_link_alive", "gate_guidance_alive", "gate_link_ok", "armed_known", "source"
         )})
 
     @app.get("/api/stream")
@@ -93,11 +94,37 @@ def main():
     parser.add_argument("--system-id", type=int, default=1)
     parser.add_argument("--http-port", type=int, default=8088)
     parser.add_argument("--recording-dir", default="integration/logs/dashboard")
+    parser.add_argument("--gate-ros", action="store_true",
+                        help="subscribe to proposal-only ROS gate status (requires sourced ROS packages)")
     args = parser.parse_args()
     telemetry = DashboardTelemetry(system_id=args.system_id)
     lock = threading.Lock()
     recorder = DashboardRecorder(args.recording_dir)
     link = mavutil.mavlink_connection(args.mavlink, autoreconnect=True)
+
+    if args.gate_ros:
+        import rclpy
+        from rclpy.node import Node
+        from std_msgs.msg import Bool
+        from auv_interfaces_ros2.msg import GateGuidance
+
+        class GateReader(Node):
+            def __init__(self):
+                super().__init__("atal_dashboard_gate_reader")
+                self.create_subscription(Bool, "/auv/perception/gate_link_ok", self.on_link, 10)
+                self.create_subscription(GateGuidance, "/auv/mission/gate_guidance", self.on_guidance, 10)
+
+            def on_link(self, msg):
+                with lock:
+                    telemetry.ingest_gate_link(msg.data)
+
+            def on_guidance(self, msg):
+                with lock:
+                    telemetry.ingest_gate_guidance(msg)
+
+        rclpy.init()
+        gate_reader = GateReader()
+        threading.Thread(target=rclpy.spin, args=(gate_reader,), daemon=True).start()
 
     def read_loop():
         while True:
