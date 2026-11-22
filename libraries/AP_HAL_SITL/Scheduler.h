@@ -31,6 +31,9 @@ public:
     bool is_system_initialized() override { return _initialized; };
     void set_system_initialized() override;
 
+    void expect_delay_ms(uint32_t ms) override;
+    bool in_expected_delay(void) const override;
+
     void reboot(bool hold_in_bootloader) override;
 
     bool interrupts_are_blocked(void) const {
@@ -73,6 +76,14 @@ public:
 private:
     SITL_State *_sitlState;
     uint8_t _nested_atomic_ctr;
+
+    // the window the main thread has told us to expect to lose, as
+    // ChibiOS tracks it: start and length in milliseconds, and a
+    // nesting count so the innermost EXPECT_DELAY_MS to end does not
+    // cancel an outer one
+    uint32_t expect_delay_start;
+    uint32_t expect_delay_length;
+    uint32_t expect_delay_nesting;
     static AP_HAL::Proc _failsafe;
 
     static void _run_timer_procs();

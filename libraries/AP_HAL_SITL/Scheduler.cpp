@@ -191,6 +191,58 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
+/*
+  SITL has no watchdog to pat and no flash to erase, but its main loop
+  can still be held up on purpose - and both AP_Vehicle's stalled-loop
+  reporting and the sensor drivers' error suppression ask the scheduler
+  whether that is what is happening.  Without an implementation here the
+  answer on SITL is always "no", so an EXPECT_DELAY_MS window has no
+  effect in any autotest.  Track the window as ChibiOS does, less the
+  parts which have no meaning here.
+ */
+void Scheduler::expect_delay_ms(uint32_t ms)
+{
+    if (!in_main_thread()) {
+        // only for the main thread
+        return;
+    }
+    if (ms == 0) {
+        // a window ending; the outermost one to end clears it
+        if (expect_delay_nesting > 0) {
+            expect_delay_nesting--;
+        }
+        if (expect_delay_nesting == 0) {
+            expect_delay_start = 0;
+        }
+        return;
+    }
+    const uint32_t now = AP_HAL::millis();
+    if (expect_delay_start != 0) {
+        // a window is already open: keep whichever ends later
+        const uint32_t done = now - expect_delay_start;
+        if (expect_delay_length > done) {
+            const uint32_t remaining = expect_delay_length - done;
+            if (remaining > ms) {
+                ms = remaining;
+            }
+        }
+    }
+    expect_delay_start = now;
+    expect_delay_length = ms;
+    expect_delay_nesting++;
+}
+
+bool Scheduler::in_expected_delay(void) const
+{
+    if (expect_delay_start != 0) {
+        const uint32_t now = AP_HAL::millis();
+        if (now - expect_delay_start <= expect_delay_length) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void Scheduler::set_system_initialized() {
     if (_initialized) {
         AP_HAL::panic(
