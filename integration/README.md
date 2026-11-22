@@ -1,5 +1,7 @@
 # Editable vehicle defaults and software checks
 
+`atal_companion.launch.py` starts only the ROS 2 gate link and proposal-only guidance nodes. Source ROS Humble and a build of `auv_interfaces_ros2` plus `auv_control_ros2` from the read-only reference, then run `ros2 launch integration/atal_companion.launch.py`. It does not start the reference `control_system.launch.py`, open sensor/actuator ports, or send MAVLink commands. Nano gate detections are an independent input; no ArduSub guidance-command bridge exists yet.
+
 This directory contains provisional values copied from the read-only ROS 2 `ATAL_controller` checkout. They are starting points, not measured installation data. Keep changes in this ArduSub repository; the ROS 2 checkout remains the fallback.
 
 | Change | Edit here | Check |
