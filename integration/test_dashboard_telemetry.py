@@ -89,6 +89,27 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.telemetry.ingest(Message("HEARTBEAT", base_mode=1, custom_mode=99))
         self.assertIsNone(self.telemetry.snapshot()["vehicle_mode"])
 
+    def test_battery_sys_status_requires_fresh_link_and_known_values(self):
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=0))
+        self.telemetry.ingest(Message("SYS_STATUS", source=255, voltage_battery=16000,
+                                      current_battery=125, battery_remaining=60))
+        self.assertFalse(self.telemetry.snapshot()["battery_alive"])
+        self.telemetry.ingest(Message("SYS_STATUS", voltage_battery=16000,
+                                      current_battery=125, battery_remaining=60))
+        live = self.telemetry.snapshot()
+        self.assertTrue(live["battery_alive"])
+        self.assertEqual((live["battery_v"], live["battery_a"], live["battery_percent"]), (16.0, 1.25, 60))
+        self.telemetry.ingest(Message("SYS_STATUS", voltage_battery=65535,
+                                      current_battery=-1, battery_remaining=-1))
+        unknown = self.telemetry.snapshot()
+        self.assertTrue(unknown["battery_alive"])
+        self.assertIsNone(unknown["battery_v"])
+        self.assertIsNone(unknown["battery_a"])
+        self.assertIsNone(unknown["battery_percent"])
+        self.time[0] = 3.1
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=0))
+        self.assertFalse(self.telemetry.snapshot()["battery_alive"])
+
     def test_gate_proposals_require_fresh_link_and_validity(self):
         self.telemetry.ingest_gate_link(True)
         self.telemetry.ingest_gate_guidance(Message("GATE", state="ALIGN", command_valid=True,

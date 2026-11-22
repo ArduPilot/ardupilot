@@ -97,6 +97,10 @@ function render(s, requestFailed = false) {
   $('mission-item').textContent = missionFresh && Number.isInteger(s.mission_seq) ? String(s.mission_seq) : '—';
   $('mission-total').textContent = missionFresh && Number.isInteger(s.mission_total) ? String(s.mission_total) : '—';
   $('mission-mode').textContent = missionFresh ? s.mission_mode || '—' : '—';
+  status('battery-status', s.battery_alive ? 'Telemetry fresh' : 'Unavailable', s.battery_alive ? '' : 'warn');
+  $('battery-voltage').textContent = s.battery_alive && Number.isFinite(s.battery_v) ? `${number(s.battery_v, 2)} V` : '—';
+  $('battery-current').textContent = s.battery_alive && Number.isFinite(s.battery_a) ? `${number(s.battery_a, 2)} A` : '—';
+  $('battery-percent').textContent = s.battery_alive && Number.isFinite(s.battery_percent) ? `${s.battery_percent}%` : '—';
   const gateLink = s.gate_link_alive ? s.gate_link_ok : null;
   const gateValid = gateLink && s.gate_guidance_alive && s.gate_proposal_valid;
   status('gate-link', gateLink === null ? 'Unavailable' : gateLink ? 'Live' : 'Unhealthy', gateLink ? 'good' : 'warn');

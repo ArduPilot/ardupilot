@@ -38,7 +38,7 @@ def make_app(telemetry, lock, recorder=None):
         with lock:
             snapshot = telemetry.snapshot()
         return jsonify({key: snapshot[key] for key in (
-            "link_alive", "imu_alive", "pressure_alive", "position_alive", "mission_alive",
+            "link_alive", "imu_alive", "pressure_alive", "position_alive", "mission_alive", "battery_alive",
             "gate_link_alive", "gate_guidance_alive", "gate_link_ok", "armed_known", "source"
         )})
 

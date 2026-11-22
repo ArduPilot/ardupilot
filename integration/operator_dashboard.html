@@ -118,6 +118,16 @@
             <div class="water-reading"><span>Temperature</span><strong id="temperature">—</strong><small>°C</small></div>
             <div class="water-reading"><span>Vertical speed</span><strong id="vel-z">—</strong><small>m/s · NED</small></div>
           </section>
+          <section class="card" aria-labelledby="power-heading">
+            <h2 class="ct" id="power-heading">Power</h2>
+            <div class="status-list">
+              <div><span>Battery</span><strong id="battery-status" class="warn">Unavailable</strong></div>
+              <div><span>Voltage</span><strong id="battery-voltage">—</strong></div>
+              <div><span>Current</span><strong id="battery-current">—</strong></div>
+              <div><span>Remaining</span><strong id="battery-percent">—</strong></div>
+            </div>
+            <p class="fineprint">Reported by ArduSub SYS_STATUS. Unknown values stay blank; no charge estimate is inferred.</p>
+          </section>
           <section class="card" aria-labelledby="source-heading">
             <h2 class="ct" id="source-heading">Data Source</h2>
             <div class="source-name">ArduSub MAVLink</div>

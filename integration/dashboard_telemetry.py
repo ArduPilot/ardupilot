@@ -24,6 +24,7 @@ class DashboardTelemetry:
         self._position_at = None
         self._servo_at = None
         self._mission_at = None
+        self._battery_at = None
         self._gate_link_at = None
         self._gate_guidance_at = None
         self._state = {
@@ -37,6 +38,7 @@ class DashboardTelemetry:
             "timestamp": 0.0, "imu_hz": 0.0,
             "mission_seq": None, "mission_total": None,
             "mission_state": None, "mission_mode": None,
+            "battery_v": None, "battery_a": None, "battery_percent": None,
             "gate_link_ok": None, "gate_state": None, "gate_proposal_valid": None,
             "gate_forward": None, "gate_lateral": None, "gate_vertical": None, "gate_yaw": None,
         }
@@ -121,6 +123,14 @@ class DashboardTelemetry:
             s["mission_state"] = {1: "No mission", 2: "Not started", 3: "Active", 4: "Paused", 5: "Complete"}.get(state)
             s["mission_mode"] = {1: "Mission mode", 2: "Suspended"}.get(mode)
             self._mission_at = now
+        elif kind == "SYS_STATUS":
+            voltage = getattr(msg, "voltage_battery", 65535)
+            current = getattr(msg, "current_battery", -1)
+            remaining = getattr(msg, "battery_remaining", -1)
+            s["battery_v"] = voltage / 1000.0 if 0 < voltage < 65535 else None
+            s["battery_a"] = current / 100.0 if current >= 0 else None
+            s["battery_percent"] = remaining if 0 <= remaining <= 100 else None
+            self._battery_at = now
 
     def snapshot(self):
         now = self._now()
@@ -152,6 +162,10 @@ class DashboardTelemetry:
         s["mission_alive"] = s["link_alive"] and self._mission_at is not None and now - self._mission_at < 3.0
         if not s["mission_alive"]:
             for key in ("mission_seq", "mission_total", "mission_state", "mission_mode"):
+                s[key] = None
+        s["battery_alive"] = s["link_alive"] and self._battery_at is not None and now - self._battery_at < 3.0
+        if not s["battery_alive"]:
+            for key in ("battery_v", "battery_a", "battery_percent"):
                 s[key] = None
         s["gate_link_alive"] = self._gate_link_at is not None and now - self._gate_link_at < 0.5
         s["gate_guidance_alive"] = self._gate_guidance_at is not None and now - self._gate_guidance_at < 0.5

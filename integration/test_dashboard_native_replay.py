@@ -93,7 +93,8 @@ def main():
                         with urllib.request.urlopen(request, timeout=0.2) as response:
                             assert json.load(response)["active"]
                         recording_started = True
-                    if state["link_alive"] and state["imu_alive"] and state["pressure_alive"] and state["mission_alive"]:
+                    if (state["link_alive"] and state["imu_alive"] and state["pressure_alive"]
+                            and state["mission_alive"] and state["battery_alive"]):
                         if live_since is None:
                             live_since = time.monotonic()
                         if time.monotonic() - live_since < 0.3:
@@ -115,6 +116,7 @@ def main():
                         with (recording_dir / recording["file"]).open(newline="", encoding="utf-8") as file:
                             rows = list(csv.DictReader(file))
                         if any(row["link_alive"] == "True" and row["imu_alive"] == "True" and
+                               row["battery_alive"] == "True" and
                                row["mission_alive"] == "True" and row["mission_state"] == "No mission" and
                                abs(float(row["pressure_mbar"]) - 1025.5) < 0.2
                                for row in rows if row["pressure_mbar"]):

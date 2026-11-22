@@ -13,6 +13,7 @@ FIELDS = (
     "pressure_alive", "pressure_mbar", "water_temp", "position_alive", "depth_m", "pos_n", "pos_e",
     "vel_fwd", "vel_lat", "vel_z", "mission_alive", "mission_seq", "mission_total",
     "mission_state", "mission_mode",
+    "battery_alive", "battery_v", "battery_a", "battery_percent",
     "gate_link_alive", "gate_link_ok", "gate_guidance_alive", "gate_state",
     "gate_proposal_valid", "gate_forward", "gate_lateral", "gate_vertical", "gate_yaw",
     "output_alive", *(f"pwm_{i}" for i in range(1, 9)),
@@ -81,6 +82,9 @@ class DashboardRecorder:
                 row["vel_fwd"] = row["vel_lat"] = None
             if not snapshot.get("mission_alive"):
                 for key in ("mission_seq", "mission_total", "mission_state", "mission_mode"):
+                    row[key] = None
+            if not snapshot.get("battery_alive"):
+                for key in ("battery_v", "battery_a", "battery_percent"):
                     row[key] = None
             if not snapshot.get("gate_link_alive"):
                 row["gate_link_ok"] = None
