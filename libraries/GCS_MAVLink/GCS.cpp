@@ -482,9 +482,20 @@ void GCS::update_sensor_status_flags()
     AP_AHRS &ahrs = AP::ahrs();
 
     control_sensors_present |= MAV_SYS_STATUS_AHRS;
-    if (ahrs.initialised()) {
+    // the AHRS is not healthy until it is initialised (for an EKF,
+    // until its attitude has aligned).  So that a GCS does not report
+    // it unhealthy while it aligns after boot, report it as not yet
+    // enabled until it is first initialised or 10 seconds have
+    // passed.  After a watchdog reset we may be flying, so report it
+    // straight away:
+    const bool ahrs_initialised = ahrs.initialised();
+    ahrs_seen_initialised |= ahrs_initialised;
+    const bool ahrs_starting_up = !ahrs_seen_initialised &&
+                                  AP_HAL::millis() < 10000 &&
+                                  !hal.util->was_watchdog_reset();
+    if (!ahrs_starting_up) {
         control_sensors_enabled |= MAV_SYS_STATUS_AHRS;
-        if (ahrs.healthy()) {
+        if (ahrs_initialised && ahrs.healthy()) {
             if (!ahrs.have_inertial_nav() || ins.accel_calibrated_ok_all()) {
                 control_sensors_health |= MAV_SYS_STATUS_AHRS;
             }
