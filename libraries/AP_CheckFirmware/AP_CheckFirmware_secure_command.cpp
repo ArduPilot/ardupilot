@@ -142,7 +142,7 @@ static bool make_session_key(uint8_t key[8])
     uint8_t uid_len = 12;
     hal.util->get_system_id_unformatted(data.unique_id, uid_len);
     data.time_us = AP_HAL::micros();
-    if (!hal.util->get_true_random_vals(data.random, sizeof(data.random), 100U * 1000U)) {
+    if (!hal.util->get_true_random_vals(data.random, sizeof(data.random), 100U)) {
         return false;
     }
     const uint64_t c64 = crc_crc64((const uint32_t *)&data, sizeof(data)/sizeof(uint32_t));
@@ -197,7 +197,7 @@ bool AP_CheckFirmware::check_signature(const mavlink_secure_command_t &pkt)
         // monocypher signatures are 64 bytes
         return false;
     }
-    struct ap_signature_buffer buffers[] {
+    const struct ap_signature_buffer buffers[] {
         { (const uint8_t *)&pkt.sequence, sizeof(pkt.sequence) },
         { (const uint8_t *)&pkt.operation, sizeof(pkt.operation) },
         { pkt.data, pkt.data_length },
@@ -252,11 +252,9 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
         goto send_reply;
     }
 
-    if (pkt.operation != SECURE_COMMAND_GET_SESSION_KEY) {
-        if (!secure_command_sequence.accept(pkt.sequence)) {
-            reply.result = MAV_RESULT_DENIED;
-            goto send_reply;
-        }
+    if (!secure_command_sequence.accept(pkt.sequence)) {
+        reply.result = MAV_RESULT_DENIED;
+        goto send_reply;
     }
 
     switch (pkt.operation) {
@@ -266,7 +264,6 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
             reply.result = MAV_RESULT_FAILED;
             break;
         }
-        secure_command_sequence.reset();
         reply.data_length = sizeof(session_key);
         memcpy(reply.data, session_key, reply.data_length);
         reply.result = MAV_RESULT_ACCEPTED;

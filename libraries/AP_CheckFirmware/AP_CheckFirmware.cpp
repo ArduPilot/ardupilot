@@ -14,10 +14,6 @@
 #include <string.h>
 #include "monocypher.h"
 
-#ifndef BOOT_FROM_EXT_FLASH
-#define BOOT_FROM_EXT_FLASH 0
-#endif
-
 const struct ap_secure_data public_keys __attribute__((section(".apsec_data")));
 
 /*
@@ -42,17 +38,18 @@ static check_fw_result_t check_firmware_signature(const app_descriptor_signed *a
     }
 
     // 8 byte signature version
-    static const uint64_t sig_version_legacy = 30437LLU;
+    static const uint64_t sig_version_internal_only = 30437LLU;
     uint64_t sig_version;
     if (ad->signature_length != 72) {
         return check_fw_result_t::FAIL_REASON_BAD_FIRMWARE_SIGNATURE;
     }
     memcpy(&sig_version, ad->signature, sizeof(sig_version));
 
-    if (sig_version != sig_version_legacy) {
+    if (sig_version != sig_version_internal_only) {
         return check_fw_result_t::FAIL_REASON_BAD_FIRMWARE_SIGNATURE;
     }
 
+#if !(EXT_FLASH_SIZE_MB && !BOOT_FROM_EXT_FLASH)
     const struct ap_signature_buffer buffers[] {
         { flash1, len1 },
         { flash2, len2 },
@@ -60,6 +57,7 @@ static check_fw_result_t check_firmware_signature(const app_descriptor_signed *a
     if (!ap_check_signature(public_keys, &ad->signature[sizeof(sig_version)], buffers, 2)) {
         return check_fw_result_t::FAIL_REASON_VERIFICATION;
     }
+#endif
 
 #if EXT_FLASH_SIZE_MB && !BOOT_FROM_EXT_FLASH
     static const uint64_t sig_version_extf = 30438LLU;
@@ -91,7 +89,7 @@ static check_fw_result_t check_firmware_signature(const app_descriptor_signed *a
             const uint32_t remaining = ad->extf_image_size - offset;
             const uint32_t read_size = remaining < sizeof(extf_buffer) ? remaining : sizeof(extf_buffer);
             if (!ext_flash_read(offset, extf_buffer, read_size)) {
-                return check_fw_result_t::FAIL_REASON_EXTF_READ;
+                return check_fw_result_t::FAIL_REASON_EXTF_FAILED_READ;
             }
             crypto_check_update(actx, extf_buffer, read_size);
         }
