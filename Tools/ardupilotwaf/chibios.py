@@ -272,7 +272,8 @@ def sign_firmware(img1, img2, extf_img, private_keyfile):
     key = base64.b64decode(key[len(keytype):])
     sig = monocypher.signature_sign(key, img1 + img2)
     sig_len = len(sig)
-    signed_descriptor = struct.pack("<IQ64s", sig_len+8, 30437, sig)
+    sig_version_internal_only = 30437
+    signed_descriptor = struct.pack("<IQ64s", sig_len+8, sig_version_internal_only, sig)
     extf_signature = None
     if extf_img:
         signature_domain = b'ArduPilotFwSig2'
@@ -356,7 +357,9 @@ class set_app_descriptor(Task.Task):
             descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
 
         elf_in, bin_in = self.inputs[:2]
-        extf_img = bytearray(open(self.inputs[2].abspath(), 'rb').read()) if len(self.inputs) > 2 else bytearray()
+        extf_img = bytearray()
+        if len(self.inputs) > 2:
+            extf_img = bytearray(open(self.inputs[2].abspath(), 'rb').read())
         elf_out, bin_out = self.outputs
 
         img = bytearray(open(bin_in.abspath(), 'rb').read())
