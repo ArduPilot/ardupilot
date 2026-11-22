@@ -48,3 +48,4 @@ Next, keep working in software: decide the documented ROS-versus-ArduSub saturat
 ## 2026-11-22 dashboard recording continuation
 
 - Added a local 10 Hz CSV telemetry recorder with start/stop/status controls in the operator page. It records normalized ArduSub snapshot values, freshness flags, UTC timestamps, and the eight reported output channels, leaving unknown data blank. Isolated CSV and HTTP tests pass. It is independent of vehicle commands and lacks the ROS logger's mission/video alignment features.
+- Extended the native virtual-sensor `SERIAL3` dashboard replay through the recorder, confirming a saved CSV row contains fresh link, IMU, and Bar30 pressure data. This is software evidence only.

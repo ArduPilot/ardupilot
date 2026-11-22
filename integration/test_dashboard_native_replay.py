@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Prove native ArduSub telemetry reaches the local dashboard HTTP service."""
+"""Prove native ArduSub telemetry reaches dashboard HTTP, SSE and local CSV."""
 
+import csv
 import json
 import os
 import pty
@@ -32,10 +33,11 @@ def main():
         depth_master, depth_slave = pty.openpty()
         dashboard_port = unused_port(socket.SOCK_DGRAM)
         http_port = unused_port(socket.SOCK_STREAM)
+        recording_dir = Path(directory) / "recordings"
         dashboard = subprocess.Popen(
             [sys.executable, str(ROOT / "integration/dashboard_api.py"),
              "--mavlink", f"udpin:127.0.0.1:{dashboard_port}",
-             "--http-port", str(http_port)],
+             "--http-port", str(http_port), "--recording-dir", str(recording_dir)],
             cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
@@ -68,6 +70,8 @@ def main():
         counter = 0
         last_depth = 0.0
         state = None
+        recording_started = False
+        live_since = None
         try:
             deadline = time.monotonic() + 10
             while time.monotonic() < deadline and process.poll() is None and dashboard.poll() is None:
@@ -81,15 +85,40 @@ def main():
                 try:
                     with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/api/state", timeout=0.2) as response:
                         state = json.load(response)
+                    if not recording_started:
+                        request = urllib.request.Request(
+                            f"http://127.0.0.1:{http_port}/api/recording/start",
+                            method="POST", headers={"X-ATAL-Local-Action": "recording"},
+                        )
+                        with urllib.request.urlopen(request, timeout=0.2) as response:
+                            assert json.load(response)["active"]
+                        recording_started = True
                     if state["link_alive"] and state["imu_alive"] and state["pressure_alive"]:
+                        if live_since is None:
+                            live_since = time.monotonic()
+                        if time.monotonic() - live_since < 0.3:
+                            time.sleep(0.01)
+                            continue
                         assert abs(state["pressure_mbar"] - 1025.5) < 0.2
                         with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/api/stream", timeout=0.2) as response:
                             event = json.loads(response.readline().removeprefix(b"data: "))
                         assert event["link_alive"] and event["imu_alive"]
                         with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/", timeout=0.2) as response:
                             assert b"AUV-IITK Control" in response.read()
-                        print("Native ArduSub serial3 → dashboard HTTP and SSE passed")
-                        return
+                        request = urllib.request.Request(
+                            f"http://127.0.0.1:{http_port}/api/recording/stop",
+                            method="POST", headers={"X-ATAL-Local-Action": "recording"},
+                        )
+                        with urllib.request.urlopen(request, timeout=0.2) as response:
+                            recording = json.load(response)
+                        with (recording_dir / recording["file"]).open(newline="", encoding="utf-8") as file:
+                            rows = list(csv.DictReader(file))
+                        if any(row["link_alive"] == "True" and row["imu_alive"] == "True" and
+                               abs(float(row["pressure_mbar"]) - 1025.5) < 0.2
+                               for row in rows if row["pressure_mbar"]):
+                            print("Native ArduSub serial3 → dashboard HTTP, SSE and CSV passed")
+                            return
+                        raise AssertionError(f"Recorded CSV lacks live native telemetry: {recording}")
                 except (urllib.error.URLError, TimeoutError):
                     pass
                 time.sleep(0.01)
