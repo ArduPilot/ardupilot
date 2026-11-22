@@ -158,10 +158,6 @@ volatile unsigned timer[NTIMERS];
 extern AP_FlashIface_JEDEC ext_flash;
 #endif
 
-#ifndef BOOT_FROM_EXT_FLASH
-#define BOOT_FROM_EXT_FLASH 0
-#endif
-
 /*
   1ms timer tick callback
  */
