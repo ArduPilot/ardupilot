@@ -59,6 +59,7 @@ struct PACKED log_GYR {
 // @Field: AH: accelerometer health
 // @Field: GHz: gyroscope measurement rate
 // @Field: AHz: accelerometer measurement rate
+// @Field: GRI: gyroscope rate estimate's filtered innovation, the observed sample rate's offset from the estimate
 struct PACKED log_IMU {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -69,6 +70,7 @@ struct PACKED log_IMU {
     float temperature;
     uint8_t gyro_health, accel_health;
     uint16_t gyro_rate, accel_rate;
+    int16_t gyro_rate_innovation;
 };
 
 // @LoggerMessage: ISBH
@@ -135,7 +137,7 @@ struct PACKED log_Vibe {
     { LOG_GYR_MSG, sizeof(log_GYR), \
       "GYR", "QBQfff",        "TimeUS,I,SampleUS,GyrX,GyrY,GyrZ", "s#sEEE", "F-F000" , true }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "QBffffffIIfBBHH", "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" , true }, \
+      "IMU",  "QBffffffIIfBBHHh", "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz,GRI", "s#EEEooo--O--zz%", "F-000000-----00D" , true }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
       "VIBE", "QBfffI", "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip", "s#ooo-", "F-000-" , true }, \
     { LOG_ISBH_MSG, sizeof(log_ISBH), \

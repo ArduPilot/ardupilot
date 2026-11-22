@@ -62,6 +62,7 @@ void AP_InertialSensor::Write_IMU_instance(const uint64_t time_us, const uint8_t
         accel_health : (uint8_t)get_accel_health(imu_instance),
         gyro_rate : get_gyro_rate_hz(imu_instance),
         accel_rate : get_accel_rate_hz(imu_instance),
+        gyro_rate_innovation : int16_t(constrain_float(_gyro_rate_convergence[imu_instance].innovation * 1.0e6f, INT16_MIN, INT16_MAX)),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
