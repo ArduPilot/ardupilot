@@ -12,7 +12,10 @@ FIELDS = (
     "timestamp_utc", "link_alive", "armed_known", "armed", "vehicle_mode", "imu_alive", "roll", "pitch", "yaw",
     "pressure_alive", "pressure_mbar", "water_temp", "position_alive", "depth_m", "pos_n", "pos_e",
     "vel_fwd", "vel_lat", "vel_z", "mission_alive", "mission_seq", "mission_total",
-    "mission_state", "mission_mode", "output_alive", *(f"pwm_{i}" for i in range(1, 9)),
+    "mission_state", "mission_mode",
+    "gate_link_alive", "gate_link_ok", "gate_guidance_alive", "gate_state",
+    "gate_proposal_valid", "gate_forward", "gate_lateral", "gate_vertical", "gate_yaw",
+    "output_alive", *(f"pwm_{i}" for i in range(1, 9)),
 )
 
 
@@ -78,6 +81,13 @@ class DashboardRecorder:
                 row["vel_fwd"] = row["vel_lat"] = None
             if not snapshot.get("mission_alive"):
                 for key in ("mission_seq", "mission_total", "mission_state", "mission_mode"):
+                    row[key] = None
+            if not snapshot.get("gate_link_alive"):
+                row["gate_link_ok"] = None
+            if not snapshot.get("gate_guidance_alive"):
+                row["gate_state"] = row["gate_proposal_valid"] = None
+            if not (snapshot.get("gate_link_ok") and snapshot.get("gate_guidance_alive") and snapshot.get("gate_proposal_valid")):
+                for key in ("gate_forward", "gate_lateral", "gate_vertical", "gate_yaw"):
                     row[key] = None
             pwm = snapshot.get("pwm") if snapshot.get("output_alive") else None
             for index in range(8):

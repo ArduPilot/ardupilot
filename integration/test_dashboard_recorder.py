@@ -23,12 +23,19 @@ class DashboardRecorderTests(unittest.TestCase):
                              "imu_alive": False, "roll": 42.0, "pressure_alive": False,
                              "pressure_mbar": 1025.5, "position_alive": False, "depth_m": 3.0,
                              "mission_alive": False, "mission_state": "Active", "mission_seq": 2,
+                             "gate_link_alive": False, "gate_link_ok": True,
+                             "gate_guidance_alive": False, "gate_proposal_valid": True,
+                             "gate_forward": 0.1,
                              "output_alive": False, "pwm": [1500] * 8}, now=1000.0)
             recorder.sample({"link_alive": True, "armed_known": True, "armed": True,
                              "imu_alive": True, "pressure_alive": True, "position_alive": True,
                              "pressure_mbar": 1025.5, "output_alive": True,
                              "mission_alive": True, "mission_state": "Active", "mission_seq": 2,
                              "mission_total": 4, "mission_mode": "Mission mode",
+                             "gate_link_alive": True, "gate_link_ok": True,
+                             "gate_guidance_alive": True, "gate_state": "ALIGN",
+                             "gate_proposal_valid": True, "gate_forward": 0.0,
+                             "gate_lateral": -0.05, "gate_vertical": 0.0, "gate_yaw": -0.1,
                              "pwm": [1400, 1600] + [1500] * 6}, now=1000.1)
             stopped = recorder.stop()
             self.assertFalse(stopped["active"])
@@ -44,10 +51,13 @@ class DashboardRecorderTests(unittest.TestCase):
             self.assertEqual(rows[0]["depth_m"], "")
             self.assertEqual(rows[0]["pwm_1"], "")
             self.assertEqual(rows[0]["mission_state"], "")
+            self.assertEqual(rows[0]["gate_forward"], "")
+            self.assertEqual(rows[0]["gate_link_ok"], "")
             self.assertEqual(rows[1]["pwm_1"], "1400")
             self.assertEqual(rows[1]["pwm_8"], "1500")
             self.assertEqual((rows[1]["mission_state"], rows[1]["mission_seq"], rows[1]["mission_total"]),
                              ("Active", "2", "4"))
+            self.assertEqual((rows[1]["gate_state"], rows[1]["gate_lateral"]), ("ALIGN", "-0.05"))
 
     def test_http_start_status_stop(self):
         with tempfile.TemporaryDirectory(prefix="atal-dashboard-recording-") as directory:

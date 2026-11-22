@@ -4,6 +4,7 @@
 
 To show those ROS proposals on the read-only dashboard, start `dashboard_api.py` from the same sourced shell with `--gate-ros`. Without it, the Gate Guidance card remains unavailable. The optional subscriber reads only the gate link and guidance topics; it sends no MAVLink or ROS commands. Proposal axes clear after 0.5 s without a fresh valid linked message. A disposable ROS package build and live companion/API smoke test confirmed the card's backing API receives `WAIT_FOR_LINK` while no Nano detections exist.
 A synthetic Nano `GateDetection` replay also reached the companion and dashboard as a valid `ALIGN` proposal with bounded lateral correction. The dashboard still does not act on it.
+The local CSV includes gate link health, state, validity, and proposal axes; expired or invalid axes are blank.
 
 This directory contains provisional values copied from the read-only ROS 2 `ATAL_controller` checkout. They are starting points, not measured installation data. Keep changes in this ArduSub repository; the ROS 2 checkout remains the fallback.
 
