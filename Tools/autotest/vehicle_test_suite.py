@@ -16275,6 +16275,20 @@ switch value'''
         self.dfreaders.append(ret)
         return ret
 
+    def close_dfreader(self, dfreader):
+        '''release one reader handed out by dfreader_for_path() now, instead
+        of leaving it to close_dfreaders() at the end of the test.  A loop
+        which opens a reader per poll otherwise holds a filehandle and an
+        mmap for every poll it has made.  Only call this for a reader whose
+        messages have been finished with: a DFMessage can read from the
+        reader's mmap, so closing one the caller is still holding a message
+        from is not safe.'''
+        dfreader.close()
+        try:
+            self.dfreaders.remove(dfreader)
+        except ValueError:
+            pass
+
     def close_dfreaders(self):
         '''close all readers handed out by dfreader_for_path()'''
         for dfreader in self.dfreaders:
@@ -16457,12 +16471,19 @@ switch value'''
         tstart = self.get_sim_time()
         while True:
             dfreader = self.dfreader_for_current_onboard_log()
+            found = None
             while True:
                 m = dfreader.recv_match(type=mtype)
                 if m is None:
                     break
                 if match(m):
-                    return m
+                    found = m
+                    break
+            if found is not None:
+                # left open: the caller gets a message which may still
+                # read from this reader's mmap
+                return found
+            self.close_dfreader(dfreader)
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException(
                     "Did not see %s in onboard log" %
@@ -16497,9 +16518,12 @@ switch value'''
         missed NVF and NVS, sent by the same script.'''
         tstart = self.get_sim_time()
         while True:
-            m = self.dfreader_for_current_onboard_log().recv_match(type=msg_type)
+            dfreader = self.dfreader_for_current_onboard_log()
+            m = dfreader.recv_match(type=msg_type)
             if m is not None:
+                # left open: m may still read from this reader's mmap
                 return m
+            self.close_dfreader(dfreader)
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not find %s message" % msg_type)
             self.delay_sim_time(1, reason="log to reach the disk")

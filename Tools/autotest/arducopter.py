@@ -2329,7 +2329,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     return dfreader_now
 
             # hit the end of the log without seeing what we want;
-            # wait for more of it to reach the filesystem:
+            # wait for more of it to reach the filesystem.  Release this
+            # poll's reader first: it has been read to EOF, and holding
+            # one filehandle and mmap per poll adds up over a 60-second
+            # wait.
+            self.close_dfreader(dfreader)
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("%s.%s did not maintain %f" %
                                            (mtype, field, level))
