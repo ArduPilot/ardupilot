@@ -348,11 +348,12 @@ void AP_InertialSensor_SITL::timer_update(void)
             } else
 #endif
             generate_accel();
+            const uint32_t accel_interval_us = 1.0e6f / (accel_sample_hz * (1.0f + sitl->imu_clock_ppm * 1.0e-6f));
             if (next_accel_sample == 0) {
-                next_accel_sample = now + 1000000UL / accel_sample_hz;
+                next_accel_sample = now + accel_interval_us;
             } else {
                 while (now >= next_accel_sample) {
-                    next_accel_sample += 1000000UL / accel_sample_hz;
+                    next_accel_sample += accel_interval_us;
                 }
             }
         }
@@ -367,11 +368,12 @@ void AP_InertialSensor_SITL::timer_update(void)
 #endif
             generate_gyro();
 
+            const uint32_t gyro_interval_us = 1.0e6f / (gyro_sample_hz * (1.0f + sitl->imu_clock_ppm * 1.0e-6f));
             if (next_gyro_sample == 0) {
-                next_gyro_sample = now + 1000000UL / gyro_sample_hz;
+                next_gyro_sample = now + gyro_interval_us;
             } else {
                 while (now >= next_gyro_sample) {
-                    next_gyro_sample += 1000000UL / gyro_sample_hz;
+                    next_gyro_sample += gyro_interval_us;
                 }
             }
         }
