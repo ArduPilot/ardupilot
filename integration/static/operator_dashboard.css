@@ -1,0 +1,80 @@
+/* ArduSub data surfaces on the original ATAL dashboard shell. */
+html { color-scheme: dark; }
+html.light { color-scheme: light; }
+button { font-family: inherit; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
+.edition { color: var(--tx3); border-left: 1px solid var(--bd2); padding-left: 12px; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.theme-toggle { background: var(--bg3); border: 1px solid var(--bd2); border-radius: var(--rad-sm); color: var(--tx); cursor: pointer; padding: 5px 10px; }
+.nav { overflow-x: auto; scrollbar-width: thin; align-items: center; white-space: nowrap; }
+.nav-divider { height: 18px; border-left: 1px solid var(--bd2); margin: 0 6px; }
+.nav-label { color: var(--yw); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.nav-future { color: var(--tx3); opacity: .7; padding: 7px 8px; font-size: 11px; cursor: not-allowed; }
+#conn-banner { padding: 8px 22px; border-bottom: 1px solid var(--bd); background: var(--org); color: var(--yw); font-size: 12px; font-weight: 700; }
+#conn-banner.live { background: var(--gng); color: var(--gn); }
+#conn-banner.lost { background: var(--rdg); color: var(--rd); }
+main { padding: 16px 22px 32px; }
+.view:not(.show) { display: none; }
+.sum-grid { max-width: 1920px; margin: 0 auto; }
+.card { min-width: 0; }
+.control-card { border-color: var(--bd2); }
+.read-only-status { padding: 11px 13px; border: 1px solid var(--bd2); border-radius: var(--rad-sm); background: var(--bg0); color: var(--yw); font-size: 11px; font-weight: 800; letter-spacing: .05em; }
+.read-only-status span { display: block; color: var(--tx2); margin-top: 4px; font-weight: 500; letter-spacing: 0; }
+.status-list { margin-top: 8px; }
+.status-list div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--bd); padding: 10px 2px; font-size: 12px; }
+.status-list div:last-child { border-bottom: 0; }
+.status-list span { color: var(--tx2); }
+.status-list strong { color: var(--tx); font-weight: 700; }
+.status-list strong.good { color: var(--gn); }
+.status-list strong.warn { color: var(--yw); }
+.status-list strong.danger { color: var(--rd); }
+.metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.metric { background: var(--bg0); border: 1px solid var(--bd); border-radius: var(--rad-sm); padding: 12px; }
+.metric span, .water-reading span { display: block; color: var(--tx2); font-size: 11px; }
+.metric strong { display: inline-block; margin-top: 6px; font: 700 23px 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.metric small, .water-reading small { color: var(--tx3); margin-left: 5px; }
+.instrument-grid { display: grid; grid-template-columns: minmax(0, 1fr) 82px minmax(0, 1fr); align-items: stretch; gap: 12px; }
+.instrument-main { min-width: 0; text-align: center; }
+.instrument-main .ct, .depth-instrument .ct { justify-content: center; }
+.instrument-main .ct::before, .depth-instrument .ct::before { display: none; }
+.horizon, .thruster-schematic { position: relative; height: 285px; border: 1px solid var(--bd2); border-radius: var(--rad-sm); overflow: hidden; background: var(--bg0); }
+.horizon::before { content: ''; position: absolute; inset: -100% -50%; background: linear-gradient(#1778a7 0 50%, #6f594a 50% 100%); transform: translateY(var(--pitch, 0px)) rotate(var(--roll, 0deg)); transition: transform .25s ease; }
+.horizon::after { content: ''; position: absolute; top: 50%; left: 12%; right: 12%; border-top: 2px solid #e8edf5aa; }
+.horizon:not(.live)::after { content: 'ATTITUDE UNAVAILABLE'; inset: 0; border: 0; display: grid; place-items: center; background: #0a0f1edc; color: var(--yw); font: 700 11px ui-monospace, monospace; letter-spacing: .06em; }
+.reticle { position: absolute; z-index: 1; left: 50%; top: 50%; width: 70px; height: 26px; transform: translate(-50%, -50%); border-left: 3px solid white; border-right: 3px solid white; border-bottom: 3px solid white; border-radius: 0 0 8px 8px; }
+.depth-instrument { text-align: center; border-left: 1px solid var(--bd); border-right: 1px solid var(--bd); padding: 0 9px; min-width: 0; }
+.depth-track { position: relative; width: 39px; height: 230px; margin: 0 auto 10px; border: 1px solid var(--bd2); border-radius: 6px; overflow: hidden; background: var(--bg0); }
+.depth-fill { position: absolute; inset: 0 0 auto; height: var(--fill, 0%); background: linear-gradient(#38bdf866, #0ea5e9bb); border-bottom: 2px solid var(--ac); transition: height .25s; }
+.depth-cursor { position: absolute; top: var(--fill, 0%); left: 2px; right: 2px; height: 3px; background: var(--tx); }
+.depth-instrument strong { color: var(--ac); font: 700 14px ui-monospace, monospace; }
+.depth-instrument small { display: block; color: var(--tx3); }
+.thruster-schematic { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr); padding: 14px 24px; gap: 7px 35px; }
+.thruster-schematic::before { content: 'ATAL'; position: absolute; inset: 20% 35%; display: grid; place-items: center; border: 1px dashed var(--bd2); border-radius: 35% 35% 45% 45%; color: var(--tx3); font: 700 11px ui-monospace, monospace; letter-spacing: .1em; }
+.thruster-schematic span { position: relative; z-index: 1; align-self: center; border: 1px solid var(--bd2); border-radius: 20px; background: var(--bg3); color: var(--tx2); padding: 4px 5px; font: 700 10px ui-monospace, monospace; }
+.thruster-schematic span.live { border-color: var(--ac); color: var(--ac); }
+.attitude-card { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; text-align: center; }
+.attitude-reading { background: var(--bg0); border: 1px solid var(--bd); border-top: 2px solid var(--ac); border-radius: 6px; padding: 9px 5px; }
+.attitude-reading span { display: block; color: var(--tx3); font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+.attitude-reading strong { display: inline-block; margin-top: 4px; font: 700 21px ui-monospace, monospace; }
+.attitude-reading small { color: var(--tx3); margin-left: 3px; }
+.motor-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.motor { background: var(--bg0); border: 1px solid var(--bd); border-radius: 7px; padding: 8px; }
+.motor span { color: var(--tx3); font-size: 10px; font-weight: 800; }
+.motor strong { display: block; margin: 4px 0 7px; font: 700 15px ui-monospace, monospace; }
+.motor i { display: block; height: 3px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+.motor i::after { content: ''; display: block; width: var(--level, 0%); height: 100%; background: var(--ac); }
+.water-reading { border-bottom: 1px solid var(--bd); padding: 12px 0; }
+.water-reading:last-child { border-bottom: 0; }
+.water-reading strong { display: inline-block; margin-top: 5px; font: 700 26px ui-monospace, monospace; }
+.source-name { color: var(--ac); font: 700 14px ui-monospace, monospace; }
+.fineprint { margin-top: 10px; color: var(--tx3); font-size: 11px; line-height: 1.5; }
+.diagnostics-link { display: inline-block; margin-top: 12px; color: var(--ac); font-size: 12px; }
+.tab-card { max-width: 1400px; margin: 0 auto; }
+.plot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+.plot-grid > div { min-width: 0; background: var(--bg0); border: 1px solid var(--bd); border-radius: var(--rad-sm); padding: 12px; }
+.plot-grid h3 { color: var(--tx2); font-size: 12px; margin-bottom: 10px; }
+.plot-grid canvas { display: block; width: 100%; }
+#raw-data { margin-top: 16px; overflow: auto; max-height: 75vh; padding: 14px; border: 1px solid var(--bd); border-radius: var(--rad-sm); background: var(--bg0); color: var(--tx); font: 12px/1.5 ui-monospace, monospace; }
+@media (max-width: 1350px) { .sum-grid { grid-template-columns: minmax(220px, 260px) minmax(0, 1fr); } .sum-col:last-child { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 950px) { .sum-grid { grid-template-columns: 1fr; } .sum-col:last-child { grid-column: auto; } .instrument-grid { grid-template-columns: minmax(0, 1fr) 82px minmax(0, 1fr); } }
+@media (max-width: 620px) { .hdr { padding: 10px 14px; align-items: flex-start; gap: 10px; } .hdr-pills { flex-wrap: wrap; justify-content: flex-end; } .edition, #imu-pill, #output-pill { display: none; } .hdr h1 { font-size: 14px; } .nav { padding: 7px 12px; } .nav button { padding: 7px 10px; } main { padding: 12px; } .instrument-grid { grid-template-columns: minmax(0, 1fr) 60px; } .instrument-grid .instrument-main:last-child { grid-column: 1 / -1; } .depth-track { width: 32px; } .sum-col:last-child, .plot-grid { display: block; } .sum-col:last-child > *, .plot-grid > * { margin-bottom: 12px; } .motor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .horizon::before, .depth-fill { transition: none; } }

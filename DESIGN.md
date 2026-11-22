@@ -1,60 +1,40 @@
 ---
 version: alpha
 colors:
-  primary: "#51c9db"
-  background: "#091420"
-  panel: "#112334"
-  border: "#294358"
-  text: "#e7f3f5"
-  muted: "#9db3bf"
-  telemetry: "#51c9db"
-  healthy: "#6ed6a4"
-  caution: "#ffc878"
-  danger: "#ff8b83"
+  primary: "#38bdf8"
+  background: "#0a0f1e"
+  panel: "#1e2d45"
+  border: "rgba(100, 140, 200, 0.20)"
+  text: "#e8edf5"
+  muted: "#9baec8"
+  telemetry: "#38bdf8"
+  healthy: "#22c55e"
+  caution: "#fbbf24"
+  danger: "#f87171"
 typography:
   display:
-    fontFamily: "system-ui, sans-serif"
+    fontFamily: "Inter, sans-serif"
   data:
-    fontFamily: "ui-monospace, monospace"
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
 rounded:
-  panel: "14px"
-  instrument: "10px"
+  panel: "12px"
+  instrument: "8px"
   status: "99px"
 omitted:
-  - section: spacing
-    reason: "One small telemetry screen; spacing is set locally in dashboard_view.html."
   - section: components
-    reason: "No reusable application component library exists yet."
+    reason: "The first port is static HTML using the reference dashboard CSS; shared components will be considered as more functional panels arrive."
 ---
 
-## Overview
+## Purpose and source
 
-The ATAL ArduSub dashboard is an instrument panel for a tethered AUV operator. This first page is a temporary read-only telemetry view while the existing ROS 2 dashboard is migrated. The final dashboard should closely retain that dashboard's layout, assets, and interaction model, with ArduSub-specific data and control connections. This temporary page gives immediate evidence of link, arming, sensor freshness, attitude, water readings, and motor telemetry. Its visual cue is a restrained attitude horizon, backed by explicit numbers and status words.
+The ArduSub dashboard at `/` is the first read-only port of the operator UI in `ATAL_controller/web_dashboard`. It uses that reference's `dashboard.css` and three SVG assets, along with its topbar, navigation labels, dark/light colors, and three-column instrument arrangement. `integration/static/ros_dashboard.css` is the preserved reference stylesheet; `integration/static/operator_dashboard.css` owns only the ArduSub adaptation. The earlier small instrument view remains at `/diagnostics`.
 
-## Colors
+## Visual rules
 
-Deep blue surfaces echo the original ROS dashboard. Cyan identifies telemetry; green means a live or safe state; amber means missing or stale data; red identifies armed state or connection failure. Color always accompanies text. The CSS custom properties in `integration/dashboard_view.html` are the runtime source for these values and match the frontmatter above.
+Use the reference dark navy surfaces and cyan instrument accent. Light mode uses the reference `html.light` token override. The header and tab strip stay together at the top; the navigation scrolls horizontally when necessary. On narrower screens the columns stack, while attitude and depth remain legible. Numbers use a tabular monospace face. The attitude horizon and water column are the visual focus, matching the reference cockpit vocabulary. Motion is limited to live instrument updates and is removed for reduced-motion users.
 
-## Typography
+## Behavior rules
 
-System sans is used for headings and explanation. Monospace digits keep live values stable while they update. The page uses English, matching the existing ROS dashboard.
+Show link, arming, IMU, pressure, position, and output freshness in text as well as color. Missing and stale readings use an em dash. The old ROS command areas appear only as unavailable navigation labels until real ArduSub behavior is implemented; they do not look clickable. Dashboard, Plots, Raw Data, theme toggle, and diagnostic link work now. The plot retains up to 60 seconds of received data and leaves gaps for missing samples. Raw Data displays the normalized API snapshot, including freshness flags, without implying every retained value is current.
 
-## Layout
-
-The horizon and water/motion readings share the first row on wide screens. Motor channels form a full-width row and wrap to four, then two, columns on narrower screens. Status remains visible in text at all sizes.
-
-## Elevation & Depth
-
-One thin border separates cards from the dark canvas. Shadows are intentionally absent so the horizon remains the focal instrument.
-
-## Shapes
-
-Cards use a 14px radius; status badges are pills. The horizon uses a 10px radius.
-
-## Components
-
-The one current page is implemented in `integration/dashboard_view.html`. A future dashboard port should extract shared tokens and components when a second screen exists.
-
-## Do's and Don'ts
-
-Show stale and unavailable data as unavailable. Do not leave a last-known value looking live. Do not add control affordances until the corresponding ArduSub command, safety, and acknowledgement paths are implemented and tested.
+The depth gauge's 10 m range is a display-only default in `operator_dashboard.html` (`data-display-range-m`); edit it when the operator's useful scale is known. It is not a pressure sensor calibration or depth limit. Motor channel names remain SERVO 1–8 until physical wiring is verified. No browser action can command or arm the vehicle yet.

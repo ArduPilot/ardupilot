@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AUV-IITK Control · ArduSub</title>
+  <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+  <link rel="stylesheet" href="/static/ros_dashboard.css">
+  <link rel="stylesheet" href="/static/operator_dashboard.css">
+  <script src="/static/operator_dashboard.js" defer></script>
+</head>
+<body>
+  <div class="topbar">
+    <header class="hdr">
+      <div class="hdr-left">
+        <img src="/static/img/auv_logo.svg" alt="AUV-IITK" class="logo">
+        <h1>AUV-<span>IITK</span> Control</h1>
+        <span class="edition">ArduSub</span>
+      </div>
+      <div class="hdr-pills">
+        <span class="pill" id="imu-pill"><span class="dot" id="imu-dot"></span>IMU <b id="imu-rate">—</b> Hz</span>
+        <span class="pill" id="output-pill"><span class="dot" id="output-dot"></span>THR</span>
+        <span class="pill" id="state-pill"><span class="dot" id="state-dot"></span><span id="state-text">WAITING</span></span>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme" title="Toggle light/dark theme" onclick="toggleTheme()">☀️</button>
+      </div>
+    </header>
+    <nav class="nav" aria-label="Dashboard sections">
+      <button type="button" class="on" data-tab="dashboard" aria-current="page" onclick="selectTab('dashboard')">Dashboard</button>
+      <button type="button" data-tab="plots" onclick="selectTab('plots')">Plots</button>
+      <button type="button" data-tab="raw" onclick="selectTab('raw')">Raw Data</button>
+      <span class="nav-divider" aria-hidden="true"></span>
+      <span class="nav-label">ArduSub integration pending</span>
+      <span class="nav-future">Control Lab</span>
+      <span class="nav-future">Throttle Control</span>
+      <span class="nav-future">Flight Plan</span>
+      <span class="nav-future">Mission Builder</span>
+      <span class="nav-future">Nano Perception</span>
+      <span class="nav-future">Gate Guidance</span>
+      <span class="nav-future">Waypoint Navigation</span>
+      <span class="nav-future">Tuning Guide</span>
+      <span class="nav-future">Debug</span>
+      <span class="nav-future">Autotune</span>
+    </nav>
+  </div>
+
+  <div id="conn-banner" role="status" aria-live="polite">Waiting for ArduSub telemetry</div>
+  <main>
+    <section id="p-dashboard" class="view show" aria-label="Dashboard">
+      <div class="sum-grid">
+        <div class="sum-col">
+          <section class="card control-card" aria-labelledby="control-heading">
+            <h2 class="ct" id="control-heading">System Control</h2>
+            <div class="read-only-status">READ ONLY <span>Vehicle commands are not connected</span></div>
+            <div class="status-list">
+              <div><span>Link</span><strong id="link-status">Waiting</strong></div>
+              <div><span>Arming</span><strong id="arming-status">Unknown</strong></div>
+              <div><span>IMU</span><strong id="imu-status">Waiting</strong></div>
+              <div><span>Pressure</span><strong id="pressure-status">Waiting</strong></div>
+              <div><span>Position</span><strong id="position-status">Waiting</strong></div>
+              <div><span>Motor output</span><strong id="motor-status">Waiting</strong></div>
+            </div>
+          </section>
+          <section class="card" aria-labelledby="motion-heading">
+            <h2 class="ct" id="motion-heading">Vehicle Motion</h2>
+            <div class="metric-grid">
+              <div class="metric"><span>Forward</span><strong id="vel-fwd">—</strong><small>m/s</small></div>
+              <div class="metric"><span>Lateral</span><strong id="vel-lat">—</strong><small>m/s</small></div>
+              <div class="metric"><span>North</span><strong id="pos-n">—</strong><small>m</small></div>
+              <div class="metric"><span>East</span><strong id="pos-e">—</strong><small>m</small></div>
+            </div>
+            <p class="fineprint">Local position and body velocity disappear when their source is stale.</p>
+          </section>
+        </div>
+        <div class="sum-col center-col">
+          <section class="card instrument-card" aria-labelledby="orientation-heading">
+            <div class="instrument-grid">
+              <div class="instrument-main">
+                <h2 class="ct" id="orientation-heading">Orientation</h2>
+                <div class="horizon" id="horizon" role="img" aria-label="Attitude unavailable"><div class="reticle"></div></div>
+              </div>
+              <div class="depth-instrument">
+                <h2 class="ct">Depth</h2>
+                <div class="depth-track" data-display-range-m="10" title="0–10 m display scale"><div class="depth-fill" id="depth-fill"></div><div class="depth-cursor" id="depth-cursor"></div></div>
+                <strong id="depth-reading">—</strong><small>m</small>
+              </div>
+              <div class="instrument-main">
+                <h2 class="ct">Thruster Activity</h2>
+                <div class="thruster-schematic" id="thruster-schematic" aria-label="Eight reported servo outputs"></div>
+              </div>
+            </div>
+          </section>
+          <section class="card attitude-card" aria-label="Attitude readings">
+            <div class="attitude-reading"><span>ROLL</span><strong id="roll">—</strong><small>deg</small></div>
+            <div class="attitude-reading"><span>PITCH</span><strong id="pitch">—</strong><small>deg</small></div>
+            <div class="attitude-reading"><span>YAW</span><strong id="yaw">—</strong><small>deg</small></div>
+            <div class="attitude-reading"><span>DEPTH</span><strong id="depth-small">—</strong><small>m</small></div>
+          </section>
+          <section class="card" aria-labelledby="outputs-heading">
+            <h2 class="ct" id="outputs-heading">Motor output / SERVO channels 1–8</h2>
+            <div class="motor-grid" id="motor-grid"></div>
+            <p class="fineprint">Reported PWM in µs. Channel mapping is provisional until wiring is checked.</p>
+          </section>
+        </div>
+        <div class="sum-col">
+          <section class="card" aria-labelledby="water-heading">
+            <h2 class="ct" id="water-heading">Water Column</h2>
+            <div class="water-reading"><span>Pressure</span><strong id="pressure">—</strong><small>mbar</small></div>
+            <div class="water-reading"><span>Temperature</span><strong id="temperature">—</strong><small>°C</small></div>
+            <div class="water-reading"><span>Vertical speed</span><strong id="vel-z">—</strong><small>m/s · NED</small></div>
+          </section>
+          <section class="card" aria-labelledby="source-heading">
+            <h2 class="ct" id="source-heading">Data Source</h2>
+            <div class="source-name">ArduSub MAVLink</div>
+            <p class="fineprint" id="sample-age">Waiting for attitude samples</p>
+            <p class="fineprint">Telemetry is read only. Viewing this page does not arm, disarm, or command the vehicle.</p>
+            <a class="diagnostics-link" href="/diagnostics">Open diagnostic view ↗</a>
+          </section>
+        </div>
+      </div>
+    </section>
+    <section id="p-plots" class="view" aria-label="Plots" hidden>
+      <div class="card tab-card"><h2 class="ct">Telemetry Plots</h2><p class="fineprint">Last 60 seconds of received attitude and depth. Gaps indicate unavailable data.</p><div class="plot-grid"><div><h3>Roll / pitch / yaw</h3><canvas id="attitude-plot" height="220" aria-label="Attitude plot"></canvas></div><div><h3>Depth</h3><canvas id="depth-plot" height="220" aria-label="Depth plot"></canvas></div></div></div>
+    </section>
+    <section id="p-raw" class="view" aria-label="Raw Data" hidden>
+      <div class="card tab-card"><h2 class="ct">Raw Data</h2><p class="fineprint">Current normalized ArduSub telemetry snapshot. Values may be stale; check the corresponding alive flags.</p><pre id="raw-data">Waiting for telemetry</pre></div>
+    </section>
+  </main>
+</body>
+</html>

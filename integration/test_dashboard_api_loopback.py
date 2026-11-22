@@ -51,7 +51,12 @@ def main():
                     assert abs(state["roll"] - 5.72958) < 0.01
                     with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/", timeout=0.5) as response:
                         page = response.read().decode("utf-8")
-                    assert "Vehicle telemetry" in page and "Motor output / SERVO channels" in page
+                    assert "AUV-IITK Control" in page and "Motor output / SERVO channels" in page
+                    for asset in ("ros_dashboard.css", "operator_dashboard.css", "operator_dashboard.js", "img/auv_logo.svg"):
+                        with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/static/{asset}", timeout=0.5) as response:
+                            assert response.status == 200 and response.read()
+                    with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/diagnostics", timeout=0.5) as response:
+                        assert "Vehicle telemetry" in response.read().decode()
                     with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/api/stream", timeout=0.5) as response:
                         stream_state = json.loads(response.readline().removeprefix(b"data: "))
                     assert stream_state["link_alive"] and stream_state["imu_alive"]

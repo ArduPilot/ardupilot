@@ -21,6 +21,10 @@ def make_app(telemetry, lock):
 
     @app.get("/")
     def dashboard():
+        return send_file(Path(__file__).with_name("operator_dashboard.html"))
+
+    @app.get("/diagnostics")
+    def diagnostics():
         return send_file(Path(__file__).with_name("dashboard_view.html"))
 
     @app.get("/api/state")

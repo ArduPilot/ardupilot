@@ -87,7 +87,7 @@ def main():
                             event = json.loads(response.readline().removeprefix(b"data: "))
                         assert event["link_alive"] and event["imu_alive"]
                         with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/", timeout=0.2) as response:
-                            assert b"Vehicle telemetry" in response.read()
+                            assert b"AUV-IITK Control" in response.read()
                         print("Native ArduSub serial3 → dashboard HTTP and SSE passed")
                         return
                 except (urllib.error.URLError, TimeoutError):
