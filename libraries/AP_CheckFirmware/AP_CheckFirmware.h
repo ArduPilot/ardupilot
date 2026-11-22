@@ -4,15 +4,11 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_OpenDroneID/AP_OpenDroneID_config.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_config.h>
+#include "AP_CheckFirmware_config.h"
 #if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#endif
-
-#ifndef AP_CHECK_FIRMWARE_ENABLED
-#define AP_CHECK_FIRMWARE_ENABLED AP_OPENDRONEID_ENABLED
 #endif
 
 enum class check_fw_result_t : uint8_t {
@@ -27,7 +23,7 @@ enum class check_fw_result_t : uint8_t {
     FAIL_REASON_BAD_FIRMWARE_SIGNATURE = 17,
     FAIL_REASON_VERIFICATION = 18,
     FAIL_REASON_BAD_LENGTH_EXTF = 19,
-    FAIL_REASON_EXTF_READ = 20,
+    FAIL_REASON_EXTF_FAILED_READ = 20,
 };
 
 #if AP_CHECK_FIRMWARE_ENABLED
