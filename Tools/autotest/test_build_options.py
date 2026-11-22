@@ -417,6 +417,10 @@ class TestBuildOptions(object):
             feature_define_whitelist.add(r'AP_RANGEFINDER_ENABLED')
             feature_define_whitelist.add(r'AP_RANGEFINDER_.*_ENABLED')
 
+        if target.lower() in ["rover", "blimp", "antennatracker"]:
+            # no inverted-flight code on these vehicles
+            feature_define_whitelist.add('AP_INVERTED_FLIGHT_ENABLED')
+
         if target.lower() in ["blimp", "antennatracker", "sub"]:
             # no OSD on Sub/blimp/tracker
             feature_define_whitelist.add(r'OSD_ENABLED')
