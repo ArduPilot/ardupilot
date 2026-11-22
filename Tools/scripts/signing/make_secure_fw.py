@@ -28,7 +28,7 @@ args = parser.parse_args()
 
 key_len = 32
 sig_len = 64
-sig_version_legacy = 30437
+sig_version_internal_only = 30437
 sig_version_extf = 30438
 descriptor = b'\x41\xa3\xe5\xf2\x65\x69\x92\x07'
 
@@ -110,7 +110,7 @@ if len(signature) != sig_len:
 # pack signature in 4 bytes length, 8 byte signature version and 64 byte
 # signature. We have a signature version to allow for changes to signature
 # system in the future
-desc = struct.pack("<IQ64s", sig_len+8, sig_version_legacy, signature)
+desc = struct.pack("<IQ64s", sig_len+8, sig_version_internal_only, signature)
 img = img[:(offset + 16)] + desc + img[(offset + desc_len):]
 
 if len(img) != img_len:

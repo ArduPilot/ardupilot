@@ -365,6 +365,11 @@ def test_cubeorange_commands(dialect, renode, firmware, bootloader,
         if reply.result != MAV_RESULT_ACCEPTED or reply.data_length != 8:
             raise AssertionError('signed session request was not accepted')
         session_key = bytes(reply.data[:reply.data_length])
+        reply = board.secure_command(
+            sequence, GET_SESSION_KEY, b'',
+            signed_command(private_key, sequence, GET_SESSION_KEY))
+        if reply.result != MAV_RESULT_DENIED:
+            raise AssertionError('replayed session request was accepted')
 
         sequence = 100
         data = bytes((0, 1))
