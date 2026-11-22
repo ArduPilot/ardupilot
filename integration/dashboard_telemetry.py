@@ -22,7 +22,7 @@ class DashboardTelemetry:
             "armed": False, "armed_known": False,
             "pressure_mbar": None, "water_temp": None, "depth_m": None,
             "pos_n": None, "pos_e": None, "vel_fwd": None,
-            "vel_lat": None, "vel_z": None, "dvl_locked": False,
+            "vel_lat": None, "vel_z": None, "dvl_locked": None,
             "timestamp": 0.0, "imu_hz": 0.0,
         }
 

@@ -29,7 +29,7 @@ function render(s, requestFailed = false) {
   status('link-status', linkText, s.link_alive ? 'good' : hadLink || requestFailed ? 'danger' : 'warn');
   status('arming-status', !s.armed_known ? 'Unknown' : s.armed ? 'Armed' : 'Disarmed', !s.armed_known ? 'warn' : s.armed ? 'danger' : 'good');
   for (const [name, alive] of [['imu', s.imu_alive], ['pressure', s.pressure_alive], ['position', s.position_alive], ['motor', s.output_alive]]) {
-    status(`${name}-status`, alive ? 'Live' : 'Unavailable', alive ? 'good' : 'warn');
+    status(`${name}-status`, alive ? 'Fresh' : 'Unavailable', alive ? 'good' : 'warn');
   }
   $('state-text').textContent = !s.armed_known ? 'UNKNOWN' : s.armed ? 'ARMED' : 'DISARMED';
   $('state-dot').className = `dot ${!s.armed_known ? 'warn' : s.armed ? 'err' : 'on'}`;

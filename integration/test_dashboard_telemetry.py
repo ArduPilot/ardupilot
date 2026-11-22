@@ -73,6 +73,7 @@ class DashboardTelemetryTests(unittest.TestCase):
     def test_api_is_read_only(self):
         client = make_app(self.telemetry, threading.Lock()).test_client()
         self.assertEqual(client.get("/api/state").json["source"], "ardusub_mavlink")
+        self.assertIsNone(client.get("/api/state").json["dvl_locked"])
         stream = client.get("/api/stream", buffered=False)
         self.assertEqual(stream.mimetype, "text/event-stream")
         event = next(iter(stream.response)).decode("utf-8")
