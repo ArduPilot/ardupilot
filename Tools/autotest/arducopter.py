@@ -21962,6 +21962,65 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if self.statustext_in_collections("Internal Errors"):
             raise NotAchievedException("Internal error raised while armed inverted")
 
+    def GyroRateLearning(self):
+        '''check each gyro's sample rate offset is learned, seeds the next boot and cannot be set by a GCS'''
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.GyroRateLearning_body()
+        finally:
+            # the learned offsets are internal parameters, so context_pop
+            # cannot restore them; clear them with BRD_OPTIONS' "allow
+            # set internal parameters" bit, outside the context
+            self.set_parameter("BRD_OPTIONS", int(self.get_parameter("BRD_OPTIONS")) | 4)
+            self.set_parameters({
+                "INS_GYR_RPPM": 0,
+                "INS_GYR2_RPPM": 0,
+            }, add_to_context=False)
+            self.context_pop()
+            self.reboot_sitl()
+
+    def GyroRateLearning_body(self):
+        # the simulated IMUs sample 2% slow
+        self.set_parameters({
+            "SIM_IMU_CLK_PPM": -20000,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+
+        # saved once the fast rate convergence ends, 30s after boot
+        self.wait_statustext(r"IMU0: gyro rate -1\.9\d% from nominal \(was \+0\.00%\)",
+                             regex=True, check_context=True, timeout=60)
+        self.wait_statustext(r"IMU1: gyro rate -1\.9\d% from nominal", regex=True, check_context=True)
+        learned = self.get_parameters(["INS_GYR_RPPM", "INS_GYR2_RPPM"])
+        for name, ppm in learned.items():
+            # the simulated sample interval is whole microseconds
+            if abs(ppm - -20000) > 1000:
+                raise NotAchievedException("%s=%d; want about -20000" % (name, ppm))
+
+        self.start_subtest("A GCS cannot set the learned offset")
+        self.send_set_parameter_direct("INS_GYR_RPPM", 0)
+        self.delay_sim_time(2, reason="allow the set to be processed")
+        self.assert_parameter_value("INS_GYR_RPPM", learned["INS_GYR_RPPM"])
+
+        self.start_subtest("The next boot starts from the learned rate")
+        self.reboot_sitl()
+        self.delay_sim_time(5, reason="log some IMU messages")
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type='IMU', condition='IMU.I==0')
+        # without the seed the estimate starts at the nominal 1000Hz
+        if m is None or m.GHz > 981:
+            raise NotAchievedException("first IMU0 GHz %s; want the learned 980" % (m.GHz if m else None))
+        self.progress("First IMU0 GHz %u" % m.GHz)
+
+        self.start_subtest("A changed gyro ID clears that gyro's offset")
+        self.set_parameter("INS_GYR_ID", 1)
+        self.reboot_sitl()
+        self.assert_parameter_values({
+            "INS_GYR_RPPM": 0,
+            "INS_GYR2_RPPM": learned["INS_GYR2_RPPM"],
+        })
+
     def NavControllerOutputAltError(self):
         '''check the sign of NAV_CONTROLLER_OUTPUT.alt_error'''
         # alt_error is target altitude minus current altitude, so it
@@ -22235,6 +22294,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptingFlyVelocity,
             self.PLDNoParameters,
             self.ArmedInvertedTakeoff,
+            self.GyroRateLearning,
         ])
         return ret
 
