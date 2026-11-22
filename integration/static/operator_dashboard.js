@@ -239,7 +239,12 @@ function disconnectCamera() {
 $('camera-form').addEventListener('submit', event => {
   event.preventDefault();
   const url = cameraUrl.value.trim();
-  if (!url) { cameraStatus.textContent = 'Enter a camera stream URL.'; return; }
+  if (!url) {
+    try { localStorage.removeItem('atal-camera-url'); } catch (_) { /* storage may be disabled */ }
+    disconnectCamera();
+    cameraStatus.textContent = 'Enter a camera stream URL.';
+    return;
+  }
   try {
     const parsed = new URL(url);
     if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('HTTP only');
