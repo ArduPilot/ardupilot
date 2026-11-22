@@ -17284,6 +17284,9 @@ switch value'''
         first_for_session = True
         self_binary_privatised = False
         test = None
+        # set when this worker is leaving the pool other than by being told
+        # to; see the exit at the end of this method
+        lost = False
         try:
             while True:
                 # ask the dispatcher for work, telling it which suite we
@@ -17383,6 +17386,9 @@ switch value'''
             if logsrc.logs_dir:
                 if glob.glob("core*") or glob.glob("ap-*.core"):
                     logsrc.check_logs("FRAMEWORK")
+            # the result is reported above, but this worker is leaving the
+            # pool; see the exit at the end of this method
+            lost = True
 
         except Exception as e:  # noqa: BLE001
             # anything else escaping here used to take the worker with it,
@@ -17410,6 +17416,9 @@ switch value'''
             if logsrc.logs_dir:
                 if glob.glob("core*") or glob.glob("ap-*.core"):
                     logsrc.check_logs("FRAMEWORK")
+            # the result is reported above, but this worker is leaving the
+            # pool; see the exit at the end of this method
+            lost = True
 
         if active is not None:
             active.stop_worker_session()
@@ -17421,6 +17430,22 @@ switch value'''
         # as this worker switched away from it.
         self.put_sanitiser_results(active if active is not None else self,
                                    active_key)
+
+        if lost:
+            # a test raised, so this worker is done: it cannot take another,
+            # because restarting a session inside a worker is not reliable -
+            # the next test times out waiting for a heartbeat, the old
+            # SITL's ports not yet being free (measured 2026-11-22, by
+            # injecting a fault and watching the following test fail).
+            #
+            # It left the pool before this change too; what it did not do
+            # was say so.  A worker which returns normally is reaped as a
+            # success, so the dispatcher could not tell the pool had shrunk,
+            # and a long run quietly lost the width it was asked for.
+            # Exiting non-zero gets a WORKER FAILED line and a place in the
+            # summary.  SystemExit is not an Exception, so the handlers
+            # above do not swallow it.
+            sys.exit(1)
 
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
