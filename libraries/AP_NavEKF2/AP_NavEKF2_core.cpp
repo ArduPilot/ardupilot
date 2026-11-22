@@ -373,6 +373,20 @@ void NavEKF2_core::InitialiseVariablesMag()
 // This method can only be used when the vehicle is static
 bool NavEKF2_core::InitialiseFilterBootstrap(void)
 {
+    // wait for a second of IMU data before taking our initial tilt
+    // from the accelerometer, so it is not taken from the IMUs' first
+    // samples, for example straight after a watchdog reset.  This is
+    // timed from our first call, so a Plane which gets its GPS lock
+    // later does not wait again:
+    const uint32_t now_ms = frontend->imuSampleTime_us / 1000;
+    if (firstInitTime_ms == 0) {
+        firstInitTime_ms = now_ms;
+        return false;
+    }
+    if (now_ms - firstInitTime_ms < 1000) {
+        return false;
+    }
+
     // If we are a plane and don't have GPS lock then don't initialise
     if (assume_zero_sideslip() && dal.gps().status(dal.gps().primary_sensor()) < AP_GPS_FixType::FIX_3D) {
         dal.snprintf(prearm_fail_string,
