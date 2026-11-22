@@ -247,6 +247,7 @@ public:
 
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info2[];
 #if INS_AUX_INSTANCES
     AP_InertialSensor_Params params[INS_AUX_INSTANCES];
 #endif
@@ -654,6 +655,23 @@ private:
     // accelerometer and gyro raw sample rate in units of Hz
     float  _accel_raw_sample_rates[INS_MAX_INSTANCES];
     float  _gyro_raw_sample_rates[INS_MAX_INSTANCES];
+
+    // gyro raw sample rate as registered by the driver, in Hz
+    uint16_t _gyro_nominal_rates[INS_MAX_INSTANCES];
+
+    // learned offset of each gyro's sample rate from its nominal
+    // rate, in ppm; seeds the rate estimate at boot
+    AP_Int32 _gyro_rate_ppm_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+    INS_PARAM_WRAPPER(_gyro_rate_ppm);
+
+    // set a gyro's nominal raw sample rate and seed its rate estimate
+    void set_gyro_nominal_rate(uint8_t instance, uint16_t rate_hz);
+
+    // save each gyro's sample rate offset once its estimate has converged
+    void update_gyro_rate_ppm();
+    uint8_t _gyro_rate_ppm_id_ok;  // bitmask of gyros whose ID matches the saved one
+    bool _gyro_rate_ppm_checked;
+    bool _gyro_rate_armed_early;
 
     // how many sensors samples per notify to the backend
     uint8_t _accel_over_sampling[INS_MAX_INSTANCES];

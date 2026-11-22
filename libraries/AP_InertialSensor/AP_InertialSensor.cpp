@@ -59,6 +59,16 @@
 
 extern const AP_HAL::HAL& hal;
 
+// learned gyro rate offsets: offsets beyond the limit are not clock
+// error and are never used; a change smaller than the save threshold
+// is within temperature drift; a change bigger than the warning
+// level means a different sensor or a changed driver
+#define GYRO_RATE_PPM_MAX 100000
+#define GYRO_RATE_PPM_SAVE_THRESHOLD 1000
+#define GYRO_RATE_PPM_WARN 10000
+// five time constants of the slow rate filter (0.98 per 1s window)
+#define GYRO_RATE_SLOW_CONVERGE_MS 250000U
+
 
 
 #if APM_BUILD_COPTER_OR_HELI
@@ -699,12 +709,45 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_RAW_LOG_OPT", 56, AP_InertialSensor, raw_logging_options, 0),
 
+    // index 60 continues the table in var_info2
+    AP_SUBGROUPEXTENSION("", 60, AP_InertialSensor, var_info2),
+
     // indexes 57 and 58 used by INS_HNTC3 and INS_HNTC4
 
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
      */
+    AP_GROUPEND
+};
+
+// second table of INS parameters, chained from var_info index 60
+const struct AP_Param::GroupInfo AP_InertialSensor::var_info2[] = {
+    // @Param: _GYR_RPPM
+    // @DisplayName: Gyro rate offset
+    // @Description: Learned offset of the gyro's sample rate from its nominal rate, in parts per million. Written by the autopilot while disarmed once the rate estimate has converged, and used to start the estimate on the next boot. Only learned once a gyro calibration has saved the gyro's ID, and cleared if the gyro ID changes.
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_GYR_RPPM", 1, AP_InertialSensor, _gyro_rate_ppm_old_param[0], 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
+#if INS_MAX_INSTANCES > 1
+    // @Param: _GYR2_RPPM
+    // @DisplayName: Gyro2 rate offset
+    // @Description: Learned offset of the second gyro's sample rate from its nominal rate, in parts per million. Written by the autopilot while disarmed once the rate estimate has converged, and used to start the estimate on the next boot. Only learned once a gyro calibration has saved the gyro's ID, and cleared if the gyro ID changes.
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_GYR2_RPPM", 2, AP_InertialSensor, _gyro_rate_ppm_old_param[1], 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+#endif
+
+#if INS_MAX_INSTANCES > 2
+    // @Param: _GYR3_RPPM
+    // @DisplayName: Gyro3 rate offset
+    // @Description: Learned offset of the third gyro's sample rate from its nominal rate, in parts per million. Written by the autopilot while disarmed once the rate estimate has converged, and used to start the estimate on the next boot. Only learned once a gyro calibration has saved the gyro's ID, and cleared if the gyro ID changes.
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_GYR3_RPPM", 3, AP_InertialSensor, _gyro_rate_ppm_old_param[2], 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+#endif
+
     AP_GROUPEND
 };
 
@@ -761,7 +804,6 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
         }
     }
 
-    _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
     _gyro_over_sampling[_gyro_count] = 1;
     _gyro_raw_sampling_multiplier[_gyro_count] = INT16_MAX/radians(2000);
 
@@ -772,7 +814,17 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
         _gyro_cal_ok[_gyro_count] = false;
     }
 
+    if ((!saved || _gyro_id(_gyro_count) != id) && _gyro_rate_ppm(_gyro_count) != 0) {
+        // the learned rate offset belongs to a different sensor
+        _gyro_rate_ppm(_gyro_count).set_and_save(0);
+    }
+    if (saved && _gyro_id(_gyro_count) == id) {
+        _gyro_rate_ppm_id_ok |= 1U<<_gyro_count;
+    }
+
     _gyro_id(_gyro_count).set(id);
+
+    set_gyro_nominal_rate(_gyro_count, raw_sample_rate_hz);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!saved) {
@@ -785,6 +837,68 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
     instance = _gyro_count++;
 
     return true;
+}
+
+/*
+  set a gyro's nominal raw sample rate.  The rate estimate starts from
+  the nominal rate corrected by the offset learned on earlier boots
+ */
+void AP_InertialSensor::set_gyro_nominal_rate(uint8_t instance, uint16_t rate_hz)
+{
+    _gyro_nominal_rates[instance] = rate_hz;
+    const int32_t ppm = constrain_int32(_gyro_rate_ppm(instance), -GYRO_RATE_PPM_MAX, GYRO_RATE_PPM_MAX);
+    _gyro_raw_sample_rates[instance] = rate_hz * (1.0f + ppm * 1.0e-6f);
+}
+
+/*
+  learn each gyro's sample rate offset from its nominal rate so the
+  next boot starts its rate estimate there.  Checked while disarmed
+  once the estimate has converged: once per boot, then after each
+  disarm.  Saved only when it has moved further than temperature
+  drift (about 30ppm/degC) would explain, so a unit saves once and
+  then rarely
+ */
+void AP_InertialSensor::update_gyro_rate_ppm()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (hal.util->get_soft_armed()) {
+        if (now_ms < HAL_INS_CONVERGANCE_MS) {
+            // the fast convergence stops when armed; allow five time
+            // constants of the slow filter instead
+            _gyro_rate_armed_early = true;
+        }
+        _gyro_rate_ppm_checked = false;
+        return;
+    }
+    if (_gyro_rate_ppm_checked ||
+        now_ms < HAL_INS_CONVERGANCE_MS ||
+        (_gyro_rate_armed_early && now_ms < HAL_INS_CONVERGANCE_MS + GYRO_RATE_SLOW_CONVERGE_MS)) {
+        return;
+    }
+    _gyro_rate_ppm_checked = true;
+
+    for (uint8_t i=0; i<_gyro_count; i++) {
+        if ((_gyro_rate_ppm_id_ok & (1U<<i)) == 0 ||
+            _gyro_nominal_rates[i] == 0 || !_gyro_healthy[i]) {
+            // only learn for a gyro whose ID is saved: an offset saved
+            // against another ID would be cleared again at boot
+            continue;
+        }
+        const float ppm = (_gyro_raw_sample_rates[i] / _gyro_nominal_rates[i] - 1.0f) * 1.0e6f;
+        const int32_t old_ppm = _gyro_rate_ppm(i);
+        if (fabsf(ppm - old_ppm) < GYRO_RATE_PPM_SAVE_THRESHOLD) {
+            continue;
+        }
+        if (fabsf(ppm) > GYRO_RATE_PPM_MAX) {
+            // not a clock error; don't seed the next boot with it
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IMU%u: gyro rate %+.1f%% from nominal", unsigned(i), ppm * 1.0e-4f);
+            continue;
+        }
+        _gyro_rate_ppm(i).set_and_save(int32_t(lrintf(ppm)));
+        GCS_SEND_TEXT(fabsf(ppm - old_ppm) > GYRO_RATE_PPM_WARN ? MAV_SEVERITY_WARNING : MAV_SEVERITY_INFO,
+                      "IMU%u: gyro rate %+.2f%% from nominal (was %+.2f%%)",
+                      unsigned(i), ppm * 1.0e-4f, old_ppm * 1.0e-4f);
+    }
 }
 
 /*
@@ -2007,6 +2121,8 @@ void AP_InertialSensor::update(void)
         send_uart_data();
     }
 #endif
+
+    update_gyro_rate_ppm();
 }
 
 /*

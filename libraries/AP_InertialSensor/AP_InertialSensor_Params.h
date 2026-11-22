@@ -23,6 +23,7 @@ public:
     AP_UInt32 _gyro_id;
     AP_Vector3f _gyro_offset;
     AP_Float caltemp_gyro;
+    AP_Int32 _gyro_rate_ppm;
 
     AP_Int8 _use;
 

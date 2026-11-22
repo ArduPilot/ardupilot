@@ -293,7 +293,7 @@ protected:
     // set gyro raw sample rate; note that the storage type is
     // actually float!
     void _set_gyro_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
-        _imu._gyro_raw_sample_rates[instance] = rate_hz;
+        _imu.set_gyro_nominal_rate(instance, rate_hz);
     }
     
     // publish a temperature value

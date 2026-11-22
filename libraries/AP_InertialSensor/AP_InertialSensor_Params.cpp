@@ -142,6 +142,14 @@ const AP_Param::GroupInfo AP_InertialSensor_Params::var_info[] = {
     // @Path: AP_InertialSensor_tempcal.cpp
     AP_SUBGROUPINFO(tcal, "TCAL_", 10, AP_InertialSensor_Params, AP_InertialSensor_TCal),
 #endif
+
+    // @Param: GYR_RPPM
+    // @DisplayName: Gyro rate offset
+    // @Description: Learned offset of the gyro's sample rate from its nominal rate, in parts per million. Written by the autopilot while disarmed once the rate estimate has converged, and used to start the estimate on the next boot. Only learned once a gyro calibration has saved the gyro's ID, and cleared if the gyro ID changes.
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("GYR_RPPM", 11, AP_InertialSensor_Params, _gyro_rate_ppm, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
     AP_GROUPEND
 
 };
