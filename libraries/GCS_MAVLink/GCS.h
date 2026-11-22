@@ -11,6 +11,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
+#include <AP_Math/AP_Math.h>
 #include <AP_Mission/AP_Mission.h>
 #include <stdint.h>
 #include "MAVLink_routing.h"
@@ -99,6 +100,29 @@ bool check_payload_size(mavlink_channel_t chan, uint16_t max_payload_len);
         return (subclass_name *)_chan[ofs];                        \
     }
 
+
+// The navigation setpoint a vehicle is commanding, reported by
+// POSITION_TARGET_GLOBAL_INT.
+struct NavTarget {
+
+    static const uint16_t ALL_IGNORE = 0x0DFF;  // all ignore bits, not FORCE_SET
+
+    Location loc;
+    Vector3f vel_ned_ms;
+    Vector3f accel_ned_mss;
+
+    // POSITION_TARGET_TYPEMASK bits: a SET bit means that dimension is NOT
+    // commanded. Starts fully ignored; the vehicle clears what it commands.
+    uint16_t type_mask = ALL_IGNORE;
+
+    // true if the vehicle has cleared the position ignore bits, meaning loc
+    // holds the commanded position
+    bool has_position() const {
+        return (type_mask & (POSITION_TARGET_TYPEMASK_X_IGNORE |
+                             POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                             POSITION_TARGET_TYPEMASK_Z_IGNORE)) == 0;
+    }
+};
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
 class DefaultIntervalsFromFiles
@@ -387,6 +411,9 @@ public:
     void send_gps_global_origin() const;
     virtual void send_attitude_target() {};
     void send_position_target_global_int();
+    // returns the navigation setpoint the vehicle is currently commanding,
+    // including which of its dimensions are actually being commanded
+    virtual bool get_nav_target(NavTarget &target) const { return false; }
     // returns a Location to which the vehicle is currently heading,
     // or would head to in an autonomous mode
     virtual bool get_target_location(Location &loc) const { return false; }
@@ -602,6 +629,8 @@ protected:
     void handle_mission_count(const mavlink_message_t &msg);
     void handle_mission_write_partial_list(const mavlink_message_t &msg);
     void handle_mission_item(const mavlink_message_t &msg);
+    void handle_mission_item_int(const mavlink_message_t &msg);
+    void handle_mission_item_int(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int, bool send_mission_item_warning);
 
     void handle_distance_sensor(const mavlink_message_t &msg);
     void handle_obstacle_distance(const mavlink_message_t &msg);
@@ -1247,6 +1276,12 @@ public:
         return 200;
     }
 
+    // poweroff_initiated - called when system is being deliberately
+    // powered off.  p1 will be sent as the first parameter in a
+    // MAV_CMD_POWER_OFF_INITIATED.  A varargs-string and parameters
+    // can be supplied to send a custom message.
+    void poweroff_initiated(float p1, const char *fmt, ...) FMT_PRINTF(3, 4);
+
     void init();
     void convert_parameters();
     void setup_console();
@@ -1323,7 +1358,7 @@ public:
     uint32_t sysid_this_mav() const { return sysid; }
     uint32_t telem_delay() const { return mav_telem_delay; }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // lua access to command_int
     MAV_RESULT lua_command_int_packet(const mavlink_command_int_t &packet);
 #endif
@@ -1408,14 +1443,25 @@ private:
         uint32_t last_port1_data_ms;
         uint32_t baud1;
         uint32_t baud2;
-        uint8_t parity1;
-        uint8_t parity2;
+        uint32_t orig_baud1;
+        uint32_t orig_baud2;
+        uint8_t orig_parity1;
+        uint8_t orig_parity2;
+        uint16_t options1;
+        uint16_t options2;
+        uint16_t start_options1;
+        uint16_t start_options2;
+        uint8_t stop_bits1;
+        uint8_t stop_bits2;
+        // the ports have been taken and set up, see passthru_timer()
+        bool ports_set_up;
         uint8_t timeout_s;
         HAL_Semaphore sem;
     } _passthru;
 
     // timer called to implement pass-thru
     void passthru_timer();
+    void restore_passthru_line_settings();
 
     // this contains the index of the GCS_MAVLINK backend we will
     // first call update_send on.  It is incremented each time

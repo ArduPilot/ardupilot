@@ -64,6 +64,31 @@ Updating the firmware does not update the SD-card module files.
 Edit bindings.desc and rebuild. The waf build will automatically
 re-run the code generator.
 
+The generator uses Python's standard library, with no additional packages.
+To run it directly from the repository root:
+
+```bash
+python3 libraries/AP_Scripting/generator/generator.py \
+    -i libraries/AP_Scripting/generator/description/bindings.desc \
+    -o /tmp/lua_generated_bindings -d /tmp/generated_docs.lua
+```
+
+In `generator/`, `bindings_parser.py` reads descriptions into the dataclasses in
+`model.py`. `cpp.py` and `docs.py` render that model using the files in
+`templates/`. Templates use standard `string.Template` substitutions;
+loops, type conversions, and decisions stay in Python. Waf tracks both
+the Python files and templates as inputs, and `./waf scripting_docs` also
+generates the editable Lua documentation.
+
+Run the generator regression tests with:
+
+```bash
+python3 -m unittest discover -s libraries/AP_Scripting/generator/tests -v
+```
+
+The tests cover description parsing and diagnostics, output argument handling,
+documentation types, and Python module compatibility.
+
 ## Lua Source Code
 
 The Lua 5.3.6 source code is vendored in `lua/`. This is a customized

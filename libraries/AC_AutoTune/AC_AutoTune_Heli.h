@@ -106,7 +106,7 @@ protected:
 #if HAL_LOGGING_ENABLED
     // methods to log autotune summary data
     void Log_AutoTune() override;
-    void Log_Write_AutoTune(AxisType _axis, TuneType tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
+    void Log_Write_AutoTune(AxisType _axis, TuneType tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel_cdss);
 
     // methods to log autotune time history results for command, angular rate, and attitude.
     void Log_AutoTuneDetails() override;
@@ -163,17 +163,17 @@ private:
         TARGET   = 1,
     };
 
-    float target_angle_max_rp_cd() const override;
+    float target_angle_max_rp_rad() const override;
 
-    float target_angle_max_y_cd() const override;
+    float target_angle_max_y_rad() const override;
 
-    float target_angle_min_rp_cd() const override;
+    float target_angle_min_rp_rad() const override;
 
-    float target_angle_min_y_cd() const override;
+    float target_angle_min_y_rad() const override;
 
-    float angle_lim_max_rp_cd() const override;
+    float angle_lim_max_rp_rad() const override;
 
-    float angle_lim_neg_rpy_cd() const override;
+    float angle_lim_neg_rpy_rad() const override;
 
     // initialize dwell test or angle dwell test variables
     void dwell_test_init(float start_frq, float stop_frq, float amplitude, float filt_freq, FreqRespInput freq_resp_input, FreqRespCalcType calc_type, AC_AutoTune_FreqResp::ResponseType resp_type, AC_AutoTune_FreqResp::InputType waveform_input_type);

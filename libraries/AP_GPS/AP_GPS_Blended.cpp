@@ -253,7 +253,7 @@ void AP_GPS_Blended::calc_state(void)
     // combine the states into a blended solution
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         // use the highest status
-        if (gps.state[i].status > state.status) {
+        if (AP_GPS::fix_type_priority(gps.state[i].status) > AP_GPS::fix_type_priority(state.status)) {
             state.status = gps.state[i].status;
         }
 

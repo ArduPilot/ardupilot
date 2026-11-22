@@ -159,13 +159,14 @@ public:
     bool has_pan_control(uint8_t instance) const;
 
     // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
-    enum MAV_MOUNT_MODE get_mode() const { return get_mode(_primary); }
-    enum MAV_MOUNT_MODE get_mode(uint8_t instance) const;
+    using Mode = AP_Mount_Params::Mode;
+    Mode get_mode() const { return get_mode(_primary); }
+    Mode get_mode(uint8_t instance) const;
 
     // set_mode - sets mount's mode
     //  returns true if mode is successfully set
-    void set_mode(enum MAV_MOUNT_MODE mode) { return set_mode(_primary, mode); }
-    void set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode);
+    void set_mode(Mode mode) { return set_mode(_primary, mode); }
+    void set_mode(uint8_t instance, Mode mode);
 
     // set_mode_to_default - restores the mode to it's default mode held in the MNTx_DEFLT_MODE parameter
     //      this operation requires 60us on a Pixhawk/PX4
@@ -262,7 +263,7 @@ public:
     // any failure_msg returned will not include a prefix
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // get target rate in deg/sec. returns true on success
     bool get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
 
@@ -276,12 +277,12 @@ public:
     // accessors for scripting backends and logging
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
 
- #if AP_SCRIPTING_ENABLED
+ #if AP_EXTERNAL_BINDING_ENABLED
     // used by a script sending messages to a physical device to
     // indicate what targets can be either natively sent to the device
     // or internally handled by the script
     void set_natively_supported_mount_target_types(uint8_t instance, uint8_t types_mask);
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_EXTERNAL_BINDING_ENABLED
 
     // write mount log packet for all backends
     void write_log();

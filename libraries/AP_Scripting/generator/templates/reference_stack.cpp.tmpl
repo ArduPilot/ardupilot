@@ -1,0 +1,3 @@
+#if $slots > LUA_MINSTACK
+${indent}luaL_checkstack(L, $slots, nullptr);
+#endif

@@ -4,7 +4,8 @@
 
 The Target tab selects a board, firmware and bootloader. The Config tab
 attaches emulated devices to ports derived from the board hwdef. The Physics
-tab manages a standalone vehicle model and location. Together they build and
+tab manages a standalone vehicle model and location. The R/C tab drives an
+emulated SBUS transmitter. Together they build and
 control a normal Tools/renode/run.py session. Renode's telnet monitor supplies
 live PC, configured MIPS, executed MIPS and virtual-time speedup.
 
@@ -19,6 +20,7 @@ one command per line:
   attach PORT DEVICE, detach PORT DEVICE,
   physics on|off, physics-model NAME,
   physics-location LAT LON ALT HEADING, physics-rate HZ,
+  rc on|off, rc-channels PWM,PWM,..., rc-defaults,
   download-renode, start, stop, status, quit
 
 Replies are prefixed OK, ERR or STATUS.
@@ -56,6 +58,34 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 SETTINGS_PATH = Path.cwd() / 'launch-settings.json'
 SETTINGS_FORMAT = 1
+RC_CHANNEL_COUNT = 8
+RC_PWM_MIN = 1000
+RC_PWM_MAX = 2000
+# stick positions for each vehicle's default RCMAP and mode channel
+RC_DEFAULTS = {
+    'Copter': (1500, 1500, 1000, 1500, 1000, 1000, 1000, 1000),
+    # FLTMODE_CH 8 low is RTL; 1500 selects FLTMODE4, FBWA
+    'Plane': (1500, 1500, 1000, 1500, 1000, 1000, 1000, 1500),
+    # throttle is centred for reverse; MODE_CH 8 low selects MANUAL
+    'Rover': (1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000),
+    # every Sub joystick axis is centred
+    'Sub': (1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500),
+    'AntennaTracker': (1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000),
+    'Blimp': (1500, 1500, 1500, 1500, 1000, 1000, 1000, 1000),
+}
+RC_NAMES = {
+    'Copter': ('Roll', 'Pitch', 'Throttle', 'Yaw', 'Mode'),
+    'Plane': ('Roll', 'Pitch', 'Throttle', 'Yaw', '', '', '', 'Mode'),
+    'Rover': ('Steering', '', 'Throttle', '', '', '', '', 'Mode'),
+    'Sub': ('Pitch', 'Roll', 'Throttle', 'Yaw', 'Forward', 'Lateral'),
+    'AntennaTracker': ('Yaw', 'Pitch'),
+    'Blimp': ('Right', 'Forward', 'Up', 'Yaw', 'Mode'),
+}
+FIRMWARE_VEHICLES = (
+    ('arducopter', 'Copter'), ('arduplane', 'Plane'), ('ardurover', 'Rover'),
+    ('ardusub', 'Sub'), ('antennatracker', 'AntennaTracker'),
+    ('blimp', 'Blimp'),
+)
 
 ANSI_RE = re.compile(r'\x1b\[[0-9;?]*[ -/]*[@-~]')
 PROMPT_RE = re.compile(r'\([^)]+\)\s*$')
@@ -561,8 +591,17 @@ def firmware_choices(board):
 
 
 def default_bootloader(board):
-    path = ROOT / 'Tools' / 'bootloaders' / ('%s_bl.bin' % board)
-    return path if path.is_file() else None
+    import gen_board
+    # as embedded by the build, else that of the board providing hwdef-bl.dat
+    names = [gen_board.bootloader_board(ROOT, board)]
+    hwdef = gen_board.bootloader_hwdef(ROOT, board)
+    if hwdef is not None:
+        names.append(hwdef.parent.name)
+    for name in names:
+        path = ROOT / 'Tools' / 'bootloaders' / ('%s_bl.bin' % name)
+        if path.is_file():
+            return path
+    return None
 
 
 def parse_elapsed(value):
@@ -585,6 +624,24 @@ def clean_monitor_text(data):
     # Telnet negotiation bytes decode as replacement characters. They carry
     # no monitor content and make prompt/value matching less predictable.
     return text.replace('\ufffd', '')
+
+
+def rc_defaults(vehicle):
+    return list(RC_DEFAULTS.get(vehicle, RC_DEFAULTS['Copter']))
+
+
+def firmware_vehicle_name(path):
+    '''Vehicle of a firmware file from its name or download cache path.'''
+    if path in (None, 'auto'):
+        return None
+    parts = [part.lower() for part in Path(path).parts]
+    for name, vehicle in FIRMWARE_VEHICLES:
+        if any(part.startswith(name) for part in parts[-1:]):
+            return vehicle
+    for _name, vehicle in FIRMWARE_VEHICLES:
+        if vehicle.lower() in parts:
+            return vehicle
+    return None
 
 
 def parse_metrics(text):
@@ -693,6 +750,7 @@ class Launcher:
         self.args = args
         self.log_q = queue.Queue()
         self.monitor_q = queue.Queue()
+        self.monitor_wake = threading.Event()
         self.runner = ProcRunner('renode', self.log_q)
         self.usb_runner = ProcRunner('usb', self.log_q)
         self.physics_runner = ProcRunner('physics', self.log_q)
@@ -734,6 +792,10 @@ class Launcher:
             getattr(args, 'physics_binary', None))
         self.physics_status = 'off'
         self.monitor_port = args.monitor_port
+        self.rc_lock = threading.Lock()
+        self.rc_enabled = False
+        self.rc_channels = rc_defaults('Copter')
+        self.rc_sent = None
 
     def log(self, message):
         self.log_q.put(message)
@@ -800,6 +862,9 @@ class Launcher:
             command += ['--imu', imu_name]
         if self.real_iomcu:
             command.append('--real-iomcu')
+        channels, enabled = self.rc_state()
+        if enabled and self.rc_available():
+            command += ['--rc-channels', ','.join(str(value) for value in channels)]
         if self.iomcu_force_update:
             command.append('--iomcu-force-update')
         if self.usb:
@@ -827,6 +892,43 @@ class Launcher:
         if self.ethernet:
             command += ['--ethernet-tap', self.ethernet]
         return command
+
+    def rc_available(self):
+        import gen_board
+        return bool(self.board) and not gen_board.is_periph_board(ROOT, self.board)
+
+    def rc_state(self):
+        with self.rc_lock:
+            return tuple(self.rc_channels), self.rc_enabled
+
+    def set_rc(self, enabled=None, channels=None):
+        '''Change the emulated transmitter; a running board follows it.'''
+        if channels is not None:
+            channels = [int(value) for value in channels]
+            if (len(channels) != RC_CHANNEL_COUNT or
+                    not all(RC_PWM_MIN <= value <= RC_PWM_MAX for value in channels)):
+                raise ValueError('R/C needs %u channels from %u to %u' %
+                                 (RC_CHANNEL_COUNT, RC_PWM_MIN, RC_PWM_MAX))
+        with self.rc_lock:
+            if enabled is not None:
+                self.rc_enabled = bool(enabled)
+            if channels is not None:
+                self.rc_channels = channels
+        self.monitor_wake.set()
+
+    def _send_rc(self, client):
+        state = self.rc_state()
+        if state == self.rc_sent or not self.rc_available():
+            return
+        channels, enabled = state
+        error, _ = execute_monitor_command_batch(client, [
+            'rcInput SetChannels "%s"' % ','.join(str(value) for value in channels),
+            'rcInput Enabled %s' % ('true' if enabled else 'false'),
+        ])
+        # a failed update is logged once rather than retried every loop
+        self.rc_sent = state
+        if error is not None:
+            self.log_q.put('[rc] %s' % error)
 
     def physics_connect_command(self):
         values = (self.physics_latitude, self.physics_longitude,
@@ -1003,9 +1105,12 @@ class Launcher:
         except (OSError, ValueError) as error:
             return str(error)
         try:
+            rc_state = self.rc_state()
             command = self.build_command(self.monitor_port)
         except ValueError as error:
             return str(error)
+        # a disabled transmitter ignores the channels Renode starts with
+        self.rc_sent = rc_state
         ports = [self.monitor_port]
         if not self.uds:
             ports.append(self.args.uart_port)
@@ -1163,6 +1268,7 @@ class Launcher:
         if rollback_commands and len(rollback_commands) != len(commands):
             raise ValueError('rollback commands must match command count')
         self.monitor_q.put((commands, context, rollback_commands))
+        self.monitor_wake.set()
         return True
 
     def _monitor_loop(self, generation):
@@ -1185,7 +1291,10 @@ class Launcher:
                 return
 
             self.log_q.put(('__monitor_ready__', generation))
+            next_metrics = time.monotonic()
             while generation == self.generation and self.runner.running():
+                current = None
+                self.monitor_wake.clear()
                 try:
                     while True:
                         try:
@@ -1199,12 +1308,19 @@ class Launcher:
                             context = dict(context, rollback_failed=True)
                         self.log_q.put(
                             ('__hotplug_done__', generation, context, error))
-                    timeout = 60 if not history else 5
-                    current = parse_metrics(client.command(
-                        METRICS_COMMAND, timeout=timeout))
+                    self._send_rc(client)
+                    if time.monotonic() >= next_metrics:
+                        next_metrics = time.monotonic() + 1
+                        timeout = 60 if not history else 5
+                        current = parse_metrics(client.command(
+                            METRICS_COMMAND, timeout=timeout))
                 except (OSError, TimeoutError, ValueError) as error:
                     self.log_q.put(('__monitor_error__', generation, str(error)))
                     return
+                if current is None:
+                    # R/C and hotplug changes wake the loop early
+                    self.monitor_wake.wait(max(0, next_metrics - time.monotonic()))
+                    continue
                 current['wall_seconds'] = time.monotonic()
                 history.append(current)
                 # Renode advances in bursts and then sleeps when paced. A
@@ -1225,7 +1341,6 @@ class Launcher:
                         current['speedup'] = virtual_delta / wall_delta
                         current['executed_mips'] = instruction_delta / wall_delta / 1e6
                 self.log_q.put(('__metrics__', generation, current))
-                time.sleep(1)
         finally:
             client.close()
 
@@ -1357,6 +1472,10 @@ class Launcher:
                     'heading_deg': self.physics_heading,
                 },
             },
+            'rc': {
+                'enabled': self.rc_state()[1],
+                'channels': list(self.rc_state()[0]),
+            },
         }
         if self.metrics is not None:
             result.update({
@@ -1438,6 +1557,7 @@ def main():
     from PySide6.QtWidgets import QMessageBox
     from PySide6.QtWidgets import QPlainTextEdit
     from PySide6.QtWidgets import QPushButton
+    from PySide6.QtWidgets import QSlider
     from PySide6.QtWidgets import QSpinBox
     from PySide6.QtWidgets import QTabWidget
     from PySide6.QtWidgets import QToolButton
@@ -1688,6 +1808,45 @@ def main():
     physics_layout.addWidget(physics_group)
     physics_layout.addStretch()
     tabs.addTab(physics_tab, 'Physics')
+
+    rc_tab = QWidget()
+    rc_layout = QVBoxLayout(rc_tab)
+    rc_help = QLabel(
+        'Emulated R/C transmitter with an SBUS receiver. Boards with an IOMCU '
+        'receive it on the IOMCU R/C input. On other boards attach an SBUS '
+        'R/C receiver to a SERIAL port in Config and set SERIALn_PROTOCOL 23. '
+        'Untick to use another R/C source, or to trigger R/C failsafe in '
+        'flight. Defaults follow the vehicle type.')
+    rc_help.setWordWrap(True)
+    rc_layout.addWidget(rc_help)
+    rc_group = QGroupBox('Transmitter')
+    rc_grid = QGridLayout(rc_group)
+    rc_enable = QCheckBox('Transmitter on')
+    rc_grid.addWidget(rc_enable, 0, 0, 1, 2)
+    rc_reset = QPushButton('Default positions')
+    rc_grid.addWidget(rc_reset, 0, 3)
+    rc_labels = []
+    rc_sliders = []
+    for channel in range(RC_CHANNEL_COUNT):
+        label = QLabel()
+        slider = QSlider(Qt.Horizontal)
+        slider.setRange(RC_PWM_MIN, RC_PWM_MAX)
+        slider.setSingleStep(5)
+        slider.setPageStep(100)
+        spin = QSpinBox()
+        spin.setRange(RC_PWM_MIN, RC_PWM_MAX)
+        spin.setSuffix(' us')
+        slider.valueChanged.connect(spin.setValue)
+        spin.valueChanged.connect(slider.setValue)
+        rc_grid.addWidget(label, channel + 1, 0)
+        rc_grid.addWidget(slider, channel + 1, 1, 1, 2)
+        rc_grid.addWidget(spin, channel + 1, 3)
+        rc_labels.append(label)
+        rc_sliders.append(slider)
+    rc_grid.setColumnStretch(1, 1)
+    rc_layout.addWidget(rc_group)
+    rc_layout.addStretch()
+    tabs.addTab(rc_tab, 'R/C')
     outer.addWidget(tabs)
 
     status_box = QGroupBox('Runtime')
@@ -2467,6 +2626,44 @@ def main():
     physics_altitude.valueChanged.connect(lambda _value: sync_physics())
     physics_heading.valueChanged.connect(lambda _value: sync_physics())
 
+    # vehicle whose default stick positions the sliders started from
+    rc_defaults_vehicle = None
+
+    def rc_vehicle():
+        return (firmware_vehicle_name(launcher.firmware) or
+                firmware_vehicle.currentData())
+
+    def rc_changed():
+        launcher.set_rc(enabled=rc_enable.isChecked(),
+                        channels=[slider.value() for slider in rc_sliders])
+        update_preview()
+
+    def set_rc_sliders(channels):
+        for slider, value in zip(rc_sliders, channels):
+            slider.setValue(value)
+        rc_changed()
+
+    def apply_rc_defaults():
+        nonlocal rc_defaults_vehicle
+        rc_defaults_vehicle = rc_vehicle()
+        set_rc_sliders(rc_defaults(rc_defaults_vehicle))
+
+    def refresh_rc_controls():
+        vehicle = rc_vehicle()
+        if rc_defaults_vehicle is not None and vehicle != rc_defaults_vehicle:
+            apply_rc_defaults()
+        names = RC_NAMES.get(vehicle, RC_NAMES['Copter'])
+        for channel, label in enumerate(rc_labels):
+            name = names[channel] if channel < len(names) else ''
+            label.setText('CH%u %s' % (channel + 1, name))
+        rc_group.setEnabled(launcher.rc_available())
+
+    rc_enable.toggled.connect(lambda _checked: rc_changed())
+    firmware_vehicle.currentIndexChanged.connect(lambda _index: sync_options())
+    rc_reset.clicked.connect(apply_rc_defaults)
+    for slider in rc_sliders:
+        slider.valueChanged.connect(lambda _value: rc_changed())
+
     def sync_options():
         sync_physics()
         launcher.firmware = firmware_combo.currentData() or 'auto'
@@ -2487,6 +2684,7 @@ def main():
                     launcher.can_base + port['index'])
         launcher.ethernet = (ethernet.currentText().strip()
                              if ethernet_enable.isChecked() else '')
+        refresh_rc_controls()
         update_preview()
 
     def current_launch_settings():
@@ -2532,6 +2730,11 @@ def main():
                 'longitude_deg': launcher.physics_longitude,
                 'altitude_m': launcher.physics_altitude,
                 'heading_deg': launcher.physics_heading,
+            },
+            'rc': {
+                'enabled': rc_enable.isChecked(),
+                'channels': [slider.value() for slider in rc_sliders],
+                'vehicle': rc_defaults_vehicle,
             },
         }
 
@@ -2938,6 +3141,19 @@ def main():
             return set_checkbox(dfu_check, value)
         if command == 'can':
             return set_checkbox(can, value)
+        if command == 'rc':
+            return set_checkbox(rc_enable, value)
+        if command == 'rc-channels':
+            try:
+                channels = [int(field) for field in value.split(',')]
+                launcher.set_rc(channels=channels)
+            except ValueError as error:
+                return 'ERR %s' % error
+            set_rc_sliders(channels)
+            return 'OK'
+        if command == 'rc-defaults':
+            apply_rc_defaults()
+            return 'OK'
         if command == 'can-base':
             can_base.setValue(int(value))
             return 'OK'
@@ -3144,6 +3360,22 @@ def main():
         select_combo_value(firmware_vehicle, target.get('firmware_vehicle'))
         select_combo_value(firmware_channel, target.get('firmware_channel'))
         sync_options()
+
+        nonlocal rc_defaults_vehicle
+        rc = launch_settings.get('rc', {})
+        if not isinstance(rc, dict):
+            rc = {}
+        channels = rc.get('channels')
+        if (isinstance(channels, list) and len(channels) == RC_CHANNEL_COUNT and
+                all(isinstance(value, int) and not isinstance(value, bool) and
+                    RC_PWM_MIN <= value <= RC_PWM_MAX for value in channels)):
+            set_rc_sliders(channels)
+            vehicle = rc.get('vehicle')
+            rc_defaults_vehicle = vehicle if isinstance(vehicle, str) else rc_vehicle()
+        else:
+            apply_rc_defaults()
+        rc_enable.setChecked(rc.get('enabled') is True)
+        refresh_rc_controls()
 
     restore_launch_settings()
     sync_physics()

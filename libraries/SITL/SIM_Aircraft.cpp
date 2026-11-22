@@ -425,9 +425,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.battery_current = battery_current;
     fdm.motor_mask = motor_mask | sitl->vibe_motor_mask;
     memcpy(fdm.rpm, rpm, sizeof(fdm.rpm));
-    fdm.rcin_chan_count = rcin_chan_count;
+    fdm.rcin_chan_count = MIN(rcin_chan_count, ARRAY_SIZE(fdm.rcin));
     fdm.range = rangefinder_range();
-    memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
+    memcpy(fdm.rcin, rcin, fdm.rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
     fdm.bodyMagField.rotate(sitl->imu_orientation);
@@ -709,6 +709,13 @@ void Aircraft::update_home()
 
 void Aircraft::update_model(const struct sitl_input &input)
 {
+#ifdef AP_POWER_CONTROL_GPIO
+    if (hal.gpio->read(AP_POWER_CONTROL_GPIO) == AP_POWER_CONTROL_GPIO_VALUE_OFF) {
+        ::printf("Power off pin %u set, exiting\n", unsigned(AP_POWER_CONTROL_GPIO));
+        exit(0);
+    }
+#endif // AP_POWER_CONTROL_GPIO
+
     local_ground_level = 0.0f;
     if (sitl != nullptr) {
         update(input);
@@ -1076,7 +1083,7 @@ bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input
         return false;
     }
     const uint32_t clamp_idx = clamp_ch - 1;
-    if (clamp_idx > ARRAY_SIZE(input.servos)) {
+    if (clamp_idx >= ARRAY_SIZE(input.servos)) {
         return false;
     }
     const uint16_t servo_pos = input.servos[clamp_idx];

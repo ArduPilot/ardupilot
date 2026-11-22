@@ -148,7 +148,7 @@ void ModeAuto::run()
 
     case SubMode::NAV_GUIDED:
     case SubMode::NAV_SCRIPT_TIME:
-#if AC_NAV_GUIDED || AP_SCRIPTING_ENABLED
+#if AC_NAV_GUIDED || AP_EXTERNAL_BINDING_ENABLED
         nav_guided_run();
 #endif
         break;
@@ -345,7 +345,7 @@ bool ModeAuto::enter_auto_rtl(ModeReason reason)
 // lua scripts use this to retrieve the contents of the active command
 bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (_mode == SubMode::NAV_SCRIPT_TIME) {
         id = nav_scripting.id;
         cmd = nav_scripting.command;
@@ -362,7 +362,7 @@ bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &a
 // lua scripts use this to indicate when they have complete the command
 void ModeAuto::nav_script_time_done(uint16_t id)
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if ((_mode == SubMode::NAV_SCRIPT_TIME) && (id == nav_scripting.id)) {
         nav_scripting.done = true;
     }
@@ -824,7 +824,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         do_nav_script_time(cmd);
         break;
@@ -862,18 +862,20 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
     case MAV_CMD_DO_SET_ROI_NONE:           // 197
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:                // 201
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
         // point the copter and camera at a region of interest (ROI)
         // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
         do_roi(cmd);
         break;
 
-#if HAL_MOUNT_ENABLED
+#if HAL_MOUNT_ENABLED && AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
-#endif
+#endif  // HAL_MOUNT_ENABLED && AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
 
 #if AC_NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
@@ -958,18 +960,18 @@ float ModeAuto::wp_bearing_deg() const
     return degrees(wp_nav->get_wp_bearing_to_destination_rad());
 }
 
-bool ModeAuto::get_wp(Location& destination) const
+bool ModeAuto::get_nav_target(NavTarget& target) const
 {
     switch (_mode) {
     case SubMode::NAV_GUIDED:
-        return copter.mode_guided.get_wp(destination);
+        return copter.mode_guided.get_nav_target(target);
     case SubMode::WP:
     case SubMode::CIRCLE_MOVE_TO_EDGE:
     case SubMode::CIRCLE:
         // the orbit and the move-to-edge leg are wp_nav legs like WP
-        return wp_nav->get_oa_wp_destination(destination);
+        return get_wpnav_target(target, true);
     case SubMode::RTL:
-        return copter.mode_rtl.get_wp(destination);
+        return copter.mode_rtl.get_nav_target(target);
     default:
         return false;
     }
@@ -1052,7 +1054,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         cmd_complete = verify_nav_delay(cmd);
         break;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         cmd_complete = verify_nav_script_time();
         break;
@@ -1082,10 +1084,12 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
-#if HAL_MOUNT_ENABLED
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
+#if HAL_MOUNT_ENABLED && AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
-#endif
+#endif  // HAL_MOUNT_ENABLED && AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
 #if AC_NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:
 #endif
@@ -1179,7 +1183,7 @@ void ModeAuto::rtl_run()
     copter.mode_rtl.run(false);
 }
 
-#if AC_NAV_GUIDED || AP_SCRIPTING_ENABLED
+#if AC_NAV_GUIDED || AP_EXTERNAL_BINDING_ENABLED
 // nav_guided_run - allows control by external navigation controller
 //      called by run at 100hz or more
 void ModeAuto::nav_guided_run()
@@ -1187,7 +1191,7 @@ void ModeAuto::nav_guided_run()
     // call regular guided flight mode run function
     copter.mode_guided.run();
 }
-#endif  // AC_NAV_GUIDED || AP_SCRIPTING_ENABLED
+#endif  // AC_NAV_GUIDED || AP_EXTERNAL_BINDING_ENABLED
 
 // loiter_run - loiter in AUTO flight mode
 //      called by run at 100hz or more
@@ -1547,6 +1551,11 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
 // returns false if the location cannot be determined which only happens if the terrain data is unavailable
 bool ModeAuto::get_loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& loc) const
 {
+    if (!AP_Mission::cmd_has_location(cmd.id)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return false;
+    }
+
     loc = cmd.content.location;
 
     // use current lat, lon if zero
@@ -1889,9 +1898,11 @@ bool ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const
         return false;
     }
 
-    // if there is no delay at the end of this segment get next nav command
+    // Only location-bearing commands can be used as the next spline control point.
     AP_Mission::Mission_Command temp_cmd;
-    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
+    if (cmd.p1 == 0 &&
+        mission.get_next_nav_cmd(cmd.index+1, temp_cmd) &&
+        AP_Mission::cmd_has_location(temp_cmd.id)) {
         if (!get_loc_from_cmd(temp_cmd, dest_loc, next_dest_loc)) {
             return false;
         }
@@ -1944,7 +1955,7 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // start accepting position, velocity and acceleration targets from lua scripts
 void ModeAuto::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
 {
@@ -2396,7 +2407,7 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // check if verify_nav_script_time command has completed
 bool ModeAuto::verify_nav_script_time()
 {

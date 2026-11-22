@@ -10,6 +10,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         protected AP_CompassModelBase(IMachine machine)
         {
             physics = AP_PhysicsState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
         }
 
         public override byte[] Read(int count = 1)
@@ -22,12 +23,33 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         public byte Rotation { get; set; }
 
+        // "x,y,z" mGauss at full heater duty, in the board frame, as in the
+        // hwdef HAL_HEATER_MAG_OFFSET that the firmware adds to compensate
+        public string HeaterInterference
+        {
+            get => heaterInterference == null ? "" : string.Join(",", heaterInterference);
+            set
+            {
+                heaterInterference = string.IsNullOrEmpty(value) ? null :
+                    Array.ConvertAll(value.Split(','), item => float.Parse(
+                        item, System.Globalization.CultureInfo.InvariantCulture));
+            }
+        }
+
         protected float[] Field
         {
             get
             {
-                return AP_SensorOrientation.BodyToSensor(
-                    physics.Current.MagneticFieldBodyMgauss, Rotation);
+                var field = (float[])physics.Current.MagneticFieldBodyMgauss.Clone();
+                if(heaterInterference != null)
+                {
+                    var duty = (float)(thermal.HeaterDuty * 0.01);
+                    for(var i = 0; i < 3; i++)
+                    {
+                        field[i] -= heaterInterference[i] * duty;
+                    }
+                }
+                return AP_SensorOrientation.BodyToSensor(field, Rotation);
             }
         }
 
@@ -48,6 +70,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         }
 
         private readonly AP_PhysicsState physics;
+        private readonly AP_BoardThermalState thermal;
+        private float[] heaterInterference;
     }
 
     public class AP_MAG3110 : AP_CompassModelBase

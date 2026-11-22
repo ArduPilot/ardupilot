@@ -69,7 +69,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_RPM',
     'AP_RSSI',
     'AP_Mount',
-    'AP_Module',
     'AP_Button',
     'AP_ICEngine',
     'AP_Networking',
@@ -134,17 +133,13 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_GroundEffect',
 ]
 
-def get_legacy_defines(sketch_name, bld):
-    # If we are building heli, we adjust the build directory define so that 
-    # we do not need to actually split heli and copter directories
-    if bld.cmd == 'heli' or 'heli' in bld.targets:
-        return [
-        'APM_BUILD_DIRECTORY=APM_BUILD_Heli',
-        'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
-        ]
-
+def get_legacy_defines(sketch_name, build_type=None):
+    # build_type lets one sketch directory produce more than one
+    # vehicle type; heli is built from ArduCopter as APM_BUILD_Heli
+    if build_type is None:
+        build_type = sketch_name
     return [
-        'APM_BUILD_DIRECTORY=APM_BUILD_' + sketch_name,
+        'APM_BUILD_DIRECTORY=APM_BUILD_' + build_type,
         'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
     ]
 
@@ -311,38 +306,147 @@ class upload_fw_blueos(Task.Task):
           return "Uploading to BlueOS"
 
 class check_elf_symbols(Task.Task):
+    # Recheck an unchanged binary when the symbol policy or inspection tool changes.
+    vars = ['SYMBOLS_BLACKLIST', 'CHECK_MALLOC_WRAPPING', 'CHECK_SYMBOLS',
+            'vehicle_binary', 'ALLOW_NONFLIGHT_SYMBOLS', 'SIM_ENABLED',
+            'LINKFLAGS', 'DEST_OS', 'NM',
+            'PICOLIBC', 'PICOLIBC_LIB', 'PICOLIBC_MAP_PATH', 'PICOLIBC_MODE', 'NEWLIB_LIBM',
+            'TOOLCHAIN']
     color='CYAN'
     def keyword(self):
         return "checking symbols"
 
     def run(self):
         '''
-        check for disallowed symbols in elf file, such as C++ exceptions
+        check allocator wrapping and disallowed symbols in the linked binary
         '''
         elfpath = self.inputs[0].abspath()
 
-        if not self.env.CHECK_SYMBOLS:
-            # checking symbols disabled on this build
+        # Allocator/wrapper checks also apply to simulator builds and must not
+        # depend on the optional C++ exception/new checking.
+        check_cxx = self.env.CHECK_SYMBOLS and self.env.vehicle_binary and not self.env.SIM_ENABLED
+        check_malloc = self.env.CHECK_MALLOC_WRAPPING and self.env.vehicle_binary
+        check_blacklist = (self.env.SYMBOLS_BLACKLIST and self.env.vehicle_binary and
+                           not self.env.ALLOW_NONFLIGHT_SYMBOLS and not self.env.SIM_ENABLED)
+        check_picolibc = self.env.PICOLIBC and self.env.TOOLCHAIN != 'emscripten'
+        if not (check_cxx or check_malloc or check_blacklist or check_picolibc):
             return
-
-        if not self.env.vehicle_binary or self.env.SIM_ENABLED:
-            # we only want to check symbols for vehicle binaries, allowing examples
-            # to use C++ exceptions. We also allow them in simulator builds
-            return
-
-        # we use string find on these symbols, so this catches all types of throw
-        # calls this should catch all uses of exceptions unless the compiler
-        # manages to inline them
-        blacklist = ['std::__throw',
-                     'operator new[](unsigned int)',
-                     'operator new[](unsigned long)',
-                     'operator new(unsigned int)',
-                     'operator new(unsigned long)']
 
         nmout = subprocess.check_output(self.env.NM + ['-C', elfpath], text=True)
-        for b in blacklist:
-            if nmout.find(b) != -1:
-                raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
+        symbols = []
+        for line in nmout.splitlines():
+            fields = line.split(None, 2)
+            if len(fields) == 3:
+                # Defined symbols: address, type, name (possibly demangled).
+                symbols.append((fields[2], fields[1]))
+            elif len(fields) == 2:
+                # Undefined symbols have no address.
+                symbols.append((fields[1], fields[0]))
+
+        # --wrap only redirects undefined references. Calls resolved within a
+        # libc object can bypass it, so reject the original symbols as well.
+        for symbol, symbol_type in symbols:
+            # Local data cannot satisfy a reference to a libc function. Keep
+            # checking global symbols, code and undefined/weak references.
+            if symbol_type in ('b', 'd', 'g', 'r', 's'):
+                continue
+            name = symbol.split('@', 1)[0].split('.', 1)[0]
+            if check_blacklist and name in self.env.SYMBOLS_BLACKLIST:
+                raise Errors.WafError("Disallowed unwrapped symbol in %s: %s" % (elfpath, symbol))
+
+        if self.env.PICOLIBC_MODE == 'chibios':
+            map_path = self.env.PICOLIBC_MAP_PATH
+            if not map_path:
+                map_path = os.path.join(os.path.dirname(os.path.dirname(elfpath)), 'Linker.map')
+            with open(map_path, 'r', encoding='utf-8', errors='replace') as map_file:
+                map_contents = map_file.read()
+            picolibc_archive = os.path.realpath(self.env.PICOLIBC_LIB)
+            forbidden_archives = (
+                'libc_nano.a', 'libm_nano.a', 'libnosys.a',
+                'libstdc++.a',
+            )
+            for archive in forbidden_archives:
+                # Linker scripts name archives in section patterns. An archive
+                # contributed code only when the map names one of its members.
+                if archive + '(' in map_contents:
+                    raise Errors.WafError("Forbidden toolchain archive in %s: %s" % (map_path, archive))
+            found_picolibc = False
+            for line in map_contents.splitlines():
+                libm_start = line.find('libm.a(')
+                if libm_start != -1:
+                    archive_start = line.rfind(' ', 0, libm_start) + 1
+                    archive = os.path.realpath(line[archive_start:libm_start + len('libm.a')])
+                    if not self.env.NEWLIB_LIBM or archive != os.path.realpath(self.env.NEWLIB_LIBM):
+                        raise Errors.WafError("Unexpected libm archive in %s: %s" % (map_path, archive))
+                libc_start = line.find('libc.a(')
+                if libc_start == -1:
+                    continue
+                archive_start = line.rfind(' ', 0, libc_start) + 1
+                archive = os.path.realpath(line[archive_start:libc_start + len('libc.a')])
+                if archive != picolibc_archive:
+                    raise Errors.WafError("Unexpected libc archive in %s: %s" % (map_path, archive))
+                found_picolibc = True
+            if not found_picolibc:
+                raise Errors.WafError("Picolibc archive missing from %s" % map_path)
+
+        defined_functions = {name for name, kind in symbols if kind in ('T', 't')}
+        if self.env.PICOLIBC_MODE == 'sitl' and check_picolibc:
+            symbol_prefix = '_' if self.env.DEST_OS == 'darwin' else ''
+            parser_pairs = {
+                'atof': 'ap_picolibc_atof',
+                'strtod': 'ap_picolibc_strtod',
+                'strtof': 'ap_picolibc_strtof',
+            }
+            names = {name.split('@', 1)[0] for name, _ in symbols}
+            required = set()
+            for public, implementation in parser_pairs.items():
+                # key this on the public symbol: picolibc's atof calls its
+                # strtod, so that implementation can arrive while the public
+                # alias, which nothing referenced, was dropped by the linker
+                public_name = symbol_prefix + public
+                if public_name in names:
+                    required.update({public_name, symbol_prefix + implementation})
+            missing = required - defined_functions
+            if missing:
+                raise Errors.WafError("Missing Picolibc SITL symbols in %s: %s" %
+                                      (elfpath, ', '.join(sorted(missing))))
+        if check_malloc and self.env.DEST_OS == 'darwin':
+            # no --wrap on Darwin; AP_Common defines malloc in the executable
+            if '_malloc' not in defined_functions:
+                raise Errors.WafError("Missing defined zero-filling malloc in %s" % elfpath)
+        elif check_malloc:
+            # The wrapper may remain in the binary even if --wrap was lost.
+            # Check both the link option and its definition, not just its name.
+            flags = [part for flag in self.env.LINKFLAGS for part in flag.split(',')
+                     if part not in ('-Wl', '-Xlinker')]
+            wrapped = '--wrap=malloc' in flags or any(
+                flags[i:i+2] == ['--wrap', 'malloc'] for i in range(len(flags)-1))
+            if not wrapped:
+                raise Errors.WafError("Missing malloc wrapping in %s: the zero-filling allocator requires --wrap=malloc." % elfpath)
+            # a binary that never calls malloc doesn't pull in the wrapper
+            names = {symbol.split('@', 1)[0] for symbol, _ in symbols}
+            uses_malloc = 'malloc' in names or '__wrap_malloc' in names
+            if uses_malloc and '__wrap_malloc' not in defined_functions:
+                raise Errors.WafError("Missing defined zero-filling __wrap_malloc in %s" % elfpath)
+
+        cxx_blacklist = []
+        if (self.env.PICOLIBC_MODE == 'chibios' and
+                self.env.vehicle_binary and not self.env.ALLOW_NONFLIGHT_SYMBOLS and
+                not self.env.SIM_ENABLED):
+            # libstdc++ error helpers end in abort and may pull newlib
+            # diagnostics into an otherwise Picolibc-only binary.
+            cxx_blacklist.append('std::__throw_')
+        if check_cxx:
+            # Reject throwing new overloads while allowing std::nothrow.
+            cxx_blacklist += ['operator new[](unsigned int)',
+                              'operator new[](unsigned long)',
+                              'operator new(unsigned int)',
+                              'operator new(unsigned long)']
+        # Prefix/substring matching covers every __throw helper supplied by
+        # current or future libstdc++ versions.
+        for symbol in cxx_blacklist:
+            if symbol in nmout:
+                raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, symbol))
 
 @feature('post_link')
 @after_method('process_source')
@@ -352,7 +456,20 @@ def post_link(self):
     '''
     link_output = self.link_task.outputs[0]
 
+    map_path = None
+    if self.env.BOARD_CLASS == 'ChibiOS':
+        map_path = link_output.abspath() + '.map'
+        map_prefix = '-Wl,-Map,Linker.map,'
+        self.link_task.env = self.link_task.env.derive()
+        self.link_task.env.LINKFLAGS = [
+            flag.replace(map_prefix, '-Wl,-Map,%s,' % map_path)
+            for flag in self.link_task.env.LINKFLAGS
+        ]
+
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
+    if map_path is not None:
+        check_elf_task.env = check_elf_task.env.derive()
+        check_elf_task.env.PICOLIBC_MAP_PATH = map_path
     check_elf_task.set_run_after(self.link_task)
     if self.bld.options.upload_blueos and self.env["BOARD_CLASS"] == "LINUX":
         _upload_task = self.create_task('upload_fw_blueos', src=link_output)
@@ -365,6 +482,8 @@ def ap_program(bld,
                use_legacy_defines=True,
                program_name=None,
                vehicle_binary=True,
+               ap_build_type=None,
+               allow_nonflight_symbols=False,
                **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
@@ -377,7 +496,7 @@ def ap_program(bld,
         program_name = bld.path.name
 
     if use_legacy_defines:
-        kw['defines'].extend(get_legacy_defines(bld.path.name, bld))
+        kw['defines'].extend(get_legacy_defines(bld.path.name, ap_build_type))
 
     kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES + ['post_link']
 
@@ -405,6 +524,7 @@ def ap_program(bld,
     )
 
     tg.env.vehicle_binary = vehicle_binary
+    tg.env.ALLOW_NONFLIGHT_SYMBOLS = allow_nonflight_symbols
 
     if 'use' in kw and bld.env.STATIC_LINKING:
         # ensure we link against vehicle library
@@ -436,7 +556,7 @@ def ap_stlib(bld, **kw):
 
     kw['ap_libraries'] = unique_list(kw['ap_libraries'] + bld.env.AP_LIBRARIES)
     for l in kw['ap_libraries']:
-        bld.ap_library(l, kw['ap_vehicle'])
+        bld.ap_library(l, kw['ap_vehicle'], kw.get('ap_build_type'))
 
     # Pull the shared 'dronecan_libs' objects target (see
     # _build_common_taskgens()) in via 'use'
@@ -606,6 +726,11 @@ def test_summary(bld):
 _build_commands = {}
 
 def _process_build_command(bld):
+    # bld.options is shared by every command in this invocation, so
+    # take a copy rather than extending its list; otherwise `waf copter
+    # plane` would also build copter's programs during the plane command
+    bld.program_groups = list(bld.options.program_group)
+
     if bld.cmd not in _build_commands:
         return
 
@@ -619,7 +744,7 @@ def _process_build_command(bld):
             bld.targets = targets
 
     program_group_list = Utils.to_list(params['program_group_list'])
-    bld.options.program_group.extend(program_group_list)
+    bld.program_groups.extend(program_group_list)
 
 def build_command(name,
                    targets=None,
@@ -635,7 +760,7 @@ def build_command(name,
     context_class.__doc__ = doc
 
 def _select_programs_from_group(bld):
-    groups = bld.options.program_group
+    groups = bld.program_groups
     if not groups:
         if bld.targets:
             groups = []
@@ -718,8 +843,9 @@ arducopter and upload it to my board".
 
     g.add_option('--asan',
         action='store_true',
-        help='''Build using the clang Address Sanitizer (Linux and macOS). Requires
-clang to be selected via the CXX/CC environment variables, e.g.:
+        help='''Build using the Address Sanitizer (Linux and macOS).  Works with
+either gcc or clang; select one with the CXX/CC environment variables if
+you do not want the default, e.g.:
   CXX=clang++-19 CC=clang-19 ./waf configure --board sitl --asan
 llvm-symbolizer must be on the PATH for symbolised reports.
 ''')

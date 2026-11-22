@@ -1,6 +1,11 @@
 #pragma once
 
 #pragma GCC optimize("O2")
+#ifdef __NO_MATH_ERRNO__
+// GCC 10 drops the build's -fno-math-errno at the pragma above and then
+// will not inline helpers defined before it, such as sq()
+#pragma GCC optimize("no-math-errno")
+#endif
 
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_Math/AP_Math.h>

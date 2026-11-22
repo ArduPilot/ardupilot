@@ -21,6 +21,31 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..
 import chibios_hwdef
 import build_options
 
+def build_option_value(options, opt):
+    '''1 or 0 if build option opt was given to waf configure, else None.
+    options is the dict of configure options'''
+    enable_option = opt.config_option().replace("-","_")
+    disable_option = "disable_" + enable_option[len("enable-"):]
+    # optparse stores --enable-foo-bar as enable_foo_bar
+    lower_disable_option = disable_option.lower()
+    lower_enable_option = enable_option.lower()
+    if options.get(enable_option) or options.get(lower_enable_option):
+        return 1
+    if options.get(disable_option) or options.get(lower_disable_option):
+        return 0
+    return None
+
+def build_option_defines(options):
+    '''{define: 0 or 1} for the build options given to waf configure, for
+    the hwdef scripts to write those values in hwdef.h'''
+    values = {opt.define: build_option_value(options, opt) for opt in build_options.BUILD_OPTIONS}
+    return {d: v for d, v in values.items() if v is not None}
+
+def add_optimisation(env, level):
+    '''use the same optimisation level for C and C++'''
+    env.CFLAGS += [level]
+    env.CXXFLAGS += [level]
+
 class BoardMeta(type):
     def __init__(cls, name, bases, dct):
         super(BoardMeta, cls).__init__(name, bases, dct)
@@ -70,6 +95,22 @@ class Board:
                 not isinstance(self, chibios)):
             cfg.fatal('--enable-USB-debug requires an STM32H7 ChibiOS board')
 
+        # Preserve our allocator's zero initialisation across construction.
+        # scan-build compiles with gcc but analyses with clang, which rejects
+        # -flifetime-dse and then silently skips the analysis
+        analyser = any(os.path.basename(c) == 'c++-analyzer' for c in cfg.env.CXX)
+        if 'clang++' in cfg.env.COMPILER_CXX or cfg.env.TOOLCHAIN == 'emscripten' or analyser:
+            # Clang can elide calls to our replacement operator new entirely.
+            zero_init_flag = '-fno-builtin'
+        else:
+            zero_init_flag = '-flifetime-dse=1'
+        env.CXXFLAGS += [zero_init_flag]
+        # Board configure_env methods may replace LINKFLAGS, so add this here
+        # to preserve the same behaviour during LTO. QURT invokes hexagon-link
+        # directly, which does not accept compiler flags.
+        if env.BOARD_CLASS != 'QURT':
+            env.LINKFLAGS += [zero_init_flag]
+
         self.disable_buggy_compiler_warnings(cfg, env)
 
         # Setup scripting:
@@ -84,11 +125,11 @@ class Board:
 
         if cfg.options.enable_scripting:
             env.DEFINES.update(
-                AP_SCRIPTING_ENABLED = 1,
+                AP_SCRIPTING_LUA_ENABLED = 1,
             )
         elif cfg.options.disable_scripting:
             env.DEFINES.update(
-                AP_SCRIPTING_ENABLED = 0,
+                AP_SCRIPTING_LUA_ENABLED = 0,
             )
 
         # embed any scripts from ROMFS/scripts
@@ -180,18 +221,14 @@ class Board:
 
         # support enabling any option in build_options.py
         for opt in build_options.BUILD_OPTIONS:
-            enable_option = opt.config_option().replace("-","_")
-            disable_option = "disable_" + enable_option[len("enable-"):]
-            lower_disable_option = disable_option.lower().replace("_", "-")
-            lower_enable_option = enable_option.lower().replace("_", "-")
-            if getattr(cfg.options, enable_option, False) or getattr(cfg.options, lower_enable_option, False):
-                env.CXXFLAGS += ['-D%s=1' % opt.define]
-                cfg.msg("Enabled %s" % opt.label, 'yes', color='GREEN')
-            elif getattr(cfg.options, disable_option, False) or getattr(cfg.options, lower_disable_option, False):
-                env.CXXFLAGS += ['-D%s=0' % opt.define]
-                cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
-            else:
+            value = build_option_value(vars(cfg.options), opt)
+            if value is None:
                 continue
+            env.CXXFLAGS += ['-D%s=%u' % (opt.define, value)]
+            if value:
+                cfg.msg("Enabled %s" % opt.label, 'yes', color='GREEN')
+            else:
+                cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
             # the option replaces any default a board set for this define:
             # DEFINES and ap_config.h come after CXXFLAGS, so they would win
             env.DEFINES.pop(opt.define, None)
@@ -337,6 +374,7 @@ class Board:
             '-Werror=format-extra-args',
             '-Werror=ignored-qualifiers',
             '-Werror=undef',
+            '-Werror=deprecated-declarations',
             '-DARDUPILOT_BUILD',
         ]
 
@@ -379,18 +417,23 @@ class Board:
                 '-Wcast-align=strict',
             ]
 
+        # handle passing through DEBUG status into waf env:
         if cfg.env.DEBUG:
-            env.CFLAGS += [
-                '-g',
-                '-O0',
-            ]
             env.DEFINES.update(
                 HAL_DEBUG_BUILD = 1,
             )
-        elif cfg.options.debug_symbols:
+
+        # handle setting of include-debug-symbols in CFLAGS:
+        if cfg.env.DEBUG or cfg.options.debug_symbols:
             env.CFLAGS += [
                 '-g',
             ]
+        # adjust compiler optimisation when debugging:
+        if cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-O0',
+            ]
+
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
@@ -439,6 +482,7 @@ class Board:
             '-Werror=unused-value',
             '-Werror=unused-variable',
             '-Werror=delete-non-virtual-dtor',
+            '-Werror=deprecated-declarations',
             '-Wfatal-errors',
             '-Wno-trigraphs',
             '-Werror=parentheses',
@@ -552,9 +596,14 @@ class Board:
             env.CFLAGS += errors
             env.CXXFLAGS += errors
 
-        if cfg.env.DEBUG:
+        # handle setting of include-debug-symbols in CXXFLAGS:
+        if cfg.env.DEBUG or cfg.options.debug_symbols:
             env.CXXFLAGS += [
                 '-g',
+            ]
+        # adjust compiler optimisation when debugging:
+        if cfg.env.DEBUG:
+            env.CXXFLAGS += [
                 '-O0',
             ]
 
@@ -656,6 +705,8 @@ class Board:
             self.embed_ROMFS_files(bld)
 
     def build(self, bld):
+        if bld.env.PICOLIBC:
+            bld.load('picolibc')
         git_hash_ext = bld.git_head_hash(short=True, hash_abbrev=16)
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True), "abcdef")
         bld.ap_version_append_str('GIT_VERSION_EXTENDED', git_hash_ext, "0123456789abcdef")
@@ -680,7 +731,8 @@ class Board:
         if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES, ctx.env.ROMFS_UNCOMPRESSED):
             ctx.fatal("Failed to created ap_romfs_embedded.h")
 
-        ctx.env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
+        ctx.env.CFLAGS += ['-DAP_ROMFS_ENABLED=1']
+        ctx.env.CXXFLAGS += ['-DAP_ROMFS_ENABLED=1']
 
         # Allow lua to load from ROMFS if any lua files are added
         for file in ctx.env.ROMFS_FILES:
@@ -818,6 +870,27 @@ class SITLBoard(Board):
 
         super().configure(cfg)
 
+        if cfg.options.asan:
+            # The sanitizer runtime comes before our archives on the link
+            # line and supplies its own operator new, so a program which
+            # does not otherwise need AP_Common/c++.cpp never pulls that
+            # object out of the archive: it gets the sanitizer's allocator
+            # rather than our zeroing one, and none of our leak
+            # suppressions.  Naming operator new does not help, as the
+            # sanitizer's own definition satisfies it, so ask for a symbol
+            # only that object defines.
+            #
+            # This is added here rather than in configure_env() because
+            # waf's configure checks link none of our code: with clang,
+            # whose sanitizer runtime is a static archive carrying only a
+            # weak reference, the request becomes an unsatisfied undefined
+            # symbol and every check fails.
+            symbol = '__lsan_default_suppressions'
+            if cfg.env.DEST_OS == 'darwin':
+                # Mach-O prefixes C symbols with an underscore
+                symbol = '_' + symbol
+            cfg.env.LINKFLAGS += ['-Wl,-u,' + symbol]
+
     def configure_env(self, cfg, env):
         super().configure_env(cfg, env)
         env.DEFINES.update(
@@ -886,14 +959,19 @@ class SITLBoard(Board):
             ]
 
         if not cfg.env.DEBUG:
-            env.CXXFLAGS += [
-                '-O3',
-            ]
+            add_optimisation(env, '-O3')
 
         if cfg.options.asan:
             if not cfg.env.DEBUG:
                 cfg.fatal('--asan requires --debug for reliable instrumentation')
+            # the C sources need instrumenting as well; the sanitizer
+            # interposes malloc either way, but without this an overflow
+            # inside a .c file is invisible
             env.CXXFLAGS += [
+                '-fsanitize=address',
+                '-fno-omit-frame-pointer',
+            ]
+            env.CFLAGS += [
                 '-fsanitize=address',
                 '-fno-omit-frame-pointer',
             ]
@@ -907,7 +985,10 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
+            # the sanitizer runtime must be on the link line too, otherwise
+            # even waf's own configure checks fail with undefined
+            # references to __asan_init
             env.LINKFLAGS += ['-fsanitize=address']
 
         env.AP_LIBRARIES += [
@@ -919,11 +1000,16 @@ class SITLBoard(Board):
             'SITL',
         ]
 
+        # ELF/Mach-O vehicle builds must not silently lose the malloc wrapper.
+        # Cygwin uses runtime import-table patching; WASM has a separate linker.
+        env.CHECK_MALLOC_WRAPPING = cfg.env.DEST_OS != 'cygwin' and cfg.env.TOOLCHAIN != 'emscripten'
+
         # wrap malloc to ensure memory is zeroed
         if cfg.env.DEST_OS == 'cygwin':
             pass # handled at runtime in libraries/AP_Common/c++.cpp
         elif platform.system() != 'Darwin':
             env.LINKFLAGS += ['-Wl,--wrap,malloc']
+        # Darwin has no --wrap; malloc is replaced in libraries/AP_Common/c++.cpp
         
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
@@ -1093,6 +1179,8 @@ class esp32(Board):
             'AP_HAL_ESP32',
         ]
 
+        add_optimisation(env, '-Os')
+
         env.CFLAGS += [
             '-fno-inline-functions',
             '-mlongcalls',
@@ -1101,7 +1189,6 @@ class esp32(Board):
         env.CFLAGS.remove('-Werror=undef')
 
         env.CXXFLAGS += ['-mlongcalls',
-                         '-Os',
                          '-g',
                          '-ffunction-sections',
                          '-fdata-sections',
@@ -1182,9 +1269,10 @@ class chibios(Board):
         ]
 
         # make board name available for USB IDs
-        env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
         env.HAL_MAX_STACK_FRAME_SIZE = 'HAL_MAX_STACK_FRAME_SIZE=%d' % 1300 # set per Wframe-larger-than, ensure its same
-        env.CFLAGS += cfg.env.CPU_FLAGS + [
+        cpu_flags = [flag for flag in cfg.env.CPU_FLAGS if flag != '-u_printf_float']
+        libc_specs = []
+        env.CFLAGS += cpu_flags + [
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
             '-Wno-attributes',
@@ -1217,12 +1305,9 @@ class chibios(Board):
             '-fno-math-errno',
             '-mno-thumb-interwork',
             '-mthumb',
-            '--specs=nano.specs',
-            '--specs=nosys.specs',
             '-D__USE_CMSIS',
-            '-Werror=deprecated-declarations',
             '-DNDEBUG=1'
-        ]
+        ] + libc_specs
         if not cfg.options.Werror:
             env.CFLAGS += [
             '-Wno-error=double-promotion',
@@ -1245,29 +1330,26 @@ class chibios(Board):
         bldnode = cfg.bldnode.make_node(self.name)
         env.BUILDROOT = bldnode.make_node('').abspath()
 
-        env.LINKFLAGS = cfg.env.CPU_FLAGS + [
+        env.LINKFLAGS = cpu_flags + [
             '-fomit-frame-pointer',
             '-falign-functions=16',
             '-ffunction-sections',
             '-fdata-sections',
             '-u_port_lock',
             '-u_port_unlock',
-            '-u_exit',
-            '-u_kill',
-            '-u_getpid',
-            '-u_errno',
             '-uchThdExit',
             '-fno-common',
             '-nostartfiles',
             '-mno-thumb-interwork',
             '-mthumb',
-            '--specs=nano.specs',
-            '--specs=nosys.specs',
             '-L%s' % env.BUILDROOT,
             '-L%s' % cfg.srcnode.make_node('modules/ChibiOS/os/common/startup/ARMCMx/compilers/GCC/ld/').abspath(),
             '-L%s' % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/common/').abspath(),
             '-Wl,-Map,Linker.map,%s--cref,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=ldscript.ld,--defsym=__process_stack_size__=%s,--defsym=__main_stack_size__=%s' % ("--print-memory-usage," if cfg.env.EXT_FLASH_SIZE_MB > 0 and cfg.env.INT_FLASH_PRIMARY == 0 else "", cfg.env.PROCESS_STACK, cfg.env.MAIN_STACK)
-        ]
+        ] + libc_specs
+
+        env.LINKFLAGS += ['-nostdlib', '-Wl,--start-group']
+        env.LDFLAGS += ['-Wl,--end-group']
 
         if cfg.env.DEBUG:
             env.CFLAGS += [
@@ -1328,7 +1410,7 @@ class chibios(Board):
                 AP_SIM_ENABLED = 0,
             )
 
-        env.LIB += ['gcc', 'm']
+        env.LIB += ['gcc']
 
         env.GIT_SUBMODULES += [
             'ChibiOS',
@@ -1444,9 +1526,7 @@ class LinuxBoard(Board):
         )
 
         if not cfg.env.DEBUG:
-            env.CXXFLAGS += [
-                '-O3',
-            ]
+            add_optimisation(env, '-O3')
 
         env.LIB += [
             'm',
@@ -1454,7 +1534,6 @@ class LinuxBoard(Board):
 
         cfg.check_librt(env)
         cfg.check_lttng(env)
-        cfg.check_libdl(env)
         cfg.check_libiio(env)
 
         env.LINKFLAGS += ['-pthread',]
@@ -1462,6 +1541,7 @@ class LinuxBoard(Board):
             'AP_HAL_Linux',
         ]
 
+        env.CHECK_MALLOC_WRAPPING = True
         # wrap malloc to ensure memory is zeroed
         env.LINKFLAGS += ['-Wl,--wrap,malloc']
 
@@ -1609,9 +1689,7 @@ class QURTBoard(Board):
             env.LINKFLAGS += ["-no-threads"]
 
         if not cfg.env.DEBUG:
-            env.CXXFLAGS += [
-                '-O3',
-            ]
+            add_optimisation(env, '-O3')
 
         env.AP_LIBRARIES += [
             'AP_HAL_QURT',

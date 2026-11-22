@@ -17,10 +17,15 @@
   or by setting Q_TAILSIT_MOTMX nonzero and Q_FRAME_CLASS and Q_FRAME_TYPE
   to a configuration supported by AP_MotorsMatrix
  */
-#include "tailsitter.h"
-#include "Plane.h"
 
-#if HAL_QUADPLANE_ENABLED
+#include <AP_Motors/AP_Motors_config.h>
+
+#include "tailsitter.h"
+
+#if AP_PLANE_TAILSITTER_ENABLED
+
+#include "Plane.h"
+#include "quadplane.h"
 
 const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
@@ -199,10 +204,22 @@ Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):qu
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+/*
+  return true if Q_FRAME_CLASS is the dual-motor tailsitter frame
+ */
+bool Tailsitter::is_dual_motor_frame() const
+{
+#if AP_MOTORS_FRAME_TAILSITTER_ENABLED
+    return quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER;
+#else
+    return false;
+#endif  // AP_MOTORS_FRAME_TAILSITTER_ENABLED
+}
+
 void Tailsitter::setup()
 {
     // Set tailsitter enable flag based on old heuristics
-    if (!enable.configured() && (((quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (motor_mask != 0)) && (quadplane.tiltrotor.type != Tiltrotor::TILT_TYPE_BICOPTER))) {
+    if (!enable.configured() && (((is_dual_motor_frame()) || (motor_mask != 0)) && (quadplane.tiltrotor.type != Tiltrotor::TILT_TYPE_BICOPTER))) {
         enable.set_and_save(1);
     }
 
@@ -219,7 +236,7 @@ void Tailsitter::setup()
 
     // TODO: update this if servo function assignments change
     // used by relax_attitude_control() to control special behavior for vectored tailsitters
-    _is_vectored = (quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) &&
+    _is_vectored = (is_dual_motor_frame()) &&
                    (!is_zero(vectored_hover_gain) &&
                     (SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft) ||
                      SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorRight)));
@@ -231,7 +248,7 @@ void Tailsitter::setup()
     _have_v_tail = SRV_Channels::function_assigned(SRV_Channel::k_vtail_left) || SRV_Channels::function_assigned(SRV_Channel::k_vtail_right);
 
     // set defaults for dual/single motor tailsitter
-    if (quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
+    if (is_dual_motor_frame()) {
         AP_Param::set_defaults_from_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
     }
 
@@ -259,7 +276,7 @@ void Tailsitter::setup()
  */
 bool Tailsitter::is_control_surface_tailsitter(void) const
 {
-    return quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER
+    return is_dual_motor_frame()
            && ( is_zero(vectored_hover_gain) || !SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft));
 }
 
@@ -449,9 +466,12 @@ void Tailsitter::output(void)
     if (plane.arming.is_armed_and_safety_off()) {
         // scale surfaces for throttle
         speed_scaling();
-    } else if (tailsitter_motors != nullptr) {
+    }
+#if AP_MOTORS_TAILSITTER_ENABLED
+    else if (tailsitter_motors != nullptr) {
         tailsitter_motors->set_min_throttle(0.0);
     }
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
     // No tilt output unless hover gain is set
     float tilt_left = 0.0;
@@ -795,9 +815,11 @@ void Tailsitter::speed_scaling(void)
         SRV_Channels::set_output_scaled(functions[i], v);
     }
 
+#if AP_MOTORS_TAILSITTER_ENABLED
     if (tailsitter_motors != nullptr) {
         tailsitter_motors->set_min_throttle(disk_loading_min_throttle);
     }
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
     // Record for log
     log_data.throttle_scaler = throttle_scaler;
@@ -1066,4 +1088,21 @@ bool Tailsitter_Transition::allow_weathervane()
     return !tailsitter.in_vtol_transition() && (vtol_limit_start_ms == 0);
 }
 
-#endif  // HAL_QUADPLANE_ENABLED
+#else
+// stub implementations for when tailsitter support is not compiled
+// in.  Fine-grained defines throughout the code are intrusive.
+const AP_Param::GroupInfo Tailsitter::var_info[] = {
+    AP_GROUPEND
+};
+
+Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors) { }
+bool Tailsitter::active(void) { return false; }
+bool Tailsitter::is_in_fw_flight(void) const { return false; }
+bool Tailsitter::relax_pitch(void) { return true; }
+void Tailsitter::write_log() { }
+bool Tailsitter::is_control_surface_tailsitter(void) const { return false; }
+void Tailsitter::output(void) { }
+bool Tailsitter::in_vtol_transition(uint32_t now) const { return false; }
+void Tailsitter::check_input(void) { }
+void Tailsitter::setup(void) { }
+#endif  // AP_PLANE_TAILSITTER_ENABLED

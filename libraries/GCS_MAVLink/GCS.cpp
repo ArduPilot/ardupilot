@@ -19,6 +19,8 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Vehicle/AP_Vehicle_config.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -572,7 +574,7 @@ void GCS::update_sensor_status_flags()
 #endif  // HAL_LOGGING_ENABLED
 
     // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if AP_VEHICLE_ENABLED
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
@@ -717,7 +719,7 @@ bool GCS_MAVLINK::check_payload_size(uint16_t max_payload_len)
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 /*
   lua access to command_int
 
@@ -736,7 +738,7 @@ MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
 
     return ch->handle_command_int_packet(packet, msg);
 }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 /*
   return true if a MAVLink system ID is a GCS for this vehicle
@@ -757,6 +759,21 @@ void GCS::available_modes_changed() {
         GCS_MAVLINK &c = *chan(i);
         c.available_modes_changed();
     }
+}
+
+void GCS::poweroff_initiated(float p1, const char *fmt, ...)
+{
+    // Send a Mavlink broadcast to our components announcing the shutdown
+    mavlink_command_long_t cmd_msg{};
+    cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
+    cmd_msg.param1 = p1;
+    GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg, sizeof(cmd_msg));
+
+    // ... and send a statustext....
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    send_textv(MAV_SEVERITY_WARNING, fmt, arg_list);
+    va_end(arg_list);
 }
 
 #endif  // HAL_GCS_ENABLED

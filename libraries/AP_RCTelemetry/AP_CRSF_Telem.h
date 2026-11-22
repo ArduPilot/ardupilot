@@ -165,32 +165,35 @@ public:
     } _param_request;
 
     const static uint8_t PARAMETER_MENU_ID = 1; // id of the parameter menu
+    const static uint8_t PARAMETER_HIDDEN = 0x80; // bit 7 of a field's type hides it
 
 #if AP_CRSF_SCRIPTING_ENABLED
     // scripted CRSF menus
     // menus follow the predefined ardupilot parameter menu
-    // to avoid a lot of id shuffling at most 10 menus each with at most 20 parameters are allowed
-    // menu indexes are SCRIPTED_MENU_START_ID -> SCRIPTED_MENU_START_ID + 10
-    // parameter indexes are SCRIPTED_MENU_START_ID + 10 + menu_id * MAX_SCRIPTED_MENU_SIZE
+    // a transmitter reads the fields from 1 up to the count in the device info, so menus and
+    // parameters take consecutive ids from SCRIPTED_MENU_START_ID in the order they are added
     const static uint8_t MAX_SCRIPTED_MENUS = 10U;
-    const static uint8_t MAX_SCRIPTED_MENU_SIZE = 20U;
     const static uint8_t MAX_SCRIPTED_PARAMETERS = 255U;
     const static uint8_t MAX_SCRIPTED_PARAMETER_SIZE = 255U;
     const static uint8_t MAX_SCRIPTED_MENU_NAME_LEN = 16;
     const static uint8_t SCRIPTED_MENU_START_ID = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS + 2;
+    // a folder's list of children ends with 0xFF, so no field can have that id
+    const static uint8_t MAX_SCRIPTED_ID = 0xFE;
 
     // 8-bit parameter ids must be unique within the whole menu structure
     // each parameter has an id, length and packed data
     // to avoid heavy flash usage in the CRSF protocol implementation, the data encoding is
     // managed in lua
     struct ScriptedEntry {
-        uint8_t id; // indexed from the menu id + 1 to menu id + MAX_SCRIPTED_MENU_SIZE
+        uint8_t id; // consecutive from SCRIPTED_MENU_START_ID in the order entries are added
         uint8_t parent_id;
     };
 
     struct ScriptedParameter : public ScriptedEntry {
         uint16_t length;
         const char* data;
+        // true if the script packed this parameter as a COMMAND
+        bool is_command() const { return length > 0 && data[0] == ParameterType::COMMAND; }
     };
 
     // each menu contains a number of parameters and has a name
@@ -212,6 +215,8 @@ public:
         ScriptedParameter* find_parameter(uint8_t param_num);
         ScriptedMenu* find_menu(uint8_t param_num);
         bool remove_menu(uint8_t param_num);
+        // true once another child would not fit in this menu's folder entry
+        bool folder_full() const;
 
         void dump_structure(uint8_t indent);
         ScriptedMenu() {}
@@ -384,8 +389,14 @@ private:
     void calc_command_response();
     void calc_bind();
     void calc_parameter();
+    // the folder the OSD parameters are listed from, the Parameters folder or the root
+    uint8_t osd_param_folder() const;
 #if AP_CRSF_SCRIPTING_ENABLED
     bool calc_scripted_parameter();
+    // true once every id a scripted field can have has been given out
+    bool scripted_ids_exhausted() const { return next_scripted_id > MAX_SCRIPTED_ID; }
+    // id given to the next scripted menu or parameter
+    uint8_t next_scripted_id = SCRIPTED_MENU_START_ID;
 #endif
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
     void calc_text_selection( AP_OSD_ParamSetting* param, uint8_t chunk);

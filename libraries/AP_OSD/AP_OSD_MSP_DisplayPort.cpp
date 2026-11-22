@@ -76,6 +76,10 @@ void AP_OSD_MSP_DisplayPort::clear(void)
             _canvas_cols = 60;
             _canvas_rows = 22;
             break;
+        case 3:
+            _canvas_cols = 53;
+            _canvas_rows = 20;
+            break;
         default:
             _canvas_cols = 30;
             _canvas_rows = 16;
@@ -169,8 +173,10 @@ void AP_OSD_MSP_DisplayPort::flush(void)
     // grab the screen and force a redraw
     _displayport->msp_displayport_grab();
     _displayport->msp_displayport_draw_screen();
+}
 
-    // ok done processing displayport data
+void AP_OSD_MSP_DisplayPort::osd_thread_update()
+{
     // let's process incoming MSP frames (and reply if needed)
     _displayport->process_incoming_data();
     // push any outgoing telemetry frames

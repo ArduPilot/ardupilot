@@ -6,6 +6,7 @@ on:
     paths: # only run for scripting changes
       - 'libraries/AP_Scripting/tests/docs_check.py'
       - 'libraries/AP_Scripting/generator/**'
+      - 'libraries/AP_Scripting/wscript'
       - '**.lua'
       - 'Tools/scripts/run_lua_language_check.py'
       - 'Tools/scripts/run_luacheck.sh'
@@ -17,6 +18,7 @@ on:
     paths: # only run for scripting changes
       - 'libraries/AP_Scripting/tests/docs_check.py'
       - 'libraries/AP_Scripting/generator/**'
+      - 'libraries/AP_Scripting/wscript'
       - '**.lua'
       - 'Tools/scripts/run_lua_language_check.py'
       - 'Tools/scripts/run_luacheck.sh'
@@ -49,6 +51,9 @@ jobs:
       - name: Install pip dependencies
         run: |
           python3 -m pip install github-release-downloader empy==3.3.4
+
+      - name: Test binding generator
+        run: python3 -m unittest discover -s libraries/AP_Scripting/generator/tests -v
 
       - name: Register lua check problem matcher
         run: |

@@ -82,6 +82,7 @@ const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57
 // right mode.
 const char AP_GPS::_initialisation_blob[] =
 #if AP_GPS_UBLOX_ENABLED
+    // enables NAV_SOL at rate 1 as well as setting 230400 baud
     UBLOX_SET_BINARY_230400
 #endif
 #if AP_GPS_SIRF_ENABLED
@@ -518,6 +519,7 @@ void AP_GPS::send_blob_start(uint8_t instance)
 
 #if AP_GPS_UBLOX_ENABLED
     if (type == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
+        // enables NAV_SOL at rate 1 as well as setting 115200 baud
         static const char blob[] = UBLOX_SET_BINARY_115200;
         send_blob_start(instance, blob, sizeof(blob));
         return;
@@ -531,7 +533,8 @@ void AP_GPS::send_blob_start(uint8_t instance)
         // we use 460800 when doing moving baseline as we need
         // more bandwidth. We don't do this if using UART2, as
         // in that case the RTCMv3 data doesn't go over the
-        // link to the flight controller
+        // link to the flight controller.  This blob also enables
+        // NAV_SOL at rate 1
         static const char blob[] = UBLOX_SET_BINARY_460800;
         send_blob_start(instance, blob, sizeof(blob));
         return;
@@ -1091,10 +1094,26 @@ void AP_GPS::update(void)
 #endif
 }
 
+#if GPS_MAX_RECEIVERS > 1
+uint8_t AP_GPS::fix_type_priority(AP_GPS_FixType status)
+{
+    switch (status) {
+    case AP_GPS_FixType::PPP:
+        return 5;
+    case AP_GPS_FixType::RTK_FLOAT:
+        return 6;
+    case AP_GPS_FixType::RTK_FIXED:
+        return 7;
+    case AP_GPS_FixType::STATIC:
+        return 8;
+    default:
+        return uint8_t(status);
+    }
+}
+
 /*
   update primary GPS instance
  */
-#if GPS_MAX_RECEIVERS > 1
 void AP_GPS::update_primary(void)
 {
 #if AP_GPS_BLENDED_ENABLED
@@ -1170,7 +1189,7 @@ void AP_GPS::update_primary(void)
             // may be the old timestamp that triggered the loss of
             // blending
             const uint32_t delay_threshold = 400;
-            const bool higher_status = state[i].status > state[primary_instance].status;
+            const bool higher_status = fix_type_priority(state[i].status) > fix_type_priority(state[primary_instance].status);
             const bool old_data_primary = (now - state[primary_instance].last_gps_time_ms) > delay_threshold;
             const bool old_data = (now - state[i].last_gps_time_ms) > delay_threshold;
             const bool equal_status = state[i].status == state[primary_instance].status;
@@ -1212,7 +1231,7 @@ void AP_GPS::update_primary(void)
         if (i == primary_instance) {
             continue;
         }
-        if (state[i].status > state[primary_instance].status) {
+        if (fix_type_priority(state[i].status) > fix_type_priority(state[primary_instance].status)) {
             // we have a higher status lock, or primary is set to the blended GPS, change GPS
             primary_instance = i;
             _last_instance_swap_ms = now;

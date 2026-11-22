@@ -477,6 +477,8 @@ extern const AP_HAL::HAL& hal;
 #ifndef AP_BATTMON_CELL_COUNT
 #define AP_BATTMON_CELL_COUNT 6
 #endif
+// cell voltages are accumulated per cell in an array of AP_BATT_MONITOR_CELLS_MAX
+static_assert(AP_BATTMON_CELL_COUNT <= AP_BATT_MONITOR_CELLS_MAX, "AP_BATTMON_CELL_COUNT exceeds AP_BATT_MONITOR_CELLS_MAX");
 
 // Current Calibration Coulomb Counter Gain and Capacity Gain
 // Boards with different resistor values should override in hwdef.

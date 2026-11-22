@@ -27,8 +27,8 @@ public:
         return _base_port;
     }
 
-    // paths for UART devices
-    const char *_serial_path[9] {
+    // paths for UART devices, one per SERIALn including --serial9
+    const char *_serial_path[AP_HAL::HAL::num_serial] {
         "tcp:0:wait",
         "tcp:2",
         "tcp:3",
@@ -38,6 +38,7 @@ public:
         "tcp:6",
         "tcp:7",
         "tcp:8",
+        "tcp:9",
     };
     ObjectArray<struct AP_Param::defaults_table_struct> cmdline_param{100};
 
@@ -60,10 +61,10 @@ private:
     /*
       look up the model/vehicle in @ROMFS/vehicleinfo.json and set
       defaults_path to the matching comma-separated @ROMFS/... list
-      so AP_Param can load them. No-op if defaults_path is already
-      set or if no embedded JSON is found.
+      so AP_Param can load them. Returns the model to simulate, which
+      is the frame's "model" field when it has one.
     */
-    void resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str);
+    const char *resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str);
 
     /* dump @ROMFS/vehicleinfo.json to stdout (for --list-models) */
     static void list_models_and_exit(void);

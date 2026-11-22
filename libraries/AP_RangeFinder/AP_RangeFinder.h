@@ -295,7 +295,7 @@ public:
     // methods to return a distance on a particular orientation from
     // any sensor which can current supply it
     int8_t signal_quality_pct_orient(enum Rotation orientation) const;
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // centimetre accessors - do not use, reduce use where possible
     uint16_t distance_cm_orient(enum Rotation orientation) const {
         return distance_orient(orientation) * 100.0;

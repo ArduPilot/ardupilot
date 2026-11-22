@@ -13,8 +13,8 @@
 // driver reads FIFO_COUNTH. Renode's emulated F405 cannot drain a free-running
 // 1kHz FIFO in real time; coupling production to the driver's poll preserves
 // fresh lockstep feedback without accumulating stale motion data. Acceleration
-// and angular-rate samples follow physics truth; temperature remains at 25C so
-// the driver's raw-temperature consistency check does not trip.
+// and angular-rate samples follow physics truth; FIFO and TEMP_OUT report the
+// same board temperature so the driver's raw-temperature check passes.
 //
 using System;
 using System.Collections.Generic;
@@ -36,6 +36,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             this.whoAmI = whoAmI;
             this.rotation = rotation;
             physics = AP_PhysicsState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
             fifo = new Queue<byte>();
             registers = new byte[128];
             Reset();
@@ -139,6 +140,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
             case INT_STATUS:
                 return 0x01; // RAW_RDY: a sample is always available
+            case TEMP_OUT_H:
+                return (byte)(TemperatureRaw() >> 8);
+            case TEMP_OUT_L:
+                return (byte)TemperatureRaw();
             default:
                 return registers[reg];
             }
@@ -174,10 +179,32 @@ namespace Antmicro.Renode.Peripherals.Sensors
             PushWord(ScaleWord(acceleration[1], AccelScale));
             PushWord(ScaleWord(acceleration[0], AccelScale));
             PushWord(ScaleWord(-acceleration[2], AccelScale));
-            PushWord(0);         // 25C, constant
+            PushWord(TemperatureRaw());
             PushWord(ScaleWord(gyro[1], GyroScale));
             PushWord(ScaleWord(gyro[0], GyroScale));
             PushWord(ScaleWord(-gyro[2], GyroScale));
+        }
+
+        // zero and LSB/C from AP_InertialSensor_Invensense for each part
+        private short TemperatureRaw()
+        {
+            double zero = 25.0, scale = 1.0 / 326.8;
+            switch(whoAmI)
+            {
+            case 0x98: // ICM20689
+                scale = 0.003;
+                break;
+            case 0x68: // MPU6000
+            case 0x70: // MPU6500
+                zero = 36.53;
+                scale = 1.0 / 340;
+                break;
+            case 0x71: // MPU9250
+                zero = 21.0;
+                scale = 1.0 / 340;
+                break;
+            }
+            return ScaleWord((float)(thermal.TemperatureC - zero), scale);
         }
 
         private static float[] Interpolate(float[] from, float[] to, float alpha)
@@ -206,6 +233,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly byte whoAmI;
         private readonly byte rotation;
         private readonly AP_PhysicsState physics;
+        private readonly AP_BoardThermalState thermal;
         private float[] previousAcceleration;
         private float[] previousGyro;
         private ulong previousTimestampUs;
@@ -219,6 +247,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private const byte PRODUCT_ID = 0x0C;
         private const byte INT_STATUS = 0x3A;
+        private const byte TEMP_OUT_H = 0x41;
+        private const byte TEMP_OUT_L = 0x42;
         private const byte USER_CTRL = 0x6A;
         private const byte PWR_MGMT_1 = 0x6B;
         private const byte FIFO_COUNTH = 0x72;

@@ -78,7 +78,7 @@ python3 -m pip -q install -U $PYTHON_PKGS
     if [ ! -f arm-none-eabi-g++ ]; then
        sudo ln -s /usr/bin/ccache arm-none-eabi-g++
     fi
-    if [ ! -f arm-none-eabi-g++ ]; then
+    if [ ! -f arm-none-eabi-gcc ]; then
         sudo ln -s /usr/bin/ccache arm-none-eabi-gcc
     fi
 )

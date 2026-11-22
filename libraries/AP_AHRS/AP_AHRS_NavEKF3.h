@@ -47,6 +47,10 @@ public:
         started = EKF3.InitialiseFilter();
     }
 
+    // EKF3 uses the magnitude of its own air-relative velocity, matching
+    // its historical synthetic airspeed:
+    bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
+
     bool get_origin(Location &ret) const override {
         return EKF3.getOriginLLH(ret);
     }

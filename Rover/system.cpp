@@ -19,11 +19,7 @@ void Rover::init_ardupilot()
 
     g2.windvane.init(serial_manager);
 
-    // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
-
-    // setup telem slots with serial ports
-    gcs().setup_uarts();
 
 #if OSD_ENABLED
     osd.init();

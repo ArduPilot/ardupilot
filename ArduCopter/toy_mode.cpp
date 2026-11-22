@@ -859,7 +859,7 @@ void ToyMode::throttle_adjust(float &throttle_control)
 
     // limit descent rate close to the ground
     float pos_d_m;  
-    if (AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {  
+    if (!AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {  
         // we do not know how high we are, let alone where the ground is  
         return;  
     }  
@@ -900,6 +900,7 @@ void ToyMode::throttle_adjust(float &throttle_control)
  */
 void ToyMode::blink_update(void)
 {
+#if AP_RELAY_ENABLED
     if (red_blink_pattern & (1U<<red_blink_index)) {
         copter.relay.on(1);
     } else {
@@ -910,6 +911,7 @@ void ToyMode::blink_update(void)
     } else {
         copter.relay.off(0);
     }
+#endif
     green_blink_index = (green_blink_index+1) % 16;
     red_blink_index = (red_blink_index+1) % 16;
     if (green_blink_index == 0 && green_blink_count > 0) {
@@ -969,6 +971,19 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
     }
     mavlink_named_value_int_t m;
     mavlink_msg_named_value_int_decode(&msg, &m);
+    if (strncmp(m.name, "WIFICHAN", 10) == 0) {
+        // the radio needs this whether or not toy mode is enabled
+#if AP_RADIO_ENABLED
+        AP_Radio *radio = AP_Radio::get_singleton();
+        if (radio) {
+            radio->set_wifi_channel(m.value);
+        }
+#endif
+        return;
+    }
+    if (!enabled()) {
+        return;
+    }
     if (strncmp(m.name, "BLINKR", 10) == 0) {
         red_blink_pattern = (uint16_t)m.value;
         red_blink_count = m.value >> 16;
@@ -987,13 +1002,6 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
         last_video_ms = AP_HAL::millis();
         // immediately update AP_Notify recording flag
         AP_Notify::flags.video_recording = true;
-    } else if (strncmp(m.name, "WIFICHAN", 10) == 0) {
-#if AP_RADIO_ENABLED
-        AP_Radio *radio = AP_Radio::get_singleton();
-        if (radio) {
-            radio->set_wifi_channel(m.value);
-        }
-#endif
     } else if (strncmp(m.name, "LOGDISARM", 10) == 0) {
         enum ap_var_type vtype;
         AP_Int8 *log_disarmed = (AP_Int8 *)AP_Param::find("LOG_DISARMED", &vtype);
@@ -1008,7 +1016,11 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
  */
 void ToyMode::send_named_int(const char *name, int32_t value)
 {
-    mavlink_msg_named_value_int_send(MAVLINK_COMM_1, AP_HAL::millis(), name, value);
+    // the message copies its whole name field, so give it one rather
+    // than reading past the end of a shorter name
+    char buf[MAVLINK_MSG_NAMED_VALUE_INT_FIELD_NAME_LEN] {};
+    strncpy_noterm(buf, name, sizeof(buf));
+    mavlink_msg_named_value_int_send(MAVLINK_COMM_1, AP_HAL::millis(), buf, value);
 }
 
 /*

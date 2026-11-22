@@ -6,6 +6,7 @@
 
 import argparse
 import contextlib
+import io
 import math
 import os
 import signal
@@ -81,11 +82,13 @@ def connect_mavlink(port, process, log_path, deadline):
     while time.monotonic() < deadline:
         check_process(process, log_path)
         try:
-            connection = mavutil.mavlink_connection(
-                'tcp:127.0.0.1:%u' % port,
-                source_system=255,
-                source_component=190,
-            )
+            # pymavlink prints a line for each refused connect while Renode boots
+            with contextlib.redirect_stdout(io.StringIO()):
+                connection = mavutil.mavlink_connection(
+                    'tcp:127.0.0.1:%u' % port,
+                    source_system=255,
+                    source_component=190,
+                )
             recv_match(connection, process, log_path, 'HEARTBEAT', deadline)
             return connection
         except OSError as error:
@@ -293,31 +296,33 @@ def wait_for_flight(connection, process, log_path, deadline):
 
 def latest_log_entry(connection, process, log_path, timeout=20):
     deadline = time.monotonic() + timeout
-    connection.mav.log_request_list_send(
-        connection.target_system, connection.target_component, 0, 0xffff)
     latest = None
     while time.monotonic() < deadline:
-        entry = recv_match(connection, process, log_path, 'LOG_ENTRY', deadline)
-        if entry.num_logs == 0:
-            delay = min(1, max(0, deadline - time.monotonic()))
-            if delay > 0:
-                time.sleep(delay)
-                if time.monotonic() < deadline:
-                    connection.mav.log_request_list_send(
-                        connection.target_system, connection.target_component,
-                        0, 0xffff)
-            continue
-        if latest is None or entry.id > latest.id:
-            latest = entry
-        if entry.id == entry.last_log_num:
-            if entry.size == 0:
-                raise RuntimeError('latest DataFlash log is empty')
-            return entry
+        # a busy vehicle can miss the request, so ask again until it answers
+        connection.mav.log_request_list_send(
+            connection.target_system, connection.target_component, 0, 0xffff)
+        retry = min(deadline, time.monotonic() + 5)
+        while time.monotonic() < retry:
+            check_process(process, log_path)
+            entry = connection.recv_match(type='LOG_ENTRY', blocking=True, timeout=1)
+            if entry is None:
+                continue
+            if entry.num_logs == 0:
+                time.sleep(1)
+                break
+            if latest is None or entry.id > latest.id:
+                latest = entry
+            if entry.id == entry.last_log_num:
+                if entry.size == 0:
+                    raise RuntimeError('latest DataFlash log is empty')
+                return entry
+            retry = min(deadline, time.monotonic() + 5)
     raise RuntimeError('timed out listing DataFlash logs')
 
 
-def download_log(connection, process, process_log, output, timeout=180):
-    entry = latest_log_entry(connection, process, process_log)
+def download_log(connection, process, process_log, output, timeout=180,
+                 list_timeout=20):
+    entry = latest_log_entry(connection, process, process_log, list_timeout)
     print('downloading log %u (%u bytes) over MAVLink' % (entry.id, entry.size),
           flush=True)
     data = bytearray()

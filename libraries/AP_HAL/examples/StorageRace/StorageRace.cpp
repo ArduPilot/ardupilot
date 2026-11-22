@@ -230,7 +230,9 @@ void setup()
     pthread_join(thread, nullptr);
     close(fd);
     printf("PASS: %u concurrent storage rounds persisted\n", num_rounds);
-    exit(0);
+    fflush(stdout);
+    // HAL threads still use the static drivers, so skip their destructors.
+    _exit(0);
 }
 void loop() {}
 AP_HAL_MAIN();

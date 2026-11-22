@@ -60,7 +60,7 @@ ChibiOS::CANIface can_iface[HAL_NUM_CAN_IFACES];
 #define CAN_APP_VERSION_MINOR                                           0
 #endif
 #ifndef CAN_APP_NODE_NAME
-#define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
+#define CAN_APP_NODE_NAME "org.ardupilot." HAL_BOARD_NAME
 #endif
 
 #ifdef EXT_FLASH_SIZE_MB

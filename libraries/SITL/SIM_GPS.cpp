@@ -150,7 +150,7 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: GPS Options
     // @Description: GPS Options bitmask
-    // @Bitmask: 0:UBlox GPS is F9P
+    // @Bitmask: 0:UBlox GPS is F9P, 1:UBlox receiver without flash loses its saved configuration on reboot
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
 
@@ -175,6 +175,13 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Vector3Parameter: 1
     // @User: Advanced
     AP_GROUPINFO("GLTV",       21, GPSParms, vel_glitch, 0),
+
+    // @Param: UBXMDL
+    // @DisplayName: UBlox receiver model
+    // @Description: Which u-blox receiver to simulate. Simple outputs all messages and ignores configuration; the other models are configured by the autopilot through the UBX configuration protocol and output only the messages they have been configured to output
+    // @Values: 0:Simple, 1:u-blox 6 FW 7.03, 2:NEO-M8N FW 2.01, 3:M8 ROM CORE 3.01, 4:NEO-M8N SPG 3.01, 5:NEO-M9N SPG 4.04, 6:M10 ROM SPG 5.10
+    // @User: Advanced
+    AP_GROUPINFO("UBXMDL",    22, GPSParms, ubx_model, 0),
 
     AP_GROUPEND
 };

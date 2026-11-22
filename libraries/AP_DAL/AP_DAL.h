@@ -112,6 +112,10 @@ public:
         TOUCHDOWN_EXPECTED = (1U<<7),
     };
 
+    enum class RFRNFlags2 {
+        VEHICLE_LANDED = (1U<<0),
+    };
+
     // EKF ID for timing checks
     enum class EKFType : uint8_t {
         EKF2 = 0,
@@ -198,6 +202,11 @@ public:
         return _RFRN.touchdown_expected;
     }
 
+    // true if the vehicle code reports it has landed
+    bool get_vehicle_landed(void) const {
+        return _RFRN.vehicle_landed;
+    }
+
     // for EKF usage to enable takeoff expected to true
     void set_takeoff_expected();
 
@@ -206,8 +215,8 @@ public:
         return _RFRN.ahrs_trim;
     }
 
-    const Matrix3f &get_rotation_vehicle_body_to_autopilot_body(void) const {
-        return _rotation_vehicle_body_to_autopilot_body;
+    const Quaternion &get_quat_vehicle_body_to_autopilot_body(void) const {
+        return _quat_vehicle_body_to_autopilot_body;
     }
 
     // get the home location. This is const to prevent any changes to
@@ -229,7 +238,7 @@ public:
     }
 
     // log optical flow data
-    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride);
+    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride, float altMin);
 
     // log external nav data
     void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms);
@@ -256,6 +265,11 @@ public:
             msg.alt,
             Location::AltFrame::ABSOLUTE
         };
+        // rebuild the trim rotation from the logged trim; it is
+        // otherwise only set in start_frame(), which is not called
+        // when replaying:
+        _quat_vehicle_body_to_autopilot_body.from_euler(msg.ahrs_trim);
+        _quat_vehicle_body_to_autopilot_body = _quat_vehicle_body_to_autopilot_body.inverse();
     }
     void handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 
@@ -391,7 +405,7 @@ private:
     uint32_t _micros;
     uint32_t _millis;
 
-    Matrix3f _rotation_vehicle_body_to_autopilot_body;
+    Quaternion _quat_vehicle_body_to_autopilot_body;
     Location _home;
     uint32_t _last_imu_time_us;
 

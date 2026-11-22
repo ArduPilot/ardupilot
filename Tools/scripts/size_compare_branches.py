@@ -16,8 +16,6 @@ Starting in the ardupilot directory.
 Output is placed into ELF_DIFF_[VEHICLE_NAME]
 '''
 
-from __future__ import annotations
-
 import copy
 import optparse
 import os

@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_ENABLED
+
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -60,7 +64,7 @@ void AP_Motors::get_frame_and_type_string(char *buffer, uint8_t buflen) const
     const char *frame_str = get_frame_string();
     const char *type_str = get_type_string();
     if (type_str != nullptr && strlen(type_str)
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
         && custom_frame_string == nullptr
 #endif
     ) {
@@ -220,7 +224,7 @@ void AP_Motors::add_motor_num(int8_t motor_num)
     }
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 void AP_Motors::set_external_limits(bool roll, bool pitch, bool yaw, bool throttle_lower, bool throttle_upper)
 {
     external_limits.roll = roll;
@@ -254,7 +258,7 @@ bool AP_Motors::is_digital_pwm_type() const
 // return string corresponding to frame_class
 const char* AP_Motors::get_frame_string() const
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (custom_frame_string != nullptr) {
         return custom_frame_string;
     }
@@ -262,7 +266,7 @@ const char* AP_Motors::get_frame_string() const
     return _get_frame_string();
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // set custom frame string
 void AP_Motors::set_frame_string(const char * str) {
     if (custom_frame_string != nullptr) {
@@ -377,3 +381,5 @@ namespace AP {
         return AP_Motors::get_singleton();
     }
 }
+
+#endif  // AP_MOTORS_ENABLED

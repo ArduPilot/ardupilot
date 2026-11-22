@@ -324,7 +324,7 @@ public:
 #if HAL_TORQEEDO_ENABLED
         TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
 #endif  // HAL_TORQEEDO_ENABLED
-        EMERGENCY_LANDING_EN = 157, //Force long FS action to FBWA for landing out of range
+        EMERGENCY_LANDING_EN = 157, // Force-enable Glide failsafe action
 #if AP_OPTICALFLOW_ENABLED
         OPTFLOW_CAL =        158, // optical flow calibration
 #endif  // AP_OPTICALFLOW_ENABLED
@@ -412,7 +412,7 @@ public:
         // external projects.  See the SCRIPTING_1 range instead if
         // you are writing a Lua script.
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
         // inputs for the use of onboard lua scripting
         SCRIPTING_1 =        300,
         SCRIPTING_2 =        301,
@@ -431,7 +431,7 @@ public:
         SCRIPTING_15 =       314,
         SCRIPTING_16 =       315,
         STOP_RESTART_SCRIPTING =     316,   // emergency scripting disablement
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_EXTERNAL_BINDING_ENABLED
 
         // this must be higher than any aux function above
         AUX_FUNCTION_MAX =   317,
@@ -743,7 +743,7 @@ public:
     void calibrating(bool b) { gcs_is_calibrating = b; }
     bool calibrating() { return gcs_is_calibrating; }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // get last aux cached value for scripting. Returns false if never set, otherwise 0,1,2
     bool get_aux_cached(RC_Channel::AUX_FUNC aux_fn, uint8_t &pos);
 #endif
@@ -818,7 +818,7 @@ private:
     // true if GCS is performing a RC calibration
     bool gcs_is_calibrating;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // bitmask of last aux function value, 2 bits per function
     // value 0 means never set, otherwise level+1
     HAL_Semaphore aux_cache_sem;

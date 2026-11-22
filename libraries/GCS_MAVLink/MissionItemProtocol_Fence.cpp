@@ -103,12 +103,17 @@ uint16_t MissionItemProtocol_Fence::item_count() const
 
 MAV_MISSION_RESULT MissionItemProtocol_Fence::convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mavlink_mission_item_int_t &mission_item_int, AC_PolyFenceItem &ret)
 {
-    if (mission_item_int.frame != MAV_FRAME_GLOBAL &&
-        mission_item_int.frame != MAV_FRAME_GLOBAL_INT &&
-        mission_item_int.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-        mission_item_int.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
-        mission_item_int.frame != MAV_FRAME_GLOBAL_TERRAIN_ALT &&
-        mission_item_int.frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
+    switch (mission_item_int.frame) {
+    case MAV_FRAME_GLOBAL:
+    case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+    case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
+    case MAV_FRAME_GLOBAL_INT:
+    case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+    case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
+        break;
+    default:
         return MAV_MISSION_UNSUPPORTED_FRAME;
     }
 

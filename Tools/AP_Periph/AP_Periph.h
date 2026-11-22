@@ -463,7 +463,7 @@ public:
     uint64_t get_vehicle_state() { return vehicle_state; }
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     AP_Scripting scripting;
 #endif
 
@@ -661,7 +661,7 @@ public:
 };
 
 #ifndef CAN_APP_NODE_NAME
-#define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
+#define CAN_APP_NODE_NAME "org.ardupilot." HAL_BOARD_NAME
 #endif
 
 namespace AP

@@ -121,7 +121,7 @@ Supports up to **16 PWM outputs**:
 - **Main Outputs (M1-M8)**: via STM32F103 IO Processor
 - **Auxiliary Outputs (A1-A8)**: via STM32H753 FMU
 
-> **Note:** All outputs support both PWM and DShot protocols, except for outputs **A7** and **A8**, which are PWM-only. Outputs **M1-M8** are bi-directional DShot capable.
+> **Note:** All outputs support both PWM and DShot protocols, except for outputs **A7** and **A8**, which are PWM-only. Outputs **M1-M4** are bi-directional DShot capable. DShot on M1-M8 requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller.
 ---
 
 ## Battery Monitoring

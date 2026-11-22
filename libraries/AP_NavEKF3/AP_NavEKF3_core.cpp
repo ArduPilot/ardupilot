@@ -118,22 +118,22 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedBaro.init(obs_buffer_length)) {
         return false;
     }
-    if(dal.airspeed() && !storedTAS.init(obs_buffer_length)) {
+    if(dal.airspeed() && !tas.stored.init(obs_buffer_length)) {
         return false;
     }
     if(dal.opticalflow_enabled() && !storedOF.init(flow_buffer_length)) {
         return false;
     }
 #if EK3_FEATURE_BODY_ODOM
-    if(frontend->sources.ext_nav_enabled() && !storedBodyOdm.init(obs_buffer_length)) {
+    if(frontend->sources.ext_nav_enabled() && !bodyOdm.stored.init(obs_buffer_length)) {
         return false;
     }
-    if(frontend->sources.wheel_encoder_enabled() && !storedWheelOdm.init(imu_buffer_length)) {
+    if(frontend->sources.wheel_encoder_enabled() && !bodyOdm.storedWheel.init(imu_buffer_length)) {
         // initialise to same length of IMU to allow for multiple wheel sensors
         return false;
     }
 #endif // EK3_FEATURE_BODY_ODOM
-    if(frontend->sources.gps_yaw_enabled() && !storedYawAng.init(obs_buffer_length)) {
+    if(frontend->sources.gps_yaw_enabled() && !gpsYaw.stored.init(obs_buffer_length)) {
         return false;
     }
 #if AP_RANGEFINDER_ENABLED
@@ -149,13 +149,13 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     }
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (frontend->sources.ext_nav_enabled() && !storedExtNav.init(extnav_buffer_length)) {
+    if (frontend->sources.ext_nav_enabled() && !extNav.stored.init(extnav_buffer_length)) {
         return false;
     }
-    if (frontend->sources.ext_nav_enabled() && !storedExtNavVel.init(extnav_buffer_length)) {
+    if (frontend->sources.ext_nav_enabled() && !extNav.storedVel.init(extnav_buffer_length)) {
         return false;
     }
-    if(frontend->sources.ext_nav_enabled() && !storedExtNavYawAng.init(extnav_buffer_length)) {
+    if(frontend->sources.ext_nav_enabled() && !extNav.storedYawAng.init(extnav_buffer_length)) {
         return false;
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
@@ -166,7 +166,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #if EK3_FEATURE_DRAG_FUSION
-    if (!storedDrag.init(obs_buffer_length)) {
+    if (!drag.stored.init(obs_buffer_length)) {
         return false;
     }
 #endif
@@ -204,13 +204,12 @@ void NavEKF3_core::InitialiseVariables()
 
     // initialise time stamps
     imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
-    prevTasStep_ms = imuSampleTime_ms;
+    tas.InitialiseVariables(imuSampleTime_ms);
     prevBetaDragStep_ms = imuSampleTime_ms;
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
     lastGpsPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
-    lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
     lastTimeGpsReceived_ms = 0;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
@@ -222,7 +221,6 @@ void NavEKF3_core::InitialiseVariables()
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
-    timeTasReceived_ms = 0;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
     posNEResetCount = 0;
     posDResetCount = 0;
@@ -250,6 +248,7 @@ void NavEKF3_core::InitialiseVariables()
     memset(&Pmut[0][0], 0, sizeof(Pmut));
     memset(&KHP[0][0], 0, sizeof(KHP));
     flowDataValid = false;
+    flowRngBelowAltMin = false;
     rangeDataToFuse  = false;
 #if EK3_FEATURE_OPTFLOW_FUSION
     Popt = 0.0f;
@@ -289,16 +288,7 @@ void NavEKF3_core::InitialiseVariables()
     baroHgtOffset = 0.0f;
     rngOnGnd = 0.05f;
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    // 2-state AGL KF initialisation
-    // Start with generous uncertainty; the first valid RF measurement will hard-reset the state
-    aglKfH = rngOnGnd;      // assume sitting on ground at minimum range
-    aglKfV = 0.0f;
-    aglKfP[0][0] = 25.0f;   // 5 m initial std-dev in height
-    aglKfP[0][1] = 0.0f;
-    aglKfP[1][0] = 0.0f;
-    aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
-    aglKfValid = false;
-    lastAglRngFuseTime_ms = 0;
+    aglKf.InitialiseVariables(rngOnGnd);
 #endif
     yawResetCount = 0;
     tiltErrorVariance = sq(M_2PI);
@@ -374,43 +364,22 @@ void NavEKF3_core::InitialiseVariables()
     rngBcn.InitialiseVariables();
 #endif  // EK3_FEATURE_BEACON_FUSION
 
-#if EK3_FEATURE_BODY_ODOM
     // body frame displacement fusion
-    memset((void *)&bodyOdmDataNew, 0, sizeof(bodyOdmDataNew));
-    memset((void *)&bodyOdmDataDelayed, 0, sizeof(bodyOdmDataDelayed));
-#endif
-    lastbodyVelPassTime_ms = 0;
-    ZERO_FARRAY(bodyVelTestRatio);
-    ZERO_FARRAY(varInnovBodyVel);
-    ZERO_FARRAY(innovBodyVel);
-    prevBodyVelFuseTime_ms = 0;
-    bodyOdmMeasTime_ms = 0;
-    bodyVelFusionDelayed = false;
-    bodyVelFusionActive = false;
+    bodyOdm.InitialiseVariables();
 
     // yaw sensor fusion
-    yawMeasTime_ms = 0;
-    memset((void *)&yawAngDataNew, 0, sizeof(yawAngDataNew));
-    memset((void *)&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
+    gpsYaw.InitialiseVariables();
 
 #if EK3_FEATURE_EXTERNAL_NAV
     // external nav data fusion
-    extNavDataDelayed = {};
-    extNavMeasTime_ms = 0;
-    extNavLastPosResetTime_ms = 0;
-    extNavDataToFuse = false;
-    extNavUsedForPos = false;
-    extNavVelDelayed = {};
-    extNavVelToFuse = false;
-    useExtNavVel = false;
-    extNavVelMeasTime_ms = 0;
+    extNav.InitialiseVariables();
 #endif
 
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
     storedBaro.reset();
-    storedTAS.reset();
+    tas.stored.reset();
 #if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     storedRange.reset();
 #endif
@@ -419,12 +388,12 @@ void NavEKF3_core::InitialiseVariables()
     rngBcn.storedRange.reset();
 #endif
 #if EK3_FEATURE_BODY_ODOM
-    storedBodyOdm.reset();
-    storedWheelOdm.reset();
+    bodyOdm.stored.reset();
+    bodyOdm.storedWheel.reset();
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
-    storedExtNav.reset();
-    storedExtNavVel.reset();
+    extNav.stored.reset();
+    extNav.storedVel.reset();
 #endif
 
     // initialise pre-arm message
@@ -452,7 +421,19 @@ void NavEKF3_core::InitialiseVariablesMag()
     allMagSensorsFailed = false;
     finalInflightMagInit = false;
     inhibitMagStates = true;
-    magSelectIndex = dal.compass().get_first_usable();
+
+    // initialise compass index
+    // if affinity is enabled try to use the compass corresponding to this core index
+    const auto &compass = dal.compass();
+    if ((frontend->_affinity & EKF_AFFINITY_MAG) &&
+        core_index < compass.get_count() &&
+        compass.healthy(core_index) &&
+        compass.use_for_yaw(core_index)) {
+        magSelectIndex = core_index;
+    } else {
+        magSelectIndex = compass.get_first_usable();
+    }
+
     lastMagOffsetsValid = false;
     magStateResetRequest = false;
     magStateInitComplete = false;
@@ -463,9 +444,9 @@ void NavEKF3_core::InitialiseVariablesMag()
     quatAtLastMagReset = stateStruct.quat;
     magFieldLearned = false;
     storedMag.reset();
-    storedYawAng.reset();
+    gpsYaw.stored.reset();
 #if EK3_FEATURE_EXTERNAL_NAV
-    storedExtNavYawAng.reset();
+    extNav.storedYawAng.reset();
 #endif
     needMagBodyVarReset = false;
     needEarthBodyVarReset = false;
@@ -550,6 +531,9 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     stateStruct.wind_vel.zero();
     stateStruct.earth_magfield.zero();
     stateStruct.body_magfield.zero();
+
+    // clear the learned body magnetic field
+    learnedMagField.clear();
 
     // set the position, velocity and height
     ResetVelocity(resetDataSource::DEFAULT);
@@ -1126,7 +1110,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 }
             }
 	        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
-	        if (!tasDataDelayed.allowFusion) {
+	        if (!tas.dataDelayed.allowFusion) {
 	            // Allow wind states to recover faster when using sideslip fusion with a failed airspeed sesnor
 	            windVelVar *= 10.0f;
 	        }
@@ -1779,8 +1763,8 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         {
             for (uint8_t j=0; j<=stateIndexLim; j++)
             {
-                nextP[i][j] = Pmut[i][j];
-                nextP[j][i] = Pmut[j][i];
+                nextP[i][j] = P[i][j];
+                nextP[j][i] = P[j][i];
             }
         }
     }
@@ -1915,8 +1899,8 @@ void NavEKF3_core::ConstrainVariances()
 
             // set the variances to the measurement variance
         #if EK3_FEATURE_EXTERNAL_NAV
-            if (useExtNavVel) {
-                Pmut[6][6] = sq(extNavVelDelayed.err);
+            if (extNav.useVel) {
+                Pmut[6][6] = sq(extNav.velDelayed.err);
             } else
         #endif
             {
@@ -2016,13 +2000,11 @@ bool NavEKF3_core::FinishFusion(ftype innov, bool force /*= false*/)
     // update the covariance matrix as P = P - KHP (KHP was filled by caller)
     for (auto r=0; r<=stateIndexLim; r++) {
         for (auto c=0; c<=r; c++) {
-            // P must end up symmetric, so average the upper and lower
-            // differences, then store that result in both positions. it would
-            // be faster and more numerically stable to average the KHP entries
-            // instead, but we have no good proof P was symmetric before!
-            const ftype lower = P[r][c] - KHP[r][c];
-            const ftype upper = P[c][r] - KHP[c][r];
-            const ftype res = 0.5f*(lower + upper);
+            // P is symmetric, so average the (assumedly small) differences,
+            // subtract from upper (which equals lower), then store the result
+            // in both positions to preserve the symmetric structure.
+            const ftype diff = 0.5f*(KHP[r][c] + KHP[c][r]);
+            const ftype res = P[r][c] - diff;
             Pmut[r][c] = res;
             Pmut[c][r] = res;
         }

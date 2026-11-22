@@ -271,16 +271,17 @@ AP_OSD_ParamSetting::AP_OSD_ParamSetting(uint8_t param_number) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// construct a setting from a compact static initializer structure
-AP_OSD_ParamSetting::AP_OSD_ParamSetting(const Initializer& initializer) :
-    _param_number(initializer.index),
-    default_enabled(true),
-    default_ypos(initializer.index + 1),
-    default_param_group(initializer.token.group_element),
-    default_param_idx(initializer.token.idx),
-    default_param_key(initializer.token.key),
-    default_type(float(initializer.type))
+// set the defaults from a compact static initializer structure. This is
+// done in place so the remaining members keep their zeroed state
+void AP_OSD_ParamSetting::set_defaults(const Initializer& initializer)
 {
+    _param_number = initializer.index;
+    default_enabled = true;
+    default_ypos = initializer.index + 1;
+    default_param_group = initializer.token.group_element;
+    default_param_idx = initializer.token.idx;
+    default_param_key = initializer.token.key;
+    default_type = float(initializer.type);
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -291,15 +292,21 @@ void AP_OSD_ParamSetting::update()
     if (PARAM_TOKEN_INDEX(_current_token) == PARAM_COMPOSITE_INDEX(_param_key, _param_idx, _param_group) && _param_key >= 0) {
         return;
     }
-    // if a parameter was configured then use that
-    _current_token = AP_Param::ParamToken {};
+    // if a parameter was configured then use that, searching in locals as CRSF reads
+    // the setting from another thread and must not see the parameters passed on the way
+    AP_Param::ParamToken token {};
+    ap_var_type type = AP_PARAM_NONE;
+    AP_Param* param;
     // surely there is a more efficient way than brute-force search
-    for (_param = AP_Param::first(&_current_token, &_param_type);
-        _param && (AP_Param::get_persistent_key(_current_token.key) != uint16_t(_param_key.get())
-            || _current_token.idx != uint8_t(_param_idx.get())
-            || _current_token.group_element != uint32_t(_param_group.get()));
-        _param = AP_Param::next_scalar(&_current_token, &_param_type)) {
+    for (param = AP_Param::first(&token, &type);
+        param && (AP_Param::get_persistent_key(token.key) != uint16_t(_param_key.get())
+            || token.idx != uint8_t(_param_idx.get())
+            || token.group_element != uint32_t(_param_group.get()));
+        param = AP_Param::next_scalar(&token, &type)) {
     }
+    _current_token = token;
+    _param_type = type;
+    _param = param;
 
     if (_param == nullptr) {
         enabled.set(false);

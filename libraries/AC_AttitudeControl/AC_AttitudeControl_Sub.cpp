@@ -307,30 +307,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Sub, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
-    // @Param: RAT_RLL_FILT
-    // @DisplayName: Roll axis rate controller input frequency in Hz
-    // @Description: Roll axis rate controller input frequency in Hz
-    // @Range: 1 100
-    // @Increment: 1
-    // @Units: Hz
-    // @User: Standard
-
-    // @Param: RAT_PIT_FILT
-    // @DisplayName: Pitch axis rate controller input frequency in Hz
-    // @Description: Pitch axis rate controller input frequency in Hz
-    // @Range: 1 100
-    // @Increment: 1
-    // @Units: Hz
-    // @User: Standard
-
-    // @Param: RAT_YAW_FILT
-    // @DisplayName: Yaw axis rate controller input frequency in Hz
-    // @Description: Yaw axis rate controller input frequency in Hz
-    // @Range: 1 100
-    // @Increment: 1
-    // @Units: Hz
-    // @User: Standard
-
     AP_GROUPEND
 };
 
@@ -405,6 +381,7 @@ void AC_AttitudeControl_Sub::rate_controller_run()
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
 
+    _rate_target_rads = _ang_vel_body_rads;
     _rate_gyro_rads = _ahrs.get_gyro_latest();
     _rate_gyro_time_us = AP_HAL::micros64();
 

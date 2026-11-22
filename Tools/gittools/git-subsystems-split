@@ -32,8 +32,6 @@ Options:
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import os
 import subprocess
 import sys

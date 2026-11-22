@@ -4,6 +4,7 @@
 
 #include "AP_HAL_Namespace.h"
 #include "AP_HAL_Boards.h"
+#include <AP_Common/AP_Common.h>
 
 class AP_HAL::AnalogSource {
 public:

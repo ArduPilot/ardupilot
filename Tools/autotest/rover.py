@@ -11,12 +11,14 @@ import operator
 import os
 import pathlib
 import shutil
+import statistics
 import struct
 import sys
 import time
 
 from pymavlink import mavextra
 from pymavlink import mavutil
+from pymavlink import quaternion
 from pymavlink.mavftp import MAVFTP
 
 import vehicle_test_suite
@@ -307,6 +309,30 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         }, check_context=True, very_verbose=True)
         self.context_pop()
 
+        self.start_subtest("Reject non-finite parameter values with current value")
+        param_name = "SIM_ACC1_RND"
+        current_value = self.get_parameter(param_name)
+        for value in (float("nan"), float("inf"), float("-inf")):
+            self.context_push()
+            self.context_collect('PARAM_ERROR')
+            self.send_set_parameter_direct(param_name, value)
+            self.assert_received_message_field_values('PARAM_ERROR', {
+                "target_system": 250,
+                "target_component": 250,
+                "param_id": param_name,
+                "param_index": -1,
+                "error": mavutil.mavlink.MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE,
+            }, check_context=True, very_verbose=True)
+            reply = self.assert_receive_message(
+                'PARAM_VALUE',
+                condition="PARAM_VALUE.param_id == '%s'" % param_name,
+            )
+            self.assert_message_field_values(reply, {
+                "param_value": current_value,
+            })
+            self.context_pop()
+            self.assert_parameter_value(param_name, current_value)
+
     def Sprayer(self):
         """Test sprayer functionality."""
         rc_ch = 5
@@ -410,8 +436,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        self.set_rc(3, 2000)
-        self.set_rc(1, 1000)
+        self.set_rc_from_map({3: 2000, 1: 1000})
 
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < timeout:
@@ -421,8 +446,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         # centre the sticks and let the rover coast to a stop before we
         # finish.  Disarming stops the motors but not the vehicle, and
         # the next test is entitled to start from rest.
-        self.set_rc(3, 1500)
-        self.set_rc(1, 1500)
+        self.set_rc_from_map({3: 1500, 1: 1500})
         self.disarm_vehicle()
         self.wait_groundspeed(0, 0.2, minimum_duration=1)
 
@@ -832,8 +856,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_rc(8, mapping[1])
         self.wait_mode('ACRO')
 
-        self.set_rc(9, 1000)
-        self.set_rc(10, 1000)
+        self.set_rc_from_map({9: 1000, 10: 1000})
         self.set_parameters({
             "RC9_OPTION": 53, # steering
             "RC10_OPTION": 54, # hold
@@ -844,8 +867,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_mode("HOLD")
 
         # reset both switches - should go back to ACRO
-        self.set_rc(9, 1000)
-        self.set_rc(10, 1000)
+        self.set_rc_from_map({9: 1000, 10: 1000})
         self.wait_mode("ACRO")
 
         self.set_rc(9, 1900)
@@ -1449,10 +1471,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter('FS_ACTION', 0)  # do nothing when radio fails
         self.set_rc(throttle_ch, 900)  # RC fail
         self.reboot_sitl()
-        self.wait_mode(1)
+        self.wait_mode("ACRO")
         self.progress("Make sure we stay in this mode")
         self.delay_sim_time(5, reason="mode persistence check")
-        self.wait_mode(1)
+        self.wait_mode("ACRO")
         # now change modes with a switch:
         self.set_rc(throttle_ch, 1100)
         self.delay_sim_time(3, reason="RC throttle to register")
@@ -5155,7 +5177,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
-        while not self.mode_is("HOLD"):
+        while not self.mode_is("HOLD", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not move to hold")
             m = self.assert_receive_message('VFR_HUD')
@@ -5526,19 +5548,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         self.progress("get a known heading to avoid worrying about wrap")
         # this is steering-type-two-paddles
-        self.set_rc(1, 1400)
-        self.set_rc(3, 1500)
+        self.set_rc_from_map({1: 1400, 3: 1500})
         self.wait_heading(90)
         self.progress("straighten up")
-        self.set_rc(1, 1500)
-        self.set_rc(3, 1500)
+        self.set_rc_from_map({1: 1500, 3: 1500})
         self.progress("steer one way")
-        self.set_rc(1, 1600)
-        self.set_rc(3, 1400)
+        self.set_rc_from_map({1: 1600, 3: 1400})
         self.wait_heading(120)
         self.progress("steer the other")
-        self.set_rc(1, 1400)
-        self.set_rc(3, 1600)
+        self.set_rc_from_map({1: 1400, 3: 1600})
         self.wait_heading(60)
         self.zero_throttle()
         self.disarm_vehicle()
@@ -6482,6 +6500,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.install_message_hook_context(
             vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(
                 self, max_allowed_divergence=5))
+        # wait for the beacon-derived position to agree with the true one
+        # before driving.  Polling change_mode() and armed() get us here
+        # sooner in simulated time than they used to, and the EKF's
+        # position is still converging: the divergence hook above then
+        # tripped on the residual, at 5.27-5.41m against its 5m limit.
+        # This is a condition rather than a delay, so a position which
+        # never settles fails here instead of mid-drive.
+        self.wait_simstate_divergence_below(2, minimum_duration=5, timeout=60)
         self.change_mode('MANUAL')
         self.arm_vehicle()
         self.set_rc(3, 2000)   # full throttle forward
@@ -8130,6 +8156,391 @@ return update()
                 (atc_decel_cap, time_uncapped_decel, time_capped_decel))
         self.disarm_vehicle(force=True)
 
+    def RadioRCChannels(self):
+        '''test RC input supplied via the RADIO_RC_CHANNELS mavlink message'''
+
+        # channel values are in the message's centered 13-bit format;
+        # [-4096,4096] maps onto [860,2140] PWM.  Channel 8 is left where the
+        # test suite's default RC puts it so the mode switch does not move:
+        values = [
+            0,      # 1500
+            -4096,  # 860; minimum
+            4096,   # 2140; maximum
+            1600,   # 1750
+            -1600,  # 1250
+            100,    # 1515; division truncates towards zero
+            -100,   # 1485; ... in both directions
+            1920,   # 1800; mode channel
+            320,    # 1550
+            -320,   # 1450
+            800,    # 1625
+            -800,   # 1375
+            2400,   # 1875
+            -2400,  # 1125
+            3200,   # 2000
+            -3200,  # 1000
+        ]
+        expected_pwm = [self.radio_rc_channels_value_to_pwm(x) for x in values]
+
+        self.set_parameters({
+            "RC_PROTOCOLS": 1 << 16,  # MAVRadio only; excludes the SITL UDP RC input
+            "RC_FS_TIMEOUT": 3,  # we feed the frames by hand; be generous
+            "FS_ACTION": 0,  # we want the failsafe reported, not acted upon
+        })
+        # RC_PROTOCOLS is only consulted while AP_RCProtocol is searching for
+        # a protocol, and the SITL UDP input has long since been detected:
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        self.start_subtest("no RC input at all until a RADIO_RC_CHANNELS arrives")
+        self.delay_sim_time(5, reason="let any RC input appear")
+        self.assert_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER,
+            present=False,
+            enabled=False,
+            healthy=False,
+        )
+        m = self.assert_receive_message('RC_CHANNELS')
+        if m.chancount != 0:
+            raise NotAchievedException("Expected no RC channels, got %u" % m.chancount)
+
+        self.start_subtest("channel values are converted to PWM")
+        self.wait_radio_rc_channels_pwm(values, expected_pwm, len(values))
+        self.wait_statustext("RCInput: decoding MAVRadio", check_context=True, timeout=10)
+        self.context_stop_collecting('STATUSTEXT')
+
+        self.start_subtest("every frame is converted, not just the first")
+        # the same count, but a different value in every channel bar the mode
+        # channel; a backend which converted the first frame it saw and then
+        # latched would still be reporting the PWMs from the subtest above.
+        # All of the values are distinct, so rotating them moves every one:
+        moved = [x for (i, x) in enumerate(values) if i != 7]
+        moved = moved[1:] + moved[0:1]
+        moved.insert(7, values[7])
+        moved_pwm = [self.radio_rc_channels_value_to_pwm(x) for x in moved]
+        self.wait_radio_rc_channels_pwm(moved, moved_pwm, len(moved))
+
+        self.start_subtest("count is honoured")
+        # the payload always carries 32 channels, so count is the only thing
+        # saying how many of them are real; send all sixteen values but claim
+        # only eight, so honouring count and honouring the payload differ:
+        self.wait_radio_rc_channels_pwm(values, expected_pwm[0:8], 8, count=8)
+
+        self.start_subtest("oversize count is clamped")
+        # the message carries 32 channels and ArduPilot takes at most
+        # MAX_RCIN_CHANNELS of them.  RC_CHANNELS is all we can see here and
+        # it reports at most NUM_RC_CHANNELS, so this demonstrates only that
+        # no more than 16 channels come back, not where the input-side clamp
+        # sits:
+        self.wait_radio_rc_channels_pwm(values + values, expected_pwm, 16)
+
+        self.start_subtest("failsafe flag is honoured")
+        self.set_parameter("FS_THR_ENABLE", 1)
+        # establish that the vehicle is happy while the frames flow:
+        self.radio_rc_channels_pump(
+            values,
+            0,
+            'SYS_STATUS',
+            lambda m: m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER,
+            20,
+            "RC receiver to be healthy",
+        )
+        # ... then change nothing but the failsafe flag:
+        self.context_collect('STATUSTEXT')
+        self.radio_rc_channels_pump(
+            values,
+            mavutil.mavlink.RADIO_RC_CHANNELS_FLAGS_FAILSAFE,
+            'SYS_STATUS',
+            lambda m: not (m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER),
+            30,
+            "RC receiver to go unhealthy",
+        )
+        # note that it is the SYS_STATUS assertion above - made while the
+        # frames were still flowing - which shows the flag caused this.  The
+        # statustext wait below runs after the pump has stopped, so on its own
+        # it would also be satisfied by simply losing the input:
+        self.wait_statustext("Radio Failsafe", check_context=True, timeout=30)
+        self.context_stop_collecting('STATUSTEXT')
+
+        self.start_subtest("failsafe clears when the flag clears")
+        self.context_collect('STATUSTEXT')
+        self.radio_rc_channels_pump(
+            values,
+            0,
+            'SYS_STATUS',
+            lambda m: m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER,
+            30,
+            "RC receiver to recover",
+        )
+        self.wait_statustext("Radio Failsafe Cleared", check_context=True, timeout=30)
+        self.context_stop_collecting('STATUSTEXT')
+
+        self.start_subtest("a flag which is not FAILSAFE does not fail the vehicle")
+        # a backend testing bool(flags) rather than the FAILSAFE bit would put
+        # us into failsafe here.  Maintain for longer than RC_FS_TIMEOUT, so
+        # input which had stopped counting as valid would show up:
+        self.assert_radio_rc_channels_maintains(
+            values,
+            mavutil.mavlink.RADIO_RC_CHANNELS_FLAGS_OUTDATED,
+            'SYS_STATUS',
+            lambda m: m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER,
+            6,  # RC_FS_TIMEOUT is 3
+            "RC receiver went unhealthy with only the OUTDATED flag set",
+        )
+
+        self.start_subtest("FAILSAFE is honoured when another flag is also set")
+        # ... while a backend comparing flags with == rather than masking
+        # would ignore FAILSAFE the moment any other bit came along, so send
+        # the pair the earlier subtests have shown to be individually inert
+        # and active:
+        self.radio_rc_channels_pump(
+            values,
+            (mavutil.mavlink.RADIO_RC_CHANNELS_FLAGS_FAILSAFE |
+             mavutil.mavlink.RADIO_RC_CHANNELS_FLAGS_OUTDATED),
+            'SYS_STATUS',
+            lambda m: not (m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER),
+            30,
+            "RC receiver to go unhealthy with FAILSAFE and OUTDATED both set",
+        )
+
+        self.start_subtest("RADIO_RC_CHANNELS is ignored when RC_PROTOCOLS excludes MAVRadio")
+        # PPM only, which also excludes the SITL UDP RC input, so nothing at
+        # all should ever count as RC input; the same frames as were accepted
+        # above must not make the RC receiver appear:
+        self.set_parameter("RC_PROTOCOLS", 1 << 1)
+        self.reboot_sitl()
+        self.assert_radio_rc_channels_maintains(
+            values,
+            0,
+            'SYS_STATUS',
+            lambda m: not (m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER),
+            10,
+            "RC receiver appeared with MAVRadio excluded from RC_PROTOCOLS",
+        )
+        m = self.assert_receive_message('RC_CHANNELS')
+        if m.chancount != 0:
+            raise NotAchievedException("Expected no RC channels, got %u" % m.chancount)
+
+    def JSON_sim_and_physics_time(self, physics):
+        '''SITL time, and the physics time just before and after reading it'''
+        before = physics.timestamp
+        sim_time = self.get_sim_time()
+        return sim_time, before, physics.timestamp
+
+    def JSON_assert_elapsed_equal(self, start, end, tolerance=0.05):
+        '''SITL time elapsed between two samples is the physics time elapsed
+
+        Each physics read brackets its SITL read, which bounds the message
+        latency exactly instead of allowing for it with a guessed tolerance.
+        '''
+        (sim0, before0, after0) = start
+        (sim1, before1, after1) = end
+        sim = sim1 - sim0
+        self.progress("sim elapsed %f, physics elapsed %f-%f" % (sim, before1 - after0, after1 - before0))
+        if not before1 - after0 - tolerance <= sim <= after1 - before0 + tolerance:
+            raise NotAchievedException("SITL time drifted from physics time")
+
+    def JSON_frame_rate(self, physics):
+        '''median of the frame rates SITL sent in its last servo packets'''
+        with physics.lock:
+            rates = list(physics.frame_rates)
+        rate = statistics.median(rates)
+        self.progress("frame_rate median=%.1f min=%u max=%u over %u packets" % (rate, min(rates), max(rates), len(rates)))
+        return rate
+
+    def JSON_sim_wall_ratio(self, windows=5):
+        '''median SITL/wall-clock rate over 1s windows
+
+        A CI stall moves the mean of one long window, not the median of
+        several short ones.
+        '''
+        ratios = []
+        for i in range(windows):
+            wall_start = time.time()
+            sim_start = self.get_sim_time()
+            time.sleep(1)
+            ratios.append((self.get_sim_time() - sim_start) / (time.time() - wall_start))
+        ratio = statistics.median(ratios)
+        self.progress("sim/wall median=%f stdev=%f %s" % (ratio, statistics.stdev(ratios), ["%.2f" % r for r in ratios]))
+        return ratio
+
+    def JSONLockstep(self):
+        '''check SITL runs in lockstep with a JSON physics backend'''
+        # physics time far from zero, as a backend sending wall-clock time
+        start_time = 1760000000.0
+        with self.JSON_physics(start_time=start_time, dt=0.0025) as physics:
+            self.wait_ready_to_arm()
+
+            # SITL time is physics time, counted from the first frame
+            self.JSON_assert_elapsed_equal((0, start_time, start_time), self.JSON_sim_and_physics_time(physics))
+
+            # SITL matches its frame rate to the physics step
+            frame_rate = self.JSON_frame_rate(physics)
+            if abs(frame_rate - 400) > 2:
+                raise NotAchievedException("frame_rate %.1f, expected 400" % frame_rate)
+
+            # SITL waits for its physics, only resending the frame about once a second
+            physics.paused = True
+            packets = physics.packets
+            time.sleep(3)
+            # count before resuming, so resumed frames are not counted
+            sent = physics.packets - packets
+            physics.paused = False
+            if sent > 5:
+                raise NotAchievedException("SITL sent %u frames without physics" % sent)
+            self.wait_heartbeat()
+
+            # servo outputs reach the physics backend
+            self.change_mode('MANUAL')
+            self.arm_vehicle()
+            self.set_rc(3, 1700)
+            self.wait_servo_channel_in_range(3, 1650, 1750, timeout=5)
+            # while the throttle slews the backend may already hold a newer
+            # output than the message, so wait for the two to agree
+            tstart = self.get_sim_time()
+            while True:
+                servo3 = self.assert_receive_message('SERVO_OUTPUT_RAW').servo3_raw
+                if physics.pwm[2] == servo3:
+                    break
+                if self.get_sim_time_cached() - tstart > 5:
+                    raise NotAchievedException("physics got throttle %u, expected %u" % (physics.pwm[2], servo3))
+            self.set_rc(3, 1500)
+            self.disarm_vehicle()
+
+    def JSONNoLockstep(self):
+        '''check SITL follows a free-running JSON physics backend using no_lockstep'''
+        with self.JSON_physics(dt=0.005, free_run=True, fields={'no_lockstep': True}) as physics:
+            self.wait_heartbeat()
+
+            # the physics paces SITL, in real time whatever the speedup
+            ratio = self.JSON_sim_wall_ratio()
+            if not 0.5 < ratio < 1.5:
+                raise NotAchievedException("SITL ran at %fx, expected the physics real time" % ratio)
+            self.JSON_assert_elapsed_equal((0, 0, 0), self.JSON_sim_and_physics_time(physics))
+
+            # frame rate is not forced to the physics step
+            sim_rate = self.get_parameter("SIM_RATE_HZ")
+            frame_rate = self.JSON_frame_rate(physics)
+            if frame_rate != sim_rate:
+                raise NotAchievedException("frame_rate %.1f, expected SIM_RATE_HZ %u" % (frame_rate, sim_rate))
+
+            # SITL keeps running its loop without physics.  Its own frame
+            # is made longer than the physics step, which the physics has
+            # to win back once it resumes
+            self.set_parameter("SIM_RATE_HZ", 100)
+            physics.paused = True
+            packets = physics.packets
+            time.sleep(2)
+            sent = physics.packets - packets
+            physics.paused = False
+            if sent < 10:
+                raise NotAchievedException("SITL sent only %u frames without physics" % sent)
+            self.wait_heartbeat()
+
+            # after the pause SITL time follows the physics again
+            resumed = self.JSON_sim_and_physics_time(physics)
+            self.delay_sim_time(4, reason="physics resumed")
+            self.JSON_assert_elapsed_equal(resumed, self.JSON_sim_and_physics_time(physics))
+
+    def JSONNoTimeSync(self):
+        '''check SITL runs as fast as a JSON physics backend using no_time_sync'''
+        self.context_set_speedup(1)
+        with self.JSON_physics(fields={'no_time_sync': True}) as physics:
+            # SIM_JSON makes the simulator AHRS the default
+            self.assert_parameter_value("AHRS_EKF_TYPE", 10)
+
+            # not held to the speedup
+            ratio = self.JSON_sim_wall_ratio()
+            if ratio < 5:
+                raise NotAchievedException("SITL ran at %fx with SIM_SPEEDUP=1, expected no time sync" % ratio)
+
+            # frame rate is not forced to the physics step
+            sim_rate = self.get_parameter("SIM_RATE_HZ")
+            frame_rate = self.JSON_frame_rate(physics)
+            if frame_rate != sim_rate:
+                raise NotAchievedException("frame_rate %.1f, expected SIM_RATE_HZ %u" % (frame_rate, sim_rate))
+
+    def JSONClock(self):
+        '''check SITL time follows JSON physics time without drift and across a physics reset'''
+        # wall-clock physics time, with a step SITL used to truncate by 1us each frame
+        start_time = 1760000000.0
+        with self.JSON_physics(start_time=start_time, dt=0.0009999995) as physics:
+            self.wait_heartbeat()
+
+            # SITL time counts from the first frame, without drift
+            first = (0, start_time, start_time)
+            self.JSON_assert_elapsed_equal(first, self.JSON_sim_and_physics_time(physics))
+            self.delay_sim_time(200, reason="clock drift")
+            self.JSON_assert_elapsed_equal(first, self.JSON_sim_and_physics_time(physics))
+
+            # the physics restarts its clock, SITL time carries on following it
+            before_reset = self.JSON_sim_and_physics_time(physics)
+            with physics.lock:
+                physics.timestamp = 1.0
+            after_reset = self.JSON_sim_and_physics_time(physics)
+            if after_reset[0] < before_reset[0]:
+                raise NotAchievedException("SITL time went back on physics reset")
+            self.delay_sim_time(20, reason="after physics reset")
+            self.JSON_assert_elapsed_equal(after_reset, self.JSON_sim_and_physics_time(physics))
+
+    def JSONSensors(self):
+        '''check SITL uses the sensor data sent by a JSON physics backend'''
+        with self.JSON_physics() as physics:
+            physics.set(attitude=[0, 0, math.radians(90)])
+            self.set_parameters({
+                "RNGFND1_TYPE": 100,
+                "BATT_MONITOR": 4,
+                "WNDVN_TYPE": 11,
+                "WNDVN_SPEED_TYPE": 11,
+            })
+            self.reboot_sitl()
+            self.wait_heading(90)
+            self.set_message_rate_hz('WIND', 10)
+
+            # two sets of values, so each field is seen to follow a change
+            for rng, volt, amp, wind_dir, wind_spd in (3.5, 11.1, 2.5, 45, 5), (6.0, 12.3, 4.0, 120, 8):
+                physics.set(rng_1=rng,
+                            battery={'voltage': volt, 'current': amp},
+                            windvane={'direction': math.radians(wind_dir), 'speed': wind_spd})
+                self.wait_rangefinder_distance(rng - 0.1, rng + 0.1)
+                self.wait_message_field_values('SYS_STATUS', {
+                    'voltage_battery': volt * 1000,
+                    'current_battery': amp * 100,
+                }, epsilon=20)
+                self.wait_and_maintain("AppWndDir", wind_dir,
+                                       lambda: self.assert_receive_named_value_float('AppWndDir').value,
+                                       accuracy=1)
+                self.wait_and_maintain("AppWndSpd", wind_spd,
+                                       lambda: self.assert_receive_named_value_float('AppWndSpd').value,
+                                       accuracy=0.1)
+
+            # the backend moves the vehicle east, then north
+            self.wait_ready_to_arm()
+            for velocity, speed in ([0, 1, 0], 1), ([2, 0, 0], 2):
+                physics.set(velocity=velocity)
+                self.wait_groundspeed(speed - 0.1, speed + 0.1)
+                start = self.get_location()
+                self.delay_sim_time(10, reason="vehicle moving")
+                dist = self.get_distance(start, self.get_location())
+                if abs(dist - 10 * speed) > 1:
+                    raise NotAchievedException("moved %fm in 10s, expected %fm" % (dist, 10 * speed))
+            physics.set(velocity=[0, 0, 0])
+
+            # euler attitude, then quaternion which takes precedence over it
+            for field, euler in (('attitude', (-5, 0, -90)),
+                                 ('quaternion', (10, 0, 90)),
+                                 ('quaternion', (-20, 5, 45))):
+                roll, pitch, yaw = [math.radians(a) for a in euler]
+                if field == 'quaternion':
+                    physics.set(quaternion=quaternion.Quaternion([roll, pitch, yaw]).q.tolist())
+                else:
+                    physics.set(attitude=[roll, pitch, yaw])
+                self.wait_message_field_values('SIMSTATE', {
+                    'roll': roll,
+                    'pitch': pitch,
+                    'yaw': yaw,
+                }, epsilon=0.01)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -8154,6 +8565,7 @@ return update()
             self.RCOverridesCancel,
             Test(self.RCOverrideEnableChannel, speedup=10),
             self.RCOverridesClearByPilotInput,
+            Test(self.RadioRCChannels, speedup=5),  # we hand-feed the RC frames
             self.MANUAL_CONTROL,
             self.Sprayer,
             self.AC_Avoidance,
@@ -8265,6 +8677,11 @@ return update()
             self.WP_SPEED,
             self.AutoModeAccelChanges,
             self.AutoModeAccelLimiting,
+            self.JSONLockstep,
+            self.JSONNoLockstep,
+            self.JSONNoTimeSync,
+            self.JSONClock,
+            self.JSONSensors,
         ])
         return ret
 

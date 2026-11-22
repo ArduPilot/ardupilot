@@ -15,7 +15,7 @@
 
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include "lua_scripts.h"
 #include <AP_HAL/AP_HAL.h>
@@ -669,4 +669,4 @@ uint32_t lua_scripts::get_running_checksum()
     return running_checksum;
 }
 
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_SCRIPTING_LUA_ENABLED

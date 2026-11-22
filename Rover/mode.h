@@ -359,7 +359,7 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_script_time();
 #endif
@@ -395,7 +395,7 @@ private:
     uint32_t nav_delay_time_max_ms;  // used for delaying the navigation commands
     uint32_t nav_delay_time_start_ms;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // nav_script_time command variables
     struct {
         bool done;          // true once lua script indicates it has completed

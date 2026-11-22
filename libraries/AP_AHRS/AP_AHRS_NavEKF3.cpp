@@ -5,6 +5,7 @@
 #include "AP_AHRS_NavEKF3.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -103,16 +104,10 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * attitude estimates:
      */
-    EKF3.getRotationBodyToNED(results.dcm_matrix);
-
-    Vector3f eulers;
-    EKF3.getEulerAngles(eulers);
-    results.roll_rad  = eulers.x;
-    results.pitch_rad = eulers.y;
-    results.yaw_rad   = eulers.z;
-
     EKF3.getQuaternion(results.quaternion);
-    results.quaternion.rotate(-AP::ahrs().get_trim());
+    // quaternion composition rotates the autopilot-body-frame attitude into the vehicle-body-frame
+    results.quaternion *= AP::ahrs().get_quat_vehicle_body_to_autopilot_body();
+    results.derive_attitude_from_quaternion();
 
     results.attitude_valid = started;
 
@@ -238,6 +233,38 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     results.control_gain_scaler_Z = 1;
 
     results.control_height_limit_valid = EKF3.getHeightControlLimit(results.control_height_limit_m);
+
+    // publish this backend's airspeed estimate from the results above:
+    fill_airspeed_estimate(results);
+}
+
+// EKF3 synthesises airspeed from the magnitude of its own air-relative
+// velocity (ground velocity minus its wind estimate), constrained to the
+// ground speed +/- the wind limit.  When it has no wind estimate of its own
+// it asks the frontend to fall back to the DCM synthetic.
+bool AP_AHRS_NavEKF3::synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type)
+{
+    if (!results.wind_valid || !results.velocity_NED_valid) {
+        // no wind estimate of our own: ask the frontend to fall back to the
+        // DCM synthetic:
+        type = AirspeedEstimateType::DCM_FALLBACK;
+        return false;
+    }
+    type = AirspeedEstimateType::EKF3_SYNTHETIC;
+    float true_airspeed = (results.velocity_NED - results.wind).length();
+    const float gnd_speed = results.velocity_NED.length();
+    const float wind_max = AP::ahrs().get_max_wind();
+    if (wind_max > 0) {
+        const float tas_lim_lower = MAX(0.0f, gnd_speed - wind_max);
+        const float tas_lim_upper = MAX(tas_lim_lower, gnd_speed + wind_max);
+        true_airspeed = constrain_float(true_airspeed, tas_lim_lower, tas_lim_upper);
+    } else {
+        true_airspeed = MAX(0.0f, true_airspeed);
+    }
+    // divide by EAS2TAS (rather than multiplying by its reciprocal) so the EAS
+    // value matches DCM's EAS<->TAS arithmetic exactly:
+    airspeed_ret = true_airspeed / get_EAS2TAS();
+    return true;
 }
 
 bool AP_AHRS_NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

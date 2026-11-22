@@ -32,13 +32,12 @@ void Plane::rc_failsafe_short_on_event()
     case Mode::Number::AUTOTUNE:
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::CRUISE:
-    case Mode::Number::TRAINING:  
-        if(plane.emergency_landing) {
-            IGNORE_RETURN(set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE)); // emergency landing switch overrides normal action to allow out of range landing
-            break;
-        }
-        if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-            IGNORE_RETURN(set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE));
+    case Mode::Number::TRAINING:
+    case Mode::Number::GLIDE:
+        // emergency landing switch overrides normal action to allow out of range landing
+        if (plane.emergency_landing || (g.fs_action_short == FS_ACTION_SHORT_GLIDE)) {
+            IGNORE_RETURN(set_mode(mode_glide, ModeReason::RADIO_FAILSAFE));
+
         } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
             IGNORE_RETURN(set_mode(mode_fbwb, ModeReason::RADIO_FAILSAFE));
         } else {
@@ -81,8 +80,8 @@ void Plane::rc_failsafe_short_on_event()
     case Mode::Number::THERMAL:
         if (g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) { // if acton = 0(BESTGUESS) this group of modes take no action
             failsafe.saved_mode_number = control_mode->mode_number();
-            if (g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-                IGNORE_RETURN(set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE));
+            if (g.fs_action_short == FS_ACTION_SHORT_GLIDE) {
+                IGNORE_RETURN(set_mode(mode_glide, ModeReason::RADIO_FAILSAFE));
             } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
                 IGNORE_RETURN(set_mode(mode_fbwb, ModeReason::RADIO_FAILSAFE));
             } else {
@@ -133,6 +132,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::LOITER:
     case Mode::Number::THERMAL:
     case Mode::Number::TAKEOFF:
+    case Mode::Number::GLIDE:
         if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF && !(g.fs_action_long == FS_ACTION_LONG_GLIDE || g.fs_action_long == FS_ACTION_LONG_PARACHUTE)) {
             // don't failsafe if in initial climb of TAKEOFF mode and FS action is not parachute or glide
             // long failsafe will be re-called if still in fs after initial climb
@@ -140,16 +140,14 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             break;
         }
 
-        if(plane.emergency_landing) {
-            IGNORE_RETURN(set_mode(mode_fbwa, reason)); // emergency landing switch overrides normal action to allow out of range landing
-            break;
-        }
-        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
+        // emergency landing switch overrides normal action to allow out of range landing
+        if (plane.emergency_landing || (g.fs_action_long == FS_ACTION_LONG_GLIDE)) {
+            IGNORE_RETURN(set_mode(mode_glide, reason));
+
+        } else if (g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if HAL_PARACHUTE_ENABLED
             parachute_release();
 #endif
-        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            IGNORE_RETURN(set_mode(mode_fbwa, reason));
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
             IGNORE_RETURN(set_mode(mode_auto, reason));
 #if MODE_AUTOLAND_ENABLED
@@ -204,7 +202,8 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             parachute_release();
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            IGNORE_RETURN(set_mode(mode_fbwa, reason));
+            IGNORE_RETURN(set_mode(mode_glide, reason));
+
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
             IGNORE_RETURN(set_mode(mode_auto, reason));
 #if MODE_AUTOLAND_ENABLED

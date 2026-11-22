@@ -27,14 +27,52 @@ Tools/renode/tests/test_physics_flight.py copter --renode build/renode/renode
 Tools/renode/tests/test_mission.py
 ```
 
+`test_rc_input.py` checks emulated SBUS R/C input and R/C failsafe through the
+synthetic IOMCU, the real IOMCU and a flight-controller UART. It uses
+CubeOrangePlus and MatekH743 ArduPlane builds, by default from `build/`:
+
+```sh
+Tools/renode/tests/test_rc_input.py --renode build/renode/renode
+```
+
+`test_serial_passthru.py` checks bidirectional forwarding and MAVLink receive
+recovery with ChibiOS UART ownership checks. Build MatekH743 Copter first:
+
+```sh
+./waf configure --board MatekH743
+./waf copter
+Tools/renode/tests/test_serial_passthru.py --renode build/renode/renode
+```
+
+`test_bdshot.py` checks bidirectional DShot telemetry with the built-in
+AM32-style ESCs: all four answering, only one answering, one that is silent
+and then starts answering, and extended telemetry (EDT). Build
+MatekH743-bdshot Copter first:
+
+```sh
+./waf configure --board MatekH743-bdshot
+./waf copter
+Tools/renode/tests/test_bdshot.py --renode build/renode/renode
+```
+
+`test_dshot_esc_model.py` checks the built-in ESC model's AM32 behaviours
+directly (arming, commands, EDT, 3D, signal loss); it compiles the model
+with `mcs` and runs it under `mono`, and is skipped without them.
+
+`--scripted` uses the UDP ESCs from `dshot_esc.py` instead, which covers
+the UDP bridge path but has no EDT. `--am32-sitl ELF` runs the scenarios
+against AM32 SITL ESCs over UDP,
+with a motor test spinning motor 1. Build the ESC with `make AM32_SITL_CAN`
+in an am32-firmware checkout and pass its `obj/AM32_AM32_SITL_CAN_*.elf`.
+
 The fetch helper downloads the latest package for the host architecture from
 `https://firmware.ardupilot.org/Tools/Renode/`. It verifies the package size
 and SHA-256 against `latest.json` before extracting it. Set
 `RENODE_PACKAGE_BASE_URL` to use another package mirror, or set
 `RENODE_SOURCE_REVISION` to require a specific 40-character source revision.
 `RENODE_PACKAGE_SHA256` additionally requires the package checksum to match a
-trusted value. CI pins both values in `test_renode.yml`; update both when
-changing the Renode package.
+trusted value. CI sets neither, so it tests the published package that
+`launch.py` users get, and logs its source revision.
 
 `run.py` downloads the SVD matching the exact MCU in the compiled `hwdef.dat`
 from `https://firmware.ardupilot.org/Tools/Renode/data/SVD/`, verifies its size

@@ -173,7 +173,7 @@ void IntelligentEnergy24::update_send()
         // add the checksum to the end of the message
         char data_end[7];
         hal.util->snprintf(data_end, ARRAY_SIZE(data_end), "%u>\n", checksum);
-        strncat(message, data_end, ARRAY_SIZE(data_end));
+        strncat(message, data_end, ARRAY_SIZE(message) - strlen(message) - 1);
 
     }
 

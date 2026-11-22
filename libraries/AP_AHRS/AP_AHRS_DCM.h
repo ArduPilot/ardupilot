@@ -21,7 +21,7 @@
  *
  */
 
-#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include "AP_AHRS_config.h"
 
 #if AP_AHRS_DCM_ENABLED
@@ -90,6 +90,10 @@ public:
     bool yaw_source_available(void) const;
 
 private:
+
+    // DCM maintains _last_airspeed_TAS in its drift correction; use it
+    // directly rather than recomputing from the published velocity:
+    bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.

@@ -2,6 +2,8 @@
 
 #include "AP_Motors_config.h"
 
+#if AP_MOTORS_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>         // filter library
@@ -11,7 +13,7 @@
 #include <SRV_Channel/SRV_Channel_config.h>
 
 #ifndef AP_MOTORS_MAX_NUM_MOTORS
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 #define AP_MOTORS_MAX_NUM_MOTORS 32
 #else
 #define AP_MOTORS_MAX_NUM_MOTORS 12
@@ -84,23 +86,51 @@ public:
 
     enum motor_frame_class {
         MOTOR_FRAME_UNDEFINED = 0,
+#if AP_MOTORS_FRAME_QUAD_ENABLED
         MOTOR_FRAME_QUAD = 1,
+#endif
+#if AP_MOTORS_FRAME_HEXA_ENABLED
         MOTOR_FRAME_HEXA = 2,
+#endif
+#if AP_MOTORS_FRAME_OCTA_ENABLED
         MOTOR_FRAME_OCTA = 3,
+#endif
+#if AP_MOTORS_FRAME_OCTAQUAD_ENABLED
         MOTOR_FRAME_OCTAQUAD = 4,
+#endif
+#if AP_MOTORS_FRAME_Y6_ENABLED
         MOTOR_FRAME_Y6 = 5,
+#endif
         MOTOR_FRAME_HELI = 6,
+#if AP_MOTORS_FRAME_TRI_ENABLED
         MOTOR_FRAME_TRI = 7,
+#endif  // AP_MOTORS_FRAME_TRI_ENABLED
+#if AP_MOTORS_FRAME_SINGLE_ENABLED
         MOTOR_FRAME_SINGLE = 8,
+#endif  // AP_MOTORS_FRAME_SINGLE_ENABLED
+#if AP_MOTORS_FRAME_COAX_ENABLED
         MOTOR_FRAME_COAX = 9,
+#endif  // AP_MOTORS_FRAME_COAX_ENABLED
+#if AP_MOTORS_FRAME_TAILSITTER_ENABLED
         MOTOR_FRAME_TAILSITTER = 10,
+#endif  // AP_MOTORS_FRAME_TAILSITTER_ENABLED
         MOTOR_FRAME_HELI_DUAL = 11,
+#if AP_MOTORS_FRAME_DODECAHEXA_ENABLED
         MOTOR_FRAME_DODECAHEXA = 12,
+#endif
         MOTOR_FRAME_HELI_QUAD = 13,
+#if AP_MOTORS_FRAME_DECA_ENABLED
         MOTOR_FRAME_DECA = 14,
+#endif
+#if AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
         MOTOR_FRAME_SCRIPTING_MATRIX = 15,
+#endif  // AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
+#if AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
         MOTOR_FRAME_6DOF_SCRIPTING = 16,
+#endif  // AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
+#if AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
         MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX = 17,
+#endif  // AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
     };
 
     // return string corresponding to frame_class
@@ -241,7 +271,7 @@ public:
         void set_throttle(bool flag); // set limits for throttle upper and lower
     } limit;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // set limit flag for pitch, roll and yaw
     void set_external_limits(bool roll, bool pitch, bool yaw, bool throttle_lower, bool throttle_upper);
 #endif
@@ -306,7 +336,7 @@ public:
     // direct motor write
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     void set_frame_string(const char * str);
 #endif
 
@@ -424,7 +454,7 @@ protected:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) = 0;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // Custom frame string set from scripting
     char* custom_frame_string;
 
@@ -445,3 +475,5 @@ private:
 namespace AP {
     AP_Motors *motors();
 };
+
+#endif  // AP_MOTORS_ENABLED

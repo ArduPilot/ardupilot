@@ -1190,7 +1190,7 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
         const AP_Scripting *scripting = AP_Scripting::get_singleton();
         if ((scripting != nullptr) && !scripting->arming_checks(sizeof(buffer), buffer)) {
             check_failed(Check::SYSTEM, report, "%s", buffer);
@@ -1681,6 +1681,18 @@ bool AP_Arming::serial_protocol_checks(bool display_failure)
     return true;
 }
 
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+// Check for a pending power off
+bool AP_Arming::poweroff_checks(bool display_failure) const
+{
+    if (AP::vehicle()->poweroff_pending()) {
+        check_failed(display_failure, "Power off pending");
+        return false;
+    }
+    return true;
+}
+#endif  // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+
 //Check for estop
 bool AP_Arming::estop_checks(bool display_failure)
 {
@@ -1788,6 +1800,9 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
         & crashdump_checks(report)
 #endif
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+        &  poweroff_checks(report)
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
         &  serial_protocol_checks(report)
         &  estop_checks(report);
 
@@ -1891,6 +1906,9 @@ bool AP_Arming::mandatory_checks(bool report)
 #endif
     ret &= rc_in_calibration_check(report);
     ret &= serial_protocol_checks(report);
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+    ret &= poweroff_checks(report);
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
     return ret;
 }
 
@@ -2005,10 +2023,11 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 #endif // HAL_HAVE_SAFETY_SWITCH
 
 #if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
-    // save any compass offsets the EKF has learned.  This must be done
-    // before the vehicle calls hal.util->set_soft_armed(false); once the
-    // EKF sees onGround it clears finalInflightMagInit and will no
-    // longer hand out learned offsets.
+    // save any compass offsets the EKF has learned
+    // EKF3 holds the learned field until the next arm so it is still available after landing.
+    // EKF2 does not so this must be done before the vehicle calls hal.util->set_soft_armed(false)
+    // because once EKF2 sees onGround it clears finalInflightMagInit and stops handing out
+    // learned offsets.
     AP::compass().save_ekf_learned_offsets();
 #endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 

@@ -482,7 +482,7 @@ void AP_Notify::send_text(const char *str)
     _send_text_updated_millis = AP_HAL::millis();
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 void AP_Notify::send_text_scripting(const char *str, uint8_t r)
 {
     for (uint8_t i = 0; i < _num_devices; i++) {

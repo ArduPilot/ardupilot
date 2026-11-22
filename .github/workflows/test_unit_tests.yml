@@ -124,9 +124,19 @@ jobs:
         ]
         config: [
             unit-tests,
+            unit-tests-asan,
             examples,
+            examples-asan,
             sitl
         ]
+        exclude:
+          # the clang images do not carry the sanitizer runtime, so clang
+          # cannot link anything built with --asan.  Drop these two once
+          # libclang-rt-<v>-dev is in ardupilot-dev-clang
+          - toolchain: clang
+            config: unit-tests-asan
+          - toolchain: clang
+            config: examples-asan
     steps:
       # git checkout the PR
       - uses: actions/checkout@v7
@@ -164,6 +174,13 @@ jobs:
         if: matrix.config == 'unit-tests'
         run: |
           Tools/autotest/unittest/annotate_params_unittest.py
+
+      - name: Unittest test_new_boards
+        env:
+          PYTHONPATH: "${{ github.workspace }}/Tools/scripts"
+        if: matrix.config == 'unit-tests'
+        run: |
+          python3 Tools/autotest/unittest/test_new_boards_unittest.py
 
       - name: Archive buildlog artifacts
         uses: actions/upload-artifact@v7

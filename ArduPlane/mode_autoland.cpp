@@ -201,10 +201,20 @@ void ModeAutoLand::update()
 {
     plane.calc_nav_roll();
 
-    // Apply level roll limit in climb stage
-    if (stage == AutoLandStage::CLIMB) {
+    switch (stage) {
+    case AutoLandStage::CLIMB:
+        // Apply level roll limit in climb stage
         plane.roll_limit_cd = MIN(plane.roll_limit_cd, plane.g.level_roll_limit*100);
         plane.nav_roll_cd = constrain_int16(plane.nav_roll_cd, -plane.roll_limit_cd, plane.roll_limit_cd);
+        break;
+
+    case AutoLandStage::LOITER:
+        break;
+
+    case AutoLandStage::LANDING:
+        // allow landing to restrict the roll limits
+        plane.nav_roll_cd = plane.landing.constrain_roll(plane.nav_roll_cd, plane.g.level_roll_limit*100);
+        break;
     }
 
     plane.calc_nav_pitch();
@@ -251,6 +261,23 @@ void ModeAutoLand::navigate()
         plane.auto_state.crosstrack = true;
         break;
     }
+}
+
+void ModeAutoLand::update_target_altitude()
+{
+    // Retain the loiter altitude target while waiting for the landing backend
+    // to confirm that we are lined up. The NAV_LAND target is at ground level,
+    // so using the normal waypoint target here would command a descent before
+    // the landing glide slope has been set up. Keeping the existing target also
+    // preserves its terrain frame.
+    if ((stage == AutoLandStage::LANDING) &&
+        (plane.landing.get_type() == AP_Landing::TYPE_STANDARD_GLIDE_SLOPE) &&
+        !plane.landing.is_on_approach() &&
+        !plane.landing.is_flaring()) {
+        return;
+    }
+
+    Mode::update_target_altitude();
 }
 
 /*
@@ -312,4 +339,3 @@ bool ModeAutoLand::is_landing() const
 
 
 #endif // MODE_AUTOLAND_ENABLED
-

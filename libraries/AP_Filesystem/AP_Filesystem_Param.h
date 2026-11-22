@@ -84,7 +84,7 @@ private:
 
     // finish uploading parameters
     bool finish_upload(const rfile &r);
-    bool param_upload_parse(const rfile &r, bool &need_retry);
+    bool param_upload_parse(const rfile &r, bool apply, bool &need_retry);
 };
 
 #endif  // AP_FILESYSTEM_PARAM_ENABLED

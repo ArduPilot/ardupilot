@@ -106,9 +106,11 @@ int AP_Filesystem_Mission::close(int fd)
 /*
   packed format:
     file header:
-      uint16_t magic = 0x671b
+      uint16_t magic = 0x763d
       uint16_t data_type MAV_MISSION_TYPE_*
-      uint32_t total_items
+      uint16_t options
+      uint16_t start (first item number, 0 for full upload)
+      uint16_t num_items
 
     per-entry is mavlink packed item
  */

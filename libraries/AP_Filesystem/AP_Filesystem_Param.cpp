@@ -542,9 +542,10 @@ int32_t AP_Filesystem_Param::write(int fd, const void *buf, uint32_t count)
 }
 
 /*
-  parse incoming parameters
+  parse incoming parameters. If apply is false then only check that
+  every record is valid, without changing any parameters
  */
-bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
+bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool apply, bool &need_retry)
 {
     need_retry = false;
 
@@ -598,6 +599,11 @@ bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
         uint16_t flags2;
 
         b += 2 + name_len;
+
+        if (!apply) {
+            b += value_size;
+            continue;
+        }
 
         // assume that this write to the Param filesystem is coming
         // via mavftp:
@@ -662,10 +668,14 @@ bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
  */
 bool AP_Filesystem_Param::finish_upload(const rfile &r)
 {
+    bool need_retry;
+    // check whole upload first so a rejected upload leaves all parameters unchanged
+    if (!param_upload_parse(r, false, need_retry)) {
+        return false;
+    }
     uint8_t loops = 0;
     while (loops++ < 4) {
-        bool need_retry;
-        if (!param_upload_parse(r, need_retry)) {
+        if (!param_upload_parse(r, true, need_retry)) {
             return false;
         }
         if (!need_retry) {

@@ -382,7 +382,7 @@ void ModeAuto::start_RTL()
 // lua scripts use this to retrieve the contents of the active command
 bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (_submode == SubMode::NavScriptTime) {
         id = nav_scripting.id;
         cmd = nav_scripting.command;
@@ -399,7 +399,7 @@ bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &a
 // lua scripts use this to indicate when they have complete the command
 void ModeAuto::nav_script_time_done(uint16_t id)
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if ((_submode == SubMode::NavScriptTime) && (id == nav_scripting.id)) {
         nav_scripting.done = true;
     }
@@ -539,7 +539,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_delay(cmd);
         break;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         do_nav_script_time(cmd);
         break;
@@ -572,7 +572,9 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
         if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
             rover.camera_mount.clear_roi_target();
@@ -581,7 +583,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
             rover.camera_mount.set_roi_target(cmd.content.location);
         }
         break;
-#endif
+#endif  // HAL_MOUNT_ENABLED
 
     case MAV_CMD_DO_SET_REVERSE:
         do_set_reverse(cmd);
@@ -679,7 +681,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_DELAY:
         return verify_nav_delay(cmd);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         return verify_nav_script_time();
 #endif
@@ -699,7 +701,9 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_REVERSE:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_GUIDED_LIMITS:
@@ -1019,7 +1023,7 @@ void ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
         cmd.content.guided_limits.horiz_max);
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // start accepting position, velocity and acceleration targets from lua scripts
 void ModeAuto::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
 {

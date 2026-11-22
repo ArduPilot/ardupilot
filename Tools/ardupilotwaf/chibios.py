@@ -23,6 +23,7 @@ import hal_common
 
 # sys.path already set up at the top of boards.py
 import chibios_hwdef
+import boards
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -397,7 +398,7 @@ class generate_apj(Task.Task):
 class build_abin(Task.Task):
     '''build an abin file for skyviper firmware upload via web UI'''
     color='CYAN'
-    run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC} ${TGT}'
+    run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC[0].abspath()} ${TGT} ${ABIN_GIT_HASH}'
     def keyword(self):
         return "Generating"
     def __str__(self):
@@ -487,6 +488,9 @@ def chibios_firmware(self):
     self.create_task('generate_apj', src=[intf_bin] + extf_bin, tgt=apj_target)
 
     if self.env.BUILD_ABIN:
+        # the build directory may be outside the source tree, so the
+        # hash is found here rather than by the script
+        self.env.ABIN_GIT_HASH = self.bld.git_head_hash()
         abin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.abin').name)
         abin_task = self.create_task('build_abin', src=[intf_bin] + extf_bin, tgt=abin_target)
         abin_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/make_abin.sh'))
@@ -708,6 +712,7 @@ def generate_hwdef_h(env):
         signed_fw=bool(env.AP_SIGNED_FIRMWARE),
         mass_storage_option=get_build_option_value(env, 'MASS_STORAGE'),
         hwdef=hwdef,
+        build_option_defines=boards.build_option_defines(env.OPTIONS),
         # stringify like old subprocess based invocation. note that no error is
         # generated if this path is missing!
         default_params_filepath=str(env.DEFAULT_PARAMETERS),
@@ -742,18 +747,28 @@ def pre_build(bld):
 def build(bld):
 
     # make ccache effective on ChibiOS builds
-    os.environ['CCACHE_IGNOREOPTIONS'] = '--specs=nano.specs --specs=nosys.specs'
+    if not bld.env.PICOLIBC:
+        os.environ['CCACHE_IGNOREOPTIONS'] = '--specs=nano.specs --specs=nosys.specs'
     
+    # one set of variables for every call into the ChibiOS makefiles.  lib
+    # runs pass again and both write include_dirs, so a variable only one of
+    # them has changes that file after waf has hashed it; ENABLE_CRASHDUMP,
+    # which adds AP_HAL to the include path, did exactly that
+    make_vars = "BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${HAL_MAX_STACK_FRAME_SIZE}"
+    if bld.env.ENABLE_CRASHDUMP:
+        make_vars += " ENABLE_CRASHDUMP=yes"
+
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule="BUILDDIR=${BUILDDIR_REL} BUILDROOT=${BUILDROOT} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
+        rule="%s '${MAKE}' pass -f '${BOARD_MK}'" % make_vars,
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
     )
 
     bld(
-        # create the file modules/ChibiOS/include_dirs
-        rule="echo // BUILD_FLAGS: ${BUILDDIR_REL} ${BUILDROOT} ${CH_ROOT_REL} ${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} > chibios_flags.h",
+        # create the file chibios_flags.h: every ChibiOS object depends on
+        # it, so a change to the variables rebuilds them
+        rule="echo // BUILD_FLAGS: %s > chibios_flags.h" % make_vars,
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('chibios_flags.h')
     )
@@ -771,25 +786,16 @@ def build(bld):
     if bld.env.ROMFS_FILES:
         common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
 
+    ch_targets = [bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')]
     if bld.env.ENABLE_CRASHDUMP:
-        ch_task = bld(
-            # build libch.a from ChibiOS sources and hwdef.h
-            rule="BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' ENABLE_CRASHDUMP=yes CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
-            group='dynamic_sources',
-            source=common_src,
-            target=[
-                bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'),
-                bld.bldnode.find_or_declare('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')
-            ]
-        )
-    else:
-        ch_task = bld(
-            # build libch.a from ChibiOS sources and hwdef.h
-            rule="BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
-            group='dynamic_sources',
-            source=common_src,
-            target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
-        )
+        ch_targets += [bld.bldnode.find_or_declare('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')]
+    ch_task = bld(
+        # build libch.a from ChibiOS sources and hwdef.h
+        rule="%s '${MAKE}' -j%u lib -f '${BOARD_MK}'" % (make_vars, bld.options.jobs),
+        group='dynamic_sources',
+        source=common_src,
+        target=ch_targets
+    )
     ch_task.name = "ChibiOS_lib"
     DSP_LIBS = {
         'cortex-m4' : 'libarm_cortexM4lf_math.a',
@@ -802,17 +808,26 @@ def build(bld):
                         os.path.join(bld.env.BUILDROOT,'modules/ChibiOS/libDSP.a'))
         bld.env.LIB += ['DSP']
     bld.env.LIB += ['ch']
+    if bld.env.PICOLIBC:
+        # Keep the no-exceptions C++ runtime after ChibiOS so its ABI stubs
+        # take precedence. Retain the toolchain math library with Picolibc libc.
+        bld.env.LIB += ['stdc++_nano', 'm', 'c']
     bld.env.LIBPATH += ['modules/ChibiOS/']
     if bld.env.ENABLE_CRASHDUMP:
         # Link the handler directly so it overrides ChibiOS's weak fault handler.
         bld.env.LINKFLAGS += ['modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o']
     # list of functions that will be wrapped to move them out of libc into our
     # own code
-    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']
+    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf', 'fiprintf']
+    if bld.env.PICOLIBC:
+        wraplist += ['__errno', 'getenv']
 
-    # list of functions that we will give a link error for if they are
-    # used. This is to prevent accidental use of these functions
-    blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell', 'realloc',
+    # Functions rejected by the post-link symbol scan in production firmware.
+    # Examples, tools and SITL-on-hardware are allowed to use them.
+    blacklist = ['read', 'lseek', 'write', 'close', 'fstat', 'isatty',
+                 'raise', 'exit', '_Exit', '_exit', '_fini',
+                 'kill', '_kill', 'getpid', '_getpid',
+                 '_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell', 'realloc',
                  'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                  'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',
@@ -821,6 +836,30 @@ def build(bld):
 
     # these functions use global state that is not thread safe
     blacklist += ['gmtime']
+    # Flight firmware must not acquire locks inside libc. Reject the hooks
+    # even if an archive supplies them, rather than relying only on link errors.
+    blacklist += [
+        '__retarget_lock_init', '__retarget_lock_init_recursive',
+        '__retarget_lock_close', '__retarget_lock_close_recursive',
+        '__retarget_lock_acquire', '__retarget_lock_acquire_recursive',
+        '__retarget_lock_try_acquire', '__retarget_lock_try_acquire_recursive',
+        '__retarget_lock_release', '__retarget_lock_release_recursive',
+        '__lock___libc_recursive_mutex',
+    ]
+    if not bld.env.SIM_ENABLED:
+        blacklist += ['abort']
 
-    for w in wraplist + blacklist:
+    # Include wrapped functions in the final scan because --wrap cannot catch
+    # references resolved within the same libc object.
+    bld.env.SYMBOLS_BLACKLIST = wraplist + blacklist
+    bld.env.SYMBOLS_BLACKLIST += ['_before_main']
+    if bld.env.PICOLIBC:
+        bld.env.SYMBOLS_BLACKLIST += [
+            '_impure_ptr', '__errno', '_calloc_r', '_free_r', '_malloc_r',
+            '_realloc_r',
+        ]
+    if not bld.env.CH_CFG_USE_HEAP:
+        bld.env.SYMBOLS_BLACKLIST += ['malloc', 'calloc', 'free']
+
+    for w in wraplist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]

@@ -1083,7 +1083,7 @@ struct PACKED log_VER {
 // @Field: Heal: Healthy
 // @Field: ThEnd: Reached end of thread
 // @Field: Mov: Motor is moving
-// @Field: Clut: Clutch is engaged (motor can move freely)
+// @Field: Clut: Clutch is disengaged (motor can move freely)
 // @Field: Mode: 0 is Relaxed, 1 is Position Control, 2 is Rate Control
 // @Field: DLen: Desired Length
 // @Field: Len: Estimated Length

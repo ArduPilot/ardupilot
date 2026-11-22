@@ -202,7 +202,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
         const float slew = MIN(1.0f, (now - rpmdata.last_update_us) * rpmdata.update_rate_hz * (1.0f / 1e6f));
         rpm = (rpmdata.prev_rpm + (rpmdata.rpm - rpmdata.prev_rpm) * slew);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
         if ((1U<<esc_index) & rpm_scale_mask) {
             rpm *= rpm_scale_factor[esc_index];
         }
@@ -676,13 +676,14 @@ void AP_ESC_Telem::update()
 {
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
+    const bool logging_enabled = logger != nullptr && logger->logging_enabled();
     const uint64_t now_us64 = AP_HAL::micros64();
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         const volatile AP_ESC_Telem_Backend::RpmData &rpmdata = _rpm_data[i];
         volatile AP_ESC_Telem_Backend::TelemetryData &telemdata = _telem_data[i];
         // Push received telemetry data into the logging system
-        if (logger && logger->logging_enabled()) {
+        if (logging_enabled) {
             if (telemdata.last_update_ms != _last_telem_log_ms[i]
                 || rpmdata.last_update_us != _last_rpm_log_us[i]) {
 
@@ -806,15 +807,17 @@ void AP_ESC_Telem::update()
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         // copy the last_updated_us timestamp to avoid any race issues
         const uint32_t last_updated_us = _rpm_data[i].last_update_us;
-        const uint32_t now_us = AP_HAL::micros();
-        // Invalidate RPM data if not received for too long
-        if (AP_HAL::timeout_expired(last_updated_us, now_us, ESC_RPM_DATA_TIMEOUT_US)) {
+        // Invalidate RPM data if not received for too long.  Only
+        // valid data can time out, which saves reading the clock for
+        // the many ESC slots which never report
+        if (_rpm_data[i].data_valid &&
+            AP_HAL::timeout_expired(last_updated_us, AP_HAL::micros(), ESC_RPM_DATA_TIMEOUT_US)) {
             _rpm_data[i].data_valid = false;
         }
         const uint32_t last_telem_data_ms = _telem_data[i].last_update_ms;
-        const uint32_t now_ms = AP_HAL::millis();
         // Invalidate telemetry data if not received for too long
-        if (AP_HAL::timeout_expired(last_telem_data_ms, now_ms, ESC_TELEM_DATA_TIMEOUT_MS)) {
+        if (_telem_data[i].any_data_valid &&
+            AP_HAL::timeout_expired(last_telem_data_ms, AP_HAL::millis(), ESC_TELEM_DATA_TIMEOUT_MS)) {
             _telem_data[i].any_data_valid = false;
         }
     }
@@ -845,7 +848,7 @@ bool AP_ESC_Telem::was_rpm_data_ever_reported(const volatile AP_ESC_Telem_Backen
     return instance.last_update_us > 0;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 /*
   set RPM scale factor from script
 */

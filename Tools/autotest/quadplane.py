@@ -440,16 +440,22 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             '''watches NAV_CONTROLLER_OUTPUT/GLOBAL_POSITION_INT and makes
             sure the QRTL approach altitude target eases down continuously,
             without stepping, towards RTL_ALTITUDE'''
-            def __init__(self, suite, entry_alt, max_step_rate=5, max_step_fixed=2):
+            def __init__(self, suite, entry_alt, max_step_rate=5, max_step_fixed=2,
+                         start_band=10):
                 super(MonitorQRTLDescentRate, self).__init__(suite)
                 # max_step_rate: m/s, target may not chase faster than this
                 # max_step_fixed: m, allowed on top of max_step_rate * dt
+                # start_band: m, how close to entry_alt the ramp's first
+                # target must be for monitoring to start
                 self.max_step_rate = max_step_rate
                 self.max_step_fixed = max_step_fixed
+                self.start_band = start_band
+                self.entry_alt = entry_alt
                 self.alt = entry_alt
                 self.prev_target = None
                 self.prev_t = None
                 self.target = None
+                self.started = False
 
             def process(self, mav, m):
                 m_type = m.get_type()
@@ -461,6 +467,17 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
                 now = self.suite.get_sim_time_cached()
                 self.target = self.alt + m.alt_error
+                if not self.started:
+                    # the first cycle after the mode change can still
+                    # report alt_error against Q_RTL_ALT, before the
+                    # approach ramp has a target of its own.  That is one
+                    # sample of (entry_alt - Q_RTL_ALT), here 80m, and it
+                    # is not the stepping this test looks for; start once
+                    # the ramp owns the target.  Failing to start at all
+                    # is caught after the hook is removed.
+                    if abs(self.target - self.entry_alt) > self.start_band:
+                        return
+                    self.started = True
                 if self.prev_target is not None:
                     dt = now - self.prev_t
                     step = abs(self.target - self.prev_target)
@@ -485,6 +502,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         if monitor.target is None:
             raise NotAchievedException("Never saw a target altitude")
+        if not monitor.started:
+            raise NotAchievedException(
+                "QRTL never set an approach target within %.1fm of the entry "
+                "altitude (%.1fm); last target was %.1fm" %
+                (monitor.start_band, entry_alt, monitor.target))
         if monitor.target > entry_alt - min_progress:
             raise NotAchievedException(
                 "QRTL target altitude only came down from %.1fm to %.1fm, "
@@ -686,6 +708,83 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.reboot_sitl()  # far from home
 
+    def QAUTOTUNEYawRepoint(self):
+        '''check QAutoTune survives a slow position-hold yaw re-point'''
+        # beyond 5m of drift position hold commands a yaw re-point; the
+        # low yaw acceleration here makes its traverse outlast the
+        # failed-to-level timeout while staying under the rate-based
+        # deferral threshold
+        self.set_parameters({
+            "Q_A_ACC_Y_MAX": 5,
+            "Q_AUTOTUNE_AXES": 3,  # roll and pitch only
+            # adjust tune so QAUTOTUNE can cope:
+            "Q_AUTOTUNE_AGGR": 0.1,
+            "Q_AUTOTUNE_MIN_D": 0.0004,
+            "Q_A_RAT_RLL_P": 0.15,
+            "Q_A_RAT_RLL_I": 0.25,
+            "Q_A_RAT_RLL_D": 0.002,
+            "Q_A_RAT_PIT_P": 0.15,
+            "Q_A_RAT_PIT_I": 0.25,
+            "Q_A_RAT_PIT_D": 0.002,
+            "Q_A_RAT_YAW_P": 0.18,
+            "Q_A_RAT_YAW_I": 0.018,
+            "Q_A_ANG_RLL_P": 4.5,
+            "Q_A_ANG_PIT_P": 4.5,
+        })
+
+        self.takeoff(15, mode='GUIDED')
+        self.hover()
+        self.change_mode("QLOITER")
+
+        # record how far the vehicle drifts and yaws away from where
+        # autotune starts, so the test fails if the re-point it exists
+        # for stops happening, rather than passing without exercising it
+        start_pos = self.assert_receive_message('GLOBAL_POSITION_INT')
+        start_yaw = math.degrees(self.assert_receive_message('ATTITUDE').yaw)
+        extremes = {"drift": 0.0, "yaw_change": 0.0}
+
+        def record_extremes(mav, m):
+            t = m.get_type()
+            if t == 'GLOBAL_POSITION_INT':
+                extremes["drift"] = max(extremes["drift"], self.get_distance_int(start_pos, m))
+            elif t == 'ATTITUDE':
+                change = abs((math.degrees(m.yaw) - start_yaw + 180) % 360 - 180)
+                extremes["yaw_change"] = max(extremes["yaw_change"], change)
+
+        self.context_push()
+        self.install_message_hook_context(record_extremes)
+        tstart = self.get_sim_time()
+        self.context_collect('STATUSTEXT')
+        self.change_mode("QAUTOTUNE")
+        self.wait_text(
+            "AutoTune: (Success|Failed to level).*",
+            timeout=5000,
+            check_context=True,
+            regex=True,
+        )
+        self.context_pop()
+        self.progress("drifted up to %.1fm and yawed up to %.0fdeg from the start" %
+                      (extremes["drift"], extremes["yaw_change"]))
+        if self.re_match.group(1) != "Success":
+            raise NotAchievedException("autotune did not succeed")
+        # position hold only re-points beyond 5m of drift, and then by
+        # at least 90deg while tuning pitch (seen: 11.2m, 140deg)
+        if extremes["drift"] < 5:
+            raise NotAchievedException("only drifted %.1fm; no yaw re-point was exercised" %
+                                       extremes["drift"])
+        if extremes["yaw_change"] < 90:
+            raise NotAchievedException("only yawed %.0fdeg; no large yaw re-point was exercised" %
+                                       extremes["yaw_change"])
+        self.progress("AUTOTUNE OK (%u seconds)" % (self.get_sim_time() - tstart))
+
+        # leave QAUTOTUNE before disarming so the tuned gains are not saved
+        self.change_mode("QLOITER")
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()  # may have drifted far from home
+
+    def hover(self, hover_throttle=1500):
+        self.set_rc(3, hover_throttle)
+
     def takeoff(self, height, mode, timeout=30):
         """climb to specified height and set throttle to 1500"""
         self.set_current_waypoint(0, check_afterwards=False)
@@ -732,9 +831,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         """Wait for level flight."""
         tstart = self.get_sim_time()
         self.progress("Waiting for level flight")
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({1: 1500, 2: 1500, 4: 1500})
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.assert_receive_message('ATTITUDE')
             roll = math.degrees(m.roll)
@@ -1351,7 +1448,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_location(loc, timeout=120, accuracy=100, height_accuracy=None)
         self.progress("Triggering failsafe")
         self.set_parameter('BATT_LOW_VOLT', 50)
-        self.wait_mode(25)  # LoiterAltQLand
+        self.wait_mode("LOITERALTQLAND")
         self.drain_mav()
         m = self.assert_receive_message('POSITION_TARGET_GLOBAL_INT', very_verbose=True)
         q_rtl_alt = self.get_parameter('Q_RTL_ALT')
@@ -1413,7 +1510,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.progress("Triggering failsafe")
         self.set_parameter('BATT_LOW_VOLT', 50)
-        self.wait_mode(25)  # LoiterAltQLand
+        self.wait_mode("LOITERALTQLAND")
         terrain_alt = self.get_terrain_height(verbose=True)
         self.drain_mav()
         m = self.assert_receive_message('POSITION_TARGET_GLOBAL_INT', very_verbose=True)
@@ -3255,8 +3352,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         self.start_subtest("Should not be able to arm with mid-stick throttle")
-        self.set_rc(3, 1500)
-        self.set_rc(4, 2000)
+        self.set_rc_from_map({3: 1500, 4: 2000})
         w = vehicle_test_suite.WaitAndMaintainDisarmed(self, minimum_duration=10)
         w.run()
         self.set_rc(4, 1500)
@@ -3264,8 +3360,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.clear_parameter_bit("RC_OPTIONS", 5)
         self.start_subtest("Should be able to arm with mid-stick throttle")
-        self.set_rc(3, 1500)
-        self.set_rc(4, 2000)
+        self.set_rc_from_map({3: 1500, 4: 2000})
         self.wait_armed()
         self.set_rc(4, 1500)
         self.disarm_vehicle()
@@ -4039,6 +4134,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             24: "Thermal",
             25: "Loiter to QLand",
             26: "Autoland",
+            27: "Glide",
         }
         initialising = self.get_mode_from_mode_mapping("INITIALISING")
         self.assert_available_modes(expected_modes, not_user_selectable=[initialising])
@@ -4420,6 +4516,134 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             # the battery failsafe latches until reboot
             self.reboot_sitl()
 
+    def TiltrotorVectoringRoll(self):
+        '''check tilt-vectoring drives the tilt servos the correct way for roll'''
+
+        # A vectored-yaw tiltrotor uses the tilt servos for both yaw and
+        # roll.  Tilting a rotor further forward reduces its vertical
+        # thrust, so a right roll demand (right side down) must tilt the
+        # left rotor back and the right rotor forward.  That is the
+        # opposite of the tilt used for a right yaw demand, where the
+        # left rotor goes forward.  Roll is scaled by sin(tilt) and yaw by
+        # cos(tilt), so the roll term only shows up at large tilt angles.
+        #
+        # The vehicle is held on the ground where SITL pins it level with
+        # zero body rates, so a stick demand produces a steady rate
+        # controller output without the vehicle ever moving.
+
+        # SERVO13 is k_tiltMotorLeft and SERVO12 is k_tiltMotorRight; a
+        # higher output tilts that side further forward:
+        LEFT_TILT_SERVO = 13
+        RIGHT_TILT_SERVO = 12
+        self.customise_SITL_commandline(
+            [],
+            model="quadplane-tilttrivec",
+            wipe=True,
+        )
+
+        self.set_parameters({
+            # FWD_THR gives the pilot direct control of the tilt angle in QACRO:
+            "RC6_OPTION": 209,
+            "Q_FWD_MANTHR_MAX": 100,
+            # AIRMODE keeps the rate controllers running with the throttle closed,
+            # so the vehicle can be held on the ground while it demands roll:
+            "RC7_OPTION": 84,
+            # vectoring uses sin(tilt) for roll and cos(tilt) for yaw, so a large
+            # tilt angle makes the roll term the dominant one:
+            "Q_TILT_MAX": 80,
+        })
+        self.context_set_message_rate_hz('SERVO_OUTPUT_RAW', 20)
+
+        def tilt_offset():
+            '''left tilt servo output minus right tilt servo output, in PWM'''
+            m = self.assert_receive_message('SERVO_OUTPUT_RAW', timeout=5)
+            left = getattr(m, "servo%u_raw" % LEFT_TILT_SERVO)
+            right = getattr(m, "servo%u_raw" % RIGHT_TILT_SERVO)
+            return left - right
+
+        def wait_tilt_offset(minimum, timeout=10):
+            '''wait for the tilt servos to split by minimum PWM, return signed offset'''
+            tstart = self.get_sim_time()
+            while True:
+                offset = tilt_offset()
+                if abs(offset) >= minimum:
+                    self.progress("tilt offset %d" % offset)
+                    return offset
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(
+                        "tilt servos did not vector (offset=%d)" % offset)
+
+        def wait_tilt_centred(maximum=15, timeout=10):
+            '''wait for the tilt servos to come back together'''
+            tstart = self.get_sim_time()
+            while True:
+                offset = tilt_offset()
+                if abs(offset) <= maximum:
+                    return
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(
+                        "tilt servos did not centre (offset=%d)" % offset)
+
+        def check_tilt_offset(name, want_positive, minimum=25, duration=2):
+            '''check the tilt servos stay split the expected way for duration'''
+            wait_tilt_offset(minimum)
+            sign = 1 if want_positive else -1
+            offsets = []
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < duration:
+                offsets.append(tilt_offset() * sign)
+            self.progress("%s: tilt offsets %d..%d (want >= %d)" %
+                          (name, min(offsets), max(offsets), minimum))
+            if min(offsets) < minimum:
+                raise NotAchievedException(
+                    "%s: tilt vectored the wrong way (offset=%d)" %
+                    (name, min(offsets) * sign))
+
+        self.change_mode('QACRO')
+        self.wait_ready_to_arm()
+        self.zero_throttle()
+        self.set_rc(6, 1000)  # rotors up
+        self.arm_vehicle()
+        self.set_rc(7, 2000)  # air mode on
+
+        self.start_subtest("roll vectors the tilt servos with the rotors tilted")
+        self.set_rc(6, 2000)  # rotors forward to Q_TILT_MAX
+        # both servos sit at the tilt angle while roll and yaw are neutral:
+        self.wait_servo_channel_value(LEFT_TILT_SERVO, 1850, comparator=operator.gt, timeout=20)
+        self.wait_servo_channel_value(RIGHT_TILT_SERVO, 1850, comparator=operator.gt, timeout=20)
+        wait_tilt_centred()
+
+        # a right roll demand must tilt the left rotor back, so that the
+        # left side lifts and the right side drops:
+        self.set_rc(1, 2000)
+        check_tilt_offset("right roll", want_positive=False)
+
+        self.set_rc(1, 1500)
+        wait_tilt_centred()
+
+        self.set_rc(1, 1000)
+        check_tilt_offset("left roll", want_positive=True)
+
+        self.set_rc(1, 1500)
+        wait_tilt_centred()
+
+        self.start_subtest("rudder vectors the tilt servos with the rotors up")
+        # with the rotors up sin(tilt) is zero, so no roll vectoring is
+        # applied and this checks the yaw half of the same calculation
+        self.set_rc(6, 1000)
+        self.wait_servo_channel_value(LEFT_TILT_SERVO, 1150, comparator=operator.lt, timeout=20)
+        self.wait_servo_channel_value(RIGHT_TILT_SERVO, 1150, comparator=operator.lt, timeout=20)
+
+        # right rudder tilts the left rotor forward, which yaws the nose right
+        self.set_rc(4, 2000)
+        check_tilt_offset("right rudder", want_positive=True)
+
+        self.set_rc(4, 1500)
+        self.set_rc(7, 1000)  # air mode off
+        # air mode has been running the motors up, so the vehicle still
+        # believes it is flying:
+        self.disarm_vehicle(force=True)
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -4497,6 +4721,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             # first, on a fresh SITL: straight after PilotYaw it failed to level 5 times in 10
             # (PR #33628 fixes the underlying AutoTune level-timeout race)
             self.QAUTOTUNE,
+            self.QAUTOTUNEYawRepoint,
             self.AHRSSwitchBackendResets,
             self.PilotYaw,
             self.TestLogDownloadWrap,
@@ -4541,6 +4766,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.VTOLCommandRejections,
             self.LANDING_TARGET,
             self.BatteryFailsafeLandAUTORefused,
+            self.TiltrotorVectoringRoll,
         ])
         return ret
 

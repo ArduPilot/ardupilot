@@ -1042,7 +1042,6 @@ void AP_DroneCAN::notify_state_send()
         msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_THROW_READY;
     }
 
-#ifndef HAL_BUILD_AP_PERIPH
     const AP_Vehicle* vehicle = AP::vehicle();
     if (vehicle != nullptr) {
         if (vehicle->is_landing()) {
@@ -1052,7 +1051,6 @@ void AP_DroneCAN::notify_state_send()
             msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_IS_TAKING_OFF;
         }
     }
-#endif // HAL_BUILD_AP_PERIPH
 
     // beware that
     // ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_YAW_EARTH_CENTIDEGREES
@@ -1135,10 +1133,14 @@ void AP_DroneCAN::gnss_send_fix()
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED;
         break;
     case AP_GPS_FixType::STATIC:
-    case AP_GPS_FixType::PPP:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_PPP; // Static is not representable in DroneCAN.
-        pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED; // There is no submode for static or PPP
+        pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED; // There is no submode for static
+        break;
+    case AP_GPS_FixType::PPP:
+        pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
+        pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_PPP;
+        pkt.sub_mode = 0; // No submodes are defined for PPP.
         break;
     }
 
@@ -1590,7 +1592,7 @@ bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 /*
   handle FlexDebug message, holding a copy locally for a lua script to access
  */
@@ -1644,7 +1646,7 @@ bool AP_DroneCAN::get_FlexDebug(uint8_t node_id, uint16_t msg_id, uint32_t &time
     return false;
 }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 /*
   handle LogMessage debug

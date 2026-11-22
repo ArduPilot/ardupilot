@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_GUIDED_ENABLED && AP_SCRIPTING_ENABLED
+#if MODE_GUIDED_ENABLED && AP_EXTERNAL_BINDING_ENABLED
 // constructor registers custom number and names
 ModeGuidedCustom::ModeGuidedCustom(const Number _number, const char* _full_name, const char* _short_name):
     number(_number),

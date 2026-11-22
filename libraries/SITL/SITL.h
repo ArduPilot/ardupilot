@@ -175,6 +175,7 @@ public:
 
     enum class GPSOptions : uint32_t {
         UBX_IS_F9P = 1U << 0,
+        UBX_NO_BACKUP = 1U << 1,
     };
 
     struct sitl_fdm state;
@@ -264,6 +265,8 @@ public:
     AP_Int8  flow_enable; // enable simulated optflow
     AP_Int16 flow_rate; // optflow data rate (Hz)
     AP_Int8  flow_delay; // optflow data delay
+    AP_Float flow_offset_x; // optflow rate offset (rad/sec) added on x axis, for fault injection
+    AP_Float flow_offset_y; // optflow rate offset (rad/sec) added on y axis, for fault injection
     AP_Int8  terrain_enable; // enable using terrain for height
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
@@ -369,6 +372,7 @@ public:
         AP_Int8 fix_type; // GPS fix type
         AP_Float noise_horizontal; // horizontal noise radius in meters
         AP_Vector3f vel_glitch; // glitch offsets in NED velocity (m/s)
+        AP_Int8 ubx_model; // see enum SITL::GPS_UBlox::Model
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 

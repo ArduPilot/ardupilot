@@ -148,7 +148,9 @@ bool AP_CustomControl::update(void)
             // values while we were not running, so clear them before they are applied.
             _backend->reset();
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Custom controller is ON");
+#if HAL_LOGGING_ENABLED
             log_switch();
+#endif  // HAL_LOGGING_ENABLED
         }
 
         _backend->update();
@@ -165,7 +167,9 @@ bool AP_CustomControl::update(void)
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Custom controller is OFF");
         }
+#if HAL_LOGGING_ENABLED
         log_switch();
+#endif  // HAL_LOGGING_ENABLED
         ret = true;
 
     } else {
@@ -238,8 +242,10 @@ void AP_CustomControl::set_controls()
 // This is called upon AUX_FUNC event.
 void AP_CustomControl::set_custom_controller(bool enabled)
 {
+#if HAL_LOGGING_ENABLED
     // double logging switch makes the state change very clear in the log
     log_switch();
+#endif  // HAL_LOGGING_ENABLED
 
     _custom_controller_active = false;
 
@@ -277,8 +283,10 @@ void AP_CustomControl::set_custom_controller(bool enabled)
     const float loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
     set_notch_sample_rate(loop_rate);
 
+#if HAL_LOGGING_ENABLED
     // log successful switch
     log_switch();
+#endif  // HAL_LOGGING_ENABLED
 }
 
 // Verify the conditions which are safe to run the custom controller.
@@ -303,6 +311,7 @@ bool AP_CustomControl::is_safe_to_run(void)
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 // Log the custom controller state. Called on each engage and disengage edge, and twice on
 // each switch event, so that the state change is unmistakable in the log.
 void AP_CustomControl::log_switch(void) {
@@ -319,6 +328,7 @@ void AP_CustomControl::log_switch(void) {
                        _custom_controller_active,
                        _is_running);
 }
+#endif  // HAL_LOGGING_ENABLED
 
 void AP_CustomControl::set_notch_sample_rate(float sample_rate)
 {

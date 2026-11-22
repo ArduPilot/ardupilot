@@ -18,8 +18,10 @@ include $repo/Tools/renode/peripherals/common/AP_DWT.cs
 include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs
 include $repo/Tools/renode/peripherals/common/AP_Hotplug.cs
 include $repo/Tools/renode/peripherals/common/AP_Physics.cs
+include $repo/Tools/renode/peripherals/common/AP_BoardThermal.cs
 include $repo/Tools/renode/peripherals/common/AP_I2CRegisterDevice.cs
 include $repo/Tools/renode/peripherals/common/AP_UARTFrameDevice.cs
+include $repo/Tools/renode/peripherals/common/AP_RCInput.cs
 include $repo/Tools/renode/peripherals/common/AP_UARTPacer.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_Actuators.cs
 include $repo/Tools/renode/peripherals/common/AP_IOMCU.cs
@@ -70,6 +72,8 @@ include $repo/Tools/renode/peripherals/sensors/AP_DevoOutput.cs
 include $repo/Tools/renode/peripherals/sensors/AP_FrSkyDOutput.cs
 include $repo/Tools/renode/peripherals/storage/AP_RAMTRON.cs
 
+include $repo/Tools/renode/peripherals/sensors/AP_SPIBarometer.cs
+include $repo/Tools/renode/peripherals/common/AP_MAX7456.cs
 mach create "ardupilot"
 machine LoadPlatformDescription $platform
 

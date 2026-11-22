@@ -2,7 +2,7 @@
 
 #include "AP_Proximity_Backend.h"
 
-#if HAL_PROXIMITY_ENABLED && AP_SCRIPTING_ENABLED
+#if HAL_PROXIMITY_ENABLED && AP_EXTERNAL_BINDING_ENABLED
 
 class AP_Proximity_Scripting : public AP_Proximity_Backend
 {
@@ -48,4 +48,4 @@ private:
     float _distance_max;
 };
 
-#endif // HAL_PROXIMITY_ENABLED && AP_SCRIPTING_ENABLED
+#endif // HAL_PROXIMITY_ENABLED && AP_EXTERNAL_BINDING_ENABLED

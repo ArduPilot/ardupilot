@@ -15,6 +15,7 @@
 //  - ccm added at 0x10000000: hwdef RAM_MAP makes it a 64K heap region,
 //    ArduPilot faults without it
 //  - usart6 added (stock stops at uart5)
+//  - timer12 added: ChibiOS halts in eicuStart when RCININT is on TIM12
 //  - iwdg swapped for the AP_STM32_IWDG stub: the stock model really
 //    fires, which turns every pause-at-a-breakpoint into a reset
 //  - timer frequencies set to the real bus clocks (stock says 10MHz,
@@ -225,6 +226,7 @@ rcc: Miscellaneous.AP_STM32F4_RCC @ sysbus 0x40023800
     timer5: timer5
     timer8: timer8
     timer9: timer9
+    timer12: timer12
 
 timer1: Timers.STM32_Timer @ sysbus 0x40010000
     BreakInterrupt -> nvic@24
@@ -265,6 +267,12 @@ timer8: Timers.STM32_Timer @ sysbus 0x40010400
 timer9: Timers.STM32_Timer @ sysbus 0x40014000
     -> nvic@24
     frequency: 168000000
+    initialLimit: 0xFFFF
+
+// shares its IRQ with the TIM8 break interrupt
+timer12: Timers.STM32_Timer @ sysbus 0x40001800
+    -> nvic@43
+    frequency: 84000000
     initialLimit: 0xFFFF
 
 bitbandPeripherals: Miscellaneous.BitBanding @ sysbus <0x42000000, +0x2000000>

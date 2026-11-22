@@ -3,6 +3,8 @@
 
 #include "defines.h"
 
+#include <GCS_MAVLink/GCS_config.h>
+
 
 //////////////////////////////////////////////////////////////////////////////
 // RC Channel definitions
@@ -58,5 +60,5 @@
 #endif
 
 #ifndef AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED
-#define AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED 1
+#define AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
 #endif

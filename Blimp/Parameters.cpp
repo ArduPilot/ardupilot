@@ -81,7 +81,7 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level in microseconds on channel 3 below which throttle failsafe triggers
+    // @Description: The PWM level in microseconds on the throttle input channel at or below which throttle failsafe triggers
     // @Range: 910 1100
     // @Units: PWM
     // @Increment: 1
@@ -428,7 +428,7 @@ void Blimp::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Jan-2024 for Copter-4.6
         { &stats, stats.var_info, 12 },
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Copter-4.6
         { &scripting, scripting.var_info, 30 },
 #endif

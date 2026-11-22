@@ -3,6 +3,22 @@
 #include "Tracker.h"
 #include <GCS_MAVLink/GCS.h>
 
+void ModeGuided::enter()
+{
+    // hold the current attitude until we receive a target
+    const AP_AHRS &ahrs = AP::ahrs();
+    _target_att.from_euler(0, ahrs.get_pitch_rad(), ahrs.get_yaw_rad());
+    _use_yaw_rate = false;
+    _use_pitch_rate = false;
+
+    // don't let the error and integrator left over from the previous
+    // mode move the servos
+    tracker.g.pidYaw2Srv.reset_filter();
+    tracker.g.pidYaw2Srv.reset_I();
+    tracker.g.pidPitch2Srv.reset_filter();
+    tracker.g.pidPitch2Srv.reset_I();
+}
+
 void ModeGuided::update()
 {
     static uint32_t last_debug;

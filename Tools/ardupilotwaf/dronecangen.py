@@ -67,12 +67,13 @@ def process_dronecangen(self):
     if dsdlc is None:
         self.bld.fatal("dronecangen: waf couldn't find dsdlc at abspath {}".format(dsdlc_dir))
     deps.extend(dsdlc.ant_glob("**/*.py **/*.em"))
-    outputs = []
-
     self.source = []
 
     if not isinstance(self.output_dir, Node.Node):
         self.output_dir = self.bld.bldnode.find_or_declare(self.output_dir)
+
+    # declare one generated header so the task reruns if it is removed
+    outputs = [self.output_dir.find_or_declare('include/dronecan_msgs.h')]
 
     task = self.create_task('dronecangen', inputs, outputs)
     task.dep_nodes = deps

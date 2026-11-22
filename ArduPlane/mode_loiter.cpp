@@ -28,7 +28,7 @@ void ModeLoiter::update()
         plane.calc_throttle();
     }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (plane.nav_scripting_active()) {
         // while a trick is running we reset altitude
         plane.set_target_altitude_current();
@@ -141,7 +141,7 @@ void ModeLoiter::navigate()
         plane.next_WP_loc.set_alt_cm(plane.target_altitude.amsl_cm, Location::AltFrame::ABSOLUTE);
     }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (plane.nav_scripting_active()) {
         // don't try to navigate while running trick
         return;

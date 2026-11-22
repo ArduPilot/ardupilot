@@ -1,0 +1,4 @@
+# RGB LED pad on PWM11
+SERVO11_FUNCTION 120
+# BLHeli/Bluejay passthrough on motor outputs
+SERVO_BLH_AUTO 1

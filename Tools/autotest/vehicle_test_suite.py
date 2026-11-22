@@ -62,6 +62,7 @@ from pymavlink.mavftp import MAX_Payload as FTP_MAX_PAYLOAD
 from pymavlink.mavftp_op import FTP_OP
 from pymavlink.rotmat import Vector3
 
+from pysim import json_physics
 from pysim import util
 from pysim import vehicleinfo
 
@@ -1288,6 +1289,22 @@ class LTM(Telem):
 
 
 class CRSF(Telem):
+    # frame types, addresses and field types of the parameter menu protocol
+    FRAMETYPE_DEVICE_PING = 0x28
+    FRAMETYPE_DEVICE_INFO = 0x29
+    FRAMETYPE_PARAMETER_ENTRY = 0x2B
+    FRAMETYPE_PARAMETER_READ = 0x2C
+    FRAMETYPE_PARAMETER_WRITE = 0x2D
+    ADDRESS_FLIGHT_CONTROLLER = 0xC8
+    ADDRESS_RADIO = 0xEA
+    FIELD_FOLDER = 11
+    FIELD_INFO = 12
+    FIELD_COMMAND = 13
+    FIELD_HIDDEN = 0x80
+    # a frame is at most 64 bytes, and its length byte counts all but the
+    # sync and length bytes
+    MAX_FRAME_LENGTH = 62
+
     def __init__(self, destination_address):
         super(CRSF, self).__init__(destination_address)
 
@@ -1303,6 +1320,46 @@ class CRSF(Telem):
 
     def write_data_id(self, dataid):
         self.do_write(self.data_id_map[dataid])
+
+    @staticmethod
+    def crc8_dvb_s2(data):
+        crc = 0
+        for b in data:
+            crc ^= b
+            for _ in range(8):
+                crc = ((crc << 1) ^ 0xD5) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+        return crc
+
+    def write_extended_frame(self, frame_type, destination, origin, payload):
+        body = bytearray([frame_type, destination, origin]) + bytearray(payload)
+        self.do_write(bytearray([0xC8, len(body) + 1]) + body + bytearray([self.crc8_dvb_s2(body)]))
+
+    def write_rc_frame(self, value=992):
+        '''send 16 channels of packed 11-bit RC values'''
+        bits = 0
+        for i in range(16):
+            bits |= value << (11 * i)
+        body = bytearray([0x16]) + bytearray(bits.to_bytes(22, 'little'))
+        self.do_write(bytearray([0xC8, len(body) + 1]) + body + bytearray([self.crc8_dvb_s2(body)]))
+
+    def read_frames(self):
+        '''return a list of (type, payload) for the complete frames received'''
+        self.buffer += self.do_read()
+        frames = []
+        while len(self.buffer) >= 2:
+            length = self.buffer[1]
+            if length < 2 or length > self.MAX_FRAME_LENGTH:
+                self.buffer = self.buffer[1:]
+                continue
+            if len(self.buffer) < length + 2:
+                break
+            frame = self.buffer[2:length+2]
+            if self.crc8_dvb_s2(frame[:-1]) != frame[-1]:
+                self.buffer = self.buffer[1:]
+                continue
+            frames.append((frame[0], frame[1:-1]))
+            self.buffer = self.buffer[length+2:]
+        return frames
 
     def progress_tag(self):
         return "CRSF"
@@ -2166,6 +2223,8 @@ class TestSuite(abc.ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
+        # nothing has run against a SITL we have not started yet:
+        self.sitl_is_freshly_started = False
         self.force_32bit = force_32bit
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
@@ -2624,6 +2683,54 @@ class TestSuite(abc.ABC):
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
         if mark_context:
             self.context_get().context_pop_requires_reboot = True
+        # nothing has run against the vehicle since it booted.  A reboot
+        # during a test is undone by run_one_test_attempt() when the test
+        # returns; one from the teardown - including context_pop()'s -
+        # stands, and saves the next test rebooting again.
+        self.sitl_is_freshly_started = True
+
+    def reboot_sitl_or_reset(self, **kwargs):
+        """Reboot the vehicle, restarting SITL if the reboot does not come back.
+
+        For the paths which tidy up after a test has already failed.  An
+        exception raised there escapes run_one_test_attempt(), and
+        run_tests() catches only pexpect.TIMEOUT, so it would reach
+        autotest.py and abandon every remaining test for the vehicle -
+        losing a whole step's results to the cleanup of a single test.
+        """
+        try:
+            self.reboot_sitl(**kwargs)
+        except Exception as e:  # noqa: BLE001
+            self.progress("Reboot after failed test did not complete (%s); resetting SITL" %
+                          str(e))
+            self.reset_SITL_commandline()
+
+    def reboot_sitl_before_test(self):
+        """Reboot so the test starts from a fresh boot.
+
+        Whatever the last test left in the vehicle's RAM - its position,
+        EKF state, home, mission progress, learned values - does not
+        reach the next one.  SITL reboots by execing its own command
+        line again, so the simulator comes back at the startup location
+        as well; storage (parameters, missions, fence) is a file and
+        survives, which is what the teardown's clears are for.
+
+        The exec replaces the vehicle process alone, so a simulated
+        peripheral started alongside it (a DroneCAN GPS, say) keeps
+        running with the state it had; a test which cares restarts its
+        peripherals itself.
+
+        A SITL we have only just started needs no reboot: nothing has
+        run against it yet.
+        """
+        if not self.sitl_is_freshly_started:
+            self.progress("Rebooting before test")
+            # Tracker is not disarmed by the post-test teardown, so it
+            # can arrive here armed:
+            self.reboot_sitl(force=self.is_tracker(), mark_context=False)
+        # this SITL is about to have a test run against it, whether we
+        # rebooted it or not:
+        self.sitl_is_freshly_started = False
 
     def assert_armed(self):
         if not self.armed():
@@ -3165,6 +3272,13 @@ class TestSuite(abc.ABC):
 
         ret = set()
 
+        # NPTR is emitted with WriteCritical from H7-only memprotect-trace
+        # code, so our C++ parsing never finds it, but it is documented and
+        # must stay documented
+        ret.update([
+            "NPTR",
+        ])
+
         # messages not expected to be on particular vehicles.  Nothing
         # needs fixing below this point, unless you can come up with a
         # better way to avoid this list!
@@ -3314,6 +3428,11 @@ class TestSuite(abc.ABC):
         for name in sorted(docco_ids):
             if name not in code_ids and name not in whitelist:
                 missing.append(name)
+                continue
+            if name not in code_ids:
+                # whitelisted and not parsed out of the C++ (e.g. a
+                # WriteCritical message), so there are no code labels to
+                # check the documentation against
                 continue
             for label in docco_ids[name]["labels"]:
                 if label not in code_ids[name]["labels"].split(","):
@@ -3523,6 +3642,27 @@ class TestSuite(abc.ABC):
         self.apply_default_parameters()
         self.progress("Reset SITL commandline to default")
 
+    @contextmanager
+    def JSON_physics(self, fields=None, **kwargs):
+        '''run SITL with --model JSON against pysim's JSON physics backend,
+        sending fields from the first frame'''
+        # SITL sends to 9002, moved by 10 for each instance like its other ports
+        kwargs.setdefault('port', self.adjust_ardupilot_port(9002))
+        physics = json_physics.JSONPhysics(**kwargs)
+        physics.set(**(fields or {}))
+        physics.start()
+        try:
+            self.customise_SITL_commandline([], model="JSON", wipe=True)
+            yield physics
+        finally:
+            # SITL blocks without its physics backend, so restore the
+            # default model before stopping it
+            physics.paused = False
+            try:
+                self.customise_SITL_commandline([])
+            finally:
+                physics.stop()
+
     def pause_SITL(self):
         '''temporarily stop the SITL process from running.  Note that
         simulation time will not move forward!'''
@@ -3644,10 +3784,10 @@ class TestSuite(abc.ABC):
         def __init__(self, suite):
             self.suite = suite
 
-        def process(self):
+        def process(self, mav, m) -> None:
             pass
 
-        def progress_prefix(self):
+        def progress_prefix(self) -> str:
             return ""
 
         def progress(self, string):
@@ -3667,10 +3807,10 @@ class TestSuite(abc.ABC):
             self.texts = texts
             self.regex = regex
 
-        def progress_prefix(self):
+        def progress_prefix(self) -> str:
             return "FFST: "
 
-        def process(self, mav, m):
+        def process(self, mav, m) -> None:
             if m.get_type() != 'STATUSTEXT':
                 return
 
@@ -3695,7 +3835,7 @@ class TestSuite(abc.ABC):
             self.last_print = 0
             self.min_print_interval = 1  # seconds
 
-        def progress_prefix(self):
+        def progress_prefix(self) -> str:
             return "VIPASS: "
 
         def process(self, mav, m):
@@ -3722,6 +3862,35 @@ class TestSuite(abc.ABC):
 
         def hook_removed(self):
             self.progress(f"Maximum divergence was {self.max_divergence}m (max={self.max_allowed_divergence}m)")
+
+    def wait_simstate_divergence_below(self, maximum, minimum_duration=0, timeout=60):
+        """wait for the EKF's reported position to agree with the simulator's
+        to within `maximum` metres, held for `minimum_duration` seconds.
+
+        A gate for tests which arm as soon as the vehicle is armable and
+        then assert on position: the filter may still be converging, and
+        the residual lands in whatever the test measures next."""
+        tstart = self.get_sim_time()
+        good_since = None
+        divergence = None
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException(
+                    "position still %s from simstate after %us" %
+                    ("%.2fm" % divergence if divergence is not None else "unknown",
+                     timeout))
+            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+            simstate = self.assert_receive_message('SIMSTATE')
+            divergence = self.get_distance_int(gpi, simstate)
+            if divergence > maximum:
+                good_since = None
+                continue
+            if good_since is None:
+                good_since = now
+                self.progress("position within %.2fm of simstate" % divergence)
+            if now - good_since >= minimum_duration:
+                return
 
     class ValidateGlobalPositionIntAgainstSimState(ValidateIntPositionAgainstSimState):
         def __init__(self, suite, **kwargs):
@@ -4272,7 +4441,10 @@ class TestSuite(abc.ABC):
         if new_log_count != 10:
             raise NotAchievedException("Expected exactly 10 new logs got %u (%s) to (%s)" %
                                        (new_log_count, original_log_list, new_log_list))
-        self.progress("Directory contents: %s" % str(new_log_list))
+        # as in log_list(): a listing of every log is not something to
+        # send to the vehicle, which writes it into the log under test
+        self.progress("Directory contents: %s" % str(new_log_list),
+                      send_statustext=False)
 
         self.download_full_log_list()
         log_id = 5
@@ -4775,7 +4947,9 @@ class TestSuite(abc.ABC):
     def log_list(self):
         '''return a list of log files present in POSIX-style logging dir'''
         ret = sorted(glob.glob("logs/00*.BIN"))
-        self.progress("log list: %s" % str(ret))
+        # every log's name on one line: keep it out of STATUSTEXT, where it
+        # would land in the very log the caller is about to read
+        self.progress("log list: %s" % str(ret), send_statustext=False)
         return ret
 
     def assert_parameter_values(self, parameters, epsilon=None):
@@ -5613,11 +5787,6 @@ class TestSuite(abc.ABC):
                 continue
             return m
 
-    def assert_receive_named_value_float_value(self, name, value, epsilon=0.0001, timeout=10):
-        m = self.assert_receive_named_value_float_value(name, timeout=timeout)
-        if abs(m.value - value) > epsilon:
-            raise NotAchievedException("Bad %s want=%f got=%f" % (name, value, m.value))
-
     def assert_rally_files_same(self, file1, file2):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
         f1 = open(file1)
@@ -6270,13 +6439,13 @@ class TestSuite(abc.ABC):
             timeout=30
         )
 
-    def armed(self, cached=False):
+    def armed(self, cached=False, poll=True):
         """Return True if vehicle is armed and safetyoff"""
         m = None
         if cached:
             m = self.mav.messages.get("HEARTBEAT", None)
         if m is None:
-            m = self.wait_heartbeat()
+            m = self.wait_heartbeat(poll=poll)
         return (m.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) != 0
 
     def send_mavlink_arm_command(self):
@@ -6420,28 +6589,40 @@ class TestSuite(abc.ABC):
                           (delta, timeout))
             return
 
-    def wait_attitude(self, desroll=None, despitch=None, timeout=2, tolerance=10,
-                      message_type='ATTITUDE', use_cached_simtime=False):
-        '''wait for an attitude (degrees)'''
-        if desroll is None and despitch is None:
-            raise ValueError("despitch or desroll must be supplied")
+    def wait_attitude(self, desroll=None, despitch=None, desyaw=None, timeout=2, tolerance=10,
+                      message_type='ATTITUDE', use_cached_simtime=False, minimum_duration=None):
+        '''wait for an attitude (degrees).  If minimum_duration is
+        supplied the attitude must be held for that many seconds'''
+        if desroll is None and despitch is None and desyaw is None:
+            raise ValueError("desroll, despitch or desyaw must be supplied")
+        if minimum_duration is not None and minimum_duration >= timeout:
+            raise ValueError("minimum_duration must be less than timeout")
         if use_cached_simtime:
             tstart = self.get_sim_time()
         else:
             tstart = self.get_sim_time_cached()
+        achieved_start = None
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise AutoTestTimeoutException("Failed to achieve attitude")
             m = self.assert_receive_message(message_type, timeout=60)
             roll_deg = math.degrees(m.roll)
             pitch_deg = math.degrees(m.pitch)
-            self.progress("wait_att[%s]: roll=%f desroll=%s pitch=%f despitch=%s" %
-                          (message_type, roll_deg, desroll, pitch_deg, despitch))
-            if desroll is not None and abs(roll_deg - desroll) > tolerance:
+            yaw_deg = math.degrees(m.yaw)
+            self.progress("wait_att[%s]: roll=%f desroll=%s pitch=%f despitch=%s yaw=%f desyaw=%s" %
+                          (message_type, roll_deg, desroll, pitch_deg, despitch, yaw_deg, desyaw))
+            if ((desroll is not None and abs(roll_deg - desroll) > tolerance) or
+                    (despitch is not None and abs(pitch_deg - despitch) > tolerance) or
+                    (desyaw is not None and self.heading_delta(yaw_deg, desyaw) > tolerance)):
+                achieved_start = None
                 continue
-            if despitch is not None and abs(pitch_deg - despitch) > tolerance:
-                continue
-            return
+            if minimum_duration is None:
+                return
+            now = self.get_sim_time_cached()
+            if achieved_start is None:
+                achieved_start = now
+            if now - achieved_start >= minimum_duration:
+                return
 
     def wait_attitude_quaternion(self,
                                  desroll=None,
@@ -7800,7 +7981,13 @@ class TestSuite(abc.ABC):
         self.progress("Changing mode to %s" % mode)
         tstart = self.get_sim_time()
         self.send_cmd_do_set_mode(mode)
-        while not self.mode_is(mode):
+        # the polled heartbeat is generated after the command is
+        # processed, so a successful change is seen without waiting
+        # for a scheduled heartbeat.  If the vehicle refuses the mode
+        # change, pace the resends on the scheduled heartbeat instead:
+        poll = True
+        while not self.mode_is(mode, poll=poll):
+            poll = False
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))
@@ -7989,8 +8176,7 @@ class TestSuite(abc.ABC):
             self.set_rc(1, steering_pwm)
             self.set_rc(3, 1550)
             self.wait_heading(heading)
-            self.set_rc(3, 1500)
-            self.set_rc(1, 1500)
+            self.set_rc_from_map({3: 1500, 1: 1500})
 
     def assert_vehicle_location_is_at_startup_location(self, dist_max=1):
         here = self.get_location()
@@ -9081,6 +9267,85 @@ class TestSuite(abc.ABC):
             raise NotAchievedException("Expected %s to be %u got %u" %
                                        (channel, value, m_value))
 
+    def radio_rc_channels_value_to_pwm(self, value):
+        '''convert a RADIO_RC_CHANNELS channel value (centered 13-bit; range
+        [-4096,4096], centre 0) into the PWM value ArduPilot derives from
+        it.  Mirrors AP_RCProtocol_MAVLinkRadio, including C's
+        truncation-towards-zero integer division.'''
+        scaled = value * 5
+        if scaled < 0:
+            return 1500 - ((-scaled) // 32)
+        return 1500 + (scaled // 32)
+
+    def send_radio_rc_channels(self, values, flags=0, count=None, time_last_update_ms=0):
+        '''send a RADIO_RC_CHANNELS message; values are in the centered
+        13-bit format the message specifies.  The message always carries 32
+        channels, so count - which defaults to the number of values supplied
+        - is the only thing saying how many of them are real.'''
+        if len(values) > 32:
+            raise ValueError("RADIO_RC_CHANNELS carries at most 32 channels")
+        if count is None:
+            count = len(values)
+        channels = list(values) + [0] * (32 - len(values))
+        self.mav.mav.radio_rc_channels_send(
+            self.mav.target_system,
+            self.mav.target_component,
+            time_last_update_ms,
+            flags,
+            count,
+            channels,
+        )
+
+    def radio_rc_channels_pump(self, values, flags, mtype, check, timeout, what, count=None):
+        '''feed RADIO_RC_CHANNELS messages to the vehicle until check()
+        returns True for a received message of type mtype.  The frames have
+        to keep flowing while we wait, or the vehicle simply loses RC.'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Timed out waiting for %s" % what)
+            self.send_radio_rc_channels(values, flags=flags, count=count)
+            m = self.mav.recv_match(type=mtype, blocking=True, timeout=0.05)
+            if m is None:
+                continue
+            if check(m):
+                return m
+
+    def assert_radio_rc_channels_maintains(self, values, flags, mtype, check, duration, what, count=None):
+        '''feed RADIO_RC_CHANNELS messages to the vehicle for duration
+        seconds, failing if check() is ever False for a received message of
+        type mtype - or if no such message turns up at all, which would
+        otherwise pass vacuously'''
+        seen = False
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < duration:
+            self.send_radio_rc_channels(values, flags=flags, count=count)
+            m = self.mav.recv_match(type=mtype, blocking=True, timeout=0.05)
+            if m is None:
+                continue
+            seen = True
+            if not check(m):
+                raise NotAchievedException(what)
+        if not seen:
+            raise NotAchievedException("No %s received while checking for %s" % (mtype, what))
+
+    def wait_radio_rc_channels_pwm(self, values, expected_pwm, expected_chancount, count=None, timeout=20):
+        '''feed RADIO_RC_CHANNELS until RC_CHANNELS reports expected_pwm in
+        its first len(expected_pwm) channels'''
+        def check(m):
+            if m.chancount != expected_chancount:
+                self.progress("RC_CHANNELS chancount=%u want=%u" %
+                              (m.chancount, expected_chancount))
+                return False
+            got = [getattr(m, "chan%u_raw" % (i+1)) for i in range(len(expected_pwm))]
+            if got != expected_pwm:
+                self.progress("RC_CHANNELS got=%s want=%s" % (got, expected_pwm))
+                return False
+            return True
+        return self.radio_rc_channels_pump(
+            values, 0, 'RC_CHANNELS', check, timeout,
+            "RC_CHANNELS to match RADIO_RC_CHANNELS", count=count)
+
     def _rc_overrides_send_single(self, chan, pwm):
         '''Send RC_CHANNELS_OVERRIDE targeting a single channel; others are UINT16_MAX (ignore)'''
         channels = [65535] * 18
@@ -9235,7 +9500,7 @@ class TestSuite(abc.ABC):
             wp_dist_m = m.wp_dist
 
             # if we changed mode, fail
-            if not self.mode_is('AUTO'):
+            if not self.mode_is('AUTO', poll=False):
                 self.progress(f"{self.mav.flightmode} vs {self.get_mode_from_mode_mapping(mode)}")
                 ignore_mode_change = (
                     (ignore_RTL_mode_change and self.mode_is('RTL', cached=True)) or
@@ -9274,16 +9539,18 @@ class TestSuite(abc.ABC):
         '''returns the most-recently received instance of message_type'''
         return self.mav.messages[message_type]
 
-    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True):
+    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True, poll=True):
         if not cached:
-            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly)
+            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly, poll=poll)
         return self.mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode)
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
-        while not self.mode_is(mode, drain_mav=False):
+        # poll=False: pace this loop on the scheduled heartbeat lest
+        # we spin at poll-round-trip rate, printing as we go
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))
@@ -9522,11 +9789,13 @@ class TestSuite(abc.ABC):
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
 
-    def wait_heartbeat(self, drain_mav=True, quiet=False, *args, **x):
+    def wait_heartbeat(self, drain_mav=True, quiet=False, poll=False, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
 Also, ignores heartbeats not from our target system'''
         if drain_mav:
             self.drain_mav(quiet=quiet)
+        if poll:
+            self.send_poll_message('HEARTBEAT', quiet=True)
         orig_timeout = x.get("timeout", 20)
         x["timeout"] = 1
         tstart = time.time()
@@ -9930,7 +10199,9 @@ Also, ignores heartbeats not from our target system'''
         else:
             text = text.encode("utf-8")
         seq = 0
-        while len(text):
+        # chunk_seq is a uint8, so nothing past the 256th chunk can be
+        # sent; the full text has already gone to our own output
+        while len(text) and seq <= 255:
             self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)
             text = text[50:]
             seq += 1
@@ -10031,7 +10302,10 @@ Also, ignores heartbeats not from our target system'''
                     result.reason = reason
                     result.passed = False
         else:
-            self.progress("pexpect says it is dead")
+            # how it died is the whole question: a signal says it crashed
+            # or was killed, an exit status says it chose to go
+            self.progress("pexpect says it is dead (exitstatus=%s signalstatus=%s)" %
+                          (self.sitl.exitstatus, self.sitl.signalstatus))
 
         # try dumping the process status file for more information:
         status_filepath = "/proc/%u/status" % self.sitl.pid
@@ -10078,6 +10352,7 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         try:
             self.check_rc_defaults()
+            self.reboot_sitl_before_test()
             self.change_mode(self.default_mode())
             # ArduPilot can still move the current waypoint from 0,
             # even if we are not in AUTO mode, so cehck_afterwards=False:
@@ -10098,6 +10373,10 @@ Also, ignores heartbeats not from our target system'''
                 if h not in start_message_hooks:
                     self.message_hooks.remove(h)
             hooks_removed = True
+        # a SITL the test restarted has had the rest of the test run
+        # against it, so it is not fresh for the next one; a restart by
+        # the teardown below marks it fresh again:
+        self.sitl_is_freshly_started = False
         # the test is done with any log it opened; release the
         # filehandles rather than holding them for the life of the run:
         self.close_dfreaders()
@@ -10150,7 +10429,7 @@ Also, ignores heartbeats not from our target system'''
             else:
                 self.progress("Force-rebooting SITL")
                 self.zero_throttle()
-                self.reboot_sitl(startup_location_dist_max=1000000) # that'll learn it
+                self.reboot_sitl_or_reset(startup_location_dist_max=1000000) # that'll learn it
             passed = False
         elif ardupilot_alive and not passed:  # implicit reboot after a failed test:
             if reset_needed:
@@ -10159,7 +10438,7 @@ Also, ignores heartbeats not from our target system'''
                 reset_needed = False
             else:
                 self.progress("Test failed but ArduPilot process alive; rebooting")
-                self.reboot_sitl() # that'll learn it
+                self.reboot_sitl_or_reset() # that'll learn it
 
         # a test which wanders off and stops somewhere else hands the
         # next test a displaced vehicle.  ArduCopter's tests require the
@@ -10385,6 +10664,7 @@ Also, ignores heartbeats not from our target system'''
             customisations.append("--sim-periph-lockstep")
             start_sitl_args["customisations"] = customisations
         self.sitl = util.start_SITL(binary, **start_sitl_args)
+        self.sitl_is_freshly_started = True
         self.expect_list_add(self.sitl)
         # stop the previous start's supplementary programs before we
         # forget them.  Simply resetting the list left them running,
@@ -10848,7 +11128,14 @@ Also, ignores heartbeats not from our target system'''
 
         # HOME_POSITION is used as a surrogate for origin until we
         # start emitting GPS_GLOBAL_ORIGIN
-        self.wait_ekf_happy()
+        #
+        # the filter will not use GPS until the gyro bias is learned,
+        # which on Tracker takes 43 to 45.7 simulated seconds from
+        # boot.  This budget is counted from here rather than from
+        # boot, so the default 45 leaves only whatever the test spent
+        # getting this far - under four seconds in the tightest case
+        # measured.
+        self.wait_ekf_happy(timeout=120)
         orig_home = self.poll_home_position()
         if orig_home is None:
             raise AutoTestTimeoutException()
@@ -11345,7 +11632,6 @@ Also, ignores heartbeats not from our target system'''
             self.check_zero_mag_parameters(params)
             self.check_zeros_mag_orient()
             self.progress("Send acceptation and check value")
-            self.wait_heartbeat()
             self.run_cmd(
                 mavutil.mavlink.MAV_CMD_DO_ACCEPT_MAG_CAL,
                 p1=target_mask, # p1: mag_mask
@@ -12169,7 +12455,6 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(
                     "Disarmed with rudder when ARMING_RUDDER=0")
             self.disarm_vehicle()
-            self.wait_heartbeat()
             self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
             self.set_parameter("ARMING_RUDDER", 1)
             self.arm_vehicle()
@@ -12181,7 +12466,6 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(
                     "Disarmed with rudder with ARMING_RUDDER=1")
             self.disarm_vehicle()
-            self.wait_heartbeat()
             self.set_parameter("ARMING_RUDDER", 2)
 
             if self.is_copter():
@@ -12201,7 +12485,6 @@ Also, ignores heartbeats not from our target system'''
                 if self.armed():
                     raise NotAchievedException("Armed with switch when interlock enabled")
                 self.disarm_vehicle()
-                self.wait_heartbeat()
                 self.set_rc(arming_switch, 1000)
                 self.set_rc(interlock_channel, 1000)
                 if self.is_heli():
@@ -12271,7 +12554,6 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_ekf_happy()
                 self.change_mode(mode)
                 self.arm_vehicle()
-                self.wait_heartbeat()
                 self.disarm_vehicle()
                 self.progress("PASS arm mode : %s" % mode)
                 self.progress("Not armable mode without Position : %s" % mode)
@@ -12401,10 +12683,10 @@ Also, ignores heartbeats not from our target system'''
         mav.mav.command_long_send(
             1,
             1,
-            mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL,
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
             1,  # confirmation
+            mavutil.mavlink.MAVLINK_MSG_ID_MESSAGE_INTERVAL,
             float(victim_message),
-            0,
             0,
             0,
             0,
@@ -12482,6 +12764,8 @@ Also, ignores heartbeats not from our target system'''
             raise NotAchievedException("Did not read same interval back from autopilot: want=%d got=%d)" %
                                        (want, m.interval_us))
         m = self.assert_receive_message('COMMAND_ACK', mav=mav)
+        if m.command != mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE:
+            raise NotAchievedException("ACK not for REQUEST_MESSAGE (got=%u)" % m.command)
         if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
             raise NotAchievedException("Expected ACCEPTED for reading message interval")
 
@@ -12598,6 +12882,8 @@ Also, ignores heartbeats not from our target system'''
             if m.interval_us != 0:
                 raise NotAchievedException("Supposed to get 0 back for unsupported stream")
             m = self.assert_receive_message('COMMAND_ACK')
+            if m.command != mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE:
+                raise NotAchievedException("ACK not for REQUEST_MESSAGE (got=%u)" % m.command)
             if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
                 raise NotAchievedException("Getting rate of unsupported message is a failure")
 
@@ -16216,6 +16502,127 @@ switch value'''
         self.check_msp_set_vtx_config(msp)
         self.reboot_sitl()
 
+    def SerialPassthroughRCIN(self):
+        '''check SERIAL_PASS passthrough onto an RC input port: data passes
+        intact both ways, and RC input resumes once passthrough ends'''
+        rx_port = self.spare_network_port()
+        host_port = self.spare_network_port(1)
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 23,  # RC input, where the receiver is
+            "RC_PROTOCOLS": 512,     # CRSF only, not SITL's own RC input
+        })
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % rx_port,    # the receiver
+            "--serial2=tcp:%u" % host_port,  # the host, e.g. a flashing tool
+        ])
+
+        def connect(port):
+            tstart = self.get_sim_time()
+            while True:
+                try:
+                    sock = socket.create_connection(("127.0.0.1", port), timeout=1)
+                    sock.setblocking(False)
+                    return sock
+                except OSError:
+                    if self.get_sim_time_cached() - tstart > 30:
+                        raise NotAchievedException("Could not connect to port %u" % port)
+                    self.delay_sim_time(0.5)
+
+        def crsf_rc_frame(value):
+            # 16 channels of 11 bits, all at value
+            bits = 0
+            nbits = 0
+            payload = bytearray()
+            for _ in range(16):
+                bits |= value << nbits
+                nbits += 11
+                while nbits >= 8:
+                    payload.append(bits & 0xFF)
+                    bits >>= 8
+                    nbits -= 8
+            body = bytes([0x16]) + payload  # RC_CHANNELS_PACKED
+            crc = 0
+            for b in body:
+                crc ^= b
+                for _ in range(8):
+                    crc = ((crc << 1) ^ 0xD5) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+            return bytes([0xC8, len(body) + 1]) + body + bytes([crc])
+
+        def send_rc_until(sock, value, timeout=20):
+            # CRSF value v gives v*5/8+880 us
+            pwm = value * 5 // 8 + 880
+            frame = crsf_rc_frame(value)
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < timeout:
+                try:
+                    sock.send(frame)
+                except BlockingIOError:
+                    pass
+                m = self.mav.recv_match(type='RC_CHANNELS', blocking=True, timeout=0.05)
+                if m is not None and m.chan1_raw == pwm:
+                    return
+            raise NotAchievedException("RC input never reached %uus" % pwm)
+
+        def drain(sock):
+            try:
+                while sock.recv(4096):
+                    pass
+            except BlockingIOError:
+                pass
+
+        def transfer(src, dst, data, timeout=60):
+            sent = 0
+            got = bytearray()
+            tstart = self.get_sim_time()
+            while len(got) < len(data):
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Only %u of %u bytes passed through" % (len(got), len(data)))
+                if sent < len(data):
+                    try:
+                        sent += src.send(data[sent:sent+1024])
+                    except BlockingIOError:
+                        pass
+                try:
+                    got += dst.recv(4096)
+                except BlockingIOError:
+                    pass
+                self.drain_mav(quiet=True)
+            if bytes(got) != data:
+                first = next(i for i in range(len(data)) if i >= len(got) or got[i] != data[i])
+                raise NotAchievedException("Passthrough data differs from byte %u" % first)
+
+        rx = connect(rx_port)
+        host = connect(host_port)
+        self.progress("Receiver detected as CRSF")
+        send_rc_until(rx, 992)
+
+        self.progress("Enabling passthrough between SERIAL2 and the RC input port")
+        self.set_parameters({
+            "SERIAL_PASSTIMO": 30,
+            "SERIAL_PASS1": 2,
+            "SERIAL_PASS2": 5,
+        })
+        # passthrough starts 1s after it is enabled
+        self.delay_sim_time(3, reason="passthrough to start")
+        drain(rx)
+        drain(host)
+
+        rand = random.Random(34)
+        to_rx = bytes(rand.getrandbits(8) for _ in range(64 * 1024))
+        to_host = bytes(rand.getrandbits(8) for _ in range(16 * 1024))
+        self.progress("Host to receiver")
+        transfer(host, rx, to_rx)
+        self.progress("Receiver to host")
+        transfer(rx, host, to_host)
+
+        self.progress("Disabling passthrough, RC input should resume")
+        self.set_parameter("SERIAL_PASS2", -1)
+        send_rc_until(rx, 1312)
+
+        rx.close()
+        host.close()
+        self.reboot_sitl()
+
     def CRSF(self):
         '''Test RC CRSF'''
         self.context_push()
@@ -16246,6 +16653,305 @@ switch value'''
         self.reboot_sitl()
         if ex is not None:
             raise ex
+
+    def crsf_parameter_menu_check(self, script=None):
+        '''read every CRSF parameter menu field and check each is in a folder
+        that lists it.  Returns the fields, a function to send a request
+        and wait for the reply, and the CRSF connection'''
+        if script is not None:
+            self.install_example_script_context(script)
+            self.set_parameter("SCR_ENABLE", 1)
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 23, # serial5 is RCIN input
+            "RC_PROTOCOLS": 512,    # CRSF only, so SITL's own RC input doesn't take over
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port # serial5 reads from to localhost port
+        ])
+        crsf = CRSF(("127.0.0.1", port))
+        crsf.connect()
+
+        # an RC frame each time sim time moves on, which is at each SYSTEM_TIME.
+        # At 50Hz the port never goes the 150ms without a frame after which the
+        # CRSF receiver counts as lost and the port is set up again, dropping
+        # what was sent to it.  Sent as fast as the loop runs they fill the
+        # socket before SITL has accepted the connection, and the write fails
+        self.context_set_message_rate_hz('SYSTEM_TIME', 50)
+        last_rc_frame_time = None
+
+        def send_rc_frame():
+            nonlocal last_rc_frame_time
+            now = self.get_sim_time_cached()
+            if now != last_rc_frame_time:
+                crsf.write_rc_frame()
+                last_rc_frame_time = now
+
+        self.progress("Sending CRSF RC frames until RC input is decoded as CRSF")
+        self.context_collect('STATUSTEXT')
+        tstart = self.get_sim_time_cached()
+        while not any("decoding CRSF" in m.text for m in self.context_collection('STATUSTEXT')):
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("RC input not decoded as CRSF")
+            send_rc_frame()
+            crsf.read_frames()
+            self.drain_mav()
+
+        def request(frame_type, payload, want_type, check, what, want_reply=True):
+            # the request is resent every 0.5s until answered, as a transmitter
+            # does.  With want_reply False it is sent once and fails if answered
+            crsf.read_frames()  # replies to earlier requests are not for this one
+            tstart = self.get_sim_time_cached()
+            tsent = None
+            while self.get_sim_time_cached() - tstart < 10:
+                now = self.get_sim_time_cached()
+                if tsent is None or (want_reply and now - tsent >= 0.5):
+                    crsf.write_extended_frame(frame_type, CRSF.ADDRESS_FLIGHT_CONTROLLER, CRSF.ADDRESS_RADIO, payload)
+                    tsent = now
+                # a reply can go out after each frame SITL receives
+                send_rc_frame()
+                self.drain_mav()
+                for (t, p) in crsf.read_frames():
+                    if t == want_type and len(p) >= 4 and p[0] == CRSF.ADDRESS_RADIO and check(p):
+                        if not want_reply:
+                            raise NotAchievedException("Unexpected reply to %s" % what)
+                        return p
+            if want_reply:
+                raise NotAchievedException("No reply to %s" % what)
+            return None
+
+        info = request(CRSF.FRAMETYPE_DEVICE_PING, [], CRSF.FRAMETYPE_DEVICE_INFO, lambda p: True, "ping")
+        name_end = info.index(0, 2)
+        field_count = info[name_end + 13]
+        self.progress("Device %s has %u fields" % (info[2:name_end].decode(), field_count))
+
+        fields = {}
+        for field_id in range(field_count + 1):
+            p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field_id, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                        lambda p: p[2] == field_id, "field %u" % field_id)
+            parent = p[4]
+            field_type = p[5] & 0x7F
+            name_end = p.index(0, 6)
+            name = p[6:name_end].decode()
+            children = []
+            if field_type == CRSF.FIELD_FOLDER:
+                children = list(p[name_end+1:p.index(0xFF, name_end+1)])
+            self.progress("field %u: %s parent=%u children=%s" % (field_id, name, parent, children))
+            fields[field_id] = (name, parent, children)
+
+        for field_id in range(1, field_count + 1):
+            parent = fields[field_id][1]
+            if parent not in fields or field_id not in fields[parent][2]:
+                raise NotAchievedException("field %u has parent %u which does not list it" % (field_id, parent))
+        for field_id, (name, parent, children) in fields.items():
+            for child in children:
+                if child not in fields:
+                    raise NotAchievedException("field %u lists %u, beyond the %u fields" % (field_id, child, field_count))
+        return (fields, request, crsf)
+
+    def crsf_field_named(self, fields, name, parent=None):
+        '''return the number of the CRSF menu field called name, in the folder
+        called parent if given'''
+        for (field, (field_name, field_parent, children)) in fields.items():
+            if field_name == name and (parent is None or fields[field_parent][0] == parent):
+                return field
+        raise NotAchievedException("No CRSF menu field called %s" % name)
+
+    def crsf_field_hidden(self, request, field_id):
+        '''return True if the CRSF menu field is hidden from the menu'''
+        p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field_id, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                    lambda p: p[2] == field_id, "field %u" % field_id)
+        return bool(p[5] & CRSF.FIELD_HIDDEN)
+
+    def CRSFParameterMenu(self):
+        '''Test every CRSF parameter menu entry can be read and is in a folder that lists it'''
+        (fields, request, crsf) = self.crsf_parameter_menu_check()
+        # the root, the Parameters folder and the 18 OSD parameter slots
+        if len(fields) != 20:
+            raise NotAchievedException("Expected 20 fields, got %u" % len(fields))
+        # with no scripted menu the menu opens straight onto the OSD parameters,
+        # and the Parameters folder is answered but hidden
+        params = self.crsf_field_named(fields, "Parameters")
+        if not self.crsf_field_hidden(request, params):
+            raise NotAchievedException("Parameters folder shown with no scripted menu")
+        for field_id in range(params + 1, len(fields)):
+            if fields[field_id][1] != 0:
+                raise NotAchievedException("OSD parameter field %u is not in the root" % field_id)
+
+    def CRSFParameterMenuScripted(self):
+        '''Test the CRSF parameter menu with the scripted example menu'''
+        (fields, request, crsf) = self.crsf_parameter_menu_check(script="crsf-menu.lua")
+        names = [name for (name, parent, children) in fields.values()]
+        for want in "Example Menu", "Another Menu", "Beethoven":
+            if want not in names:
+                raise NotAchievedException("%s not in the menu" % want)
+        # beside a scripted menu the OSD parameters are in a Parameters folder at the root
+        params = self.crsf_field_named(fields, "Parameters", parent="root")
+        if self.crsf_field_hidden(request, params):
+            raise NotAchievedException("Parameters folder hidden beside a scripted menu")
+        osd_params = [f for f in fields if f != params and fields[f][1] == params]
+        if len(osd_params) != 18:
+            raise NotAchievedException("Expected 18 OSD parameter fields in the Parameters folder, got %u" % len(osd_params))
+
+        # writes come back through the script, which echoes the value
+        options = self.crsf_field_named(fields, "Options", parent="Example Menu")
+        self.context_collect('STATUSTEXT')
+        request(CRSF.FRAMETYPE_PARAMETER_WRITE, [options, 2], CRSF.FRAMETYPE_PARAMETER_WRITE,
+                lambda p: p[2] == options, "write to field %u" % options)
+        self.wait_statustext("Selected option 2", check_context=True)
+
+    def CRSFParameterMenuUnusedSlot(self):
+        '''Test a CRSF parameter menu slot with no parameter is answered but hidden'''
+        INFO_HIDDEN = CRSF.FIELD_INFO | CRSF.FIELD_HIDDEN
+
+        # a key that matches no parameter, as after loading another vehicle's parameters
+        self.set_parameter("OSD5_PARAM1_KEY", -1)
+        (fields, request, crsf) = self.crsf_parameter_menu_check()
+        # the root, the Parameters folder and the 18 OSD parameter slots
+        if len(fields) != 20:
+            raise NotAchievedException("Expected 20 fields, got %u" % len(fields))
+
+        p = request(CRSF.FRAMETYPE_PARAMETER_READ, [2, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == 2, "field 2")
+        if p[5] != INFO_HIDDEN:
+            raise NotAchievedException("field 2 has type 0x%02x, want hidden INFO" % p[5])
+
+        # a write to it has nothing to set, and the next slot, which has a
+        # parameter, still reads back and is not hidden
+        crsf.write_extended_frame(CRSF.FRAMETYPE_PARAMETER_WRITE, CRSF.ADDRESS_FLIGHT_CONTROLLER, CRSF.ADDRESS_RADIO, [2, 1])
+        p = request(CRSF.FRAMETYPE_PARAMETER_READ, [3, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == 3,
+                    "field 3 after a write to field 2")
+        if p[5] & CRSF.FIELD_HIDDEN:
+            raise NotAchievedException("field 3 has type 0x%02x, want a visible field" % p[5])
+
+    def CRSFParameterMenuChunks(self):
+        '''Test scripted CRSF menu fields come back whole however many chunks they need'''
+        # lengths around one and two chunks of 55 bytes
+        lengths = [10, 54, 55, 56, 109, 110, 111]
+        self.install_script_content_context("crsf-chunks.lua", """
+local INFO = %u
+local menu = crsf:add_menu("Chunks")
+for _, len in ipairs({%s}) do
+    local name = "L" .. len
+    menu:add_parameter(string.pack(">Bzz", INFO, name, string.rep("x", len - 3 - #name)))
+end
+
+local function update()
+    -- reads the script does not ask for are answered directly
+    crsf:get_menu_event(2)
+    return update, 100
+end
+
+return update, 1000
+""" % (CRSF.FIELD_INFO, ", ".join([str(length) for length in lengths])))
+        self.set_parameter("SCR_ENABLE", 1)
+        (fields, request, crsf) = self.crsf_parameter_menu_check()
+
+        for length in lengths:
+            name = "L%u" % length
+            field = self.crsf_field_named(fields, name)
+            want = bytes([CRSF.FIELD_INFO]) + name.encode() + b"\0" + b"x" * (length - 3 - len(name)) + b"\0"
+            p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                        lambda p: p[2] == field, "%s chunk 0" % name)
+            chunks = p[3] + 1
+            # each chunk carries up to 55 bytes, the first after the parent folder
+            want_chunks = max(1, (length + 54) // 55)
+            if chunks != want_chunks:
+                raise NotAchievedException("%s is sent in %u chunks, want %u" % (name, chunks, want_chunks))
+            got = p[5:]  # after the parent folder, which only the first chunk carries
+            for chunk in range(1, chunks):
+                p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field, chunk], CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                            lambda p: p[2] == field and p[3] == chunks - 1 - chunk, "%s chunk %u" % (name, chunk))
+                got += p[4:]
+            self.progress("%s: %u bytes in %u chunks" % (name, len(got), chunks))
+            if bytes(got) != want:
+                raise NotAchievedException("%s came back as %s" % (name, bytes(got)))
+
+        # a chunk past the end is not answered.  Ask about the field read first,
+        # so that no late reply to an earlier read of it can still arrive
+        field = self.crsf_field_named(fields, "L10")
+        request(CRSF.FRAMETYPE_PARAMETER_READ, [field, 1], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == field,
+                "L10 chunk 1", want_reply=False)
+
+    def CRSFParameterMenuLongCommandReply(self):
+        '''Test a scripted CRSF command reply too long for its frame is refused'''
+        START = 1
+        PROGRESS = 2
+
+        # a command entry packs to 8 bytes plus its info string, and 55 bytes
+        # fit after the parent folder in a settings entry
+        self.install_script_content_context("crsf-command.lua", """
+local COMMAND = %u
+local PROGRESS = %u
+local PARAMETER_WRITE = 2
+
+local function command_entry(status, info)
+    return string.pack(">BzBBz", COMMAND, "Cmd", status, 10, info)
+end
+
+local menu = crsf:add_menu("Long")
+local cmd = menu:add_parameter(command_entry(0, "Ready"))
+local writes = 0
+
+local function update()
+    local param, _, events = crsf:get_menu_event(PARAMETER_WRITE)
+    if (events & PARAMETER_WRITE) ~= 0 and param == cmd:id() then
+        -- the first reply is one byte too long, the next just fits
+        writes = writes + 1
+        local info_len = writes == 1 and 48 or 47
+        if not crsf:send_write_response(command_entry(PROGRESS, string.rep("x", info_len))) then
+            gcs:send_text(6, string.format("reply of %%d bytes refused", 8 + info_len))
+        end
+    end
+    return update, 100
+end
+
+return update, 1000
+""" % (CRSF.FIELD_COMMAND, PROGRESS))
+        self.set_parameter("SCR_ENABLE", 1)
+        (fields, request, crsf) = self.crsf_parameter_menu_check()
+
+        field = self.crsf_field_named(fields, "Cmd")
+        reply = bytes([CRSF.FIELD_COMMAND]) + b"Cmd\0" + bytes([PROGRESS, 10]) + b"x" * 47 + b"\0"
+        # the write is resent until answered, so the refused reply is followed by one that fits
+        p = request(CRSF.FRAMETYPE_PARAMETER_WRITE, [field, START], CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                    lambda p: p[2] == field and len(p) > 10 and p[10] == PROGRESS, "the command")
+        if p[4] != fields[field][1] or bytes(p[5:]) != reply:
+            raise NotAchievedException("reply came back as %s" % bytes(p[4:]))
+        self.wait_statustext("reply of 56 bytes refused", check_context=True)
+
+    def CRSFParameterMenuFolderLimits(self):
+        '''Test scripted CRSF menus are limited to what their folders hold'''
+        self.install_script_content_context("crsf-folders.lua", """
+local INFO = %u
+local menu = crsf:add_menu("Sixteen chars ab")
+local entries = 0
+for i = 1, 40 do
+    if menu:add_parameter(string.pack(">Bzz", INFO, "P" .. i, "")) then
+        entries = entries + 1
+    end
+end
+local menus = 1
+for i = 1, 60 do
+    if crsf:add_menu("M" .. i) then
+        menus = menus + 1
+    end
+end
+gcs:send_text(6, string.format("added %%d entries and %%d menus", entries, menus))
+
+local function update()
+    -- reads the script does not ask for are answered directly
+    crsf:get_menu_event(2)
+    return update, 100
+end
+
+return update, 1000
+""" % CRSF.FIELD_INFO)
+        self.set_parameter("SCR_ENABLE", 1)
+        self.context_collect('STATUSTEXT')
+        self.crsf_parameter_menu_check()
+        # a menu with a 16 character name has room for 36 children, and the
+        # root folder for the Parameters folder and 47 menus
+        self.wait_statustext("added 36 entries and 47 menus", check_context=True)
 
     def CompassPrearms(self):
         '''test compass prearm checks'''
@@ -16361,6 +17067,54 @@ switch value'''
             distance = self.get_distance_int(orig, n)
             if distance > 1:
                 raise NotAchievedException(f"gps type {name} misbehaving")
+
+            # velocity is zero on the ground whether or not the
+            # backend parses it, so fly a constant-velocity leg.  It
+            # heads south-east so a swapped or sign-flipped axis
+            # changes the course:
+            self.takeoff(10, mode='GUIDED')
+            here = self.get_location(frame=AltFrame.ABOVE_HOME)
+            self.send_do_reposition(self.offset_location_ne(here, -300, 450))
+            # wait on the simulator's speed; VFR_HUD comes from the
+            # EKF, which a broken GPS velocity corrupts:
+            self.wait_and_maintain_range(
+                value_name="SIM_STATE groundspeed",
+                minimum=8,
+                maximum=100,
+                current_value_getter=self.get_sim_state_groundspeed,
+                minimum_duration=2,
+            )
+            self.check_gps_velocity_matches_truth(name)
+            self.land_and_disarm()
+
+    def get_sim_state_groundspeed(self):
+        m = self.poll_message('SIM_STATE', quiet=True)
+        return math.sqrt(m.vn**2 + m.ve**2)
+
+    def check_gps_velocity_matches_truth(self, name, samples=10, speed_tolerance=0.5, course_tolerance=5):
+        '''compare GPS_RAW_INT ground speed and course with the
+        simulator's velocity; the vehicle must be moving at a constant
+        velocity so GPS lag does not matter'''
+        for i in range(samples):
+            msgs = self.get_messages_frame(['GPS_RAW_INT', 'SIM_STATE'], timeout=10)
+            gps = msgs['GPS_RAW_INT']
+            sim = msgs['SIM_STATE']
+            sim_speed = math.sqrt(sim.vn**2 + sim.ve**2)
+            sim_course = math.degrees(math.atan2(sim.ve, sim.vn)) % 360
+            gps_speed = gps.vel * 0.01
+            if gps.cog == 65535:
+                raise NotAchievedException(f"{name}: GPS course unknown at {sim_speed:.2f}m/s")
+            gps_course = gps.cog * 0.01
+            self.progress(f"{name}: speed gps={gps_speed:.2f} sim={sim_speed:.2f} "
+                          f"course gps={gps_course:.1f} sim={sim_course:.1f}")
+            if abs(gps_speed - sim_speed) > speed_tolerance:
+                raise NotAchievedException(
+                    f"{name}: GPS speed {gps_speed:.2f}m/s, simulator {sim_speed:.2f}m/s")
+            course_error = self.heading_delta(gps_course, sim_course)
+            if course_error > course_tolerance:
+                raise NotAchievedException(
+                    f"{name}: GPS course {gps_course:.1f}deg, simulator {sim_course:.1f}deg")
+            self.delay_sim_time(0.5, "between GPS velocity samples")
 
     def wait_gps_satellite_count(self, messagename, count, timeout):
         """Wait for a GPS message to report a specific satellite count."""
@@ -18606,6 +19360,19 @@ switch value'''
             upload('prefix longer than previous name', previous + bad_prefix, 2, valid=False)
             self.assert_parameter_value('RC7_MIN', 1200)
 
+            # A rejected upload must not apply any of the records before the bad one.
+            good = record(2, b'RC7_MIN', struct.pack('<h', 1300))
+            bad_records = [
+                ('missing', b''),
+                ('truncated', record(2, b'RC7_MAX', struct.pack('<h', 1900))[:-1]),
+                ('flagged', bytes([0x12]) + record(2, b'RC7_MAX', struct.pack('<h', 1900))[1:]),
+                ('unsupported type', record(5, b'RC7_MAX', bytes(12))),
+                ('bad prefix', record(2, b'X', struct.pack('<h', 1900), common_len=8)),
+            ]
+            for label, bad in bad_records:
+                upload(f'valid record before a {label} record is not applied', good + bad, 2, valid=False)
+                self.assert_parameter_value('RC7_MIN', 1200)
+
             longest_name = record(2, b'NO_SUCH_PARAM_AB', struct.pack('<h', 123))
             complete = record(2, b'RC7_MIN', struct.pack('<h', 1250))
             upload('maximum length name', longest_name + complete, 2, valid=True)
@@ -19511,6 +20278,49 @@ SERIAL5_BAUD 128
                 continue
             on_radius_start_heading = None
             circle_time_start = now
+
+    def wait_circle_direction(self,
+                              centre_loc,
+                              radius_m,
+                              ccw,
+                              sweep_deg=180,
+                              epsilon_m=10,
+                              timeout=180):
+        '''wait for vehicle to travel sweep_deg around centre_loc, raising if
+        it travels in the wrong direction.  Bearing is only accumulated
+        while the vehicle is within epsilon_m of the circle, so the
+        flight out to the edge of the circle is not counted'''
+        direction_name = "counter-clockwise" if ccw else "clockwise"
+        self.progress("Waiting for %udeg of %s circle" % (sweep_deg, direction_name))
+        # bearing from the centre increases as the vehicle flies clockwise:
+        want_sign = -1 if ccw else 1
+        tstart = self.get_sim_time()
+        swept_deg = 0
+        last_bearing = None
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not circle %s" % direction_name)
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+            got_radius_m = self.get_distance(centre_loc, here)
+            if abs(got_radius_m - radius_m) > epsilon_m:
+                # vehicle is not on the circle; start accumulating again
+                last_bearing = None
+                swept_deg = 0
+                continue
+            bearing = self.get_bearing(centre_loc, here)
+            if last_bearing is not None:
+                swept_deg += (bearing - last_bearing + 180) % 360 - 180
+                self.progress("radius=%0.1f/%0.1f bearing=%0.1f swept=%0.1f/%d" %
+                              (got_radius_m, radius_m, bearing, swept_deg, want_sign * sweep_deg))
+                if -want_sign * swept_deg > 20:
+                    raise NotAchievedException(
+                        "Circling in wrong direction (swept %0.1fdeg, wanted %s)" %
+                        (swept_deg, direction_name))
+                if want_sign * swept_deg > sweep_deg:
+                    self.progress("Swept %0.1fdeg %s" % (swept_deg, direction_name))
+                    return
+            last_bearing = bearing
 
     def create_junit_report(self, test_name: str, results: List[Result], skip_list: List[Tuple[Test, Dict[str, str]]]) -> None:
         """Generate Junit report from the autotest results"""

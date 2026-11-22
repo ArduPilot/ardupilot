@@ -9,3 +9,7 @@ define HAL_HAVE_RTSCTS_SERIAL5 1
 define HAL_HAVE_RTSCTS_SERIAL6 1
 define HAL_HAVE_RTSCTS_SERIAL7 1
 define HAL_HAVE_RTSCTS_SERIAL8 1
+
+# power off pin used by SITL to simulate vehicle shutdown
+define AP_POWER_CONTROL_GPIO 12
+define AP_POWER_CONTROL_GPIO_VALUE_OFF 1

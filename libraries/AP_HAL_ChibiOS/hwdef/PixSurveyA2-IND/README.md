@@ -133,7 +133,7 @@ To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receive
 ## PWM Output
 
 The autopilot supports up to 14 PWM outputs. All 14 outputs
-support all normal PWM output formats. All outputs also support DShot. Outputs 9-14 support Bi-Directional DShot. Outputs within the same timer group need to use the same output rate. If any output in a group uses DShot then all channels in the group need to use DShot,etc..
+support all normal PWM output formats. All outputs also support DShot. DShot on outputs 1-8 (IO controller) requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller. Doing so disables PPM, DSM, iBus, SUMD, SRXL and ST24 input on the IO controller's RC input pin. SBUS and FPort on that pin, and DSM receivers on the DSM port, continue to work. Outputs 9-14 support Bi-Directional DShot. Outputs within the same timer group need to use the same output rate. If any output in a group uses DShot then all channels in the group need to use DShot,etc..
 
 - Outputs 1 and 2 in group1
 - Outputs 3 and 4 in group2

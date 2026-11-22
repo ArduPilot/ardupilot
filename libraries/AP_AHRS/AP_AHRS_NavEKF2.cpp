@@ -5,6 +5,7 @@
 #include "AP_AHRS_NavEKF2.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -104,15 +105,10 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * attitude estimates:
      */
-    EKF2.getRotationBodyToNED(results.dcm_matrix);
-    Vector3f eulers;
-    EKF2.getEulerAngles(eulers);
-    results.roll_rad  = eulers.x;
-    results.pitch_rad = eulers.y;
-    results.yaw_rad   = eulers.z;
-
     EKF2.getQuaternion(results.quaternion);
-    results.quaternion.rotate(-AP::ahrs().get_trim());
+    // quaternion composition rotates the autopilot-body-frame attitude into the vehicle-body-frame
+    results.quaternion *= AP::ahrs().get_quat_vehicle_body_to_autopilot_body();
+    results.derive_attitude_from_quaternion();
 
     results.attitude_valid = started;
 
@@ -226,6 +222,9 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     results.control_gain_scaler_Z = 1;
 
     results.control_height_limit_valid = EKF2.getHeightControlLimit(results.control_height_limit_m);
+
+    // publish this backend's airspeed estimate from the results above:
+    fill_airspeed_estimate(results);
 }
 
 bool AP_AHRS_NavEKF2::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

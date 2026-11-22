@@ -16,7 +16,7 @@
 
 #include "AP_Scripting/AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include <GCS_MAVLink/GCS_config.h>
 #include <AP_Common/AP_Common.h>
@@ -64,7 +64,7 @@ public:
     bool enabled(void) const { return _enable != 0; };
     bool should_run(void) const { return enabled() && !_stop; }
 
-#if HAL_GCS_ENABLED
+#if HAL_MAVLINK_BINDINGS_ENABLED
     void handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan);
 
     // Check if command ID is blocked
@@ -75,7 +75,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-#if HAL_GCS_ENABLED
+#if HAL_MAVLINK_BINDINGS_ENABLED
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
 #endif
 
@@ -217,4 +217,4 @@ namespace AP {
     AP_Scripting * scripting(void);
 };
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_SCRIPTING_LUA_ENABLED

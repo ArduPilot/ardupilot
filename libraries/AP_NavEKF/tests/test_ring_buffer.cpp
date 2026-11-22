@@ -149,6 +149,7 @@ TEST(ekf_imu_buffer, one_element_case)
     // we don't do bounds checking, so get here returns non-nullptr:
     // another_returned_element = (element*)b.get(0);
     // EXPECT_EQ(another_returned_element, nullptr);
+    delete b;
 }
 
 TEST(ekf_imu_buffer, is_filled)
@@ -174,6 +175,8 @@ TEST(ekf_imu_buffer, is_filled)
 
     b->push_youngest_element((void*)&e);
     EXPECT_EQ(b->is_filled(), true);
+
+    delete b;
 }
 
 AP_GTEST_MAIN()

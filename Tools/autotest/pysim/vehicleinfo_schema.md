@@ -23,7 +23,9 @@ parameter list without the source tree present.
 ```
 
 Top-level keys are vehicle names: `ArduCopter`, `ArduPlane`, `Rover`,
-`ArduSub`, `AntennaTracker`, `Helicopter`, `Blimp`, `sitl_periph_universal`.
+`ArduSub`, `AntennaTracker`, `Helicopter`, `Blimp`, `sitl_periph_universal`,
+`sitl_periph_PPP`. Every vehicle except the `sitl_periph_*` boards needs a
+`default_frame`, which `sim_vehicle.py` uses when started without `-f`.
 
 ## Per-frame fields
 
@@ -35,8 +37,8 @@ Top-level keys are vehicle names: `ArduCopter`, `ArduPlane`, `Rover`,
 | `periph_board` | string | no | Board name of the companion AP_Periph SITL build to launch alongside the vehicle. Defaults to `sitl_periph_universal`. Used by frames like `quadplane-PPP` that need a non-default periph build (e.g. `sitl_periph_PPP`). |
 | `periph_extra_args` | list of strings | no | Extra command-line arguments appended to the companion AP_Periph SITL invocation, e.g. `["--serial1=tcpclient:127.0.0.1:5765"]` to map a periph UART to a loopback TCP connection. |
 | `configure_args` | list of strings | no | Extra `waf configure` arguments needed for this frame's build, e.g. `["--enable-PPP"]`. Lets a frame that requires non-default build flags work with `sim_vehicle.py -f <frame>` without the user having to add those flags manually. |
-| `external` | bool | no | True when the physics is simulated by an external program (Gazebo, AirSim, X-Plane, JSBSim, Scrimmage, etc.) and SITL is just the autopilot. |
-| `model` | string | no | Override of the physics model string passed to the SITL binary's `--model` argument. Defaults to the frame name. May embed a JSON model path (e.g. `"X:@ROMFS/models/freestyle.json"`). |
+| `external` | bool | no | True when the physics is simulated by an external program (Gazebo, AirSim, X-Plane, JSBSim, Scrimmage, etc.) and SITL is just the autopilot. Also used by the FlyEachFrame autotests to skip frames they can't fly, e.g. `calibration`. |
+| `model` | string | no | Physics model the SITL binary simulates for this frame. When `--model` is the frame name, SITL replaces it with this field and loads the frame's defaults. Defaults to the frame name. May embed a JSON model path (e.g. `"X:@ROMFS/models/freestyle.json"`). |
 | `frame_example_script` | string | no | Lua script in `libraries/AP_Scripting/examples/` that this frame uses for motor mixing, etc. |
 | `configure_target` | string | no | Used only by sitl_periph variants — overrides the `waf configure --board` target. |
 | `extra_mavlink_cmds` | string | no | Extra commands fed to MAVProxy after startup. |
@@ -45,8 +47,21 @@ Top-level keys are vehicle names: `ArduCopter`, `ArduPlane`, `Rover`,
 
 ## Default-load resolution at runtime
 
-When the SITL binary is invoked with `--model=<frame>`, the binary's startup
-code (`libraries/AP_HAL_SITL/SITL_cmdline.cpp`) resolves the matching frame's
+When the SITL binary is invoked with `--model`, the binary's startup code
+(`libraries/AP_HAL_SITL/SITL_cmdline.cpp`) tries these candidates in turn:
+
+1. `--model` itself. If it is a frame name with a `model` field, the field
+   becomes the simulated model, e.g. `--model Callisto` runs
+   `octa-quad-cwx:@ROMFS/models/Callisto.json`;
+2. `--model` with any `:<args>` suffix removed, e.g.
+   `quad:@ROMFS/models/freestyle.json` → `quad`;
+3. that string with trailing `-<variant>` parts removed one at a time, e.g.
+   `plane-catapult` → `plane`.
+
+For each candidate it searches its own vehicle first, then the others. Within
+a vehicle, a frame whose name equals the candidate wins over a frame whose
+`model` field equals it. Steps 2 and 3 only pick the defaults; the string
+given is still what gets simulated. The binary then resolves the matching frame's
 `default_params_filename` list to a comma-separated `@ROMFS/<path>` string
 and **prepends** it to whatever was passed via `--defaults`. AP_Param loads
 the comma-separated list left-to-right with later files overriding earlier
@@ -56,15 +71,23 @@ ones, so:
 - Any user-supplied `--defaults` file (typically from `sim_vehicle.py`'s
   `--add-param-file` / `-P`) is loaded after, so its values override.
 
-If `--model` doesn't match any frame in `vehicleinfo.json`, only the explicit
-`--defaults` files (if any) are loaded — the binary still boots cleanly with
-no embedded defaults.
+If `--model` doesn't match any frame in `vehicleinfo.json` (e.g.
+`--model JSON`), only the explicit `--defaults` files (if any) are loaded. With
+no `--defaults`, the binary prints a warning and boots without default
+parameters. When `-f` is given and SITL can't resolve `--model` this way,
+`sim_vehicle.py` passes the `-f` frame's files with `--defaults` instead.
 
 ## Editing
 
-Edit `vehicleinfo.json` directly. Whitespace is `indent=4`. Run
-`python3 -c "import json; json.load(open('Tools/autotest/pysim/vehicleinfo.json'))"`
-to validate.
+Edit `vehicleinfo.json` directly. Whitespace is `indent=4`. Then run, from
+the ArduPilot root:
+
+```sh
+python3 -m pytest Tools/autotest/pysim/tests/test_vehicleinfo.py
+```
+
+A new field or vehicle needs adding to this document, and a new field to
+the test's `FIELD_TYPES`. CI runs the test in the `pre-commit` workflow.
 
 After editing, rebuild SITL so the embedded copy in
 `build/sitl/ap_romfs_embedded.h` picks up the change.

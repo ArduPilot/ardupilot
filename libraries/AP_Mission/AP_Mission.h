@@ -226,7 +226,7 @@ public:
         float p3;
     };
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // Scripting NAV command old version of storage format
     struct PACKED nav_script_time_Command_tag0 {
         uint8_t command;
@@ -388,7 +388,7 @@ public:
         // do scripting
         scripting_Command scripting;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
         // nav scripting
         nav_script_time_Command nav_script_time;
 #endif
@@ -710,7 +710,7 @@ public:
     bool jump_to_abort_landing_sequence(const Location &current_loc);
 
     // Scripting helpers for the above functions to fill in the location
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     bool jump_to_landing_sequence(void);
     bool jump_to_abort_landing_sequence(void);
 #endif
@@ -827,6 +827,15 @@ private:
 
     static bool stored_in_location(uint16_t id);
 
+    // record of how many times a do-jump command has been run. The mission keeps one set of these
+    // in _jump_tracking; look-aheads scan on a copy so the running mission is unaffected
+    struct jump_tracking_struct {
+        uint16_t index;                 // index of do-jump commands in mission
+        int16_t num_times_run;          // number of times this jump command has been run
+    };
+    // a full set of jump counters: the live set is _jump_tracking, look-aheads scan on a private copy
+    typedef jump_tracking_struct jump_tracking_array_t[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+
     struct {
         uint16_t age;   // a value of 0 means we have never seen a tag. Once a tag is seen, age will increment every time the mission index changes.
         uint16_t tag;   // most recent tag that was successfully jumped to. Only valid if age > 0
@@ -872,16 +881,23 @@ private:
     ///     returns true if successfully advanced (can it ever be unsuccessful?)
     void advance_current_do_cmd();
 
-    /// get_next_cmd - gets next command found at or after start_index
+    /// get_next_cmd - gets next command found at or after scan_index
     ///     returns true if found, false if not found (i.e. mission complete)
     ///     accounts for do_jump commands
-    ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg = true);
+    ///     scan_index is the caller's position in the mission, and is advanced by this function to
+    ///     the command the scan should resume from, so that a scan continued through this function
+    ///     follows jumps the same way the running mission does; unspecified on failure
+    ///     jump_state holds the jump counters the scan resolves jumps against: pass _jump_tracking to
+    ///     act on the running mission, or a private copy to look ahead without disturbing it.
+    ///     A look-ahead on a private cursor is not taking the jumps it follows, so it does not
+    ///     report them to the GCS either
+    bool get_next_cmd(uint16_t &scan_index, Mission_Command& cmd, jump_tracking_array_t &jump_state);
 
     /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
     ///     returns true if found, false if not found
     ///     stops and returns false if it hits another navigation command before it finds the first do or conditional command
-    ///     accounts for do_jump commands but never increments the jump's num_times_run (get_next_nav_cmd is responsible for this)
+    ///     accounts for do_jump commands, following them on a private copy of the jump counters so the running
+    ///     mission's num_times_run is never changed (advance_current_nav_cmd is responsible for that)
     bool get_next_do_cmd(uint16_t start_index, Mission_Command& cmd);
 
     ///
@@ -892,10 +908,13 @@ private:
 
     /// get_jump_times_run - returns number of times the jump command has been run
     ///     return is signed to be consistent with do-jump cmd's repeat count which can be -1 (to signify to repeat forever)
-    int16_t get_jump_times_run(const Mission_Command& cmd);
+    ///     jump_state holds the counters to read: _jump_tracking for the running mission, or a private copy
+    int16_t get_jump_times_run(const Mission_Command& cmd, jump_tracking_array_t &jump_state);
 
     /// increment_jump_times_run - increments the recorded number of times the jump command has been run
-    void increment_jump_times_run(Mission_Command& cmd, bool send_gcs_msg = true);
+    ///     jump_state holds the counters to advance: _jump_tracking for the running mission, or a private copy.
+    ///     The jump is reported to the GCS only when the live counters are the ones being advanced
+    void increment_jump_times_run(Mission_Command& cmd, jump_tracking_array_t &jump_state);
 
     /// check_eeprom_version - checks version of missions stored in eeprom matches this library
     /// command list will be cleared if they do not match
@@ -922,6 +941,10 @@ private:
     /// sanity checks that the masked fields are not NaN's or infinite
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
 
+    /// get_next_nav_cmd, following jumps on the supplied jump_state instead of a fresh private copy
+    ///     jump_state is left advanced, so chained look-aheads can share one copy
+    bool get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd, jump_tracking_array_t &jump_state);
+
     /// check if the next nav command is a takeoff, skipping delays
     bool is_takeoff_next(uint16_t start_index);
 
@@ -947,10 +970,7 @@ private:
     Location         _exit_position;  // the position in the mission that the mission was exited
 
     // jump related variables
-    struct jump_tracking_struct {
-        uint16_t index;                 // index of do-jump commands in mission
-        int16_t num_times_run;          // number of times this jump command has been run
-    } _jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    jump_tracking_array_t   _jump_tracking;
 
     // last time that mission changed
     uint32_t _last_change_time_ms;

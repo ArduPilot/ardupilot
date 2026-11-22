@@ -1,6 +1,6 @@
 #pragma once
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 
 #include <AP_Common/AP_Common.h>
 
@@ -31,4 +31,4 @@ private:
     uint8_t count;
 };
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED

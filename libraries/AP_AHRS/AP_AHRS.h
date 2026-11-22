@@ -51,11 +51,10 @@ public:
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
-    // has_status returns information about the EKF health and
-    // capabilities.  It is currently invalid to call this when a
-    // backend is in charge which returns false for get_filter_status
-    // - so this will simply return false for DCM, for example.
-    bool has_status(Status status) const;
+    // configured_backend_has_status returns information about the
+    // configured backend's health and capabilities.  Returns false if
+    // the configured backend does not provide filter status (e.g. DCM).
+    bool configured_backend_has_status(Status status) const;
 
     // Constructor
     AP_AHRS(uint8_t flags = 0);
@@ -161,13 +160,10 @@ public:
     // airspeed data or synthesised from other sources.
     bool airspeed_EAS(float &airspeed_ret) const;
 
-    enum AirspeedEstimateType : uint8_t {
-        NO_NEW_ESTIMATE = 0,
-        AIRSPEED_SENSOR = 1,
-        DCM_SYNTHETIC = 2,
-        EKF3_SYNTHETIC = 3,
-        SIM = 4,
-    };
+    // the airspeed-estimate source enum now lives on the backend so it
+    // can be stored in AP_AHRS_Backend::Estimates; keep the AP_AHRS name
+    // for existing callers:
+    using AirspeedEstimateType = AP_AHRS_Backend::AirspeedEstimateType;
 
     // return an (equivalent) airspeed estimate if available. return
     // true if airspeed_ret is valid. This value may be derived from
@@ -249,6 +245,8 @@ public:
 
     // returns the inertial navigation origin in lat/lon/alt
     bool get_origin(Location &ret) const WARN_IF_UNUSED;
+    // returns true if the global navigation origin is valid
+    bool has_origin() const WARN_IF_UNUSED { return state.origin_ok; }
 
     bool have_inertial_nav() const;
 
@@ -302,7 +300,7 @@ public:
     bool get_vert_pos_rate_D(float &velocity) const;
 
     // write optical flow measurements to EKF
-    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, const float heightOverride);
+    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, const float heightOverride, const float altMin);
 
     // retrieve latest corrected optical flow samples (used for calibration)
     bool getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const;
@@ -347,8 +345,8 @@ public:
     }
 #endif
 
-    // get_filter_status - returns filter status as a series of flags
-    bool get_filter_status(nav_filter_status &status) const {
+    // get_filter_status_for_configured_backend - returns filter status as a series of flags
+    bool get_filter_status_for_configured_backend(nav_filter_status &status) const {
         status = configured_estimates->filter_status;
         return configured_estimates->filter_status_valid;
     }
@@ -412,11 +410,11 @@ public:
         return configured_estimates->is_vibration_affected;
     }
 
-    // get_variances - provides the innovations normalised using the innovation variance where a value of 0
+    // get_variances_for_configured_backend - provides the innovations normalised using the innovation variance where a value of 0
     // indicates perfect consistency between the measurement and the EKF solution and a value of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const {
+    bool get_variances_for_configured_backend(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const {
         velVar = configured_estimates->velVar;
         posVar = configured_estimates->posVar;
         hgtVar = configured_estimates->hgtVar;
@@ -565,6 +563,7 @@ public:
     // trim rotation matrices:
     const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
     const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
+    const Quaternion& get_quat_vehicle_body_to_autopilot_body(void) const { return _quat_vehicle_body_to_autopilot_body; }
 
     // Logging functions
     void Log_Write_Home_And_Origin();
@@ -597,11 +596,8 @@ public:
         return _home;
     }
 
-    // functions to handle locking of home.  Some vehicles use this to
-    // allow GCS to lock in a home location.
-    void lock_home() {
-        _home_locked = true;
-    }
+    // true if home has been locked by passing lock to set_home().
+    // Some vehicles use this to allow GCS to lock in a home location.
     bool home_is_locked() const {
         return _home_locked;
     }
@@ -614,19 +610,19 @@ public:
     // set the home location in 10e7 degrees. This should be called
     // when the vehicle is at this position. It is assumed that the
     // current barometer and GPS altitudes correspond to this altitude
-    bool set_home(const Location &loc) WARN_IF_UNUSED;
+    bool set_home(const Location &loc, bool lock=false) WARN_IF_UNUSED;
 
     /*
      * Attitude-related public methods and attributes:
      */
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // deprecated functions for accessing rpy.  Do not use, these will
     // be removed.
     float get_roll() const { return roll; }
     float get_pitch() const { return pitch; }
     float get_yaw() const { return yaw; }
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_EXTERNAL_BINDING_ENABLED
 
     // roll/pitch/yaw euler angles, all in radians
     float get_roll_rad() const { return roll; }
@@ -701,9 +697,7 @@ public:
     Vector3f get_vibration(void) const;
 
     // return primary accels
-    const Vector3f &get_accel(void) const {
-        return AP::ins().get_accel(get_primary_accel_index());
-    }
+    const Vector3f &get_accel(void) const;
 
     // return primary accel bias. This should be subtracted from
     // get_accel() vector to get best current body frame accel
@@ -726,6 +720,17 @@ public:
 
     bool get_touchdown_expected(void) const {
         return touchdown_expected;
+    }
+
+    // vehicle code sets this when it knows the vehicle has landed,
+    // even if it is still armed.  Vehicles that do not set it leave
+    // the estimators to use the armed state alone
+    void set_vehicle_landed(bool b) {
+        vehicle_landed = b;
+    }
+
+    bool get_vehicle_landed(void) const {
+        return vehicle_landed;
     }
 
     /*
@@ -884,6 +889,7 @@ private:
 
     Matrix3f _rotation_autopilot_body_to_vehicle_body;
     Matrix3f _rotation_vehicle_body_to_autopilot_body;
+    Quaternion _quat_vehicle_body_to_autopilot_body;
 
     // last time orientation was updated from AHRS_ORIENTATION:
     uint32_t last_orientation_update_ms;
@@ -902,6 +908,7 @@ private:
     uint32_t takeoff_expected_start_ms;
     bool touchdown_expected;    // true if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
     uint32_t touchdown_expected_start_ms;
+    bool vehicle_landed;    // true if the vehicle code reports it has landed
 
     /*
      * wind estimation support
@@ -924,10 +931,6 @@ private:
     // write POS (canonical vehicle position) message out:
     void Write_POS(void) const;
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    bool _airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &status) const;
-
     // set state.configured_ekf_type and the pointer to the configured backend
     void update_configured_ekf_type();
 
@@ -942,10 +945,6 @@ private:
 
     // get configured EKF type:
     EKFType _configured_ekf_type(void) const;
-
-    // return a true airspeed estimate (navigation airspeed) if
-    // available. return true if we have an estimate
-    bool _airspeed_TAS(float &airspeed_ret) const;
 
     // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
@@ -970,13 +969,16 @@ private:
     // get current location estimate
     bool _get_location(Location &loc) const;
 
-    // return true if a airspeed sensor should be used for the AHRS airspeed estimate
-    bool _should_use_airspeed_sensor(uint8_t airspeed_index) const;
-    
     /*
       update state structure
      */
     void update_state(void);
+
+    // if a backend asked for the DCM airspeed fallback (by publishing
+    // AirspeedEstimateType::DCM_FALLBACK), fill its estimate in from the DCM
+    // backend.  Called once the backend loop has run so the DCM estimate is
+    // current:
+    void fallback_synthetic_airspeed_EAS(AP_AHRS_Backend::Estimates &results);
 
     // returns an EKF type to be used as active if we decide the
     // primary is not good enough.
@@ -1079,6 +1081,7 @@ private:
     };
 
 
+public:
     enum class Options : uint16_t {
         DISABLE_DCM_FALLBACK_FW=(1U<<0),
         DISABLE_DCM_FALLBACK_VTOL=(1U<<1),
@@ -1086,11 +1089,15 @@ private:
         RECORD_ORIGIN=(1U<<3),
         USE_RECORDED_ORIGIN_FOR_NONGPS=(1U<<4),
     };
-    AP_UInt16 _options;
-    
+
+    // return true if the given AHRS_OPTIONS bit is set.  Public so the
+    // backends can consult AHRS options while filling their results:
     bool option_set(Options option) const {
         return (_options & uint16_t(option)) != 0;
     }
+
+private:
+    AP_UInt16 _options;
 
     // true when we have completed the common origin setup
     bool done_common_origin;

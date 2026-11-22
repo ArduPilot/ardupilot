@@ -246,7 +246,7 @@ uint32_t UARTDriver::txspace(void)
     return _writebuffer.space();
 }
 
-void UARTDriver::set_flow_control(enum flow_control flow_control_setting)
+void UARTDriver::_set_flow_control(enum flow_control flow_control_setting)
 {
     _flow_control = flow_control_setting;
     if (_flow_control == FLOW_CONTROL_AUTO) {
@@ -1108,7 +1108,7 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
                     } else if (!_auto_flow_detected && AP_HAL::millis() - _auto_flow_start_ms > 500U) {
                         // CTS never seen since AUTO was set - actually disable
                         ::printf("SERIAL%u: hardware flow control not detected, disabled\n", _portNumber);
-                        set_flow_control(FLOW_CONTROL_DISABLE);
+                        _set_flow_control(FLOW_CONTROL_DISABLE);
                     }
                 }
             } else {

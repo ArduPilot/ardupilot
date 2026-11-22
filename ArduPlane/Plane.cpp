@@ -182,7 +182,7 @@ void Plane::ahrs_update()
     pitch_limit_min = aparm.pitch_limit_min;
 
     bool rotate_limits = true;
-#if HAL_QUADPLANE_ENABLED
+#if AP_PLANE_TAILSITTER_ENABLED
     if (quadplane.tailsitter.active()) {
         rotate_limits = false;
     }
@@ -208,7 +208,7 @@ void Plane::ahrs_update()
         quadplane.pos_control->update_estimates();  
     }
 #endif
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_FOLLOW_ENABLED
         g2.follow.update_estimates();
 #endif
 
@@ -631,7 +631,7 @@ void Plane::update_alt()
 
     update_flight_stage();
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (nav_scripting_active()) {
         // don't call TECS while we are in a trick
         return;
@@ -672,11 +672,17 @@ void Plane::update_alt()
             tecs_target_alt_cm = MAX(tecs_target_alt_cm, prev_WP_loc.alt - home.alt) + (g2.rtl_climb_min+10)*100;
         }
 
+        if ((flight_stage == AP_FixedWing::FlightStage::TAKEOFF ||
+             flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) &&
+            !TECS_controller.pitch_min_is_set()) {
+            // No code gave TECS a pitch minimum for this run. Give the takeoff value.
+            TECS_controller.set_pitch_min(0.01f * get_takeoff_pitch_min_cd());
+        }
+
         TECS_controller.update_pitch_throttle(tecs_target_alt_cm,
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  distance_beyond_land_wp,
-                                                 get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
                                                  aerodynamic_load_factor,
@@ -901,7 +907,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 // set target location (for use by external control and scripting)
 bool Plane::set_target_location(const Location &target_loc)
 {
@@ -919,9 +925,9 @@ bool Plane::set_target_location(const Location &target_loc)
     plane.set_guided_WP(loc);
     return true;
 }
-#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#endif //AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // get target location (for use by scripting)
 bool Plane::get_target_location(Location& target_loc)
 {
@@ -1009,7 +1015,7 @@ bool Plane::set_crosstrack_start(const Location &new_start_location)
     return true;
 }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 // returns true if vehicle is landing.
 bool Plane::is_landing() const

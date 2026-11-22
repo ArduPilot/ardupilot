@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: >-
+  If you use ArduPilot in academic or published work, please cite it as below.
+  Please also state the vehicle firmware and version you used (as reported at
+  boot and in the logs) or the git commit hash, since results depend on the
+  release.
+type: software
+title: ArduPilot
+abstract: >-
+  ArduPilot is an open source autopilot system supporting multicopters,
+  traditional helicopters, fixed-wing aircraft, VTOL aircraft, rovers, boats,
+  submarines, blimps and antenna trackers. It runs on a wide range of
+  flight controller hardware and on Linux, and includes software-in-the-loop
+  simulation (SITL) for development and testing.
+authors:
+  - name: ArduPilot Development Team
+    website: https://ardupilot.org/dev/docs/common-team.html
+  - name: ArduPilot Contributors
+repository-code: https://github.com/ArduPilot/ardupilot
+url: https://ardupilot.org
+license: GPL-3.0-or-later
+keywords:
+  - autopilot
+  - unmanned aerial vehicle
+  - UAV
+  - drone
+  - robotics
+  - flight control
+  - multicopter
+  - fixed-wing
+  - rover
+  - UGV
+  - underwater vehicle
+  - ROV
+  - USV
+  - MAVLink
+  - SITL

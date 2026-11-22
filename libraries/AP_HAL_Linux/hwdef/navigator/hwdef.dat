@@ -16,6 +16,12 @@ BARO BMP280 I2C:1:0x76
 BARO BMP388 I2C:1:0x76
 define HAL_BARO_EXTERNAL_BUS_DEFAULT 6
 
+# Navigator has no CAN ports, but can use USB-CAN adaptors via the Raspberry Pi.
+# Two interfaces is an arbitrary software limit (can0 and can1), not a hardware port count.
+env WITH_CAN 1
+define HAL_NUM_CAN_IFACES 2
+define HAL_CAN_DRIVER_DEFAULT 1
+
 
 # I2C6 is the only i2c one exposed on a header
 define HAL_LINUX_I2C_EXTERNAL_BUS_MASK 1 << 6

@@ -109,7 +109,7 @@ void ModeAuto::update()
         } else {
             plane.calc_throttle();
         }
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     } else if (nav_cmd_id == MAV_CMD_NAV_SCRIPT_TIME) {
         // NAV_SCRIPTING has a desired roll and pitch rate and desired throttle
         plane.nav_roll_cd = ahrs.roll_sensor;
@@ -137,7 +137,7 @@ void ModeAuto::navigate()
 
 bool ModeAuto::does_auto_navigation() const
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
    return (!plane.nav_scripting_active());
 #endif
    return true;
@@ -145,7 +145,7 @@ bool ModeAuto::does_auto_navigation() const
 
 bool ModeAuto::does_auto_throttle() const
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
    return (!plane.nav_scripting_active());
 #endif
    return true;

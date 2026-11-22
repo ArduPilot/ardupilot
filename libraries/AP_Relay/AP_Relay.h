@@ -127,7 +127,8 @@ private:
         // Send DroneCAN hardpoint message for given index on all interfaces
         void send_index(const uint8_t index);
 
-        static constexpr uint8_t num_pins = (int16_t)AP_Relay_Params::VIRTUAL_PINS::DroneCAN_15 - (int16_t)AP_Relay_Params::VIRTUAL_PINS::DroneCAN_0;
+        // DroneCAN_0 to DroneCAN_15 inclusive
+        static constexpr uint8_t num_pins = (int16_t)AP_Relay_Params::VIRTUAL_PINS::DroneCAN_15 - (int16_t)AP_Relay_Params::VIRTUAL_PINS::DroneCAN_0 + 1;
 
         struct {
             bool value;

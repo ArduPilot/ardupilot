@@ -122,6 +122,8 @@ case "${RELEASE_CODENAME}" in
     mantic)   ;&
     bullseye) ;&
     oracular) ;&
+    plucky)   ;&
+    questing) ;&
     _LISTENDA)
         echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
         exit 1
@@ -129,10 +131,9 @@ case "${RELEASE_CODENAME}" in
 
     bookworm) ;&
     trixie)   ;&
+    forky)    ;&
     jammy)    ;&
     noble)    ;&
-    plucky)   ;&
-    questing) ;&
     resolute) ;&
     _LISTENDB)
         echo "${RELEASE_CODENAME} is supported"
@@ -155,6 +156,11 @@ elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
+elif [ ${RELEASE_CODENAME} == 'forky' ]; then
+    SITLFML_VERSION="3.1"
+    SITLCFML_VERSION="3.0"
+    PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
@@ -165,16 +171,6 @@ elif [ ${RELEASE_CODENAME} == 'noble' ]; then
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
-    PYTHON_V="python3"
-    PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'questing' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
-    PYTHON_V="python3"
-    PIP="python3 -m pip"
 elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITLFML_VERSION="3.0"
     SITLCFML_VERSION="3.0"
@@ -233,9 +229,8 @@ ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 if false ||
    [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+   [ ${RELEASE_CODENAME} == 'forky' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'plucky' ] ||
-   [ ${RELEASE_CODENAME} == 'questing' ] ||
    [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # on Ubuntu 23.04 Lunar (and presumably later releases), we install in venv, below
@@ -250,9 +245,8 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
     if false ||
        [ ${RELEASE_CODENAME} == 'trixie' ] ||
        [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+       [ ${RELEASE_CODENAME} == 'forky' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'plucky' ] ||
-       [ ${RELEASE_CODENAME} == 'questing' ] ||
        [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
@@ -271,47 +265,50 @@ function install_arm_none_eabi_toolchain() {
     # GNU Tools for ARM Embedded Processors
     # (see https://launchpad.net/gcc-arm-embedded/)
     ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
-    case $(uname -m) in
+    ARM_ARCH=$(uname -m)
+    case $ARM_ARCH in
         x86_64)
-            if [ ! -d $OPT/$ARM_ROOT ]; then
-                (
-                    cd $OPT
-                    heading "Installing toolchain for STM32 Boards"
-                    echo "Installing toolchain for STM32 Boards"
-                    echo "Downloading from ArduPilot server"
-                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    echo "Installing..."
-                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    echo "... Cleaning"
-                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                )
-            fi
-            echo "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-            echo "Done!";;
-
+            ARM_SHA256="21134caa478bbf5352e239fbc6e2da3038f8d2207e089efc96c3b55f1edcd618"
+            ;;
         aarch64)
-            if [ ! -d $OPT/$ARM_ROOT ]; then
-                (
-                    cd $OPT
-                    heading "Installing toolchain for STM32 Boards"
-                    echo "Installing toolchain for STM32 Boards"
-                    echo "Downloading from ArduPilot server"
-                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    echo "Installing..."
-                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    echo "... Cleaning"
-                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                )
-            fi
-            echo "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-            echo "Done!";;
+            ARM_SHA256="343d8c812934fe5a904c73583a91edd812b1ac20636eb52de04135bb0f5cf36a"
+            ;;
+        *)
+            echo "No STM32 toolchain available for $ARM_ARCH, skipping"
+            DO_AP_STM_ENV=0
+            return
+            ;;
     esac
+    if [ ! -x "$OPT/$ARM_ROOT/bin/arm-none-eabi-gcc" ]; then
+        heading "Installing toolchain for STM32 Boards"
+        # extract into a staging dir so an interrupted install is retried on the next run
+        ARM_STAGING="$OPT/$ARM_ROOT.partial"
+        ARM_TARBALL="$ARM_ROOT-$ARM_ARCH-linux.tar.bz2"
+        sudo rm -rf "$ARM_STAGING"
+        sudo mkdir "$ARM_STAGING"
+        echo "Downloading from ArduPilot server"
+        # wget retries network errors itself, retry here on checksum mismatch
+        for ARM_ATTEMPT in 1 2 3; do
+            sudo wget --progress=dot:giga -O "$ARM_STAGING/$ARM_TARBALL" "https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL" &&
+                echo "$ARM_SHA256  $ARM_STAGING/$ARM_TARBALL" | sudo sha256sum -c - &&
+                break
+            if [ $ARM_ATTEMPT -eq 3 ]; then
+                sudo rm -rf "$ARM_STAGING"
+                heading "STM32 toolchain download failed or is corrupted (checksum mismatch). Please rerun this script."
+                exit 1
+            fi
+            echo "STM32 toolchain download failed, retrying ($ARM_ATTEMPT/3)"
+        done
+        echo "Installing..."
+        sudo tar xjf "$ARM_STAGING/$ARM_TARBALL" -C "$ARM_STAGING"
+        sudo rm -rf "$OPT/$ARM_ROOT"
+        sudo mv "$ARM_STAGING/$ARM_ROOT" "$OPT/$ARM_ROOT"
+        sudo rm -rf "$ARM_STAGING"
+    fi
+    echo "Registering STM32 Toolchain for ccache"
+    sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+    sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+    echo "Done!"
 }
 
 function maybe_prompt_user() {
@@ -340,10 +337,10 @@ elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
+elif [ ${RELEASE_CODENAME} == 'forky' ]; then
+    SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif true &&
      [ ${RELEASE_CODENAME} != 'noble' ] &&
-     [ ${RELEASE_CODENAME} != 'plucky' ] &&
-     [ ${RELEASE_CODENAME} != 'questing' ] &&
      [ ${RELEASE_CODENAME} != 'resolute' ] &&
      true; then
     if apt-cache search python-argparse | grep argp; then
@@ -361,13 +358,10 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
+  elif [ ${RELEASE_CODENAME} == 'forky' ]; then
+    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
+    # see below
   elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'questing' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
@@ -385,7 +379,10 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   fi
 
   if false; then :
-  elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+  elif false ||
+       [ ${RELEASE_CODENAME} == 'trixie' ] ||
+       [ ${RELEASE_CODENAME} == 'forky' ] ||
+       false; then
       PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
@@ -395,8 +392,6 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif false ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'plucky' ] ||
-       [ ${RELEASE_CODENAME} == 'questing' ] ||
        [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
       PYTHON_PKGS+=" wxpython opencv-python"
@@ -440,7 +435,7 @@ echo "Done!"
 
 SHELL_LOGIN=".profile"
 if $IS_DOCKER; then
-    echo "Inside docker, we add the tools path into .bashrc directly"
+    echo "Inside docker, we add the tools path into ~/.ardupilot_env, sourced from .bashrc"
     SHELL_LOGIN=".ardupilot_env"
     echo "# ArduPilot env file. Need to be loaded by your Shell." > ~/$SHELL_LOGIN
 fi
@@ -454,9 +449,8 @@ PIP_USER_ARGUMENT="--user"
 if false ||
      [ ${RELEASE_CODENAME} == 'bookworm' ] ||
      [ ${RELEASE_CODENAME} == 'trixie' ] ||
+     [ ${RELEASE_CODENAME} == 'forky' ] ||
      [ ${RELEASE_CODENAME} == 'noble' ] ||
-     [ ${RELEASE_CODENAME} == 'plucky' ] ||
-     [ ${RELEASE_CODENAME} == 'questing' ] ||
      [ ${RELEASE_CODENAME} == 'resolute' ] ||
      false; then
     $APT_GET install python3-venv
@@ -484,15 +478,17 @@ if false ||
     $SOURCE_LINE
     PIP_USER_ARGUMENT=""
 
-    if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?\nThis means that any terminal will open and load ArduPilot venv" ; then
-        DO_PYTHON_VENV_ENV=1
-    fi
+    grep -Fxq "$SOURCE_LINE" ~/$SHELL_LOGIN 2>/dev/null || {
+        if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?\nThis means that any terminal will open and load ArduPilot venv" ; then
+            DO_PYTHON_VENV_ENV=1
+        fi
 
-    if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
-        echo $SOURCE_LINE >> ~/$SHELL_LOGIN
-    else
-        echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
-    fi
+        if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
+            echo "$SOURCE_LINE" >> ~/$SHELL_LOGIN
+        else
+            echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
+        fi
+    }
 fi
 
 # try update packaging, setuptools and wheel before installing pip package that may need compilation
@@ -506,9 +502,8 @@ fi
 if false ||
    [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+   [ ${RELEASE_CODENAME} == 'forky' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'plucky' ] ||
-   [ ${RELEASE_CODENAME} == 'questing' ] ||
    [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # must do this ahead of wxPython pip3 run :-/
@@ -541,15 +536,6 @@ for PACKAGE in $PYTHON_PKGS; do
         time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
     fi
 done
-
-# somehow Plucky really wants Pillow reinstalled or MAVProxy's map
-# won't load (version mismatch between "Core" and "Pillow")
-if false || \
-        [ ${RELEASE_CODENAME} == 'plucky' ] || \
-        [ ${RELEASE_CODENAME} == 'questing' ] || \
-        false; then
-    $PIP install --force-reinstall pillow
-fi
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1
@@ -595,7 +581,7 @@ grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
 
 if [[ $SKIP_AP_COMPLETION_ENV -ne 1 ]]; then
 exportline3="source \"$ARDUPILOT_ROOT/Tools/completion/completion.bash\"";
-grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
+grep -Fxq "$exportline3" ~/.bashrc 2>/dev/null || {
     if maybe_prompt_user "Add ArduPilot Bash Completion to your bash shell [N/y]?" ; then
         echo "$exportline3" >> ~/.bashrc
         eval "$exportline3"
@@ -617,7 +603,7 @@ grep -Fxq "$exportline4" ~/$SHELL_LOGIN 2>/dev/null || {
 echo "Done!"
 
 if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
-  if [ -d ".git" ]; then
+  if [ -e "$ARDUPILOT_ROOT/.git" ] && git -C "$ARDUPILOT_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
     heading "Update git submodules"
     cd "$ARDUPILOT_ROOT"
     git submodule update --init --recursive
@@ -627,7 +613,7 @@ fi
 
 if $IS_DOCKER; then
     echo "Finalizing ArduPilot env for Docker"
-    echo "source ~/.ardupilot_env">> ~/.bashrc
+    grep -Fxq "source ~/.ardupilot_env" ~/.bashrc 2>/dev/null || echo "source ~/.ardupilot_env" >> ~/.bashrc
 fi
 
 echo "---------- $0 end ----------"

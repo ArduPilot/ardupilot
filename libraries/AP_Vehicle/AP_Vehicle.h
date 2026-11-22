@@ -72,7 +72,7 @@
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
 #include <AP_DDS/AP_DDS_config.h>
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -182,15 +182,15 @@ public:
     // returns true if the vehicle has crashed
     virtual bool is_crashed() const;
 
-#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
     // Method to takeoff for use by external control
     virtual bool start_takeoff(const float alt_m) { return false; }
     // Method to control vehicle position for use by external control
     virtual bool set_target_location(const Location& target_loc) { return false; }
     // Get target location for use by external control
     virtual bool get_target_location(Location& target_loc) { return false; }
-#endif // AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
-#if AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     /*
       methods to control vehicle for use by scripting
     */
@@ -265,7 +265,7 @@ public:
     };
     virtual custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) { return nullptr; }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
     // returns true if vehicle is in the process of landing
     virtual bool is_landing() const { return false; }
@@ -276,6 +276,14 @@ public:
     // reboot the vehicle in an orderly manner, doing various cleanups
     // and flashing LEDs as appropriate
     void reboot(bool hold_in_bootloader);
+
+#if AP_POWEROFF_ENABLED
+    void poweroff_start();
+    void poweroff();
+
+    // true if a delayed power off has been started
+    bool poweroff_pending() const;
+#endif // AP_POWEROFF_ENABLED
 
     /*
       get the distance to next wp in meters
@@ -506,7 +514,7 @@ protected:
     AP_TemperatureSensor temperature_sensor;
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     AP_Scripting scripting;
 #endif
 
@@ -622,6 +630,12 @@ private:
     AP_Filters filters;
 #endif
 
+#if AP_POWEROFF_ENABLED
+    void poweroff_update();
+#if AP_POWEROFF_DELAY_MS
+    uint32_t _poweroff_start_ms;
+#endif // AP_POWEROFF_DELAY_MS
+#endif // AP_POWEROFF_ENABLED
 };
 
 namespace AP {

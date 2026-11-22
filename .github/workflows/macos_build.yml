@@ -191,6 +191,15 @@ jobs:
           ./waf copter
           ccache -s
           ccache -z
+      - name: test zeroed allocation
+        if: matrix.config == 'sitl'
+        shell: bash
+        run: |
+          # shellcheck source=/dev/null
+          source ~/.bash_profile
+          ./waf --targets tests/test_cpp
+          # scribble fresh allocations so a malloc that is not zeroed fails
+          MallocScribble=1 ./build/sitl/tests/test_cpp
       - uses: ./.github/actions/save-ccache
         with:
           key-suffix: ${{ matrix.config }}
