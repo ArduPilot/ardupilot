@@ -44,3 +44,7 @@ Next, keep working in software: decide the documented ROS-versus-ArduSub saturat
 ## 2026-11-22 actuator software continuation
 
 - Added an isolated stdin/stdout harness for the existing ESP32 command guard. A native virtual-sensor ArduSub replay now feeds observed armed mixer output through the checked AP-to-ESP32 permutation, frame encoder, and guard simulator; disarm and stale-command cases return neutral. Separate unit tests cover malformed-frame fault and explicit reset. This closes a software-only observation-to-guard replay, not a real transport or firmware integration. The configured session is a test fixture, and the physical output path remains disabled.
+
+## 2026-11-22 dashboard recording continuation
+
+- Added a local 10 Hz CSV telemetry recorder with start/stop/status controls in the operator page. It records normalized ArduSub snapshot values, freshness flags, UTC timestamps, and the eight reported output channels, leaving unknown data blank. Isolated CSV and HTTP tests pass. It is independent of vehicle commands and lacks the ROS logger's mission/video alignment features.

@@ -68,6 +68,10 @@ main { padding: 16px 22px 32px; }
 .source-name { color: var(--ac); font: 700 14px ui-monospace, monospace; }
 .fineprint { margin-top: 10px; color: var(--tx3); font-size: 11px; line-height: 1.5; }
 .diagnostics-link { display: inline-block; margin-top: 12px; color: var(--ac); font-size: 12px; }
+.recording-toggle { margin-top: 12px; padding: 9px 12px; border: 1px solid var(--bd2); border-radius: var(--rad-sm); background: var(--bg3); color: var(--tx); cursor: pointer; }
+.recording-toggle:hover { border-color: var(--ac); }
+.recording-toggle:disabled { opacity: .6; cursor: wait; }
+#recording-download[hidden] { display: none; }
 .tab-card { max-width: 1400px; margin: 0 auto; }
 .plot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
 .plot-grid > div { min-width: 0; background: var(--bg0); border: 1px solid var(--bd); border-radius: var(--rad-sm); padding: 12px; }

@@ -5,6 +5,49 @@ const history = [];
 let hadLink = false;
 let lastSnapshot = null;
 let selectedTab = 'dashboard';
+let recordingActive = false;
+let recordingBusy = false;
+
+function showRecording(state) {
+  recordingActive = !!state.active;
+  $('recording-toggle').textContent = recordingActive ? 'Stop recording' : 'Start recording';
+  $('recording-toggle').disabled = recordingBusy;
+  $('recording-download').hidden = !state.file;
+  $('recording-status').textContent = recordingActive ? `Recording ${state.file} · ${state.rows} rows` :
+    state.file ? `Saved ${state.file} · ${state.rows} rows` : 'No recording active';
+}
+
+async function refreshRecording() {
+  if (recordingBusy) return;
+  try {
+    const response = await fetch('/api/recording', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Recorder unavailable');
+    showRecording(await response.json());
+  } catch (_) {
+    $('recording-status').textContent = 'Recorder unavailable';
+  }
+}
+
+async function toggleRecording() {
+  if (recordingBusy) return;
+  recordingBusy = true;
+  $('recording-toggle').disabled = true;
+  try {
+    const path = recordingActive ? '/api/recording/stop' : '/api/recording/start';
+    const response = await fetch(path, { method: 'POST', headers: { 'X-ATAL-Local-Action': 'recording' } });
+    if (!response.ok) throw new Error('Recording request failed');
+    showRecording(await response.json());
+  } catch (_) {
+    $('recording-status').textContent = 'Recording request failed';
+  } finally {
+    recordingBusy = false;
+    $('recording-toggle').disabled = false;
+  }
+}
+
+refreshRecording();
+setInterval(refreshRecording, 1000);
+$('recording-toggle').addEventListener('click', toggleRecording);
 
 for (let i = 1; i <= 8; i++) {
   const motor = document.createElement('div');
@@ -152,6 +195,10 @@ function applyTheme(light) {
   if (selectedTab === 'plots') drawPlots();
 }
 applyTheme(localStorage.getItem('atal-theme') === 'light');
+$('theme-toggle').addEventListener('click', toggleTheme);
+document.querySelectorAll('.nav button[data-tab]').forEach(button => {
+  button.addEventListener('click', () => selectTab(button.dataset.tab));
+});
 function toggleTheme() {
   const light = !document.documentElement.classList.contains('light');
   localStorage.setItem('atal-theme', light ? 'light' : 'dark');

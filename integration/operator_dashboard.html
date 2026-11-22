@@ -21,13 +21,13 @@
         <span class="pill" id="imu-pill"><span class="dot" id="imu-dot"></span>IMU <b id="imu-rate">—</b> Hz</span>
         <span class="pill" id="output-pill"><span class="dot" id="output-dot"></span>THR</span>
         <span class="pill" id="state-pill"><span class="dot" id="state-dot"></span><span id="state-text">WAITING</span></span>
-        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme" title="Toggle light/dark theme" onclick="toggleTheme()">☀️</button>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme" title="Toggle light/dark theme">☀️</button>
       </div>
     </header>
     <nav class="nav" aria-label="Dashboard sections">
-      <button type="button" class="on" data-tab="dashboard" aria-current="page" onclick="selectTab('dashboard')">Dashboard</button>
-      <button type="button" data-tab="plots" onclick="selectTab('plots')">Plots</button>
-      <button type="button" data-tab="raw" onclick="selectTab('raw')">Raw Data</button>
+      <button type="button" class="on" data-tab="dashboard" aria-current="page">Dashboard</button>
+      <button type="button" data-tab="plots">Plots</button>
+      <button type="button" data-tab="raw">Raw Data</button>
       <span class="nav-divider" aria-hidden="true"></span>
       <span class="nav-label">ArduSub integration pending</span>
       <span class="nav-future">Control Lab</span>
@@ -114,6 +114,13 @@
             <p class="fineprint" id="sample-age">Waiting for attitude samples</p>
             <p class="fineprint">Telemetry is read only. Viewing this page does not arm, disarm, or command the vehicle.</p>
             <a class="diagnostics-link" href="/diagnostics">Open diagnostic view ↗</a>
+          </section>
+          <section class="card" aria-labelledby="recording-heading">
+            <h2 class="ct" id="recording-heading">Telemetry Recording</h2>
+            <p class="fineprint">Save normalized ArduSub snapshots to a local CSV at 10 Hz. Recording does not control the vehicle.</p>
+            <button type="button" id="recording-toggle" class="recording-toggle">Start recording</button>
+            <p class="fineprint" id="recording-status" role="status" aria-live="polite">Checking recorder…</p>
+            <a class="diagnostics-link" id="recording-download" href="/api/recording/download" hidden>Download CSV ↗</a>
           </section>
         </div>
       </div>
