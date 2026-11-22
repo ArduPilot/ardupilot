@@ -44,9 +44,10 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
     delete[] fusionReport;
     fusionReport = nullptr;
     numFusionReports = 0;
-    auto *beacon = dal.beacon();
-    if (beacon != nullptr) {
-        const uint8_t count = beacon->count();
+    if (dal.beacon() != nullptr) {
+        // beacons are counted as they are first heard from, so
+        // allocate a report for every beacon we could fuse:
+        const uint8_t count = ARRAY_SIZE(lastTime_ms);
         fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[count];
         if (fusionReport != nullptr) {
             numFusionReports = count;
