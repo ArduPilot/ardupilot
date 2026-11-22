@@ -198,6 +198,11 @@ TEST(BetterStream, PrintfFloatExponentHighPrecision)
     EXPECT_FMT("1.2345678e+20", "%.10g", 1.2345678e20);
     EXPECT_FMT("1.2345678", "%.10g", 1.2345678);
 
+    // fixed-form %g used to stop at the first NUL and drop digits
+    EXPECT_FMT("1000000000", "%.10g", 1e9);
+    EXPECT_FMT("12345678", "%.14g", 12345678.0);
+    EXPECT_FMT("0", "%.10g", 0.0);
+
 #undef EXPECT_FMT
 }
 
