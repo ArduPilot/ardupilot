@@ -92,8 +92,8 @@ jobs:
           message['From'] = os.environ['SMTP_FROM']
           message['To'] = 'security@ardupilot.org'
           message.set_content(
-              'The weekly Renode signing security regression suite finished ' +
-              result + '.\n\n' +
+              'The weekly Renode signing security regression suite failed ' +
+              'with result ' + result + '.\n\n' +
               os.environ['RUN_URL'] + '\n')
 
           port = int(os.environ.get('SMTP_PORT') or 587)
