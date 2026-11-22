@@ -2128,7 +2128,7 @@ def _mapped_memory(root, repl):
     return regions
 
 
-def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
+def _platform(root, board, app, bootloader, outdir, fram_path, is_periph, warnings,
               sigrok=False, num_imus=None, imu_names=None, synthetic_iomcu=True,
               attachments=None, esc_signal_port=None, esc_sim=False):
     family = FAMILIES[app.mcu_type]
@@ -2158,12 +2158,38 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
             ]
     ext_flash_mb = app.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
     if ext_flash_mb:
-        # the bootloader leaves QSPI flash memory-mapped; the ELF loader fills it
+        qspi_devices = [device for device in bootloader.wspidev
+                        if device[1] == 'QUADSPI1']
+        flash_ids = {
+            'w25q': (0xEF, 0x40),
+            'w25q-dtr': (0xEF, 0x70),
+        }
         lines += [
             'extFlash: Memory.MappedMemory @ sysbus 0x%08X' % EXT_FLASH_BASE,
             '    size: 0x%X' % (ext_flash_mb << 20),
             '',
         ]
+        flash_name = qspi_devices[0][0].lower() if len(qspi_devices) == 1 else None
+        if flash_name in flash_ids:
+            manufacturer_id, memory_type = flash_ids[flash_name]
+            lines += [
+                '// The stock controller is registered at an emulation-only address;',
+                '// the compatibility wrapper owns the real STM32 address.',
+                'qspiModel: SPI.STM32H7_QuadSPI @ sysbus 0x61000000',
+                '    -> nvic@92',
+                '',
+                'qspi: Miscellaneous.AP_STM32H7_QuadSPI @ sysbus 0x52005000',
+                '    controller: qspiModel',
+                '',
+                'qspiFlash: Miscellaneous.AP_W25QFlash @ qspiModel',
+                '    underlyingMemory: extFlash',
+                '    manufacturerId: 0x%02X' % manufacturer_id,
+                '    memoryType: 0x%02X' % memory_type,
+                '',
+                'mdma: DMA.AP_STM32H7_MDMA @ sysbus 0x52000000',
+                '    -> nvic@122',
+                '',
+            ]
     if family['name'] in (
             'f103', 'f105', 'f303', 'f405', 'f407', 'f427', 'f767',
             'h743', 'h757', 'l4', 'g474'):
@@ -2989,7 +3015,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
      airspeed_bus, battery_samples, rangefinder_uart,
      rangefinder_type, gpio_pins, sigrok_capture, emulated_imus,
      spi_sdcard, resolved_attachments) = _platform(
-        root, board, app, outdir, state_dir / 'fram.img', is_periph, warnings,
+        root, board, app, bootloader, outdir, state_dir / 'fram.img', is_periph, warnings,
         sigrok, num_imus, imu_names, synthetic_iomcu=not real_iomcu,
         attachments=attachments, esc_signal_port=esc_signal_port, esc_sim=esc_sim)
     repl.write_text(platform)

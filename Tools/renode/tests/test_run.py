@@ -168,6 +168,44 @@ def test_convert_and_validate_apj_firmware(tmp_path):
             expected_board_id=43)
 
 
+def test_decode_apj_external_flash(tmp_path):
+    internal = b'internal image'
+    external = b'external image'
+    descriptor = {
+        'magic': 'APJFWv1',
+        'board_id': 42,
+        'image_size': len(internal),
+        'image': base64.b64encode(zlib.compress(internal)).decode('ascii'),
+        'extf_image_size': len(external),
+        'extf_image': base64.b64encode(zlib.compress(external)).decode('ascii'),
+    }
+    source = tmp_path / 'firmware.apj'
+    source.write_text(json.dumps(descriptor))
+    destination = tmp_path / 'current-external-firmware.bin'
+
+    result = renode_run.make_apj_external_binary(
+        source, destination, 1024, expected_board_id=42)
+
+    assert result == destination
+    assert destination.read_bytes() == external
+
+
+def test_apj_without_external_flash_returns_none(tmp_path):
+    payload = b'internal only'
+    descriptor = {
+        'magic': 'APJFWv1',
+        'board_id': 42,
+        'image_size': len(payload),
+        'image': base64.b64encode(zlib.compress(payload)).decode('ascii'),
+    }
+    source = tmp_path / 'firmware.apj'
+    source.write_text(json.dumps(descriptor))
+
+    assert renode_run.make_apj_external_binary(
+        source, tmp_path / 'external.bin', 1024,
+        expected_board_id=42) is None
+
+
 def test_convert_hex_firmware_ignores_bootloader(tmp_path):
     intelhex = pytest.importorskip('intelhex')
     source = tmp_path / 'firmware.hex'
