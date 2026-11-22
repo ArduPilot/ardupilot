@@ -670,8 +670,14 @@ private:
     // save each gyro's sample rate offset once its estimate has converged
     void update_gyro_rate_ppm();
     uint8_t _gyro_rate_ppm_id_ok;  // bitmask of gyros whose ID matches the saved one
-    bool _gyro_rate_ppm_checked;
-    bool _gyro_rate_armed_early;
+    uint8_t _gyro_rate_ppm_checked;  // bitmask of gyros checked since the last disarm
+
+    // low-passed difference between each gyro's observed sample rate
+    // and its estimate, used to decide that the estimate has converged
+    struct RateConvergence {
+        float innovation;  // fraction of the estimate
+        uint8_t windows;   // rate measurement windows filtered, saturating
+    } _gyro_rate_convergence[INS_MAX_INSTANCES];
 
     // how many sensors samples per notify to the backend
     uint8_t _accel_over_sampling[INS_MAX_INSTANCES];

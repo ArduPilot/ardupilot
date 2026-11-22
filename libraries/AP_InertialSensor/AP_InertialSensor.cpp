@@ -66,8 +66,11 @@ extern const AP_HAL::HAL& hal;
 #define GYRO_RATE_PPM_MAX 100000
 #define GYRO_RATE_PPM_SAVE_THRESHOLD 1000
 #define GYRO_RATE_PPM_WARN 10000
-// five time constants of the slow rate filter (0.98 per 1s window)
-#define GYRO_RATE_SLOW_CONVERGE_MS 250000U
+// the rate estimate has converged when its filtered innovation is
+// within this, after enough windows for the filter (0.1 per 1s
+// window) to settle
+#define GYRO_RATE_CONVERGED_PPM 200
+#define GYRO_RATE_CONVERGED_MIN_WINDOWS 20
 
 
 
@@ -860,30 +863,25 @@ void AP_InertialSensor::set_gyro_nominal_rate(uint8_t instance, uint16_t rate_hz
  */
 void AP_InertialSensor::update_gyro_rate_ppm()
 {
-    const uint32_t now_ms = AP_HAL::millis();
     if (hal.util->get_soft_armed()) {
-        if (now_ms < HAL_INS_CONVERGANCE_MS) {
-            // the fast convergence stops when armed; allow five time
-            // constants of the slow filter instead
-            _gyro_rate_armed_early = true;
-        }
-        _gyro_rate_ppm_checked = false;
+        _gyro_rate_ppm_checked = 0;
         return;
     }
-    if (_gyro_rate_ppm_checked ||
-        now_ms < HAL_INS_CONVERGANCE_MS ||
-        (_gyro_rate_armed_early && now_ms < HAL_INS_CONVERGANCE_MS + GYRO_RATE_SLOW_CONVERGE_MS)) {
-        return;
-    }
-    _gyro_rate_ppm_checked = true;
 
     for (uint8_t i=0; i<_gyro_count; i++) {
-        if ((_gyro_rate_ppm_id_ok & (1U<<i)) == 0 ||
+        if ((_gyro_rate_ppm_checked & (1U<<i)) != 0 ||
+            (_gyro_rate_ppm_id_ok & (1U<<i)) == 0 ||
             _gyro_nominal_rates[i] == 0 || !_gyro_healthy[i]) {
             // only learn for a gyro whose ID is saved: an offset saved
             // against another ID would be cleared again at boot
             continue;
         }
+        const auto &convergence = _gyro_rate_convergence[i];
+        if (convergence.windows < GYRO_RATE_CONVERGED_MIN_WINDOWS ||
+            fabsf(convergence.innovation) * 1.0e6f > GYRO_RATE_CONVERGED_PPM) {
+            continue;
+        }
+        _gyro_rate_ppm_checked |= 1U<<i;
         const float ppm = (_gyro_raw_sample_rates[i] / _gyro_nominal_rates[i] - 1.0f) * 1.0e6f;
         const int32_t old_ppm = _gyro_rate_ppm(i);
         if (fabsf(ppm - old_ppm) < GYRO_RATE_PPM_SAVE_THRESHOLD) {

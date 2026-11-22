@@ -269,7 +269,8 @@ protected:
     }
 
     // update the sensor rate for FIFO sensors
-    void _update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz) const __RAMFUNC__;
+    void _update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz,
+                             AP_InertialSensor::RateConvergence *convergence=nullptr) const __RAMFUNC__;
 
     // return true if the sensors are still converging and sampling rates could change significantly
     bool sensors_converging() const;
