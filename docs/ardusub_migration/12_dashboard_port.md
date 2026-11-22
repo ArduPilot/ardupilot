@@ -7,6 +7,7 @@ The reference presentation lives in `web_dashboard/templates/index.html`, compan
 The per-field comparison for the reference `updateUI(s)` is in [13_dashboard_field_map.md](13_dashboard_field_map.md).
 
 The mission-command dependency and software validation order are in [14_mission_port_boundary.md](14_mission_port_boundary.md).
+The separate Flight Plan sequencer, untethered launch, and logger boundaries are in [15_flight_plan_port_boundary.md](15_flight_plan_port_boundary.md).
 
 | Existing dashboard contract | ArduSub migration state | Next implementation boundary |
 |---|---|---|
