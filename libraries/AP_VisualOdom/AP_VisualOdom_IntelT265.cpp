@@ -24,6 +24,8 @@
 #include <GCS_MAVLink/GCS.h>
 
 #define VISUALODOM_RESET_IGNORE_DURATION_MS 1000    // sensor data is ignored for 1sec after a position reset
+#define VISUALODOM_YAW_REALIGN_DEG 2.0f             // realign while disarmed above this yaw difference from the AHRS
+#define VISUALODOM_YAW_REALIGN_GYRO_MAX_DEGS 5.0f   // only realign while disarmed when rotating slower than this
 
 extern const AP_HAL::HAL& hal;
 
@@ -42,6 +44,23 @@ void AP_VisualOdom_IntelT265::handle_pose_estimate(uint64_t remote_time_us, uint
     if (_align_yaw) {
         if (align_yaw_to_ahrs(pos, attitude)) {
             _align_yaw = false;
+        }
+    } else if (!hal.util->get_soft_armed() &&
+               AP::ahrs().get_gyro().length() < radians(VISUALODOM_YAW_REALIGN_GYRO_MAX_DEGS)) {
+        // while disarmed the AHRS yaw is our reference, and it can keep
+        // converging after we first aligned to it, for example once the
+        // compass declination is known.  Align again if we have moved
+        // away from it.  Only do this while the vehicle is still, as
+        // while it rotates our latency would show as a yaw difference,
+        // and be trimmed in.  The difference is taken between Euler
+        // yaws, as that is what align_yaw() corrects.  This is not a
+        // request: if the AHRS can not be aligned to now, nothing is
+        // left pending for after arming:
+        Quaternion att_corrected = att;
+        rotate_attitude(att_corrected);
+        const float yaw_diff = wrap_PI(AP::ahrs().get_yaw_rad() - att_corrected.get_euler_yaw());
+        if (fabsf(yaw_diff) > radians(VISUALODOM_YAW_REALIGN_DEG)) {
+            align_yaw_to_ahrs(pos, attitude);
         }
     }
     if (_align_posxy || _align_posz) {
