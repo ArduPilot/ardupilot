@@ -112,6 +112,10 @@ public:
     // return iTOW of last message, or zero if not supported
     uint32_t get_last_itow_ms(void) const;
 
+    // true if the corrected GPS time is referenced to the PPS edge, so to when
+    // the fix was measured rather than when its message arrived
+    bool corrected_time_from_pps(void) const { return jitter_correction.last_estimate_exact(); }
+
     // check if an option is set
     bool option_set(const AP_GPS::DriverOptions option) const {
         return gps.option_set(option);
