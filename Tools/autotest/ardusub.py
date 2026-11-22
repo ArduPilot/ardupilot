@@ -256,6 +256,52 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         if found_failure is not None:
             raise NotAchievedException(f"RngfndQuality test failed: {found_failure.text}")
 
+    def MAVLinkRangeFinderTimeout(self):
+        """Test configurable MAVLink rangefinder timeout"""
+        def send_distance_sensor(distance_cm=250):
+            self.mav.mav.distance_sensor_send(
+                0,  # time_boot_ms
+                10,  # min_distance cm
+                5000,  # max_distance cm
+                distance_cm,  # current_distance cm
+                mavutil.mavlink.MAV_DISTANCE_SENSOR_ULTRASOUND,
+                0,  # id
+                mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270,
+                255,  # covariance
+            )
+
+        def assert_rangefinder_healthy(healthy: bool):
+            self.drain_mav()
+            self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, healthy)
+
+        self.context_push()
+        try:
+            self.set_parameters({
+                "RNGFND1_TYPE": 10,
+                "RNGFND1_ORIENT": 25,
+                "RNGFND1_MIN": 0.10,
+                "RNGFND1_MAX": 50.00,
+            })
+            self.reboot_sitl()
+
+            self.context_set_message_rate_hz("SYS_STATUS", 10)
+            self.context_set_message_rate_hz("RANGEFINDER", 10)
+            assert_rangefinder_healthy(False)
+
+            self.set_parameter("RNGFND_MAV_TMO", 1.5)
+            for _ in range(4):
+                send_distance_sensor()
+                self.delay_sim_time(1.0, reason="Sending DISTANCE_SENSOR messages at 1 Hz")
+                assert_rangefinder_healthy(True)
+                m = self.assert_receive_message("RANGEFINDER")
+                if abs(m.distance - 2.50) > 0.05:
+                    raise NotAchievedException(f"Expected distance 2.50m, got {m.distance:.2f}m")
+
+            # Should timeout quickly
+            self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False, timeout=1)
+        finally:
+            self.context_pop()
+
     def watch_distance_maintained(self, delta=0.3, timeout=5.0):
         """Watch and wait for the rangefinder reading to be maintained"""
         tstart = self.get_sim_time_cached()
@@ -1886,6 +1932,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.SimTerrainSurftrak,
             self.SimTerrainMission,
             self.RngfndQuality,
+            self.MAVLinkRangeFinderTimeout,
             self.PositionHold,
             self.ModeChanges,
             self.MAV_mgs,
