@@ -42,7 +42,8 @@ public:
 
     // enum for FOLLOW_OPTIONS parameter
     enum class Option {
-        MOUNT_FOLLOW_ON_ENTER = 1
+        MOUNT_FOLLOW_ON_ENTER = 1,
+        TARGET_GPS_CLOCK = 2
     };
 
     // enum for YAW_BEHAVE parameter
@@ -187,6 +188,14 @@ private:
     // Records the time of a target sample, returning false for an old one or one from another component.
     bool accept_sample_time(const mavlink_message_t &msg, uint32_t remote_ms);
 
+    // Returns the local time a target sample was taken, from its remote timestamp.
+    uint32_t sample_time_ms(const mavlink_message_t &msg, uint32_t remote_ms);
+
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+    // Tracks the clock of the component supplying target data; sysid 0 stops tracking.
+    void update_clock_registration(uint32_t sysid, uint8_t compid);
+#endif
+
     // Projects the last received target position and velocity forward by dt seconds at constant acceleration.
     void project_target(float dt, Vector3f &delta_pos_m, Vector3f &delta_vel_ms) const;
 
@@ -264,6 +273,11 @@ private:
     uint32_t    _last_sample_msgid;             // message type of the last accepted sample
     uint8_t     _last_sample_compid;            // component that sent the last accepted sample
     uint32_t    _last_sample_rx_ms;             // time the last accepted sample arrived
+
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+    uint32_t    _clock_sysid;                   // sysid whose clock is registered for sample timing, 0 = none
+    uint8_t     _clock_compid;                  // compid whose clock is registered for sample timing
+#endif
 
     HAL_Semaphore   _follow_sem;                // semaphore for multi-thread use of update_estimates and LUA calls
 
