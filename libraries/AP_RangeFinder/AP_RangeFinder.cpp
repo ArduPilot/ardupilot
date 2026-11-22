@@ -709,6 +709,17 @@ void RangeFinder::handle_msg(const mavlink_message_t &msg)
     }
 }
 
+#if AP_RANGEFINDER_MAVLINK_ENABLED
+void RangeFinder::set_mavlink_timeout_ms(uint32_t timeout_ms)
+{
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (drivers[i] != nullptr) {
+            drivers[i]->set_mavlink_timeout_ms(timeout_ms);
+        }
+    }
+}
+#endif
+
 #if HAL_MSP_RANGEFINDER_ENABLED
 void RangeFinder::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 {

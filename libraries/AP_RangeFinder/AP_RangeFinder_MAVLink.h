@@ -28,6 +28,9 @@ public:
     // Get update from mavlink
     void handle_msg(const mavlink_message_t &msg) override;
 
+    // Set timeout in milliseconds for incoming DISTANCE_SENSOR messages
+    void set_mavlink_timeout_ms(uint32_t timeout_ms) override { _timeout_ms = timeout_ms; }
+
     float max_distance() const override;
     float min_distance() const override;
 
@@ -44,6 +47,7 @@ private:
     float _max_distance;
     float _min_distance;
     int8_t signal_quality;
+    uint32_t _timeout_ms = AP_RANGEFINDER_MAVLINK_TIMEOUT_MS;
 
     // start a reading
     static bool start_reading(void);
