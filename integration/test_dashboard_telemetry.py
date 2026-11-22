@@ -33,6 +33,7 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.telemetry.ingest(Message("HEARTBEAT", source=255, base_mode=128))
         self.telemetry.ingest(Message("HEARTBEAT", component=100, base_mode=128))
         self.assertFalse(self.telemetry.snapshot()["armed_known"])
+        self.assertIsNone(self.telemetry.snapshot()["armed"])
         self.telemetry.ingest(Message("HEARTBEAT", base_mode=128))
         self.telemetry.ingest(Message("ATTITUDE", roll=0.1, pitch=0, yaw=math.pi / 2,
                                       rollspeed=0.01, pitchspeed=0, yawspeed=0))
@@ -45,6 +46,7 @@ class DashboardTelemetryTests(unittest.TestCase):
         stale = self.telemetry.snapshot()
         self.assertFalse(stale["link_alive"])
         self.assertFalse(stale["armed_known"])
+        self.assertIsNone(stale["armed"])
         self.assertFalse(stale["imu_alive"])
 
     def test_body_velocity_and_bad_data(self):

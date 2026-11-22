@@ -80,7 +80,7 @@ class DashboardTelemetry:
         s["link_alive"] = self._heartbeat_at is not None and now - self._heartbeat_at < 3.0
         s["armed_known"] = s["link_alive"]
         if not s["link_alive"]:
-            s["armed"] = False
+            s["armed"] = None
         s["imu_age"] = now - self._attitude_at if self._attitude_at is not None else None
         s["imu_alive"] = s["imu_age"] is not None and s["imu_age"] < 2.5
         s["pressure_alive"] = self._pressure_at is not None and now - self._pressure_at < 2.5

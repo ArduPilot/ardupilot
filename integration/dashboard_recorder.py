@@ -61,6 +61,19 @@ class DashboardRecorder:
             timestamp = datetime.fromtimestamp(time.time() if now is None else now, timezone.utc)
             row = {key: snapshot.get(key) for key in FIELDS if key != "timestamp_utc" and not key.startswith("pwm_")}
             row["timestamp_utc"] = timestamp.isoformat(timespec="milliseconds")
+            if not snapshot.get("armed_known"):
+                row["armed"] = None
+            if not snapshot.get("imu_alive"):
+                for key in ("roll", "pitch", "yaw"):
+                    row[key] = None
+            if not snapshot.get("pressure_alive"):
+                for key in ("pressure_mbar", "water_temp"):
+                    row[key] = None
+            if not snapshot.get("position_alive"):
+                for key in ("depth_m", "pos_n", "pos_e", "vel_fwd", "vel_lat", "vel_z"):
+                    row[key] = None
+            elif not snapshot.get("imu_alive"):
+                row["vel_fwd"] = row["vel_lat"] = None
             pwm = snapshot.get("pwm") if snapshot.get("output_alive") else None
             for index in range(8):
                 row[f"pwm_{index + 1}"] = pwm[index] if isinstance(pwm, list) and len(pwm) > index else None

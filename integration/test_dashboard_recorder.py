@@ -19,10 +19,14 @@ class DashboardRecorderTests(unittest.TestCase):
             status = recorder.start()
             self.assertTrue(status["active"])
             self.assertEqual(recorder.start()["file"], status["file"])
-            recorder.sample({"link_alive": False, "armed_known": False, "armed": None,
+            recorder.sample({"link_alive": False, "armed_known": False, "armed": False,
+                             "imu_alive": False, "roll": 42.0, "pressure_alive": False,
+                             "pressure_mbar": 1025.5, "position_alive": False, "depth_m": 3.0,
                              "output_alive": False, "pwm": [1500] * 8}, now=1000.0)
             recorder.sample({"link_alive": True, "armed_known": True, "armed": True,
-                             "output_alive": True, "pwm": [1400, 1600] + [1500] * 6}, now=1000.1)
+                             "imu_alive": True, "pressure_alive": True, "position_alive": True,
+                             "pressure_mbar": 1025.5, "output_alive": True,
+                             "pwm": [1400, 1600] + [1500] * 6}, now=1000.1)
             stopped = recorder.stop()
             self.assertFalse(stopped["active"])
             self.assertEqual(stopped["rows"], 2)
@@ -31,6 +35,9 @@ class DashboardRecorderTests(unittest.TestCase):
             self.assertEqual(len(rows), 2)
             self.assertEqual(rows[0]["armed_known"], "False")
             self.assertEqual(rows[0]["armed"], "")
+            self.assertEqual(rows[0]["roll"], "")
+            self.assertEqual(rows[0]["pressure_mbar"], "")
+            self.assertEqual(rows[0]["depth_m"], "")
             self.assertEqual(rows[0]["pwm_1"], "")
             self.assertEqual(rows[1]["pwm_1"], "1400")
             self.assertEqual(rows[1]["pwm_8"], "1500")
