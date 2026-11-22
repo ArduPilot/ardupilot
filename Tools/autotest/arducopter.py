@@ -21988,9 +21988,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
 
-        # saved once the fast rate convergence ends, 30s after boot
+        # saved once the rate estimate has converged
         self.wait_statustext(r"IMU0: gyro rate -1\.9\d% from nominal \(was \+0\.00%\)",
-                             regex=True, check_context=True, timeout=60)
+                             regex=True, check_context=True, timeout=90)
         self.wait_statustext(r"IMU1: gyro rate -1\.9\d% from nominal", regex=True, check_context=True)
         learned = self.get_parameters(["INS_GYR_RPPM", "INS_GYR2_RPPM"])
         for name, ppm in learned.items():
@@ -22020,6 +22020,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "INS_GYR_RPPM": 0,
             "INS_GYR2_RPPM": learned["INS_GYR2_RPPM"],
         })
+
+        self.start_subtest("Arming before convergence delays learning only until converged")
+        # the boot above saved IMU0's new ID, so its offset is learned again
+        self.context_clear_collection('STATUSTEXT')
+        self.reboot_sitl()
+        boot_time = self.get_sim_time()
+        self.delay_sim_time(20, reason="arm while the estimate is still converging")
+        self.arm_vehicle(force=True)
+        self.disarm_vehicle(force=True)
+        self.wait_statustext(r"IMU0: gyro rate -1\.9\d% from nominal \(was \+0\.00%\)",
+                             regex=True, check_context=True, timeout=120)
+        learned_after = self.get_sim_time() - boot_time
+        self.progress("IMU0 offset learned %.0fs after boot" % learned_after)
+        # a fixed wait for the slow filter would take until 280s after boot
+        if learned_after > 120:
+            raise NotAchievedException("learned %.0fs after boot; want under 120s" % learned_after)
 
     def NavControllerOutputAltError(self):
         '''check the sign of NAV_CONTROLLER_OUTPUT.alt_error'''
