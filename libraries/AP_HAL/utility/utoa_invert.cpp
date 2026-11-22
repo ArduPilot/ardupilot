@@ -103,21 +103,15 @@ char * ulltoa_invert (uint64_t val, char *s, uint8_t base) {
 
 	// Every base which in not hex and not oct is considered decimal.
 
-	// 64 bits is not actually enough, we need 65, but it should
-	// be good enough for the log dumping we're using this for
-	uint64_t xval = val;
-	do {
-		uint8_t saved = xval;
-		xval &= ~1;
-		xval += 2;
-		xval += xval >> 1;		// *1.5
-		xval += xval >> 4;		// *1.0625
-		xval += xval >> 8;		// *1.00390625
-		xval += xval >> 16;		// *1.000015259
-		xval += xval >> 32;		// it all amounts to *1.6
-		xval >>= 4;				// /16 ... so *1.6/16 is /10, fraction truncated.
-		*s++ = '0' + saved - 10 * (uint8_t)xval;
-	} while (xval);
-	return s;
+	// The shift-based division by 10 in ultoa_invert is only exact
+	// for 32-bit values; for larger values it is sometimes off by one
+	// and overflows above about UINT64_MAX/1.6. Take off the low
+	// digits of large values with real divisions, then convert the
+	// rest as 32 bits
+	while (val > UINT32_MAX) {
+		*s++ = '0' + val % 10;
+		val /= 10;
+	}
+	return ultoa_invert(val, s, 10);
 }
 
