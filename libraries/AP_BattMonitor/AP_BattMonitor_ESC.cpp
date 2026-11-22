@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AP_BattMonitor_ESC::var_info[] = {
 
     // @Param: ESC_MASK
     // @DisplayName: ESC mask
-    // @Description: If 0 all connected ESCs will be used. If non-zero, only those selected in will be used.
+    // @Description: If 0 all connected ESCs will be used. If non-zero, only those selected in the bitmask will be used.
     // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
     // @User: Standard
     AP_GROUPINFO("ESC_MASK", 36, AP_BattMonitor_ESC, _mask, 0),
