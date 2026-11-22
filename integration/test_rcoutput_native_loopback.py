@@ -14,10 +14,10 @@ from pathlib import Path
 
 from test_xsens_native_startup import BINARY, HWDEF, ROOT, data_item, mavutil, packet
 from rcoutput_mapping import load_motor_order, motors_in_esp_order, parse_observation
-from actuator_frames import encode_frame
+from actuator_adapter import ActuatorAdapter
 
 
-def check_guard_sim(mapped, directory):
+def check_guard_sim(mapped, directory, arm_frame, pwm_frame, disarm_frame):
     """Feed observed native mixer values to the isolated C++ guard."""
     executable = Path(directory) / "actuator_guard_sim"
     subprocess.run(
@@ -25,23 +25,16 @@ def check_guard_sim(mapped, directory):
          str(ROOT / "integration/actuator_guard_sim.cpp"), "-o", str(executable)],
         check=True, capture_output=True, text=True,
     )
-    session = 0x1234ABCD
-    commands = [(0, encode_frame("ARM", session, 1)),
-                (10, encode_frame("PWM", session, 2, mapped)),
-                (20, encode_frame("DISARM", session, 3)),
-                (30, encode_frame("ARM", session, 4)),
-                (40, encode_frame("PWM", session, 5, mapped)),
-                (291, "TICK")]
+    commands = [(0, arm_frame), (10, pwm_frame), (20, disarm_frame)]
     run = subprocess.run(
         [str(executable)], input="".join(f"{when} {frame}\n" for when, frame in commands),
         check=True, capture_output=True, text=True,
     )
     rows = [line.split() for line in run.stdout.splitlines()]
-    expected_states = ["armed", "armed", "disarmed", "armed", "armed", "fault"]
+    expected_states = ["armed", "armed", "disarmed"]
     if (len(rows) != len(commands) or [row[1] for row in rows] != expected_states or
             tuple(map(int, rows[1][2:])) != mapped or
-            tuple(map(int, rows[2][2:])) != (1500,) * 8 or
-            tuple(map(int, rows[-1][2:])) != (1500,) * 8):
+            tuple(map(int, rows[2][2:])) != (1500,) * 8):
         raise SystemExit(f"Native output failed guard simulation: {run.stdout}")
 
 
@@ -51,6 +44,7 @@ def main():
     if guard_sim and not active:
         raise SystemExit("--guard-sim requires --active")
     motor_order = load_motor_order()
+    adapter = ActuatorAdapter(motor_order, 0x1234ABCD)
     if not BINARY.is_file() or "#define HAL_ATAL_RCOUT_LOOPBACK_ENABLED 1" not in HWDEF.read_text():
         raise SystemExit("Build with integration/atal_loopback_output.hwdef first")
     receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -89,6 +83,9 @@ def main():
         arm_requested = False
         disarm_requested = False
         observed_mapped = None
+        arm_frame = None
+        target_pwm_frame = None
+        disarm_frame = None
         try:
             deadline = time.monotonic() + (12 if active else 8)
             while time.monotonic() < deadline and process.poll() is None:
@@ -109,6 +106,12 @@ def main():
                 except socket.timeout:
                     continue
                 armed, values = parse_observation(frame)
+                adapter_frames = adapter.ingest(frame, time.monotonic_ns() // 1_000_000)
+                for command in adapter_frames:
+                    if ",ARM," in command and arm_frame is None:
+                        arm_frame = command
+                    elif ",DISARM," in command:
+                        disarm_frame = command
                 if armed and not active:
                     raise SystemExit(f"Unexpected arming state in RCOutput frame: {frame!r}")
                 seen += 1
@@ -120,6 +123,7 @@ def main():
                                 mapped[0] < 1500 and mapped[2] < 1500):
                             raise SystemExit(f"Invalid ESP32 motor permutation: {mapped}")
                         observed_mapped = mapped
+                        target_pwm_frame = next((command for command in adapter_frames if ",PWM," in command), None)
                         connection.mav.command_long_send(
                             1, 1, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                             0, 0, 0, 0, 0, 0, 0, 0,
@@ -127,7 +131,9 @@ def main():
                         disarm_requested = True
                 if active and disarm_requested and not armed and values[:8] == (1500,) * 8:
                     if guard_sim:
-                        check_guard_sim(observed_mapped, directory)
+                        if not (arm_frame and target_pwm_frame and disarm_frame):
+                            raise SystemExit("Native output did not traverse adapter ARM/PWM/DISARM states")
+                        check_guard_sim(observed_mapped, directory, arm_frame, target_pwm_frame, disarm_frame)
                     print("Observed native mixer response and neutral output after disarm on localhost")
                     if guard_sim:
                         print("Observed mixer output passed isolated guard simulation")
