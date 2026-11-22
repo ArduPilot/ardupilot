@@ -12,6 +12,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+os.environ.setdefault("MAVLINK20", "1")
 from pymavlink import mavutil
 
 
@@ -43,15 +44,17 @@ def main():
                                       0, 0, 4)
             sender.mav.attitude_send(0, 0.1, 0.2, 0.3, 0, 0, 0)
             sender.mav.scaled_pressure_send(0, 1025.5, 0, 2340)
+            sender.mav.mission_current_send(2, 4, 3, 1)
             try:
                 with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/api/state", timeout=0.5) as response:
                     state = json.load(response)
-                if state["link_alive"] and state["imu_alive"] and state["pressure_alive"]:
+                if state["link_alive"] and state["imu_alive"] and state["pressure_alive"] and state["mission_alive"]:
                     assert abs(state["pressure_mbar"] - 1025.5) < 0.2
                     assert abs(state["roll"] - 5.72958) < 0.01
+                    assert (state["mission_seq"], state["mission_total"], state["mission_state"]) == (2, 4, "Active")
                     with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/", timeout=0.5) as response:
                         page = response.read().decode("utf-8")
-                    assert "AUV-IITK Control" in page and "Motor output / SERVO channels" in page
+                    assert "AUV-IITK Control" in page and "Motor output / SERVO channels" in page and "Mission Status" in page
                     for asset in ("ros_dashboard.css", "operator_dashboard.css", "operator_dashboard.js", "img/auv_logo.svg"):
                         with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/static/{asset}", timeout=0.5) as response:
                             assert response.status == 200 and response.read()

@@ -16,6 +16,7 @@ class DashboardTelemetry:
         self._pressure_at = None
         self._position_at = None
         self._servo_at = None
+        self._mission_at = None
         self._state = {
             "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
             "gyro": [0.0, 0.0, 0.0], "pwm": [1500] * 8,
@@ -24,6 +25,8 @@ class DashboardTelemetry:
             "pos_n": None, "pos_e": None, "vel_fwd": None,
             "vel_lat": None, "vel_z": None, "dvl_locked": None,
             "timestamp": 0.0, "imu_hz": 0.0,
+            "mission_seq": None, "mission_total": None,
+            "mission_state": None, "mission_mode": None,
         }
 
     def ingest(self, msg):
@@ -71,6 +74,18 @@ class DashboardTelemetry:
             if all(900 <= v <= 2100 for v in values):
                 s["pwm"] = values
                 self._servo_at = now
+        elif kind == "MISSION_CURRENT":
+            seq = getattr(msg, "seq", None)
+            total = getattr(msg, "total", None)
+            state = getattr(msg, "mission_state", 0)
+            mode = getattr(msg, "mission_mode", 0)
+            if not isinstance(seq, int) or not 0 <= seq <= 65535:
+                return
+            s["mission_seq"] = seq if state not in (0, 1) else None
+            s["mission_total"] = total if isinstance(total, int) and 0 < total < 65535 else None
+            s["mission_state"] = {1: "No mission", 2: "Not started", 3: "Active", 4: "Paused", 5: "Complete"}.get(state)
+            s["mission_mode"] = {1: "Mission mode", 2: "Suspended"}.get(mode)
+            self._mission_at = now
 
     def snapshot(self):
         now = self._now()
@@ -98,5 +113,9 @@ class DashboardTelemetry:
         s["output_alive"] = self._servo_at is not None and now - self._servo_at < 2.5
         if not s["output_alive"]:
             s["pwm"] = [None] * 8
+        s["mission_alive"] = s["link_alive"] and self._mission_at is not None and now - self._mission_at < 3.0
+        if not s["mission_alive"]:
+            for key in ("mission_seq", "mission_total", "mission_state", "mission_mode"):
+                s[key] = None
         s["source"] = "ardusub_mavlink"
         return s

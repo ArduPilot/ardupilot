@@ -11,7 +11,8 @@ from pathlib import Path
 FIELDS = (
     "timestamp_utc", "link_alive", "armed_known", "armed", "imu_alive", "roll", "pitch", "yaw",
     "pressure_alive", "pressure_mbar", "water_temp", "position_alive", "depth_m", "pos_n", "pos_e",
-    "vel_fwd", "vel_lat", "vel_z", "output_alive", *(f"pwm_{i}" for i in range(1, 9)),
+    "vel_fwd", "vel_lat", "vel_z", "mission_alive", "mission_seq", "mission_total",
+    "mission_state", "mission_mode", "output_alive", *(f"pwm_{i}" for i in range(1, 9)),
 )
 
 
@@ -74,6 +75,9 @@ class DashboardRecorder:
                     row[key] = None
             elif not snapshot.get("imu_alive"):
                 row["vel_fwd"] = row["vel_lat"] = None
+            if not snapshot.get("mission_alive"):
+                for key in ("mission_seq", "mission_total", "mission_state", "mission_mode"):
+                    row[key] = None
             pwm = snapshot.get("pwm") if snapshot.get("output_alive") else None
             for index in range(8):
                 row[f"pwm_{index + 1}"] = pwm[index] if isinstance(pwm, list) and len(pwm) > index else None

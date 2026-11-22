@@ -115,6 +115,16 @@
             <p class="fineprint">Telemetry is read only. Viewing this page does not arm, disarm, or command the vehicle.</p>
             <a class="diagnostics-link" href="/diagnostics">Open diagnostic view ↗</a>
           </section>
+          <section class="card" aria-labelledby="mission-heading">
+            <h2 class="ct" id="mission-heading">Mission Status</h2>
+            <div class="status-list">
+              <div><span>State</span><strong id="mission-state" class="warn">Unavailable</strong></div>
+              <div><span>Current item</span><strong id="mission-item">—</strong></div>
+              <div><span>Total items</span><strong id="mission-total">—</strong></div>
+              <div><span>Mode</span><strong id="mission-mode">—</strong></div>
+            </div>
+            <p class="fineprint">Reported by ArduSub. This display does not start or control a mission.</p>
+          </section>
           <section class="card" aria-labelledby="recording-heading">
             <h2 class="ct" id="recording-heading">Telemetry Recording</h2>
             <p class="fineprint">Save normalized ArduSub snapshots to a local CSV at 10 Hz. Recording does not control the vehicle.</p>

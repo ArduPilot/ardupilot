@@ -85,6 +85,7 @@ class DashboardTelemetryTests(unittest.TestCase):
         client = make_app(self.telemetry, threading.Lock()).test_client()
         self.assertEqual(client.get("/api/state").json["source"], "ardusub_mavlink")
         self.assertIsNone(client.get("/api/state").json["dvl_locked"])
+        self.assertFalse(client.get("/api/health").json["mission_alive"])
         stream = client.get("/api/stream", buffered=False)
         self.assertEqual(stream.mimetype, "text/event-stream")
         event = next(iter(stream.response)).decode("utf-8")
@@ -92,6 +93,29 @@ class DashboardTelemetryTests(unittest.TestCase):
         stream.close()
         self.assertEqual(client.post("/api/arm").status_code, 404)
         self.assertEqual(client.post("/api/state").status_code, 405)
+
+    def test_mission_current_is_read_only_and_expires(self):
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=0))
+        self.telemetry.ingest(Message("MISSION_CURRENT", source=255, seq=2, total=4,
+                                      mission_state=3, mission_mode=1))
+        self.assertFalse(self.telemetry.snapshot()["mission_alive"])
+        self.telemetry.ingest(Message("MISSION_CURRENT", seq=2, total=4,
+                                      mission_state=3, mission_mode=1))
+        live = self.telemetry.snapshot()
+        self.assertEqual((live["mission_seq"], live["mission_total"]), (2, 4))
+        self.assertEqual((live["mission_state"], live["mission_mode"]), ("Active", "Mission mode"))
+        self.time[0] = 3.1
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=0))
+        stale = self.telemetry.snapshot()
+        self.assertFalse(stale["mission_alive"])
+        self.assertIsNone(stale["mission_state"])
+        self.assertIsNone(stale["mission_seq"])
+        self.telemetry.ingest(Message("MISSION_CURRENT", seq=0, total=65535,
+                                      mission_state=1, mission_mode=0))
+        empty = self.telemetry.snapshot()
+        self.assertEqual(empty["mission_state"], "No mission")
+        self.assertIsNone(empty["mission_total"])
+        self.assertIsNone(empty["mission_seq"])
 
 
 if __name__ == "__main__":

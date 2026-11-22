@@ -52,3 +52,8 @@ Next, keep working in software: decide the documented ROS-versus-ArduSub saturat
 - A fresh browser session verified recording start, live row count, stop, CSV download link, and Plots navigation. The test used a local dashboard server with no vehicle telemetry or command path; the temporary server was stopped afterward.
 - The dashboard API now returns `armed: null` when heartbeat freshness expires; the recorder blanks stale attitude, pressure, position, body velocity, and output values according to their freshness flags. Unit, HTTP loopback, and native CSV replay checks pass.
 - The API snapshot also clears expired attitude, pressure, and eight output-channel values, so Raw Data no longer exposes old numbers that look current. Existing freshness flags and last-sample age remain available for diagnosis.
+
+## 2026-11-22 mission status continuation
+
+- Added a read-only Mission Status card using ArduSub `MISSION_CURRENT`. The normalized API and local CSV expose current item, total, state, mode, and a freshness flag; unknown and expired fields remain unavailable. There is no mission-command route.
+- Synthetic MAVLink2 loopback, unit tests, and native `SERIAL3` replay with `SR3_EXT_STAT=2` pass. The native empty vehicle reports “No mission” through HTTP and CSV. The browser waiting state shows unavailable values. Mission execution and navigation validity still require separate evidence.

@@ -49,7 +49,7 @@ def main():
             "SERIAL1_PROTOCOL 36\nSERIAL1_BAUD 115\n"
             "SERIAL2_PROTOCOL 51\nSERIAL2_BAUD 115\n"
             "SERIAL3_PROTOCOL 2\nSERIAL3_BAUD 115\n"
-            "SR3_EXTRA1 10\nSR3_EXTRA2 5\nSR3_RAW_SENS 5\n"
+            "SR3_EXTRA1 10\nSR3_EXTRA2 5\nSR3_RAW_SENS 5\nSR3_EXT_STAT 2\n"
             + (ROOT / "integration/atal_motor_defaults.parm").read_text()
         )
         process = subprocess.Popen(
@@ -93,13 +93,14 @@ def main():
                         with urllib.request.urlopen(request, timeout=0.2) as response:
                             assert json.load(response)["active"]
                         recording_started = True
-                    if state["link_alive"] and state["imu_alive"] and state["pressure_alive"]:
+                    if state["link_alive"] and state["imu_alive"] and state["pressure_alive"] and state["mission_alive"]:
                         if live_since is None:
                             live_since = time.monotonic()
                         if time.monotonic() - live_since < 0.3:
                             time.sleep(0.01)
                             continue
                         assert abs(state["pressure_mbar"] - 1025.5) < 0.2
+                        assert state["mission_state"] == "No mission"
                         with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/api/stream", timeout=0.2) as response:
                             event = json.loads(response.readline().removeprefix(b"data: "))
                         assert event["link_alive"] and event["imu_alive"]
@@ -114,6 +115,7 @@ def main():
                         with (recording_dir / recording["file"]).open(newline="", encoding="utf-8") as file:
                             rows = list(csv.DictReader(file))
                         if any(row["link_alive"] == "True" and row["imu_alive"] == "True" and
+                               row["mission_alive"] == "True" and row["mission_state"] == "No mission" and
                                abs(float(row["pressure_mbar"]) - 1025.5) < 0.2
                                for row in rows if row["pressure_mbar"]):
                             print("Native ArduSub serial3 → dashboard HTTP, SSE and CSV passed")

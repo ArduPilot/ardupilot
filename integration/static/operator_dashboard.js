@@ -90,6 +90,12 @@ function render(s, requestFailed = false) {
   horizon.style.setProperty('--pitch', s.imu_alive ? `${Math.max(-45, Math.min(45, s.pitch)) * 2}px` : '0px');
   horizon.setAttribute('aria-label', s.imu_alive ? `Roll ${number(s.roll)} degrees, pitch ${number(s.pitch)} degrees` : 'Attitude unavailable');
   $('sample-age').textContent = s.imu_alive ? `Attitude sample ${number(s.imu_age, 1)} s old` : 'Attitude data unavailable';
+  const missionFresh = !!s.mission_alive;
+  const missionState = missionFresh ? s.mission_state : null;
+  status('mission-state', missionState || 'Unavailable', missionState === 'Active' ? 'good' : 'warn');
+  $('mission-item').textContent = missionFresh && Number.isInteger(s.mission_seq) ? String(s.mission_seq) : '—';
+  $('mission-total').textContent = missionFresh && Number.isInteger(s.mission_total) ? String(s.mission_total) : '—';
+  $('mission-mode').textContent = missionFresh ? s.mission_mode || '—' : '—';
   const depth = s.position_alive ? s.depth_m : null;
   $('depth-reading').textContent = $('depth-small').textContent = number(depth, 2);
   const displayRange = Number(document.querySelector('.depth-track').dataset.displayRangeM);
