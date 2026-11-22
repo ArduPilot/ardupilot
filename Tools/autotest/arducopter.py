@@ -21169,6 +21169,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_NAV_TAKEOFF_local_offset,
             self.MAV_CMD_NAV_TAKEOFF_relative_alt_pilot_modes,
             self.MAV_CMD_SOLO_BTN_FLY_HOLD,
+            self.MAV_CMD_NAV_TAKEOFF_rangefinder_range,
             self.Ch6TuningWPSpeed,
             self.Clamp,
             self.ScriptingFlyVelocity,
@@ -22761,6 +22762,65 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.change_mode('LAND')
                 self.set_rc(3, 1000)
                 self.wait_disarmed()
+
+        self.reboot_sitl()  # unlock home position
+
+    def MAV_CMD_NAV_TAKEOFF_rangefinder_range(self):
+        '''test how a Guided NAV_TAKEOFF altitude is interpreted either side of the rangefinder's range'''
+        rangefinder_max = 10
+        home_z_ofs = 20
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", rangefinder_max)
+        self.reboot_sitl()
+
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        loc = self.get_location(frame=AltFrame.ABSOLUTE)
+        home_alt_abs = loc.get_alt_m(AltFrame.ABSOLUTE) + home_z_ofs
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=loc.lat,
+            p6=loc.lng,
+            p7=home_alt_abs,
+        )
+
+        # with a rangefinder, an above-home altitude within the
+        # rangefinder's range is flown as an altitude above the
+        # terrain, but one beyond it is flown above home; with home well
+        # above the vehicle the target jumps from 5m above the ground to
+        # 35m above it.  An offset is a climb from the current altitude
+        # either side of the rangefinder's range.
+        for frame, takeoff_alt, want in (
+                (mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 5, 'above_terrain'),
+                (mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 15, 'above_home'),
+                (mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, 5, 'above_current'),
+                (mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, 15, 'above_current'),
+        ):
+            self.start_subtest(f"frame={frame} takeoff_alt={takeoff_alt} want={want}")
+            self.change_mode('GUIDED')
+            self.wait_ready_to_arm()
+            current_alt_abs = self.get_location(frame=AltFrame.ABSOLUTE).get_alt_m(AltFrame.ABSOLUTE)
+            landed_rangefinder_distance = self.get_rangefinder_distance()
+            target_alt_abs = {
+                'above_terrain': current_alt_abs - landed_rangefinder_distance + takeoff_alt,
+                'above_home': home_alt_abs + takeoff_alt,
+                'above_current': current_alt_abs + takeoff_alt,
+            }[want]
+            self.arm_vehicle()
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                p7=-takeoff_alt if frame == mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED else takeoff_alt,
+                frame=frame,
+            )
+            self.wait_altitude(
+                target_alt_abs - 0.5,
+                target_alt_abs + 0.5,
+                minimum_duration=5,
+                relative=False,
+                timeout=60,
+            )
+            self.change_mode('LAND')
+            self.wait_disarmed()
 
         self.reboot_sitl()  # unlock home position
 
