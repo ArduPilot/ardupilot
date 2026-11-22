@@ -531,18 +531,14 @@ bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32
     uint32_t run_until = hrt_micros32() + timeout_us;
     uint32_t val;
     while ((i < sz) && (hrt_micros32() < run_until)) {
-        /* If not aligned or there is odd/remainder */
-        if( (i + sizeof(uint32_t)) > sz ||
-            ((uint32_t)&output[i] % sizeof(uint32_t)) != 0) {
-            /* Single byte at a time */
-            if (stm32_rand_generate(&val)) {
-                output[i] = val;
-                i++;
-            }
-        } else {
-            /* Use native 32 bit copy instruction */
-            if (stm32_rand_generate((uint32_t*)&output[i])) {
-                i += sizeof(uint32_t);
+        if (stm32_rand_generate(&val)) {
+            const unsigned int remaining = sz - i;
+            if (remaining >= sizeof(val)) {
+                memcpy(&output[i], &val, sizeof(val));
+                i += sizeof(val);
+            } else {
+                memcpy(&output[i], &val, remaining);
+                i += remaining;
             }
         }
     }
@@ -557,23 +553,16 @@ unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int
     unsigned int i = 0;
     uint32_t val;
     while (i < sz) {
-        /* If not aligned or there is odd/remainder */
-        if( (i + sizeof(uint32_t)) > sz ||
-            ((uint32_t)&output[i] % sizeof(uint32_t)) != 0) {
-            /* Single byte at a time */
-            if (stm32_rand_generate(&val)) {
-                output[i] = val;
-                i++;
-            } else {
-                break;
-            }
+        if (!stm32_rand_generate(&val)) {
+            break;
+        }
+        const unsigned int remaining = sz - i;
+        if (remaining >= sizeof(val)) {
+            memcpy(&output[i], &val, sizeof(val));
+            i += sizeof(val);
         } else {
-            /* Use native 32 bit copy instruction */
-            if (stm32_rand_generate((uint32_t*)&output[i])) {
-                i += sizeof(uint32_t);
-            } else {
-                break;
-            }
+            memcpy(&output[i], &val, remaining);
+            i += remaining;
         }
     }
     return i;
