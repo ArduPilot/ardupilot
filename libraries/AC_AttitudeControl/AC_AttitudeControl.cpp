@@ -866,7 +866,7 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_
 // Used for tilt-based navigation with independent yaw control.
 // The thrust vector determines the desired tilt (attitude) while the heading rate commands yaw.
 // Optional yaw slew limiting constrains the heading rate input.
-void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw)
+void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw, bool hold_level_yaw)
 {
     float yaw_rate_max_rads = radians(_ang_vel_yaw_max_degs);
     if (slew_yaw) {
@@ -875,7 +875,12 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
     }
 
     // update attitude target
+    const float level_yaw_before_rad = level_yaw_rad(_attitude_target);
     update_attitude_target();
+    if (hold_level_yaw) {
+        // level yaw moves only by the yaw rate target integrated with the tilt rates
+        set_level_yaw(_attitude_target, level_yaw_before_rad + _ang_vel_target_rads.z * _dt_s);
+    }
 
     // calculate the attitude target euler angles
     _attitude_target.to_euler(_euler_angle_target_rad);
@@ -903,9 +908,16 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
         if (is_positive(yaw_rate_max_rads)) {
             heading_rate_rads = constrain_float(heading_rate_rads, -yaw_rate_max_rads, yaw_rate_max_rads);
         }
+        const float yaw_step_rad = heading_rate_rads * _dt_s;
         Quaternion yaw_quat;
-        yaw_quat.from_axis_angle(Vector3f{0.0f, 0.0f, heading_rate_rads * _dt_s});
-        _attitude_target = _attitude_target * thrust_vec_correction_quat * yaw_quat;
+        if (hold_level_yaw) {
+            // level yaw moves only by the yaw increment
+            yaw_quat.from_axis_angle(Vector3f{0.0f, 0.0f, level_yaw_before_rad + yaw_step_rad});
+            _attitude_target = thrust_vec_quat * yaw_quat;
+        } else {
+            yaw_quat.from_axis_angle(Vector3f{0.0f, 0.0f, yaw_step_rad});
+            _attitude_target = _attitude_target * thrust_vec_correction_quat * yaw_quat;
+        }
         _attitude_target.normalize();
 
         // Zero rate and acceleration feedforward targets
@@ -1010,6 +1022,15 @@ Quaternion AC_AttitudeControl::attitude_from_thrust_vector(Vector3f thrust_vecto
     Quaternion yaw_quat;
     yaw_quat.from_axis_angle(Vector3f{0.0f, 0.0f, 1.0f}, heading_angle_rad);
     return thrust_vec_quat*yaw_quat;
+}
+
+// Rotates an attitude about its body z axis to give it target_level_yaw_rad. The tilt is unchanged.
+void AC_AttitudeControl::set_level_yaw(Quaternion& attitude, float target_level_yaw_rad)
+{
+    Quaternion yaw_change_quat;
+    yaw_change_quat.from_axis_angle(Vector3f{0.0f, 0.0f, wrap_PI(target_level_yaw_rad - level_yaw_rad(attitude))});
+    attitude *= yaw_change_quat;
+    attitude.normalize();
 }
 
 // Calculates the body frame angular velocities to follow the target attitude

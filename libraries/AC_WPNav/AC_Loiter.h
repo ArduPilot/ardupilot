@@ -36,7 +36,12 @@ public:
     // - Internally computes a smoothed acceleration vector based on predictive rate shaping.
     // - Inputs: `euler_roll_angle_rad`, `euler_pitch_angle_rad` in radians.
     // - Applies internal shaping using the current attitude controller dt.
-    void set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad);
+    // - If `hold_level_yaw`, the lean is resolved at the attitude target's level yaw, for a mode whose attitude input
+    //   holds it, otherwise at the vehicle heading.
+    void set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, bool hold_level_yaw = false);
+
+    // Returns true if the LOIT_OPTIONS bit to hold level yaw is set.
+    bool hold_level_yaw_enabled() const { return loiter_option_is_set(LoiterOption::HOLD_LEVEL_YAW); }
 
     // Returns pilot-requested horizontal acceleration in the NE frame in m/s².
     // This is the internally computed and smoothed acceleration vector applied by the loiter controller.
@@ -124,6 +129,7 @@ protected:
     // Bitfields of LOITER_OPTIONS
     enum class LoiterOption {
         COORDINATED_TURN_ENABLED    = (1U << 0),    // Enable Coordinated Turn
+        HOLD_LEVEL_YAW              = (1U << 1),    // Hold level yaw against tilt
     };
     bool loiter_option_is_set(LoiterOption option) const;
 
