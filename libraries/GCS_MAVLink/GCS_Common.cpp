@@ -2171,14 +2171,16 @@ void GCS_MAVLINK::log_mavlink_stats()
 void GCS_MAVLINK::send_system_time() const
 {
     uint64_t time_unix = 0;
+    uint64_t local_us = AP_HAL::micros64();
 #if AP_RTC_ENABLED
-    AP::rtc().get_utc_usec(time_unix); // may fail, leaving time_unix at 0
+    // both fields come from one local time so receivers can recover our clock offset
+    AP::rtc().get_utc_and_local_usec(time_unix, local_us); // may fail, leaving time_unix at 0
 #endif
 
     mavlink_msg_system_time_send(
         chan,
         time_unix,
-        AP_HAL::millis());
+        uint32_t(local_us / 1000U));
 }
 
 
