@@ -34,7 +34,7 @@ M1 reference baseline: complete. M2 native build and software-test runtime: comp
 
 ## Next evidence
 
-Next, keep working in software: decide the documented ROS-versus-ArduSub saturation/PWM policy; connect the guarded eight-channel frame path to a test-only ESP32 simulator; assemble a ROS companion launch containing only high-level modules; and port remaining dashboard missions and camera workflows to explicit ArduSub-facing APIs. Prove single-owner behavior and injected fault recovery in loopback/SITL before any physical output path is enabled. Leave measured Xsens/A50 mounting, Bar30 surface zero, real sensor timing, ESP32 wiring/firmware confirmation, E-stop verification and wet commissioning for the final supervised hardware phase. All current values remain editable ROS-derived placeholders.
+Next, keep working in software: decide the documented ROS-versus-ArduSub saturation/PWM policy; assemble a ROS companion launch containing only high-level modules; and port remaining dashboard mission and camera workflows to explicit ArduSub-facing APIs. The guarded frame path now passes an isolated simulator replay using native mixer observations, but no deployed ESP32 firmware or actuator transport consumes it. Prove single-owner behavior and injected fault recovery in loopback/SITL before any physical output path is enabled. Leave measured Xsens/A50 mounting, Bar30 surface zero, real sensor timing, ESP32 wiring/firmware confirmation, E-stop verification and wet commissioning for the final supervised hardware phase. All current values remain editable ROS-derived placeholders.
 
 ## 2026-11-22 dashboard UI continuation
 
@@ -49,3 +49,4 @@ Next, keep working in software: decide the documented ROS-versus-ArduSub saturat
 
 - Added a local 10 Hz CSV telemetry recorder with start/stop/status controls in the operator page. It records normalized ArduSub snapshot values, freshness flags, UTC timestamps, and the eight reported output channels, leaving unknown data blank. Isolated CSV and HTTP tests pass. It is independent of vehicle commands and lacks the ROS logger's mission/video alignment features.
 - Extended the native virtual-sensor `SERIAL3` dashboard replay through the recorder, confirming a saved CSV row contains fresh link, IMU, and Bar30 pressure data. This is software evidence only.
+- A fresh browser session verified recording start, live row count, stop, CSV download link, and Plots navigation. The test used a local dashboard server with no vehicle telemetry or command path; the temporary server was stopped afterward.
