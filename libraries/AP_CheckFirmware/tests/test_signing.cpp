@@ -89,20 +89,21 @@ TEST(AP_CheckFirmware, CandidateMustPreserveExactKeyMultiset)
 
 TEST(AP_CheckFirmware, SecureCommandSequenceRejectsReplay)
 {
-    ap_secure_command_sequence sequence;
-    EXPECT_TRUE(sequence.accept(100));
-    EXPECT_FALSE(sequence.accept(100));
-    EXPECT_FALSE(sequence.accept(99));
-    EXPECT_FALSE(sequence.accept(100U + (1U << 31)));
-    EXPECT_TRUE(sequence.accept(101));
+    ap_secure_command_sequence normal_sequence;
+    EXPECT_TRUE(normal_sequence.accept(100));
+    EXPECT_FALSE(normal_sequence.accept(100));
+    EXPECT_FALSE(normal_sequence.accept(99));
+    EXPECT_FALSE(normal_sequence.accept(100U + (1U << 31)));
+    EXPECT_TRUE(normal_sequence.accept(101));
 
-    sequence.reset();
-    EXPECT_TRUE(sequence.accept(UINT32_MAX));
-    EXPECT_TRUE(sequence.accept(0));
-    EXPECT_FALSE(sequence.accept(UINT32_MAX));
+    ap_secure_command_sequence wrapping_sequence;
+    EXPECT_TRUE(wrapping_sequence.accept(UINT32_MAX));
+    EXPECT_TRUE(wrapping_sequence.accept(0));
+    EXPECT_FALSE(wrapping_sequence.accept(UINT32_MAX));
 
-    sequence.reset();
-    EXPECT_TRUE(sequence.accept(99));
+    // A fresh instance models the sequence state after reboot.
+    ap_secure_command_sequence fresh_sequence;
+    EXPECT_TRUE(fresh_sequence.accept(99));
 }
 
 static bool check_extf_signature(const uint8_t signature[64],
