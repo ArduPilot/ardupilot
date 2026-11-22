@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AC_PID/AC_P.h>
 #include <AP_RTC/JitterCorrection.h>
+#include <AP_RTC/AP_RTC_config.h>
 
 //==============================================================================
 // AP_Follow Class
@@ -183,6 +184,9 @@ private:
     // Checks whether the current estimate should be reset based on position and velocity errors.
     bool estimate_error_too_large() const;
 
+    // Records the time of a target sample, returning false for an old one or one from another component.
+    bool accept_sample_time(const mavlink_message_t &msg, uint32_t remote_ms);
+
     // Projects the last received target position and velocity forward by dt seconds at constant acceleration.
     void project_target(float dt, Vector3f &delta_pos_m, Vector3f &delta_vel_ms) const;
 
@@ -255,6 +259,11 @@ private:
     float       _bearing_to_target_deg;         // Bearing to target from vehicle (degrees, 0 = North)
     bool        _offsets_were_zero;             // True if initial offset was zero before being initialized
     bool        _using_follow_target;           // True if FOLLOW_TARGET messages are being used instead of GLOBAL_POSITION_INT
+
+    uint32_t    _last_sample_remote_ms;         // target timestamp of the last accepted sample
+    uint32_t    _last_sample_msgid;             // message type of the last accepted sample
+    uint8_t     _last_sample_compid;            // component that sent the last accepted sample
+    uint32_t    _last_sample_rx_ms;             // time the last accepted sample arrived
 
     HAL_Semaphore   _follow_sem;                // semaphore for multi-thread use of update_estimates and LUA calls
 

@@ -649,6 +649,37 @@ bool AP_Follow::estimate_error_too_large() const
     return pos_horiz_bad || vel_horiz_bad || pos_vert_bad || vel_vert_bad;
 }
 
+// Records the time of a target sample, returning false for one that must be ignored. The message
+// type last accepted is taken from one component until that has been silent for the timeout, as
+// each component has its own boot clock.
+// From that component a sample no newer than the last accepted, such as a copy arriving late over a
+// slower second link, is ignored. A step back larger than the allowance is a target reboot
+// restarting its boot time. A timestamp of 0 means the sender does not fill it in, so is never
+// taken as old.
+bool AP_Follow::accept_sample_time(const mavlink_message_t &msg, uint32_t remote_ms)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((_last_location_update_ms != 0) && (_sysid_of_data == msg.sysid) && (_last_sample_msgid == msg.msgid)) {
+        if (msg.compid != _last_sample_compid) {
+            // timed from arrival, as the sample itself may already be nearly as old as the timeout
+            if (now_ms - _last_sample_rx_ms <= uint32_t(_timeout * 1000.0f)) {
+                return false;
+            }
+        } else if (remote_ms != 0) {
+            const int32_t change_ms = int32_t(remote_ms - _last_sample_remote_ms);
+            if ((change_ms <= 0) && (change_ms >= -int32_t(AP_RTC_REMOTE_REBOOT_ALLOWANCE_MS))) {
+                return false;
+            }
+        }
+    }
+    _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(remote_ms, now_ms);
+    _last_sample_remote_ms = remote_ms;
+    _last_sample_msgid = msg.msgid;
+    _last_sample_compid = msg.compid;
+    _last_sample_rx_ms = now_ms;
+    return true;
+}
+
 // Projects the last received target position and velocity forward by dt seconds at constant acceleration.
 void AP_Follow::project_target(float dt, Vector3f &delta_pos_m, Vector3f &delta_vel_ms) const
 {
@@ -725,12 +756,19 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         return false;
     }
 
-    if (packet.hdg <= 36000) {
-        // valid heading field available (in centi-degrees)
-        _target_heading_deg = packet.hdg * 0.01f;
-    } else if (_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) {
+    // valid heading field available (in centi-degrees)
+    const bool heading_valid = (packet.hdg <= 36000);
+    if (!heading_valid && (_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE)) {
         // heading missing but relative offset mode requires heading -> reject
         return false;
+    }
+
+    if (!accept_sample_time(msg, packet.time_boot_ms)) {
+        return false;
+    }
+
+    if (heading_valid) {
+        _target_heading_deg = packet.hdg * 0.01f;
     } else {
         // no heading available: set heading rate to zero
         _target_heading_rate_degs = 0.0f;
@@ -746,9 +784,6 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
 
     // target acceleration not available in GLOBAL_POSITION_INT
     _target_accel_ned_mss.zero();
-
-    // apply jitter-corrected timestamp to this update
-    _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
 
     return true;
 }
@@ -790,8 +825,18 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
         return false;
     }
 
-    // decode attitude if available (bit 3 of est_capabilities)
-    if (packet.est_capabilities & (1 << 3)) {
+    // attitude available (bit 3 of est_capabilities)
+    const bool have_attitude = (packet.est_capabilities & (1 << 3)) != 0;
+    if (!have_attitude && (_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE)) {
+        // if attitude unavailable and using relative frame, cannot compute — abort
+        return false;
+    }
+
+    if (!accept_sample_time(msg, packet.timestamp)) {
+        return false;
+    }
+
+    if (have_attitude) {
         // reconstruct quaternion from packet
         Quaternion q{packet.attitude_q[0], packet.attitude_q[1], packet.attitude_q[2], packet.attitude_q[3]};
         float roll, pitch, yaw;
@@ -808,9 +853,6 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
 
         // store heading rate (yaw rate in world frame) in degrees/sec
         _target_heading_rate_degs = degrees(omega_world.z);
-    } else if (_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) {
-        // if attitude unavailable and using relative frame, cannot compute — abort
-        return false;
     } else {
         // otherwise, default heading rate to zero
         _target_heading_rate_degs = 0.0f;
@@ -836,9 +878,6 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     } else {
         _target_accel_ned_mss.zero();
     }
-
-    // apply jitter-corrected timestamp to this update
-    _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
 
     // prefer FOLLOW_TARGET over GLOBAL_POSITION_INT from now on
     _using_follow_target = true;
