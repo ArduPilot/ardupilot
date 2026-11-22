@@ -1925,6 +1925,12 @@ void GCS_MAVLINK::raw_packetReceived(uint8_t framing_status,
     }
 #endif // AP_SCRIPTING_LUA_ENABLED
 
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+    // other vehicles' clocks are learned before accept_packet(), which may
+    // reject systems other than the GCS
+    handle_remote_clock_message(msg);
+#endif
+
 #if AP_MAVLINK_FOLLOW_HANDLING_ENABLED
     {
         AP_Follow *follow = AP_Follow::get_singleton();
@@ -3869,6 +3875,27 @@ void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
     mavlink_msg_system_time_decode(&msg, &packet);
 
     AP::rtc().set_utc_usec(packet.time_unix_usec, AP_RTC::SOURCE_MAVLINK_SYSTEM_TIME);
+}
+#endif
+
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+// learn the clock offsets of other systems from their SYSTEM_TIME and GPS fix
+void GCS_MAVLINK::handle_remote_clock_message(const mavlink_message_t &msg) const
+{
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_SYSTEM_TIME: {
+        mavlink_system_time_t packet;
+        mavlink_msg_system_time_decode(&msg, &packet);
+        AP::rtc().remote_clocks().handle_system_time(msg.sysid, msg.compid, packet.time_unix_usec, packet.time_boot_ms, AP_HAL::millis());
+        break;
+    }
+    case MAVLINK_MSG_ID_GPS_RAW_INT: {
+        mavlink_gps_raw_int_t packet;
+        mavlink_msg_gps_raw_int_decode(&msg, &packet);
+        AP::rtc().remote_clocks().handle_gps_fix(msg.sysid, msg.compid, packet.fix_type, AP_HAL::millis());
+        break;
+    }
+    }
 }
 #endif
 
