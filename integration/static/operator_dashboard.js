@@ -90,8 +90,13 @@ function drawPlot(id, series) {
   ctx.fillStyle = text;
   ctx.font = '10px ui-monospace, monospace';
   const values = history.flatMap(point => series.map(item => point[item.key]).filter(Number.isFinite));
-  const lo = values.length ? Math.min(...values) : -1;
-  const hi = values.length ? Math.max(...values) : 1;
+  if (!values.length) {
+    ctx.textAlign = 'center';
+    ctx.fillText('No fresh samples yet', width / 2, height / 2);
+    return;
+  }
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
   const pad = Math.max(0.5, (hi - lo) * .15);
   for (let row = 0; row < 3; row++) {
     const y = plot.top + row * (plot.bottom - plot.top) / 2;

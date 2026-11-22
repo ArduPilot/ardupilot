@@ -72,6 +72,9 @@ main { padding: 16px 22px 32px; }
 .plot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
 .plot-grid > div { min-width: 0; background: var(--bg0); border: 1px solid var(--bd); border-radius: var(--rad-sm); padding: 12px; }
 .plot-grid h3 { color: var(--tx2); font-size: 12px; margin-bottom: 10px; }
+.plot-legend { display: flex; gap: 14px; color: var(--tx2); font-size: 10px; margin-bottom: 8px; }
+.plot-legend span::before { content: ''; display: inline-block; width: 13px; height: 2px; margin: 0 5px 3px 0; background: currentColor; }
+.roll-key { color: #f87171; } .pitch-key { color: #38bdf8; } .yaw-key { color: #a78bfa; }
 .plot-grid canvas { display: block; width: 100%; }
 #raw-data { margin-top: 16px; overflow: auto; max-height: 75vh; padding: 14px; border: 1px solid var(--bd); border-radius: var(--rad-sm); background: var(--bg0); color: var(--tx); font: 12px/1.5 ui-monospace, monospace; }
 @media (max-width: 1350px) { .sum-grid { grid-template-columns: minmax(220px, 260px) minmax(0, 1fr); } .sum-col:last-child { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } }

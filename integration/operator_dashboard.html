@@ -119,7 +119,7 @@
       </div>
     </section>
     <section id="p-plots" class="view" aria-label="Plots" hidden>
-      <div class="card tab-card"><h2 class="ct">Telemetry Plots</h2><p class="fineprint">Last 60 seconds of received attitude and depth. Gaps indicate unavailable data.</p><div class="plot-grid"><div><h3>Roll / pitch / yaw</h3><canvas id="attitude-plot" height="220" aria-label="Attitude plot"></canvas></div><div><h3>Depth</h3><canvas id="depth-plot" height="220" aria-label="Depth plot"></canvas></div></div></div>
+      <div class="card tab-card"><h2 class="ct">Telemetry Plots</h2><p class="fineprint">Last 60 seconds of received attitude and depth. Gaps indicate unavailable data.</p><div class="plot-grid"><div><h3>Attitude · degrees</h3><p class="plot-legend"><span class="roll-key">Roll</span><span class="pitch-key">Pitch</span><span class="yaw-key">Yaw</span></p><canvas id="attitude-plot" height="220" aria-label="Roll, pitch, and yaw plot"></canvas></div><div><h3>Depth · metres</h3><canvas id="depth-plot" height="220" aria-label="Depth plot"></canvas></div></div></div>
     </section>
     <section id="p-raw" class="view" aria-label="Raw Data" hidden>
       <div class="card tab-card"><h2 class="ct">Raw Data</h2><p class="fineprint">Current normalized ArduSub telemetry snapshot. Values may be stale; check the corresponding alive flags.</p><pre id="raw-data">Waiting for telemetry</pre></div>
