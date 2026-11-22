@@ -252,6 +252,8 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
         goto send_reply;
     }
 
+    // Sequence all signed operations, including GET_SESSION_KEY, so a
+    // captured session request cannot reset the replay window.
     if (!secure_command_sequence.accept(pkt.sequence)) {
         reply.result = MAV_RESULT_DENIED;
         goto send_reply;
