@@ -10,3 +10,9 @@
 #ifndef AP_RTC_LOGGING_ENABLED
 #define AP_RTC_LOGGING_ENABLED AP_RTC_ENABLED && HAL_LOGGING_ENABLED
 #endif
+
+// the most a correctly converted remote time can appear to be in the future: the
+// error of this clock while locked, including drift while the lock is held, plus rounding
+#ifndef AP_RTC_REMOTE_CLOCK_TOLERANCE_MS
+#define AP_RTC_REMOTE_CLOCK_TOLERANCE_MS 20
+#endif
