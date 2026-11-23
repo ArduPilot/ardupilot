@@ -921,6 +921,53 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self._MAV_CMD_CONDITION_YAW(self.run_cmd)
         self._MAV_CMD_CONDITION_YAW(self.run_cmd_int)
 
+    def MAV_CMD_CONDITION_DISTANCE(self):
+        '''ensure MAV_CMD_CONDITION_DISTANCE triggers at the requested distance in meters'''
+        condition_dist_m = 10
+        wp_dist_m = 25
+        depth_m = 5
+        home_loc = self.home_position_as_location()
+        wp_loc = self.offset_location_ne(home_loc, wp_dist_m, 0)
+
+        self.upload_simple_relhome_mission([
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_CONDITION_DISTANCE,
+                p1=condition_dist_m,
+                autocontinue=1,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, wp_dist_m, 0, -depth_m),
+        ])
+
+        self.dive(-depth_m)
+        self.context_collect('MISSION_ITEM_REACHED')
+        self.change_mode('AUTO')
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("Timed out waiting for CONDITION_DISTANCE")
+            self.drain_mav()
+            done = False
+            for m in self.context_collection('MISSION_ITEM_REACHED'):
+                self.progress(f"Reached mission item seq={m.seq}")
+                if m.seq == 1:
+                    dist = self.get_distance(self.get_location(), wp_loc)
+                    self.progress(f"CONDITION_DISTANCE triggered at {dist:.2f}m from WP")
+                    if abs(dist - condition_dist_m) >= 1.0:
+                        raise NotAchievedException(
+                            f"CONDITION_DISTANCE triggered at {dist:.2f}m, "
+                            f"expected ~{condition_dist_m}m"
+                        )
+                    done = True
+                    break
+                if m.seq == 2:
+                    raise NotAchievedException("Reached WP before CONDITION_DISTANCE triggered")
+            if done:
+                break
+            self.delay_sim_time(0.1, reason="Wait for mission items")
+
+        self.disarm_vehicle()
+
     def MAV_CMD_DO_REPOSITION(self):
         """Move vehicle using MAV_CMD_DO_REPOSITION"""
         # Dive so that rangefinder is in range, required for MAV_FRAME_GLOBAL_TERRAIN_ALT
@@ -1904,6 +1951,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START,
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_CONDITION_YAW,
+            self.MAV_CMD_CONDITION_DISTANCE,
             self.MAV_CMD_DO_REPOSITION,
             self.TerrainMission,
             self.SetGlobalOrigin,
