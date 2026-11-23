@@ -39,6 +39,11 @@ struct ap_secure_command_sequence {
         return true;
     }
 
+    void reset()
+    {
+        have_sequence = false;
+    }
+
 private:
     uint32_t last_sequence {};
     bool have_sequence {};
