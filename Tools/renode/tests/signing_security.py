@@ -365,11 +365,6 @@ def test_cubeorange_commands(dialect, renode, firmware, bootloader,
         if reply.result != MAV_RESULT_ACCEPTED or reply.data_length != 8:
             raise AssertionError('signed session request was not accepted')
         session_key = bytes(reply.data[:reply.data_length])
-        reply = board.secure_command(
-            sequence, GET_SESSION_KEY, b'',
-            signed_command(private_key, sequence, GET_SESSION_KEY))
-        if reply.result != MAV_RESULT_DENIED:
-            raise AssertionError('replayed session request was accepted')
 
         sequence = 100
         data = bytes((0, 1))
@@ -378,6 +373,35 @@ def test_cubeorange_commands(dialect, renode, firmware, bootloader,
         reply = board.secure_command(sequence, GET_PUBLIC_KEYS, data, signature)
         if reply.result != MAV_RESULT_ACCEPTED:
             raise AssertionError('first signed command was not accepted')
+        reply = board.secure_command(sequence, GET_PUBLIC_KEYS, data, signature)
+        if reply.result != MAV_RESULT_DENIED:
+            raise AssertionError('replayed signed command was accepted')
+        previous_sequence = sequence
+
+        # A restarted client may choose a sequence behind the prior replay
+        # window. A signed session request starts a new sequence epoch.
+        sequence = 10
+        reply = board.secure_command(
+            sequence, GET_SESSION_KEY, b'',
+            signed_command(private_key, sequence, GET_SESSION_KEY))
+        if reply.result != MAV_RESULT_ACCEPTED or reply.data_length != 8:
+            raise AssertionError('replacement session request was not accepted')
+        replacement_session_key = bytes(reply.data[:reply.data_length])
+
+        # Commands from the previous session remain invalid even though the
+        # per-session sequence window has been reset.
+        reply = board.secure_command(
+            previous_sequence, GET_PUBLIC_KEYS, data, signature)
+        if reply.result != MAV_RESULT_DENIED:
+            raise AssertionError('command from the previous session was accepted')
+
+        sequence = 1
+        signature = signed_command(
+            private_key, sequence, GET_PUBLIC_KEYS, data,
+            replacement_session_key)
+        reply = board.secure_command(sequence, GET_PUBLIC_KEYS, data, signature)
+        if reply.result != MAV_RESULT_ACCEPTED:
+            raise AssertionError('command sequence was not reset for new session')
         reply = board.secure_command(sequence, GET_PUBLIC_KEYS, data, signature)
         if reply.result != MAV_RESULT_DENIED:
             raise AssertionError('replayed signed command was accepted')
