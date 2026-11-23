@@ -22930,6 +22930,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AutoRTLReturnPathTrack,
             self.AutoRTLRefusedInFenceRecovery,
             self.AutoRTLRefusedByGCSBlock,
+            self.AutoRTLFailsafeInFenceRecovery,
             self.GripperReleaseOnThrustLoss,
             self.ScriptingAHRSSource,
             self.CompassLearnCopyFromSIM,
@@ -24760,6 +24761,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Auto RTL must be refused with AUTO blocked from the GCS")
         self.assert_auto_rtl_refused_in_rtl()
+
+    def AutoRTLFailsafeInFenceRecovery(self):
+        '''Test a failsafe Auto RTL is entered during fence recovery'''
+        alt = 10
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 10, 10, alt),  # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 10, alt),   # 2
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 10, 10, 0),         # 3
+        ])
+        self.fence_lockout_battery_failsafe_setup(low_action=6)  # Auto DO_RETURN_PATH_START/DO_LAND_START or RTL
+        self.fly_into_fence_mode_change_lockout()
+
+        self.progress("Low battery failsafe must enter Auto RTL during fence recovery")
+        self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
+        self.wait_statustext("Battery 1 is low", timeout=30)
+        self.wait_mode("AUTO_RTL", timeout=10)
+        self.wait_disarmed(timeout=180)
+        self.reboot_sitl()  # landed away from the start location
 
     def EK3_OGN_HGT_MASK(self):
         '''test baraometer-alt-compensation based on long-term GPS readings'''
