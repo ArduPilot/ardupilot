@@ -13344,7 +13344,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Check post-filter gyro logging records every sample while the rate thread decimates."""
         self.set_parameters({
             "FSTRATE_ENABLE": 3,    # fixed divisor: the rate loop takes one gyro sample in FSTRATE_DIV
-            "FSTRATE_DIV": 3,
+            "FSTRATE_DIV": 2,       # the cap is 2 or 3 for a 1000Hz gyro against a 400Hz loop
             "INS_RAW_LOG_OPT": 5,   # primary gyro, post-filter only
             "LOG_FILE_RATEMAX": 0,  # GYR is rate limited otherwise
             "LOG_DARM_RATEMAX": 0,
@@ -13389,7 +13389,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("gyro %.2f ms, logged %.2f ms, rate loop %.2f ms, %u of %u samples repeat" %
                       (gyro_dt * 1000, sample_dt * 1000, loop_dt * 1000, repeats, steps))
         # a held value can only appear while the rate loop is taking a subset of the samples
-        if loop_dt < 2 * gyro_dt:
+        if loop_dt < 1.5 * gyro_dt:
             raise NotAchievedException("Rate loop at %.2f ms is not decimating" % (loop_dt * 1000))
         # every filtered sample must be logged, not just the ones the rate loop took
         if sample_dt > 1.5 * gyro_dt:
