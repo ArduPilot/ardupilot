@@ -47,9 +47,13 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
     auto *beacon = dal.beacon();
     if (beacon != nullptr) {
         const uint8_t count = beacon->count();
-        fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[count];
-        if (fusionReport != nullptr) {
-            numFusionReports = count;
+        // the beacon library reports no beacons until one has been
+        // heard from, and a zero-length array is meaningless
+        if (count > 0) {
+            fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[count];
+            if (fusionReport != nullptr) {
+                numFusionReports = count;
+            }
         }
     }
     posOffsetNED.zero();
