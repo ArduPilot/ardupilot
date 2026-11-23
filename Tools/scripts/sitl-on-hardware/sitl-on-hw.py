@@ -48,6 +48,8 @@ parser.add_argument("--debug", action='store_true', default=False, help="create 
 parser.add_argument("--extra-hwdef", action='append', default=[], help="extra hwdef files")
 
 args, unknown_args = parser.parse_known_args()
+# vehicleinfo name, e.g. ArduCopter for both -v Copter and -v ArduCopter
+vehicle = vehicle_map.get(args.vehicle, args.vehicle)
 
 extra_hwdef = None
 
@@ -61,7 +63,7 @@ def run_program(cmd_list):
         sys.exit(1)
 
 
-frame_options = sorted(vinfo.options[vehicle_map[args.vehicle]]["frames"].keys())
+frame_options = sorted(vinfo.options[vehicle]["frames"].keys())
 frame_options_string = ' '.join(frame_options)
 if args.frame and args.frame not in frame_options and not not args.simclass.startswith('json:'):
     print(f"ERROR: invalid frame {args.frame}; must be one of {frame_options_string}")
@@ -87,7 +89,7 @@ def sohw_path(fname):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), fname)
 
 
-if args.vehicle == "plane":
+if vehicle == "ArduPlane":
     extra_hwdef_base = "plane-extra-hwdef-sitl-on-hw.dat"
     defaults_base = "plane-default.param"
 else:
@@ -119,7 +121,7 @@ if args.simclass:
     hwdef_write("define AP_SIM_FRAME_CLASS %s\n" % args.simclass)
 if args.frame:
     hwdef_write('define AP_SIM_FRAME_STRING "%s"\n' % args.frame)
-    if vehicle_map[args.vehicle] == "ArduCopter" or args.simclass == "MultiCopter":
+    if vehicle == "ArduCopter" or args.simclass == "MultiCopter":
         frame_found = False
         frame_defines = {
             "quad": "AP_MOTORS_FRAME_QUAD_ENABLED",
