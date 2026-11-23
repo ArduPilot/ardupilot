@@ -58,8 +58,9 @@ and too low because of these known gaps:
    mostly not found yet, so timer, io and bus thread callbacks are missing
  - interrupt and exception frames pushed onto a thread's stack are not
    included
- - stacks of threads created at runtime are not known, so only threads
-   with statically allocated stacks are checked
+ - stacks of threads created at runtime are not known, so their stack depth
+   cannot be checked against an allocation; recursion is still checked for
+   explicit THREAD_ENTRIES, but not dynamically discovered unsized threads
  - only the vehicle setup()/loop() and the code of their callers are
    analysed for the main thread, not other code run during startup by
    functions called through pointers
@@ -1818,11 +1819,13 @@ def main():
         print('stack sizes exclude %u bytes for saved contexts' % ctx)
 
     entries = {}
+    explicit_entries = set()
     for key, pattern in THREAD_ENTRIES:
         r = re.compile(pattern)
         matches = [f for f in prog.all_funcs() if r.search(prog.demangle(f))]
         if matches:
             entries[key] = matches
+            explicit_entries.add(key)
     for key, matches in registered_thread_entries(a).items():
         known = {f.title for f in entries.get(key, ())}
         entries.setdefault(key, []).extend(f for f in matches if f.title not in known)
@@ -1899,16 +1902,18 @@ def main():
             above += lv.size
         unresolved, dynamic, cycles = v.reachable(roots + levels, skip)
         margin = '' if total is None else str(total - depth)
-        # Unsized dynamic threads remain visible in the report; strict mode
-        # only judges threads with known stack allocations.
-        if total is not None:
-            checked += 1
+        # Explicit thread roots predate dynamic discovery and must retain
+        # strict recursion checking even when their allocation is unknown.
+        # Dynamically discovered unsized threads remain report-only.
+        if total is not None or key in explicit_entries:
             for c in cycles & v.unbounded:
                 members = v.cycles[c]
                 signature = tuple(sorted({v.source_function(m) for m in members}))
                 if signature not in unbounded_recursion:
                     unbounded_recursion[signature] = (set(), {v.source_function(m): m for m in members})
                 unbounded_recursion[signature][0].add(name)
+        if total is not None:
+            checked += 1
             if depth + args.margin > total:
                 failures.append((name, total, depth, path))
         flags = []

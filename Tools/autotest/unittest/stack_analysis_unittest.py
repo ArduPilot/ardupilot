@@ -745,6 +745,32 @@ class StackAnalysisTests(unittest.TestCase):
         self.assertIn('Scripting', output.getvalue())
         self.assertNotIn('UNBOUNDED RECURSION:', output.getvalue())
 
+    def test_strict_check_rejects_unsized_explicit_thread_recursion(self):
+        g = self.g
+        g.func('ChibiOS::Scheduler::_rcin_thread(void*)', 16)
+        uart = g.func('ChibiOS::UARTDriver::uart_thread()', 24)
+        recursive = g.func('recursive()', 32)
+        g.edge(uart, recursive)
+        g.edge(recursive, recursive)
+        g.analyser()  # write the fixture source
+        output = StringIO()
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(sa, 'Program', return_value=g.p))
+            stack.enter_context(patch.object(sa, 'ClassModel', return_value=g.classes))
+            stack.enter_context(patch.object(sa.glob, 'glob', return_value=['fixture.ci']))
+            for name in ('load_ci', 'load_cgraph_dumps', 'load_elf', 'add_elf_funcs', 'demangle_all'):
+                stack.enter_context(patch.object(g.p, name))
+            stack.enter_context(patch.object(g.p, 'remove_unlinked', return_value=0))
+            stack.enter_context(patch.object(g.classes, 'load'))
+            stack.enter_context(patch.object(sa, 'static_allocations', return_value={'rcin': 1000}))
+            argv = ['stack_analysis', g.root, '--srcroot', g.root, '--elf', 'unused', '--check']
+            stack.enter_context(patch.object(sa.sys, 'argv', argv))
+            stack.enter_context(redirect_stdout(output))
+            with self.assertRaises(SystemExit) as error:
+                sa.main()
+            self.assertEqual(error.exception.code, 1)
+        self.assertIn('UNBOUNDED RECURSION: UART', output.getvalue())
+
     def test_external_recursion_annotations_are_specific_to_elf_functions(self):
         g = self.g
         first = g.func('first()', 10)
