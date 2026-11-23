@@ -85,7 +85,16 @@ void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &s
         start_us = now;
     } else {
         count++;
-        if (now - start_us > 1000000UL) {
+        if (convergence != nullptr && convergence->windows == 0 && now - start_us > 1000000UL) {
+            /*
+              the first window starts at the first sample read, but the
+              rest of that read is the sensor's queued backlog, so its
+              count is high: skip it
+             */
+            convergence->windows = 1;
+            count = 0;
+            start_us = now;
+        } else if (now - start_us > 1000000UL) {
             float observed_rate_hz = count * 1.0e6f / (now - start_us);
 #if 0
             printf("IMU RATE: %.1f should be %.1f\n", observed_rate_hz, rate_hz);
@@ -109,7 +118,7 @@ void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &s
                   constant rather than its square root
                  */
                 const float innovation = observed_rate_hz / rate_hz - 1.0f;
-                if (convergence->windows == 0) {
+                if (convergence->windows == 1) {
                     convergence->innovation = innovation;
                 } else {
                     convergence->innovation += 0.1f * (innovation - convergence->innovation);
