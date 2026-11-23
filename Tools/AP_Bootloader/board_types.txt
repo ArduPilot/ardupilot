@@ -672,6 +672,22 @@ AP_HW_PILOTIX                          6120
 # IDs 6130-6139 reserved for Saolah
 AP_HW_Saolah743                      6130
 
+# IDs 6140-6149 reserved for ARGOSDYNE (AQUILA series)
+AP_HW_ARGOSDYNE_AQUILA-2B            6140
+AP_HW_ARGOSDYNE_AQUILA-2S            6141
+AP_HW_ARGOSDYNE_AQUILA-2PB           6142
+AP_HW_ARGOSDYNE_AQUILA-2PS           6143
+AP_HW_ARGOSDYNE_AQUILA-3FB           6144
+AP_HW_ARGOSDYNE_AQUILA-3FS           6145
+AP_HW_ARGOSDYNE_AQUILA-3FPB          6146
+AP_HW_ARGOSDYNE_AQUILA-3FPS          6147
+
+# IDs 6150-6159 reserved for ARGOSDYNE (next-generation platforms)
+AP_HW_ARGOSDYNE_EG-350               6150
+AP_HW_ARGOSDYNE_EP-400               6151
+AP_HW_ARGOSDYNE_EP-450               6152
+AP_HW_ARGOSDYNE_EC-110               6153
+
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
 # IDs 6700-6709 reserved for Avian Automata
