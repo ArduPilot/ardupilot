@@ -37,6 +37,7 @@ include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_LPUART_DmaFix.cs
 # and the sensor-orientation helper) has to come before anything that reads
 # physics truth, and the two device base classes before the devices.
 include $repo/Tools/renode/peripherals/common/AP_Physics.cs
+include $repo/Tools/renode/peripherals/common/AP_BoardThermal.cs
 include $repo/Tools/renode/peripherals/common/AP_I2CRegisterDevice.cs
 include $repo/Tools/renode/peripherals/common/AP_UARTFrameDevice.cs
 # AP_SPIMultiplexer implements IAPSigrok, which is declared in the interface
