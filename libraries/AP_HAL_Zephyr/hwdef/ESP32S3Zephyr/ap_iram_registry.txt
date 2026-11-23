@@ -1,0 +1,93 @@
+# ESP32-S3 Zephyr IRAM placement registry
+# format: path|symbol  (demangled C++ name)
+#
+# ESP32-S3 has 415 KB of IRAM (iram0_0_seg).  Functions listed here are placed
+# into IRAM by ap_iram_sections.sh which generates ap_iram_sections.ld, included
+# via zephyr_linker_sources(RAM_SECTIONS ...) in CMakeLists.txt.
+#
+# Priority order: most latency-sensitive first.
+# EKF core (19+ KB CovariancePrediction — dominates XIP flash time)
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::CovariancePrediction
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::UpdateFilter
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::UpdateStrapdownEquationsNED
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::calcOutputStates
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::UpdateFilter
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getGyroBias
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getAccelBias
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getEulerAngles
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getRotationBodyToNED
+libraries/AP_NavEKF3/AP_NavEKF3_MagFusion.cpp|NavEKF3_core::SelectMagFusion
+libraries/AP_NavEKF3/AP_NavEKF3_MagFusion.cpp|NavEKF3_core::FuseMagnetometer
+libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readIMUData
+libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaVelocity
+libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaAngle
+libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getEulerAngles
+libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getGyroBias
+libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getAccelBias
+libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getRotationBodyToNED
+# AHRS
+libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update
+libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update_EKF3
+libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::update_trig
+libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::update_cd_values
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::update
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::matrix_update
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::drift_correction
+# Attitude controller
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::update_attitude_target
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::thrust_vector_rotation_angles
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::attitude_command_model
+libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run_dt
+libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run
+libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_gain_boost
+libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_rpy_mix
+libraries/AC_PID/AC_PID.cpp|AC_PID::update_all
+# Inertial sensor hot path
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::update
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::periodic
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::wait_for_sample
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNotch::update_params
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::update_gyro_filters
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::apply_gyro_filters
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_gyro_raw_sample
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_accel_raw_sample
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_rotate_and_correct_accel
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_update_sensor_rate
+libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor::update_backend_filters
+libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor_Backend::update_filters
+# Notch filters (called at 1 kHz from sensor thread)
+libraries/Filter/NotchFilter.h|NotchFilter<Vector3<float>>::apply
+libraries/Filter/NotchFilter.h|NotchFilter<float>::apply
+libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::apply
+libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::update
+libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<Vector3<float>>::set_cutoff_frequency
+libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<float>::set_cutoff_frequency
+# Motors
+libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_to_motors
+libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_armed_stabilizing
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output_logic
+# Copter-level hot path
+ArduCopter/Attitude.cpp|Copter::run_rate_controller_main
+ArduCopter/Copter.cpp|Copter::read_AHRS
+ArduCopter/ekf_check.cpp|Copter::check_ekf_reset
+ArduCopter/land_detector.cpp|Copter::update_land_and_crash_detectors
+ArduCopter/mode.cpp|Copter::update_flight_mode
+ArduCopter/motors.cpp|Copter::motors_output
+ArduCopter/motors.cpp|Copter::motors_output_main
+ArduCopter/rate_thread.cpp|Copter::rate_controller_thread
+ArduCopter/rate_thread.cpp|Copter::rate_controller_filter_update
+ArduCopter/rate_thread.cpp|Copter::update_dynamic_notch_at_specified_rate_main
+# Vehicle
+libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch
+libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_throttle_notch
+libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch_at_specified_rate
+# GCS send/receive (called every scheduler tick)
+libraries/GCS_MAVLink/GCS_Common.cpp|GCS::update_send
+libraries/GCS_MAVLink/GCS_Common.cpp|GCS::update_receive
+# HAL timing (these used to be clock_gettime; now k_cycle_get_64 — still benefit from IRAM)
+libraries/AP_HAL_Zephyr/system.cpp|AP_HAL::micros64
+libraries/AP_HAL_Zephyr/system.cpp|AP_HAL::millis64
+libraries/AP_HAL_Zephyr/system.cpp|AP_HAL::micros
+libraries/AP_HAL_Zephyr/system.cpp|AP_HAL::millis

@@ -1304,7 +1304,13 @@ void AC_PosControl::D_init_offsets()
 // Used in LUA
 bool AC_PosControl::set_posvelaccel_offset(const Vector3f &pos_offset_ned_m, const Vector3f &vel_offset_ned_ms, const Vector3f &accel_offset_ned_mss)
 {
+    // GCC 14 false positive on the temporary that topostype() returns
+#pragma GCC diagnostic push
+#if defined(__GNUC__) && __GNUC__ >= 14
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     set_posvelaccel_offset_target_NE_m(pos_offset_ned_m.topostype().xy(), vel_offset_ned_ms.xy(), accel_offset_ned_mss.xy());
+#pragma GCC diagnostic pop
     set_posvelaccel_offset_target_D_m(pos_offset_ned_m.topostype().z, vel_offset_ned_ms.z, accel_offset_ned_mss.z);
     return true;
 }

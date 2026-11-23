@@ -1,0 +1,6 @@
+board:
+  name: cube_orange_zephyr
+  full_name: Hex CubeOrange (AP_HAL_Zephyr)
+  vendor: hex
+  socs:
+    - name: stm32h743xx

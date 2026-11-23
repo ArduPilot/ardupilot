@@ -6,6 +6,21 @@
 // 480MHz overdrive, unpolled) and spins on D3CR.VOSRDY. Everything
 // here is plain storage with those two ready bits always reading set.
 //
+// CR3.USB33RDY (bit 26) reads set as well, for Zephyr. Its USB power-up,
+// stm32_usb_pwr_enable() in drivers/usb/common/stm32/stm32_usb_pwr.c,
+// spins on LL_PWR_IsActiveFlag_USB() - READ_BIT(PWR->CR3, PWR_CR3_USB33RDY)
+// - until the 3.3V USB supply reports ready, which real silicon does within
+// microseconds of USB33DEN. With CR3 as plain storage that never happened,
+// usbd_init() never returned, and AP_HAL_Zephyr's main() waited out its
+// 30 s usbd_init_with_timeout() before starting ArduPilot at all. The AP
+// clock had been running the whole time, so every CubeOrangeZephyr boot
+// under Renode reached its first IMU sample at ~44 s of uptime - past the
+// 30 s INS rate-convergence window (AP_InertialSensor_Backend.cpp:70-73),
+// which is what left the EKF's dt at the compiled-in nominal and flew the
+// copter 40 m off its landing point. Measured 2026-09-12.
+//
+// ChibiOS never reads this bit, so it cannot see the change.
+//
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals;
@@ -35,7 +50,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             case CR1: return cr1;
             case CSR1: return ACTVOSRDY;
             case CR2: return cr2;
-            case CR3: return cr3;
+            case CR3: return cr3 | USB33RDY;
             case CPUCR: return cpucr;
             case D3CR: return d3cr | VOSRDY;
             case WKUPFR: return 0;
@@ -73,5 +88,6 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
         private const uint ACTVOSRDY = 1u << 13;
         private const uint VOSRDY = 1u << 13;
+        private const uint USB33RDY = 1u << 26;
     }
 }

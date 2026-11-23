@@ -20,7 +20,7 @@
 #pragma once
 
 
-#if !defined(HAL_DEBUG_BUILD) || !HAL_DEBUG_BUILD
+#if (!defined(HAL_DEBUG_BUILD) || !HAL_DEBUG_BUILD) && !defined(AP_BUILD_O3)
     #pragma GCC optimize("O2")
     #ifdef __NO_MATH_ERRNO__
         // GCC 10 drops the build's -fno-math-errno at the pragma above and

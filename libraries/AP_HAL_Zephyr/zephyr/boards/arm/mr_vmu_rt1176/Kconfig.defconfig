@@ -1,0 +1,25 @@
+if BOARD_MR_VMU_RT1176
+
+config BOARD
+	default "mr_vmu_rt1176"
+
+# M7 runs at 1 GHz
+config SYS_CLOCK_HW_CYCLES_PER_SEC
+	default 1000000000
+
+# Enable interrupt-driven serial (needed for all UARTs)
+config UART_INTERRUPT_DRIVEN
+	default y
+
+# Thread stack size — ArduPilot main thread needs room for EKF etc.
+config MAIN_STACK_SIZE
+	default 8192
+
+# k_malloc() only, which ArduPilot never calls - AP allocates from the libc
+# arena. The only tenant linked into this image is mcumgr's img_mgmt. The 64 KB
+# this used to reserve came straight out of the OCRAM the arena grows into, and
+# the board was running with 3104 bytes of free heap.
+config HEAP_MEM_POOL_SIZE
+	default 16384
+
+endif # BOARD_MR_VMU_RT1176

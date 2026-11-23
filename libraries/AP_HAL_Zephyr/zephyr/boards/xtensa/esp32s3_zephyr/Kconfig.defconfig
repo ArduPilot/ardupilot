@@ -1,0 +1,6 @@
+# Copyright (c) 2024 ArduPilot Project
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD
+	default "esp32s3_zephyr"
+	depends on BOARD_ESP32S3_ZEPHYR

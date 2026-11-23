@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+description: |
+  ArduPilot RCOutput pad-ownership arbiter (mr_vmu_rt1176).
+
+  FMU_CH1-8's pads each have two relevant IOMUXC alternates - FlexPWM
+  (servo/ESC PWM at param-selected rates, e.g. 50 or 400 Hz) and FlexIO
+  (DShot). Which protocol a channel speaks is an ArduPilot runtime decision
+  (MOT_PWM_TYPE / SERVO_DSHOT_* parameters, delivered to the HAL via
+  RCOutput::set_output_mode()), so pad muxing cannot be settled at boot by
+  whichever driver initialises last.
+
+  This node carries one named pinctrl state per ownership configuration,
+  and RCOutput.cpp (which no driver binds - that is the point: only
+  RCOutput applies these states, so there is exactly one arbiter) applies
+  the matching state at init and on every set_output_mode() change:
+
+    pinctrl-0 "default" - all 8 pads muxed to their FlexPWM alternates
+    pinctrl-1 "dshot"   - all 8 pads muxed to their FlexIO alternates
+
+  Granularity is the whole CH1-8 bank, matching the single-group pinctrl
+  the FlexIO-DShot node uses; per-subgroup switching (e.g. CH1-4 DShot +
+  CH5-8 PWM) needs this split into more states and is documented follow-on
+  work in RCOutput.cpp.
+
+compatible: "ardupilot,rcout-pinmux"
+
+include: [pinctrl-device.yaml, base.yaml]
+
+properties:
+  pinctrl-0:
+    required: true
+
+  pinctrl-names:
+    required: true

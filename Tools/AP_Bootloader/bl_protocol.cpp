@@ -42,14 +42,23 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
+#ifdef __ZEPHYR__
+// TODO(zephyr-bootloader, UNTESTED): no ChibiOS runtime/watchdog/CAN below.
+#include <zephyr/kernel.h>
+#include <cmsis_core.h>   // NVIC/SysTick/SCB for the pre-jump teardown
+#include "hwdef_zephyr.h"
+#else
 #include "ch.h"
 #include "hal.h"
 #include "hwdef.h"
+#endif
 
 #include "bl_protocol.h"
 #include "support.h"
+#ifndef __ZEPHYR__
 #include "can.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#endif
 #if EXT_FLASH_SIZE_MB
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
@@ -136,7 +145,11 @@
 // interrupt vector table for STM32
 #define SCB_VTOR 0xE000ED08
 
+#ifdef __ZEPHYR__
+static struct k_timer systick_vt;
+#else
 static virtual_timer_t systick_vt;
+#endif
 
 /*
   millisecond timer array
@@ -163,13 +176,10 @@ extern AP_FlashIface_JEDEC ext_flash;
 #endif
 
 /*
-  1ms timer tick callback
+  1ms timer tick - shared body, called from a HAL-specific periodic timer
  */
-static void sys_tick_handler(virtual_timer_t* vt, void *ctx)
+static void sys_tick_body(void)
 {
-    chSysLockFromISR();
-    chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
-    chSysUnlockFromISR();
     uint8_t i;
     for (i = 0; i < NTIMERS; i++)
         if (timer[i] > 0) {
@@ -187,9 +197,30 @@ static void sys_tick_handler(virtual_timer_t* vt, void *ctx)
     }
 }
 
+#ifdef __ZEPHYR__
+// TODO(zephyr-bootloader, UNTESTED): k_timer auto-repeats, unlike ChibiOS's
+// self-rearming virtual timer, so no reschedule call is needed here.
+static void sys_tick_handler(struct k_timer *unused_timer)
+{
+    sys_tick_body();
+}
+#else
+static void sys_tick_handler(virtual_timer_t* vt, void *ctx)
+{
+    chSysLockFromISR();
+    chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
+    chSysUnlockFromISR();
+    sys_tick_body();
+}
+#endif
+
 static void delay(unsigned msec)
 {
+#ifdef __ZEPHYR__
+    k_msleep(msec);
+#else
     chThdSleep(chTimeMS2I(msec));
+#endif
 }
 
 void
@@ -228,7 +259,28 @@ do_jump(uint32_t stacktop, uint32_t entrypoint)
     SCB_DisableICache();
 #endif
 
-    chSysLock();    
+#ifdef __ZEPHYR__
+    /* RT1176 is a Cortex-M7 with D-cache and I-cache and they must be off before
+     * handing over, or the app starts against the bootloader's cached view of memory.
+     * Confirmed on hardware 2026-07-29: the jump reached stage 4 and still locked up. */
+    __DSB();
+    __ISB();
+#if defined(CONFIG_CPU_HAS_DCACHE)
+    SCB_DisableDCache();
+#endif
+#if defined(CONFIG_CPU_HAS_ICACHE)
+    SCB_DisableICache();
+#endif
+#if defined(CONFIG_ARM_MPU)
+    ARM_MPU_Disable();
+#endif
+    __DSB();
+    __ISB();
+
+    (void)irq_lock();
+#else
+    chSysLock();
+#endif
 
     // we set sp as well as msp to avoid an issue with loading NuttX
     asm volatile(
@@ -242,14 +294,42 @@ do_jump(uint32_t stacktop, uint32_t entrypoint)
 #define APP_START_ADDRESS (FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U)
 #endif
 
+/* Distance from the app slot start to the app's vector table. Zero wherever the
+ * image begins with its vector table; i.MX RT117x apps carry a leading FCB/IVT
+ * boot header, so the upload lands at APP_START_ADDRESS and the jump skips it. */
+#ifndef APP_VECTOR_OFFSET
+#define APP_VECTOR_OFFSET 0U
+#endif
+
 #if !defined(STM32_OTG2_IS_OTG1)
 #define STM32_OTG2_IS_OTG1 0
+#endif
+
+#ifdef __ZEPHYR__
+/* Which stage jump_to_app() reached, readable over SWD - it can only fail
+ * silently, so this distinguishes a rejected image from a crashed jump.
+ * 1 entered, 2 lead word, 3 entry range, 4 about to jump; 10/11/12 = rejects. */
+/*
+  __noinit so these SURVIVE a warm reset - the M7 locks up and resets, which
+  zeroes .bss and destroyed the evidence every time. g_jump_magic distinguishes
+  "we wrote this" from uninitialised RAM.
+ */
+__noinit volatile uint32_t g_jump_magic;
+__noinit volatile uint32_t g_jump_stage;
+__noinit volatile uint32_t g_jump_detail;
+#define JUMP_MAGIC 0x4A554D50u   /* 'JUMP' */
+#define JUMP_MARK(s) do { g_jump_magic = JUMP_MAGIC; g_jump_stage = (s); } while (0)
+#define JUMP_FAIL(s, d) do { g_jump_magic = JUMP_MAGIC; g_jump_stage = (s); g_jump_detail = (d); } while (0)
+#else
+#define JUMP_MARK(s) do { } while (0)
+#define JUMP_FAIL(s, d) do { } while (0)
 #endif
 
 void
 jump_to_app()
 {
-    const uint32_t *app_base = (const uint32_t *)(APP_START_ADDRESS);
+    const uint32_t *app_base = (const uint32_t *)(APP_START_ADDRESS + APP_VECTOR_OFFSET);
+    JUMP_MARK(1);
 
 #if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
@@ -274,17 +354,21 @@ jump_to_app()
      */
     for (uint8_t i=0; i<RESERVE_LEAD_WORDS; i++) {
         if (app_base[i] == 0xffffffff) {
+            JUMP_FAIL(10, i);
             goto exit;
         }
     }
+    JUMP_MARK(2);
 
     /*
      * The second word of the app is the entrypoint; it must point within the
      * flash area (or we have a bad flash).
      */
     if (app_base[1] < APP_START_ADDRESS) {
+        JUMP_FAIL(11, app_base[1]);
         goto exit;
     }
+    JUMP_MARK(3);
 
 #if BOOT_FROM_EXT_FLASH
     if (app_base[1] >= (APP_START_ADDRESS + board_info.extf_size)) {
@@ -292,6 +376,7 @@ jump_to_app()
     }
 #else
     if (app_base[1] >= (APP_START_ADDRESS + board_info.fw_size)) {
+        JUMP_FAIL(12, app_base[1]);
         goto exit;
     }
 #endif
@@ -309,10 +394,13 @@ jump_to_app()
 #endif
 
     flash_set_keep_unlocked(false);
-    
+
     led_set(LED_OFF);
 
-    // resetting the clocks is needed for loading NuttX
+#ifndef __ZEPHYR__
+    // resetting the clocks is needed for loading NuttX - STM32-specific,
+    // RT1176 has an entirely different clock tree (CCM, not RCC) and this
+    // bootloader hand-off convention doesn't apply here.
 #if defined(STM32H7)
     rccDisableAPB1L(~0);
     rccDisableAPB1H(~0);
@@ -337,12 +425,36 @@ jump_to_app()
     rccResetOTG_HS();
 #endif
 #endif
-    
+
     // disable all interrupt sources
     port_disable();
+#else
+    /* Tear down everything that can still raise an interrupt before handing off.
+     * Without this the M7 LOCKS UP the instant VTOR is repointed: a pending tick or
+     * USB IRQ vectors through the app's table into an uninitialised Zephyr. */
+    k_timer_stop(&systick_vt);
 
+    /* Deliberately NOT __disable_irq(): that sets PRIMASK, which Zephyr's reset.S
+     * never clears (it locks with BASEPRI), so the app would boot masked forever. */
+
+    /* stop SysTick and clear any pending tick */
+    SysTick->CTRL = 0;
+    SysTick->VAL = 0;
+    SCB->ICSR = SCB_ICSR_PENDSTCLR_Msk | SCB_ICSR_PENDSVCLR_Msk;
+
+    /* disable + clear every NVIC line */
+    for (uint32_t i = 0; i < ARRAY_SIZE(NVIC->ICER); i++) {
+        NVIC->ICER[i] = 0xFFFFFFFFU;
+        NVIC->ICPR[i] = 0xFFFFFFFFU;
+    }
+
+    __DSB();
+    __ISB();
+#endif
+
+    JUMP_MARK(4);
     /* switch exception handlers to the application */
-    *(volatile uint32_t *)SCB_VTOR = APP_START_ADDRESS;
+    *(volatile uint32_t *)SCB_VTOR = APP_START_ADDRESS + APP_VECTOR_OFFSET;
 
     /* extract the stack and entrypoint from the app vector table and go */
     do_jump(app_base[0], app_base[1]);
@@ -480,8 +592,14 @@ bootloader(unsigned timeout)
 
     if (!done_timer_init) {
         done_timer_init = true;
+#ifdef __ZEPHYR__
+        // TODO(zephyr-bootloader, UNTESTED)
+        k_timer_init(&systick_vt, sys_tick_handler, nullptr);
+        k_timer_start(&systick_vt, K_MSEC(1), K_MSEC(1));
+#else
         chVTObjectInit(&systick_vt);
         chVTSet(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
+#endif
     }
 
     /* if we are working with a timeout, start it running */
@@ -721,7 +839,7 @@ bootloader(unsigned timeout)
                         }
                         next_check_ms = AP_HAL::millis()+delay_ms;
                     }
-                    chThdSleep(chTimeMS2I(delay_ms));
+                    delay(delay_ms);
                 }
                 erased_bytes += ext_flash.get_sector_size();
                 sector_number++;
