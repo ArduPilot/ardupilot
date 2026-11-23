@@ -65,6 +65,7 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_XTX_XT25F128F         0x0B4018
 #define JEDEC_ID_GIANTEC_GT25Q64EZ     0x1C7117
 #define JEDEC_ID_GIANTEC_GT25Q128EZ    0x1C7118
+#define JEDEC_ID_GIANTEC_GT25Q256EZ    0xC44019
 
 void AP_Logger_Flash_JEDEC::Init()
 {
@@ -167,6 +168,7 @@ bool AP_Logger_Flash_JEDEC::getSectorCount(void)
     case JEDEC_ID_WINBOND_W25Q256:
     case JEDEC_ID_FMSH_FM25Q256:
     case JEDEC_ID_MACRONIX_MX25L25635E:
+    case JEDEC_ID_GIANTEC_GT25Q256EZ:
         blocks = 512;
         df_PagePerBlock = 256;
         df_PagePerSector = 16;
