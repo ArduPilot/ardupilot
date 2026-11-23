@@ -626,6 +626,7 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_GIANTEC_GT25Q64EZ     0x1C7117
 #define JEDEC_ID_GIANTEC_GT25Q128EZ    0x1C7118
 #define JEDEC_ID_PUYA_PY25Q128HA       0x852018
+#define JEDEC_ID_GIANTEC_GT25Q256EZ    0xC44019
 
 /* Hardware-specific constants */
 
@@ -809,6 +810,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     case JEDEC_ID_WINBOND_W25Q256:
     case JEDEC_ID_MACRONIX_MX25L25635E:
     case JEDEC_ID_FMSH_FM25Q256:
+    case JEDEC_ID_GIANTEC_GT25Q256EZ: 
         block_count = 512;    /* 32MiB */
         use_32bit_address = true;
         break;
