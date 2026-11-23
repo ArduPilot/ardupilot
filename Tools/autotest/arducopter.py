@@ -18781,6 +18781,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_GPS1_ENABLE", 1)
         self.do_RTL()
 
+    def HeightKeptOnAidingLossWithOgnHgtMask(self):
+        '''losing aiding must not step the height by the EKF origin height correction'''
+        # with EK3_OGN_HGT_MASK bits 0 and 2 set, the EKF learns the baro drift
+        # relative to GPS and applies it to the baro height measurement.  The
+        # AID_NONE entry has to include that correction as well.
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 3,  # GPS
+            "EK3_SRC1_VELXY": 3,  # GPS
+            "EK3_SRC1_POSZ": 1,   # Baro
+            "EK3_OGN_HGT_MASK": 5,  # correct when using baro, apply to local position
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(12, mode='ALT_HOLD')
+
+        self.progress("Drift the baro so a correction is learned against GPS height")
+        self.set_parameter("SIM_BARO_DRIFT", 0.2)
+        self.delay_sim_time(40, "drift the baro")
+        self.set_parameter("SIM_BARO_DRIFT", 0)
+        self.delay_sim_time(30, "let the origin height correction settle")
+
+        self.context_collect('STATUSTEXT')
+        alt_before = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=60)
+
+        max_step = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 6:
+            alt = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+            max_step = max(max_step, abs(alt - alt_before))
+        self.progress("Height changed by up to %.2f m after aiding stopped" % max_step)
+        if max_step > 1:
+            raise NotAchievedException("height stepped %.2f m when aiding stopped" % max_step)
+
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.do_RTL()
+
     def EK3_EXT_NAV_vel_without_vert(self):
         '''Test that EK3 External Navigation velocity works without vertical velocity.'''
 
@@ -22106,6 +22144,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MotorTest,
             self.EKFSource,
             self.HeightKeptOnAidingLossWithAltOffset,
+            self.HeightKeptOnAidingLossWithOgnHgtMask,
             self.AHRSSwitchBackendPositionReset,
             self.EK3YawAlignEachTakeoff,
             self.EKFYawResetLogged,
