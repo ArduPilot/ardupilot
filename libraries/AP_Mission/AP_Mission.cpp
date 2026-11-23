@@ -112,6 +112,7 @@ void AP_Mission::start()
     WITH_DEPTH_GUARD(_mission_operation_depth);
     if (WithDepthGuard::value(_mission_operation_depth) == 1) {
         _command_recursion_denied = false;
+        _mission_complete_pending = false;
     }
     _flags.state = MISSION_RUNNING;
 
@@ -127,6 +128,7 @@ void AP_Mission::start()
 /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
 void AP_Mission::stop()
 {
+    _mission_complete_pending = false;
     _flags.state = MISSION_STOPPED;
 }
 
@@ -138,6 +140,7 @@ bool AP_Mission::resume()
     WITH_DEPTH_GUARD(_mission_operation_depth);
     if (WithDepthGuard::value(_mission_operation_depth) == 1) {
         _command_recursion_denied = false;
+        _mission_complete_pending = false;
     }
 
     // if mission had completed then start it from the first command
@@ -318,6 +321,7 @@ bool AP_Mission::clear()
 /// trucate - truncate any mission items beyond index
 void AP_Mission::truncate(uint16_t index)
 {
+    _mission_complete_pending = false;
     if ((unsigned)_cmd_total > index) {
         _cmd_total.set_and_save(index);
         _last_change_time_ms = AP_HAL::millis();
@@ -331,6 +335,13 @@ void AP_Mission::update()
     WITH_DEPTH_GUARD(_mission_operation_depth);
     if (WithDepthGuard::value(_mission_operation_depth) == 1) {
         _command_recursion_denied = false;
+        if (_mission_complete_pending) {
+            _mission_complete_pending = false;
+            if (_flags.state == MISSION_COMPLETE) {
+                _mission_complete_fn();
+                return;
+            }
+        }
     }
 
     // exit immediately if not running or no mission commands
@@ -665,6 +676,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     WITH_DEPTH_GUARD(_mission_operation_depth);
     if (WithDepthGuard::value(_mission_operation_depth) == 1) {
         _command_recursion_denied = false;
+        _mission_complete_pending = false;
     }
 
     // Clear flags
@@ -2232,12 +2244,13 @@ void AP_Mission::complete()
     _flags.in_return_path = false;
 
     // A mission operation that hit the command recursion guard did not
-    // complete normally. Do not let its completion callback initiate another
-    // vehicle action, such as a mode change or disarm. The outermost start,
-    // resume, update or set-current operation clears the denial first.
-    if (!_command_recursion_denied) {
-        _mission_complete_fn();
+    // complete normally. Defer its callback so a vehicle action such as a
+    // mode change or disarm runs after the recursive call chain has unwound.
+    if (_command_recursion_denied) {
+        _mission_complete_pending = true;
+        return;
     }
+    _mission_complete_fn();
 }
 
 /// advance_current_nav_cmd - moves current nav command forward
