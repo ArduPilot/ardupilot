@@ -7523,6 +7523,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                      timeout=1,
                      want_result=mavutil.mavlink.MAV_RESULT_DENIED)
 
+        # MISSION_SET_CURRENT is a message rather than a command, so a
+        # rejection cannot be carried in a COMMAND_ACK.  The mission protocol
+        # asks for a broadcast STATUSTEXT instead.
+        self.context_collect('STATUSTEXT')
+        for seq in failed_indices:
+            self.context_clear_collection('STATUSTEXT')
+            self.set_current_waypoint_using_mission_set_current(seq, check_afterwards=False)
+            self.wait_statustext("Mission: unable to set current to %u" % seq, check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+
     def MAV_CMD_DO_SET_MISSION_CURRENT_no_nav_command(self):
         '''Test setting the current command in a mission whose loop holds no nav command'''
 
