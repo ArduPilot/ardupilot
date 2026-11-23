@@ -404,4 +404,61 @@ TEST(NotchFilterTest, HarmonicNotchMaxFilters)
     filter.apply(1.0);
 }
 
+// exposes a notch's coefficients to CoefficientsTest
+class NotchFilterCoefficients : public NotchFilter<float> {
+public:
+    using NotchFilter<float>::b0;
+    using NotchFilter<float>::b1;
+    using NotchFilter<float>::b2;
+    using NotchFilter<float>::a1;
+    using NotchFilter<float>::a2;
+};
+
+// compare one notch's coefficients with the exact design
+static void check_coefficients(float rate_hz, float center_hz, float A, float Q)
+{
+    // coefficients approach 2, where floats are 1.2e-7 apart, and the design
+    // rounds several times on the way to them
+    const double tolerance = 6e-7;
+
+    NotchFilterCoefficients filter {};
+    filter.init_with_A_and_Q(rate_hz, center_hz, A, Q);
+
+    const double omega = 2 * M_PI * double(center_hz) / double(rate_hz);
+    const double alpha = sin(omega) / (2 * double(Q));
+    const double a0 = 1 + alpha;
+    const double A2 = double(A) * double(A);
+    const double b1 = -2 * cos(omega) / a0;
+
+    EXPECT_NEAR(filter.b0, (1 + alpha * A2) / a0, tolerance) << center_hz << " Hz at " << rate_hz;
+    EXPECT_NEAR(filter.b1, b1, tolerance) << center_hz << " Hz at " << rate_hz;
+    EXPECT_NEAR(filter.b2, (1 - alpha * A2) / a0, tolerance) << center_hz << " Hz at " << rate_hz;
+    EXPECT_NEAR(filter.a1, b1, tolerance) << center_hz << " Hz at " << rate_hz;
+    EXPECT_NEAR(filter.a2, (1 - alpha) / a0, tolerance) << center_hz << " Hz at " << rate_hz;
+}
+
+/*
+  compare a notch's five coefficients with the exact design from 1 Hz up to
+  just under Nyquist. Its outputs are not enough: b1 and a1 are equal, so at
+  low frequency the first outputs barely depend on the cosine, where a small
+  error in it makes the filter unstable. The low Q makes the coefficients
+  sensitive to the sine
+ */
+TEST(NotchFilterTest, CoefficientsTest)
+{
+    const float A = 0.1;
+
+    for (const float Q : {0.5f, 4.0f}) {
+        for (const float rate_hz : {1000.0f, 1600.0f, 3200.0f, 8000.0f}) {
+            const float nyquist_hz = 0.5f * rate_hz;
+            for (float center_hz = 1; center_hz < nyquist_hz; center_hz *= 1.01f) {
+                check_coefficients(rate_hz, center_hz, A, Q);
+                ASSERT_FALSE(HasFailure());
+            }
+            check_coefficients(rate_hz, nextafterf(nyquist_hz, 0.0f), A, Q);
+            ASSERT_FALSE(HasFailure());
+        }
+    }
+}
+
 AP_GTEST_MAIN()
