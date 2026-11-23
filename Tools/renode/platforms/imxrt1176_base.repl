@@ -322,7 +322,12 @@ physics: Miscellaneous.AP_Physics @ sysbus 0x5f100000
 spi1Mux: Miscellaneous.AP_SPIMultiplexer @ lpspi1
 imu0: Sensors.AP_ICM42688 @ spi1Mux 0
     whoAmI: 0x47
-    rotation: 0
+    // The board's sensor rotation, which the model applies and the firmware
+    // undoes: it must match hwdef.dat's "IMU Invensensev3 SPI:imu_sensor1
+    // ROTATION_PITCH_180" (12). At 0 the firmware undid a rotation the model
+    // never applied and read gravity upside down - roll 180 on the ground,
+    // then the attitude-error disarm at takeoff.
+    rotation: 12
 
 // The other two IMU buses exist and are selected, with nothing on them: the
 // probe fails cleanly, which is what a board with one supported IMU looks like,
