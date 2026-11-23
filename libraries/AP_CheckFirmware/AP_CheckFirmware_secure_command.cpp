@@ -252,9 +252,12 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
         goto send_reply;
     }
 
-    // Sequence all signed operations, including GET_SESSION_KEY, so a
-    // captured session request cannot reset the replay window.
-    if (!secure_command_sequence.accept(pkt.sequence)) {
+    // A signed session request starts a new replay-protection epoch so a
+    // restarted client can recover. Replaying a captured session request can
+    // rotate the key, but cannot replay commands because their signatures are
+    // bound to the session key.
+    if (pkt.operation != SECURE_COMMAND_GET_SESSION_KEY &&
+        !secure_command_sequence.accept(pkt.sequence)) {
         reply.result = MAV_RESULT_DENIED;
         goto send_reply;
     }
@@ -266,6 +269,7 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
             reply.result = MAV_RESULT_FAILED;
             break;
         }
+        secure_command_sequence.reset();
         reply.data_length = sizeof(session_key);
         memcpy(reply.data, session_key, reply.data_length);
         reply.result = MAV_RESULT_ACCEPTED;

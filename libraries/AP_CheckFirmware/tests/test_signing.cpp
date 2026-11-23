@@ -101,9 +101,8 @@ TEST(AP_CheckFirmware, SecureCommandSequenceRejectsReplay)
     EXPECT_TRUE(wrapping_sequence.accept(0));
     EXPECT_FALSE(wrapping_sequence.accept(UINT32_MAX));
 
-    // A fresh instance models the sequence state after reboot.
-    ap_secure_command_sequence fresh_sequence;
-    EXPECT_TRUE(fresh_sequence.accept(99));
+    wrapping_sequence.reset();
+    EXPECT_TRUE(wrapping_sequence.accept(99));
 }
 
 static bool check_extf_signature(const uint8_t signature[64],
