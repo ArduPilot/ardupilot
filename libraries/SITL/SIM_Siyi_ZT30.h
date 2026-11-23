@@ -62,6 +62,9 @@ private:
     // the physical gimbal:
     Gimbal gimbal;
 
+    // heading of the vehicle
+    float vehicle_yaw_rad;
+
     class PACKED FirmwareVersion : Siyi::BaseMessage {
     public:
         FirmwareVersion(

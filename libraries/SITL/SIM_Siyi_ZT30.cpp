@@ -21,12 +21,14 @@
 #if AP_SIM_SIYI_ZT30_ENABLED
 
 #include "SIM_Siyi_ZT30.h"
+#include "SIM_Aircraft.h"
 
 using namespace SITL;
 
 void Siyi_ZT30::update(const Aircraft &aircraft)
 {
     gimbal.update(aircraft);
+    aircraft.get_dcm().to_euler(nullptr, nullptr, &vehicle_yaw_rad);
 
     // base class update function:
     Siyi::update(aircraft);
@@ -80,17 +82,21 @@ void Siyi_ZT30::handle_message(const PackedMessage<GimbalAttitudeRequest> &reque
         delta_angles.x * 10 * RAD_TO_DEG * 1e6 / delta_time_us
     );
 
-    Vector3f joint_angles;
-    gimbal.get_joint_angles(joint_angles);
-    const Vector3<int16_t> joint_angles_decidegrees(
-        -joint_angles.z * 10 * RAD_TO_DEG,
-        joint_angles.y * 10 * RAD_TO_DEG,
-        joint_angles.x * 10 * RAD_TO_DEG
+    // The driver expects 312 Euler angles, with roll and pitch relative to
+    // the earth and yaw relative to the heading of the vehicle.
+    Matrix3f gimbal_dcm;
+    gimbal.get_dcm(gimbal_dcm);
+    Vector3f angles = gimbal_dcm.to_euler312();
+    angles.z = wrap_PI(angles.z - vehicle_yaw_rad);
+    const Vector3<int16_t> angles_decidegrees(
+        -angles.z * 10 * RAD_TO_DEG,
+        angles.y * 10 * RAD_TO_DEG,
+        angles.x * 10 * RAD_TO_DEG
     );
 
     const PackedMessage<GimbalAttitude> response{
         GimbalAttitude{
-            joint_angles_decidegrees.x, joint_angles_decidegrees.y, joint_angles_decidegrees.z,
+            angles_decidegrees.x, angles_decidegrees.y, angles_decidegrees.z,
             rates_decidegrees.x, rates_decidegrees.y, rates_decidegrees.z
         },
     };
@@ -146,15 +152,16 @@ void Siyi_ZT30::handle_message(const PackedMessage<GimbalRotation> &request)
     const float pitch_rate_rad = max_demanded_pitch_rate_rad * request.msg.pitch_rate_pct * 0.01f;
     const float yaw_rate_rad = max_demanded_yaw_rate_rad * request.msg.yaw_rate_pct * 0.01f;
 
-    // The message gives the rates of the pitch and yaw angles. Their frame
-    // depends on the motion mode, which this simulator ignores: it reads them
-    // as joint rates, relative to the vehicle. The gimbal model takes rates
-    // about the roll, pitch and yaw axes of the gimbal body, so convert the
-    // joint rates with the 312 Euler joint angles.
-    Vector3f joint_angles;
-    gimbal.get_joint_angles(joint_angles);
-    const float roll_rad = joint_angles.x;
-    const float pitch_rad = joint_angles.y;
+    // The message gives the rates of the pitch and yaw angles. This simulator
+    // reads them as rates of the 312 Euler angles of the gimbal relative to
+    // the earth. It ignores the motion mode, so the yaw does not follow the
+    // heading of the vehicle. The gimbal model takes rates about the roll,
+    // pitch and yaw axes of the gimbal body, so convert the Euler angle rates.
+    Matrix3f gimbal_dcm;
+    gimbal.get_dcm(gimbal_dcm);
+    const Vector3f angles = gimbal_dcm.to_euler312();
+    const float roll_rad = angles.x;
+    const float pitch_rad = angles.y;
     // The rates stay constant until the next message, while the angles change.
     // This adds a small roll error in each movement in pitch and yaw together.
     // A real gimbal holds the roll at zero, so add a roll rate that removes
