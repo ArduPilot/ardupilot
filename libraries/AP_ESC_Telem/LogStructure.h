@@ -18,7 +18,7 @@
 // @Field: Temp: ESC temperature in centi-degrees C
 // @Field: CTot: current consumed total mAh
 // @Field: MotTemp: measured motor temperature in centi-degrees C
-// @Field: Err: error rate as the ESC driver reports it; on bidirectional DShot outputs of a flight controller or AP_Periph, the percentage of bad replies in the last 250, reading 100 until 250 have been counted
+// @Field: Err: error rate as the ESC driver reports it; on bidirectional DShot outputs of a flight controller or AP_Periph, the percentage of bad replies since the 5 s statistics window restarted, taken over at least 250 replies and, while the window holds fewer, no lower than the last full window's rate, reading 100 until 250 have been counted
 struct PACKED log_Esc {
     LOG_PACKET_HEADER;
     uint64_t time_us;
