@@ -6,14 +6,8 @@
 
 #include <cstdio>
 #include <map>
-#include <vector>
-
-/*
-  this avoids an issue on stm32 with std::string
- */
-#undef _GLIBCXX_USE_C99_STDIO
 #include <string>
-#define _GLIBCXX_USE_C99_STDIO 1
+#include <vector>
 
 class AP_JSON
 {
