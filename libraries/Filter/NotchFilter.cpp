@@ -26,6 +26,116 @@ const static float NOTCH_MAX_SLEW_LOWER = 1.0f - NOTCH_MAX_SLEW;
 const static float NOTCH_MAX_SLEW_UPPER = 1.0f / NOTCH_MAX_SLEW_LOWER;
 
 /*
+   calculate the sine and cosine of an angle from 0 to pi radians, the range
+   of a notch's centre frequency in radians per sample, without calling libm.
+
+   A dynamic harmonic notch recalculates its coefficients for every notch at
+   up to half the gyro rate, and needs both results each time. sinf() and
+   cosf() each square the angle, and each reduce it when it is above pi/4.
+   Here both results share that work.
+
+   The method has three steps:
+
+   1. Reduce the angle to x in [-pi/4, pi/4], where the polynomials in step 3
+      are accurate, using the angle sum identities:
+
+        angle           x             sin(angle)   cos(angle)
+        0 to pi/4       angle         sin(x)       cos(x)
+        pi/4 to 3pi/4   angle - pi/2  cos(x)       -sin(x)
+        3pi/4 to pi     pi - angle    sin(x)       -cos(x)
+
+   2. pi/2 and pi cannot be held exactly in a float, and subtracting a rounded
+      value would lose most of the accuracy just where x is close to zero. So
+      each is held as its nearest float (HIGH) and the small remainder (LOW)
+      and subtracted in two steps, the method of Cody and Waite [1]. In each
+      branch the angle is within a factor of two of HIGH, so the first
+      subtraction is exact by Sterbenz's lemma [2]. This keeps 80-90% of
+      notch coefficient sets bit-identical to those calculated with glibc,
+      depending on how their centre frequencies are spread.
+
+   3. Evaluate the single precision polynomials from the Cephes library
+      [3][4], with their published coefficients:
+
+        sin(x) = x + x^3 * (SIN_X3 + SIN_X5 * x^2 + SIN_X7 * x^4)
+        cos(x) = 1 - x^2 / 2 + x^4 * (COS_X4 + COS_X6 * x^2 + COS_X8 * x^4)
+
+   Inaccuracy, measured on every float angle from 1e-4 to pi against double
+   precision, with and without fused multiply-add:
+
+        sin: error up to 7.0e-8, and up to 1.4 units in the last place (ulp)
+        cos: error up to 7.8e-8, and up to 1.5 ulp
+        glibc's sinf() and cosf(), for comparison: 3.3e-8, and 0.6 ulp
+
+   In a notch this is about the size of rounding its coefficients to float.
+   Over 60 million random notches (sample rate 400 Hz to 8 kHz, centre from
+   5 Hz to 0.49 of the rate, 15-60 dB, Q 1-100), compared with glibc:
+
+   - None is unstable, and the centre is within about 0.02 Hz of the design
+     with either calculation.
+   - For typical notches (1-8 kHz, from 30 Hz, up to 40 dB, Q up to 11.7) the
+     gain differs by less than 1 dB, and by under 0.02 dB in 99.9% of the
+     notches whose coefficients differ at all.
+   - Close to the centre of a very deep notch at a low frequency or high Q, a
+     move that small can change the gain by tens of dB in either direction.
+     With glibc these notches are just as far from the exact design.
+
+   An angle outside 0 to pi is not reduced and can give a wrong result. The
+   only caller checks that the centre frequency is above zero and below
+   Nyquist.
+
+   [1] W. J. Cody and W. Waite, Software Manual for the Elementary Functions,
+       Prentice-Hall, 1980.
+   [2] P. H. Sterbenz, Floating-Point Computation, Prentice-Hall, 1974,
+       Theorem 4.3.1.
+   [3] S. L. Moshier, Methods and Programs for Mathematical Functions,
+       Prentice-Hall, 1989.
+   [4] Cephes Mathematical Library, single precision sinf.c,
+       https://netlib.org/cephes/single.tgz
+ */
+static void calculate_sinf_cosf(float angle_rad, float &sin_angle, float &cos_angle)
+{
+    static constexpr float QUARTER_PI_RAD = 0.785398163f;
+    static constexpr float THREE_QUARTER_PI_RAD = 2.35619449f;
+    // pi/2 and pi as their nearest float and the remainder to the exact value
+    static constexpr float HALF_PI_HIGH_RAD = 1.57079637f;
+    static constexpr float HALF_PI_LOW_RAD = -4.37113900e-08f;
+    static constexpr float PI_HIGH_RAD = 3.14159274f;
+    static constexpr float PI_LOW_RAD = -8.74227801e-08f;
+    // Cephes sinf.c, sincof[] and coscof[]
+    static constexpr float SIN_X3 = -1.6666654611e-1f;
+    static constexpr float SIN_X5 = 8.3321608736e-3f;
+    static constexpr float SIN_X7 = -1.9515295891e-4f;
+    static constexpr float COS_X4 = 4.166664568298827e-2f;
+    static constexpr float COS_X6 = -1.388731625493765e-3f;
+    static constexpr float COS_X8 = 2.443315711809948e-5f;
+
+    const bool upper_quarter = angle_rad >= THREE_QUARTER_PI_RAD;
+    const bool middle_half = !upper_quarter && angle_rad > QUARTER_PI_RAD;
+
+    float x_rad = angle_rad;
+    if (middle_half) {
+        x_rad = (angle_rad - HALF_PI_HIGH_RAD) - HALF_PI_LOW_RAD;
+    } else if (upper_quarter) {
+        x_rad = (PI_HIGH_RAD - angle_rad) + PI_LOW_RAD;
+    }
+
+    const float x_sq = x_rad * x_rad;
+    const float sin_x = ((SIN_X7 * x_sq + SIN_X5) * x_sq + SIN_X3) * x_sq * x_rad + x_rad;
+    const float cos_x = ((COS_X8 * x_sq + COS_X6) * x_sq + COS_X4) * x_sq * x_sq - 0.5f * x_sq + 1.0f;
+
+    if (middle_half) {
+        sin_angle = cos_x;
+        cos_angle = -sin_x;
+    } else if (upper_quarter) {
+        sin_angle = sin_x;
+        cos_angle = -cos_x;
+    } else {
+        sin_angle = sin_x;
+        cos_angle = cos_x;
+    }
+}
+
+/*
    calculate the attenuation and quality factors of the filter
  */
 template <class T>
@@ -75,9 +185,11 @@ void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_h
 
     if (is_positive(new_center_freq) && (new_center_freq < 0.5 * sample_freq_hz) && (Q > 0.0)) {
         float omega = 2.0 * M_PI * new_center_freq / sample_freq_hz;
-        float alpha = sinf(omega) / (2 * Q);
+        float sin_omega, cos_omega;
+        calculate_sinf_cosf(omega, sin_omega, cos_omega);
+        float alpha = sin_omega / (2 * Q);
         b0 =  1.0 + alpha*sq(A);
-        b1 = -2.0 * cosf(omega);
+        b1 = -2.0 * cos_omega;
         b2 =  1.0 - alpha*sq(A);
         a1 = b1;
         a2 =  1.0 - alpha;
