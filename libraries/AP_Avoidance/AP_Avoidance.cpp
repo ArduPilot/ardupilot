@@ -229,6 +229,13 @@ AP_Avoidance::AP_Avoidance(AP_ADSB &adsb) :
 void AP_Avoidance::init(void)
 {
     debug("ADSB initialisation: %d obstacles", _obstacles_max.get());
+    if (_obstacles_max <= 0) {
+        // we have been asked to track no obstacles at all; there is no
+        // array to allocate, so disable ourselves as we do when the
+        // allocation fails
+        _enabled.set(0);
+        return;
+    }
 #if AP_OA_SCRIPTING_ENABLED
     // the scripting-thread readers walk _obstacles[]; publish the allocation under
     // the same semaphore they take
