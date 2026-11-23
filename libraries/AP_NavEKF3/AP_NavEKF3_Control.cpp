@@ -445,6 +445,11 @@ void NavEKF3_core::setAidingMode()
             // initialise filtered altitude used to provide a takeoff reference to current baro on disarm
             // this reduces the time required for the baro noise filter to settle before the filtered baro data can be used
             meaHgtAtTakeOff = baroDataDelayed.hgt - baroHgtOffset;
+            if (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO &&
+                (frontend->_originHgtMode & (1 << 0)) && (frontend->_originHgtMode & (1 << 2))) {
+                // baro height is fused with the EKF origin height correction applied to the measurement
+                meaHgtAtTakeOff += (ftype)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
+            }
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
             stateStruct.position.z = -meaHgtAtTakeOff;
             // store the current height to be used to keep reporting
