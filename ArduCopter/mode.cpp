@@ -194,6 +194,25 @@ bool Copter::fence_recovery_blocks_mode_change() const
     }
     return true;
 }
+
+// true if a mode change for this reason may override the fence recovery lock
+static bool reason_overrides_fence_recovery(ModeReason reason)
+{
+    switch (reason) {
+    case ModeReason::RADIO_FAILSAFE:
+    case ModeReason::BATTERY_FAILSAFE:
+    case ModeReason::GCS_FAILSAFE:
+    case ModeReason::EKF_FAILSAFE:
+    case ModeReason::TERRAIN_FAILSAFE:
+    case ModeReason::DEADRECKON_FAILSAFE:
+    case ModeReason::AVOIDANCE:
+    case ModeReason::TERMINATE:
+    case ModeReason::FENCE_BREACHED:
+        return true;
+    default:
+        return false;
+    }
+}
 #endif
 
 // update the reason for the current mode, unless the fence recovery lock holds FENCE_BREACHED
@@ -448,7 +467,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
 #if AP_FENCE_ENABLED
     // may not be allowed to change mode if recovering from fence breach
-    if (!ignore_checks && fence_recovery_blocks_mode_change()) {
+    if (!ignore_checks && !reason_overrides_fence_recovery(reason) && fence_recovery_blocks_mode_change()) {
         mode_change_failed(new_flightmode, "in fence recovery");
         return false;
     }
