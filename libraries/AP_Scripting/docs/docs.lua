@@ -2636,6 +2636,9 @@ function SRV_Channels:get_output_pwm(function_num) end
 function SRV_Channels:set_output_scaled(function_num, value) end
 
 -- Sets servo channel to specified PWM for a time in ms. This overrides any commands from the autopilot until the timeout expires.
+-- When it expires the output goes back to the value from set_output_scaled, but only if that was how the channel was last
+-- set. Otherwise the override PWM stays until something writes PWM to the channel again: autopilot outputs such as
+-- motors go back at once, but a scripting output that is only driven by PWM keeps the override value.
 ---@param chan integer -- servo channel number (zero indexed)
 ---@param pwm integer -- pwm value
 ---@param timeout_ms integer -- duration of the override
