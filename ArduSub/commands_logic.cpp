@@ -7,22 +7,24 @@ static enum AutoSurfaceState auto_surface_state = AUTO_SURFACE_STATE_GO_TO_LOCAT
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 {
-    const Location &target_loc = cmd.content.location;
-    auto alt_frame = target_loc.get_alt_frame();
+    if (AP_Mission::cmd_has_location(cmd.id)) {
+        const Location &target_loc = cmd.content.location;
+        auto alt_frame = target_loc.get_alt_frame();
 
-    if (alt_frame == Location::AltFrame::ABOVE_HOME) {
-        if (target_loc.alt > 0) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Alt above home must be negative");
+        if (alt_frame == Location::AltFrame::ABOVE_HOME) {
+            if (target_loc.alt > 0) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Alt above home must be negative");
+                return false;
+            }
+        } else if (alt_frame == Location::AltFrame::ABOVE_TERRAIN) {
+            if (target_loc.alt < 0) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Alt above terrain must be positive");
+                return false;
+            }
+        } else {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Bad alt frame");
             return false;
         }
-    } else if (alt_frame == Location::AltFrame::ABOVE_TERRAIN) {
-        if (target_loc.alt < 0) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Alt above terrain must be positive");
-            return false;
-        }
-    } else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Bad alt frame");
-        return false;
     }
 
     switch (cmd.id) {
@@ -572,7 +574,7 @@ bool Sub::verify_wait_delay()
 
 bool Sub::verify_within_distance()
 {
-    if (wp_nav.get_wp_distance_to_destination_cm() < (uint32_t)MAX(condition_value,0)) {
+    if (wp_nav.get_wp_distance_to_destination_m() < MAX(condition_value, 0)) {
         condition_value = 0;
         return true;
     }
