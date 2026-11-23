@@ -374,7 +374,8 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // focus altitude or flow faster than EK3_FLOW_MAX, so neither is locked out there: without this
     // the first sample back that fails one axis would count the whole spell as a lockout and reset
     // at once. A spell is a gap longer than half a lockout, so at least half of any lockout was
-    // tested, and longer than the 200 ms one dropped sample leaves at 10 Hz
+    // tested, and longer than the 200 ms one dropped sample leaves at 10 Hz. A source slower than
+    // 4 Hz has that gap at every sample, so a lockout of its flow is not recovered
     if (really_fuse && (fabsF(ofDataDelayed.flowRadXY.x) < frontend->_maxFlowRate) &&
         (fabsF(ofDataDelayed.flowRadXY.y) < frontend->_maxFlowRate)) {
         if ((imuSampleTime_ms - flowTestTime_ms) > FLOW_AXIS_LOCKOUT_MS / 2) {
