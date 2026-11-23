@@ -7323,8 +7323,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         # When AUTO is already active, nested command dispatch can complete
-        # its mission while handling an AUTO_RTL request.  Mission completion
-        # must not add a fourth set_mode call by falling back to LAND.
+        # its mission while handling an AUTO_RTL request.  The completion
+        # callback must fall back to LAND only after the recursion unwinds.
         self.start_subtest("Active AUTO mission completion")
         self.context_push()
         self.set_parameter("FS_EKF_ACTION", 0)
@@ -7349,9 +7349,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_FAILED,
         )
         self.wait_statustext("Mission: command recursion denied", check_context=True)
-        self.assert_mode_is('AUTO')
+        self.wait_mode('LAND')
 
-        self.change_mode('ALT_HOLD')
         self.land_and_disarm()
         self.context_pop()
         self.reboot_sitl()
