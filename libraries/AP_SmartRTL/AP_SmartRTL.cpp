@@ -347,8 +347,9 @@ bool AP_SmartRTL::request_thorough_cleanup(ThoroughCleanupType clean_type)
         return false;
     }
 
-    // check if background thread has completed request
-    if (_thorough_clean_complete_ms == _thorough_clean_request_ms) {
+    // check if background thread has completed request. A reset requested since it looked
+    // replaces the path it cleaned, so wait for that too
+    if ((_thorough_clean_complete_ms == _thorough_clean_request_ms) && !reset_pending()) {
         _thorough_clean_request_ms = 0;
         return true;
     }
