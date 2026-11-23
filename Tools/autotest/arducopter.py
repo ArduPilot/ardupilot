@@ -7322,6 +7322,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+        # When AUTO is already active, nested command dispatch can complete
+        # its mission while handling an AUTO_RTL request.  Mission completion
+        # must not add a fourth set_mode call by falling back to LAND.
+        self.start_subtest("Active AUTO mission completion")
+        self.context_push()
+        self.set_parameter("FS_EKF_ACTION", 0)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 10),
+        ])
+        self.takeoff(10, mode='LOITER')
+        self.change_mode('AUTO')
+        self.wait_mode('AUTO')
+        self.upload_simple_relhome_mission(mission_items[:4])
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELZ": 0,
+            "EK3_SRC1_VELXY": 0,
+        })
+        self.wait_ekf_flags(expected_ekf_flags, 0, timeout=120)
+        self.context_collect('STATUSTEXT')
+        self.run_cmd_do_set_mode(
+            "AUTO_RTL",
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.wait_statustext("Mission: command recursion denied", check_context=True)
+        self.assert_mode_is('AUTO')
+
+        self.change_mode('ALT_HOLD')
+        self.land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
+
     def InvalidJumpTags(self):
         '''Verify the behaviour when selecting invalid jump tags.'''
 
