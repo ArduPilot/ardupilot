@@ -78,14 +78,18 @@ int lua_mavlink_init(lua_State *L) {
         if (data.rx_buffer == nullptr) {
             data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
         }
-        if (data.accept_msg_ids == nullptr) {
+        // a script which only sends messages asks for no ids at all;
+        // leave the list unallocated rather than asking new[] for a
+        // zero-length array
+        if (data.accept_msg_ids == nullptr && num_msgs > 0) {
             data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
             if (data.accept_msg_ids != nullptr) {
                 data.accept_msg_ids_size = num_msgs;
                 memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
             }
         }
-        if ((data.rx_buffer == nullptr) || (data.accept_msg_ids == nullptr)) {
+        if ((data.rx_buffer == nullptr) ||
+            (num_msgs > 0 && data.accept_msg_ids == nullptr)) {
             delete data.rx_buffer;
             delete[] data.accept_msg_ids;
             data.rx_buffer = nullptr;
