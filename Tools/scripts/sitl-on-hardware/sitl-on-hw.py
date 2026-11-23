@@ -65,7 +65,8 @@ def run_program(cmd_list):
 
 frame_options = sorted(vinfo.options[vehicle]["frames"].keys())
 frame_options_string = ' '.join(frame_options)
-if args.frame and args.frame not in frame_options and not not args.simclass.startswith('json:'):
+# a JSON simulator takes any frame string, e.g. json:<ip>
+if args.frame and args.frame not in frame_options and args.simclass != 'JSON':
     print(f"ERROR: invalid frame {args.frame}; must be one of {frame_options_string}")
     sys.exit(1)
 
