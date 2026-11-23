@@ -775,6 +775,12 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_
             // schedule it for later:
             send_message(MSG_CURRENT_WAYPOINT);
         }
+    } else {
+        // the mission protocol asks for a broadcast STATUSTEXT when the
+        // requested item cannot be made current.  MISSION_SET_CURRENT is a
+        // message rather than a command, so there is no COMMAND_ACK to carry
+        // the failure and silence would leave the GCS with nothing to show.
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mission: unable to set current to %u", (unsigned)packet.seq);
     }
 }
 #endif  // AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
