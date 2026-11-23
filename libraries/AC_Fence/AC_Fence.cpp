@@ -145,7 +145,9 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Fence options
     // @Description: When bit 0 is set disable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
+    // @Description{Copter}: When bit 0 is set disable mode change following fence action until fence breach is cleared. Failsafes and ADSB avoidance can still change mode, and if either changes to a different mode the lock is lifted until the next fence action. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
     // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas, 2:Notify on margin breaches
+    // @Bitmask{Copter}: 0:Disable mode change following fence action until fence breach is cleared (failsafes can still change mode), 1:Allow union of inclusion areas, 2:Notify on margin breaches
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT)),
 
