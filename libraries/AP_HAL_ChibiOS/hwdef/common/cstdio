@@ -1,2 +1,21 @@
 #pragma once
-//For now this is just a placeholder header, if someone wants functionality please include it here
+/*
+  ChibiOS builds use this in place of the toolchain's <cstdio>; stdio
+  comes from AP_HAL through stdio.h. libstdc++ refers to std::vsnprintf
+  in <string> (std::to_string of a float), so name in std the standard
+  functions stdio.h declares. asprintf and vasprintf are not standard,
+  use them from the global namespace
+
+  std::to_string of a float, double or long double compiles but is not
+  supported: AP_HAL's printf is not C99, it prints %f above 9999999 as
+  %e, rounds a double to float, prints nothing for %Lf, and prints
+  nothing for any float on boards without an FPU. Use snprintf instead
+ */
+#include "stdio.h"
+
+namespace std {
+using ::printf;
+using ::snprintf;
+using ::vprintf;
+using ::vsnprintf;
+}
