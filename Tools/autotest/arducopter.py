@@ -17955,6 +17955,49 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_prearm_failure("EK3 sources require Compass")
         self.context_pop()
 
+    def HeightKeptOnAidingLossWithAltOffset(self):
+        '''losing aiding must not step the height by the baro offset'''
+        # the EKF only learns an offset between baro and its height estimate
+        # while baro is not the height source.  Learn one from GPS height
+        # (source set 1) then switch to baro height (source set 2).
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 3,  # GPS
+            "EK3_SRC1_VELXY": 3,  # GPS
+            "EK3_SRC1_POSZ": 3,   # GPS
+            "EK3_SRC1_VELZ": 3,   # GPS
+            "EK3_SRC2_POSXY": 3,  # GPS
+            "EK3_SRC2_VELXY": 3,  # GPS
+            "EK3_SRC2_POSZ": 1,   # Baro
+            "EK3_SRC2_VELZ": 0,   # None
+        })
+        self.takeoff(12, mode='ALT_HOLD')
+
+        self.progress("Make baro disagree with GPS height so an offset is learned")
+        self.set_parameter("SIM_BARO_GLITCH", 5)
+        self.delay_sim_time(15, "let the baro offset be learned")
+
+        self.progress("Switch to baro height and stop GPS")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        self.delay_sim_time(10, "settle on baro height")
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        # the EKF reports height relative to its origin, which includes the
+        # baro offset; compare against that rather than truth
+        alt_before = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=60)
+
+        max_step = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 6:
+            alt = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+            max_step = max(max_step, abs(alt - alt_before))
+        self.progress("Height changed by up to %.2f m after aiding stopped" % max_step)
+        if max_step > 1:
+            raise NotAchievedException("height stepped %.2f m when aiding stopped" % max_step)
+
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.do_RTL()
+
     def EK3_EXT_NAV_vel_without_vert(self):
         '''Test that EK3 External Navigation velocity works without vertical velocity.'''
 
@@ -21264,6 +21307,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FenceRelativeToAMSLMaxAlt,
             self.MotorTest,
             self.EKFSource,
+            self.HeightKeptOnAidingLossWithAltOffset,
             self.AHRSSwitchBackendPositionReset,
             self.EK3YawAlignEachTakeoff,
             self.EKFYawResetLogged,
