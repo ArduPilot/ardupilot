@@ -709,6 +709,10 @@ void ModeGuided::guided_angle_control_run()
     // call position controller
     position_control->D_set_pos_target_from_climb_rate_cms(climb_rate_cms);
     position_control->D_update_controller();
+
+    // do not carry horizontal thrust over from the previous mode
+    motors.set_lateral(0.0f);
+    motors.set_forward(0.0f);
 }
 
 // Guided Limit code
