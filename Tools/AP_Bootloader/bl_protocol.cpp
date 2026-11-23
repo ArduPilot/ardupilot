@@ -941,24 +941,18 @@ bootloader(unsigned timeout)
 
             // compute CRC of the programmed area
             uint32_t sum = 0;
-            uint8_t rembytes = cmd_verify_bytes % 4;
-            for (unsigned p = 0; p < (cmd_verify_bytes-rembytes); p+=4) {
-                uint32_t bytes;
+            uint8_t bytes[1024];
+            for (uint32_t p = 0; p < cmd_verify_bytes; p += sizeof(bytes)) {
+                const uint32_t read_size = MIN(uint32_t(sizeof(bytes)), cmd_verify_bytes-p);
+                ext_flash.read(p+EXT_FLASH_RESERVE_START_KB*1024, bytes, read_size);
 
 #if BOOT_FROM_EXT_FLASH
                 if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
-                    bytes = first_words[p/4];
-                } else
-#endif
-                {
-                    ext_flash.read(p+EXT_FLASH_RESERVE_START_KB*1024, (uint8_t *)&bytes, sizeof(bytes));
+                    const uint32_t first_word_bytes = MIN(uint32_t(sizeof(first_words)-p), read_size);
+                    memcpy(bytes, (const uint8_t *)first_words+p, first_word_bytes);
                 }
-                sum = crc32_small(sum, (uint8_t *)&bytes, sizeof(bytes));
-            }
-            if (rembytes) {
-                uint8_t bytes[3];
-                ext_flash.read(EXT_FLASH_RESERVE_START_KB*1024+cmd_verify_bytes-rembytes, bytes, rembytes);
-                sum = crc32_small(sum, bytes, rembytes);
+#endif
+                sum = crc32_small(sum, bytes, read_size);
             }
             cout_word(sum);
             break;
