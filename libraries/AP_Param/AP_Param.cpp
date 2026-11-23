@@ -2490,9 +2490,16 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
     free(mutable_filename);
 
     delete[] param_overrides;
+    param_overrides = nullptr;
     param_overrides_len = 0;
     num_param_overrides = 0;
     num_read_only = 0;
+
+    if (num_defaults == 0) {
+        // the file held no parameters, so there is no override array
+        // to allocate
+        return true;
+    }
 
     param_overrides = NEW_NOTHROW param_override[num_defaults];
     if (param_overrides == nullptr) {
@@ -2500,10 +2507,6 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
         return false;
     }
     param_overrides_len = num_defaults;
-
-    if (num_defaults == 0) {
-        return true;
-    }
 
     saveptr = nullptr;
     mutable_filename = strdup(filename);
@@ -2594,6 +2597,12 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
 
     uint16_t num_defaults = 0;
     if (!count_param_defaults(ptr, length, num_defaults)) {
+        return;
+    }
+
+    if (num_defaults == 0) {
+        // the embedded defaults held no parameters, so there is no
+        // override array to allocate
         return;
     }
 
