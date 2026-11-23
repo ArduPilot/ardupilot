@@ -14,3 +14,22 @@
 #if AP_EXTENDED_ESC_TELEM_ENABLED && !HAL_WITH_ESC_TELEM
     #error "AP_EXTENDED_ESC_TELEM_ENABLED requires HAL_WITH_ESC_TELEM"
 #endif
+
+// serial telemetry from HobbyWing XRotor and T-Motor Alpha ESCs; off
+// except in SITL, where it is tested
+#ifndef AP_ESC_TELEM_XROTOR_ENABLED
+#define AP_ESC_TELEM_XROTOR_ENABLED (HAL_WITH_ESC_TELEM && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+// the frame parser, which AP_Periph also uses without the backend
+#ifndef AP_ESC_TELEM_XROTOR_PARSER_ENABLED
+#define AP_ESC_TELEM_XROTOR_PARSER_ENABLED AP_ESC_TELEM_XROTOR_ENABLED
+#endif
+
+#if AP_ESC_TELEM_XROTOR_ENABLED && !HAL_WITH_ESC_TELEM
+    #error "AP_ESC_TELEM_XROTOR_ENABLED requires HAL_WITH_ESC_TELEM"
+#endif
+
+#if AP_ESC_TELEM_XROTOR_ENABLED && !AP_ESC_TELEM_XROTOR_PARSER_ENABLED
+    #error "AP_ESC_TELEM_XROTOR_ENABLED requires AP_ESC_TELEM_XROTOR_PARSER_ENABLED"
+#endif

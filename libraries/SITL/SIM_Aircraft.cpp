@@ -1252,6 +1252,14 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         }
     }
 #endif
+
+#if AP_SIM_XROTOR_ESC_ENABLED
+    for (uint8_t i = 0; i < XROTOR_ESC_SIM_MAX; i++) {
+        if (xrotor_esc_sims[i] != nullptr) {
+            xrotor_esc_sims[i]->update(*this);
+        }
+    }
+#endif
 }
 
 void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)

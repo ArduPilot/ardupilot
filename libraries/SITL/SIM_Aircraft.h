@@ -41,6 +41,7 @@
 #include "SIM_Topotek.h"
 #include "SIM_Viewpro.h"
 #include "SIM_Mount.h"
+#include "SIM_XRotorESC.h"
 
 #define MAX_SIM_INSTANCES 16
 
@@ -196,6 +197,18 @@ public:
         AP_HAL::panic("Too many gimbal simulators");
     }
 #endif  // AP_SIM_MOUNT_ENABLED
+
+#if AP_SIM_XROTOR_ESC_ENABLED
+    void add_xrotor_esc_sim(XRotorESC &sim) {
+        for (uint8_t i = 0; i < XROTOR_ESC_SIM_MAX; i++) {
+            if (xrotor_esc_sims[i] == nullptr) {
+                xrotor_esc_sims[i] = &sim;
+                return;
+            }
+        }
+        AP_HAL::panic("Too many XRotor ESC simulators");
+    }
+#endif  // AP_SIM_XROTOR_ESC_ENABLED
 
     ADSB *adsb;
 
@@ -443,6 +456,12 @@ private:
 #if AP_SIM_MOUNT_ENABLED
     static constexpr uint8_t GIMBAL_SIM_MAX = 8;
     Mount *gimbal_sims[GIMBAL_SIM_MAX];
+#endif
+
+#if AP_SIM_XROTOR_ESC_ENABLED
+    // one ESC per serial port
+    static constexpr uint8_t XROTOR_ESC_SIM_MAX = 8;
+    XRotorESC *xrotor_esc_sims[XROTOR_ESC_SIM_MAX];
 #endif
 };
 

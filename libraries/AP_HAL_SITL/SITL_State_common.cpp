@@ -234,6 +234,20 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sitl_model->set_volz(&_sitl->volz_sim);
         return &_sitl->volz_sim;
 #endif  // AP_SIM_VOLZ_ENABLED
+#if AP_SIM_XROTOR_ESC_ENABLED
+    } else if (streq(name, "xrotor")) {
+        // the argument is the output the ESC drives, starting at 1
+        const int servo_channel = (arg != nullptr) ? atoi(arg) : 0;
+        if (servo_channel < 1 || servo_channel > int(ARRAY_SIZE(_sitl->state.rpm))) {
+            AP_HAL::panic("xrotor needs the output the ESC drives, e.g. sim:xrotor:1");
+        }
+        auto *esc = NEW_NOTHROW SITL::XRotorESC(servo_channel);
+        if (esc == nullptr) {
+            AP_HAL::panic("Failed to create XRotor ESC simulator");
+        }
+        sitl_model->add_xrotor_esc_sim(*esc);
+        return esc;
+#endif  // AP_SIM_XROTOR_ESC_ENABLED
 #if AP_SIM_SIYI_ZT30_ENABLED
     } else if (streq(name, "siyi_zt30")) {
         const auto siyi = NEW_NOTHROW SITL::Siyi_ZT30();

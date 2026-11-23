@@ -1,7 +1,6 @@
 /*
-  ESC Telemetry for Hobbywing Pro 80A HV ESC. This will be
-  incorporated into a broader ESC telemetry library in ArduPilot
-  master in the future
+  ESC Telemetry for Hobbywing Pro 80A HV ESC, using the frame parser
+  in AP_ESC_Telem
  */
 
 #pragma once
@@ -9,6 +8,12 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if AP_PERIPH_HOBBYWING_ESC_ENABLED
+
+#include <AP_ESC_Telem/AP_ESC_Telem_XRotor_Parser.h>
+
+#if !AP_ESC_TELEM_XROTOR_PARSER_ENABLED
+#error "AP_PERIPH_HOBBYWING_ESC_ENABLED needs AP_ESC_TELEM_XROTOR_PARSER_ENABLED"
+#endif
 
 class HWESC_Telem {
 public:
@@ -38,30 +43,12 @@ public:
 private:
     AP_HAL::UARTDriver *uart;
 
-    struct PACKED {
-        uint8_t header; // 0x9B
-        uint8_t pkt_len; // 0x16
-        uint32_t counter;
-        uint16_t throttle_req;
-        uint16_t throttle;
-        uint16_t rpm;
-        uint16_t voltage;
-        int16_t current;
-        int16_t phase_current;
-        uint8_t mos_temperature;
-        uint8_t cap_temperature;
-        uint16_t status;
-        uint16_t crc;
-    } pkt;
-
-    uint8_t len;
-    uint32_t last_read_ms;
+    AP_ESC_Telem_XRotor_Parser parser;
     uint32_t error_count;
 
     struct HWESC decoded;
 
-    bool parse_packet(void);
-    uint8_t temperature_decode(uint8_t temp_raw) const;
+    void decode_frame(void);
 };
 
 #endif // AP_PERIPH_HOBBYWING_ESC_ENABLED
