@@ -961,6 +961,8 @@ private:
 
     // internal variables
     uint8_t                 _command_start_depth;
+    uint8_t                 _mission_operation_depth;
+    bool                    _command_recursion_denied;
     bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
     uint16_t                _repeat_dist; // Distance to repeat on mission resume (m), can be set with MAV_CMD_DO_SET_RESUME_REPEAT_DIST
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index

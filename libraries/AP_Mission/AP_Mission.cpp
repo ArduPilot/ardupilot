@@ -109,6 +109,10 @@ void AP_Mission::init()
 ///     To-Do: should we validate the mission first and return true/false?
 void AP_Mission::start()
 {
+    WITH_DEPTH_GUARD(_mission_operation_depth);
+    if (WithDepthGuard::value(_mission_operation_depth) == 1) {
+        _command_recursion_denied = false;
+    }
     _flags.state = MISSION_RUNNING;
 
     reset(); // reset mission to the first command, resets jump tracking
@@ -131,6 +135,11 @@ void AP_Mission::stop()
 ///     returns false if no mission command could be restarted
 bool AP_Mission::resume()
 {
+    WITH_DEPTH_GUARD(_mission_operation_depth);
+    if (WithDepthGuard::value(_mission_operation_depth) == 1) {
+        _command_recursion_denied = false;
+    }
+
     // if mission had completed then start it from the first command
     if (_flags.state == MISSION_COMPLETE) {
         start();
@@ -319,6 +328,11 @@ void AP_Mission::truncate(uint16_t index)
 ///     should be called at 10hz or higher
 void AP_Mission::update()
 {
+    WITH_DEPTH_GUARD(_mission_operation_depth);
+    if (WithDepthGuard::value(_mission_operation_depth) == 1) {
+        _command_recursion_denied = false;
+    }
+
     // exit immediately if not running or no mission commands
     if (_flags.state != MISSION_RUNNING || _cmd_total == 0) {
         return;
@@ -420,6 +434,7 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     WITH_DEPTH_GUARD(_command_start_depth);
 
     if (WithDepthGuard::value(_command_start_depth) > 2) {
+        _command_recursion_denied = true;
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mission: command recursion denied");
         return false;
@@ -647,6 +662,11 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
 // set_current_cmd - jumps to command specified by index
 bool AP_Mission::set_current_cmd(uint16_t index)
 {
+    WITH_DEPTH_GUARD(_mission_operation_depth);
+    if (WithDepthGuard::value(_mission_operation_depth) == 1) {
+        _command_recursion_denied = false;
+    }
+
     // Clear flags
     _flags.in_landing_sequence = false;
     _flags.in_return_path = false;
@@ -2211,8 +2231,13 @@ void AP_Mission::complete()
     _flags.in_landing_sequence = false;
     _flags.in_return_path = false;
 
-    // callback to main program's mission complete function
-    _mission_complete_fn();
+    // A mission operation that hit the command recursion guard did not
+    // complete normally. Do not let its completion callback initiate another
+    // vehicle action, such as a mode change or disarm. The outermost start,
+    // resume, update or set-current operation clears the denial first.
+    if (!_command_recursion_denied) {
+        _mission_complete_fn();
+    }
 }
 
 /// advance_current_nav_cmd - moves current nav command forward
