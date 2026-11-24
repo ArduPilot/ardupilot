@@ -10,6 +10,7 @@
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
 #include <AP_GPS/AP_GPS_config.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
 
 // define for when to include all features
 #define EK3_FEATURE_ALL APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) || APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -53,13 +54,18 @@
 #define EK3_FEATURE_OPTFLOW_SRTM EK3_FEATURE_OPTFLOW_FUSION
 #endif
 
-// IMU-aided AGL Kalman filter decoupled from the main filter's vertical position state
+// IMU-aided AGL Kalman filter decoupled from the main filter's vertical position state, fusing the
+// range finder
 #ifndef EK3_FEATURE_OPTFLOW_AGL_KF
-#define EK3_FEATURE_OPTFLOW_AGL_KF EK3_FEATURE_OPTFLOW_FUSION
+#define EK3_FEATURE_OPTFLOW_AGL_KF EK3_FEATURE_OPTFLOW_FUSION && EK3_FEATURE_RANGEFINDER_MEASUREMENTS
 #endif
 
 #if (EK3_FEATURE_OPTFLOW_AGL_KF) && !(EK3_FEATURE_OPTFLOW_FUSION)
 #error "EK3_FEATURE_OPTFLOW_AGL_KF requires EK3_FEATURE_OPTFLOW_FUSION"
+#endif
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF && !EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+#error "EK3_FEATURE_OPTFLOW_AGL_KF requires EK3_FEATURE_RANGEFINDER_MEASUREMENTS"
 #endif
 
 // moving baseline GPS yaw corrected for vehicle attitude. The correction consumes
