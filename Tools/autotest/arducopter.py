@@ -19074,6 +19074,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def BaroDriftClearedWithAltOffset(self):
         '''the arm-time datum reset must not settle the estimate at BARO_ALT_OFFSET'''
+        self.check_rearm_ignores_baro_alt_offset()
+
+    def BaroDriftClearedWithAltOffsetEKF2(self):
+        '''EKF2's arm-time datum reset must not settle the estimate at BARO_ALT_OFFSET'''
+        self.set_parameters({"EK2_ENABLE": 1, "AHRS_EKF_TYPE": 2})
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("AHRS: EKF2 active", check_context=True, timeout=60)
+        self.check_rearm_ignores_baro_alt_offset()
+
+    def check_rearm_ignores_baro_alt_offset(self):
+        '''re-arm on the ground with BARO_ALT_OFFSET set and check the height stays at the datum'''
         # update_calibration() leaves the barometer reading BARO_ALT_OFFSET
         # rather than zero, so a reset that assumes zero hands the filter that
         # offset as a real height and it settles there over the next seconds
@@ -19156,6 +19168,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def HeightKeptOnAidingLossWithBaroAltOffset(self):
         '''losing aiding must not step the height by BARO_ALT_OFFSET'''
+        self.check_aiding_loss_keeps_height_with_alt_offset("EKF3 IMU0 stopped aiding", 'XKF1', True)
+
+    def HeightKeptOnAidingLossWithBaroAltOffsetEKF2(self):
+        '''EKF2 losing aiding must not step the height by BARO_ALT_OFFSET'''
+        self.set_parameters({"EK2_ENABLE": 1, "AHRS_EKF_TYPE": 2})
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("AHRS: EKF2 active", check_context=True, timeout=60)
+        # EKF2 does not log its baro offset, and the XKF5 offset is EKF3's, which runs
+        # alongside; BaroDriftClearedWithAltOffsetEKF2 shows EKF2 takes the offset
+        self.check_aiding_loss_keeps_height_with_alt_offset("EKF2 IMU0 has stopped aiding", 'NKF1', False)
+
+    def check_aiding_loss_keeps_height_with_alt_offset(self, stopped_text, kf1_type, check_logged_offset):
+        '''fly with BARO_ALT_OFFSET set, lose GPS and check the height does not step when aiding stops'''
         # the arm-time reset seeds the baro offset from the first post-reset
         # sample, which is BARO_ALT_OFFSET rather than zero.  Height fusion
         # works in the offset frame, so the AID_NONE entry has to as well.
@@ -19173,7 +19199,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(5, reason="settle the hover")
         self.context_collect('STATUSTEXT')
         self.set_parameters({"SIM_GPS1_ENABLE": 0})
-        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=60)
+        self.wait_statustext(stopped_text, check_context=True, timeout=60)
         self.delay_sim_time(6, reason="let the step and any recovery play out")
         self.set_parameters({"SIM_GPS1_ENABLE": 1})
         self.land_and_disarm()
@@ -19184,12 +19210,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         after = []
         baro_offset = None
         while True:
-            m = dfreader.recv_match(type=['MSG', 'XKF1', 'XKF5'])
+            m = dfreader.recv_match(type=['MSG', kf1_type, 'XKF5'])
             if m is None:
                 break
             mtype = m.get_type()
             if mtype == 'MSG':
-                if stop_us is None and "stopped aiding" in m.Message:
+                # the whole text: the harness logs its own lines waiting for it
+                if stop_us is None and m.Message == stopped_text:
                     stop_us = m.TimeUS
             elif mtype == 'XKF5':
                 if m.C == 0 and stop_us is None:
@@ -19202,12 +19229,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if stop_us is None or len(after) < 10:
             raise NotAchievedException("aiding did not stop in the log")
         # without the offset in the filter there is no step to find
-        if baro_offset is None or baro_offset < offset - 1:
+        if check_logged_offset and (baro_offset is None or baro_offset < offset - 1):
             raise NotAchievedException("baro offset was %s, wanted about %u m" % (baro_offset, offset))
         base = before[-1]
         worst = max(after, key=lambda h: abs(h - base))
-        self.progress("Height %+.2f m when aiding stopped, worst after %+.2f m (baro offset %.2f m)"
-                      % (base, worst, baro_offset))
+        self.progress("Height %+.2f m when aiding stopped at %.2f s, worst after %+.2f m"
+                      % (base, stop_us * 1e-6, worst))
         if abs(worst - base) > 0.5:
             raise NotAchievedException("height stepped %.2f m when aiding stopped" % abs(worst - base))
         # the offset slews rather than stepping, so start the next test clean
@@ -27168,7 +27195,9 @@ return update, 1000
             self.BaroDriftClearedAtArm,
             self.HeightDatumKeptOnArmWhileMoving,
             self.HeightKeptOnAidingLossWithBaroAltOffset,
+            self.HeightKeptOnAidingLossWithBaroAltOffsetEKF2,
             self.BaroDriftClearedWithAltOffset,
+            self.BaroDriftClearedWithAltOffsetEKF2,
             self.BaroDriftClearedWithEKF2,
             self.BaroDriftClearedWithRangefinderHeightSwitch,
             self.BaroDriftClearedOnSecondaryCore,
