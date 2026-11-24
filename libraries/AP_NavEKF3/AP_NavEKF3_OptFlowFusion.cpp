@@ -121,7 +121,6 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         } else if (takeoffGndEffectSeen && !dal.get_touchdown_expected()) {
             takeoffGndEffectSeen = false;
             Popt = MAX(Popt, sq(frontend->_rngNoise));
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u terrain offset reopened after takeoff", (unsigned)imu_index);
         }
 
         // fuse range finder data
