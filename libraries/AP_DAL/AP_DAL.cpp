@@ -66,7 +66,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _home = ahrs.get_home();
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
-    _RFRN.alt = _home.alt;
+    _RFRN.alt = _home.get_alt_cm();
     // EAS2TAS is essentially a sensor input to the EKFs, so it is
     // deliberately taken from the barometer's atmosphere model
     // rather than the AHRS, lest a state estimator's output be fed
@@ -557,7 +557,7 @@ void AP_DAL::handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _RSLL = msg;
     // note that EKF2 does not support body frame odometry
-    const Location loc {msg.lat, msg.lng, 0, Location::AltFrame::ABSOLUTE };
+    const AbsAltLocation loc {msg.lat, msg.lng, 0 };
     ekf3.setLatLng(loc, msg.posAccSD, msg.timestamp_ms);
 }
 #endif // APM_BUILD_Replay

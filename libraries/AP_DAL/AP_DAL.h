@@ -221,7 +221,7 @@ public:
 
     // get the home location. This is const to prevent any changes to
     // home without telling AHRS about the change
-    const class Location &get_home(void) const {
+    const class AbsAltLocation &get_home(void) const {
         return _home;
     }
 
@@ -262,8 +262,7 @@ public:
         _home = {
             msg.lat,
             msg.lng,
-            msg.alt,
-            Location::AltFrame::ABSOLUTE
+            msg.alt
         };
         // rebuild the trim rotation from the logged trim; it is
         // otherwise only set in start_frame(), which is not called
@@ -406,7 +405,7 @@ private:
     uint32_t _millis;
 
     Quaternion _quat_vehicle_body_to_autopilot_body;
-    Location _home;
+    AbsAltLocation _home;
     uint32_t _last_imu_time_us;
 
     AP_DAL_InertialSensor _ins;

@@ -24,12 +24,12 @@ void AP_DAL_Beacon::start_frame()
     const log_RBCH old = _RBCH;
     if (bcon != nullptr) {
         _RBCH.get_vehicle_position_ned_returncode = bcon->get_vehicle_position_ned(_RBCH.vehicle_position_ned, _RBCH.accuracy_estimate);
-        Location loc;
+        AbsAltLocation loc;
         _RBCH.get_origin_returncode = bcon->get_origin(loc);
         _RBCH.enabled = bcon->enabled();
         _RBCH.origin_lat = loc.lat;
         _RBCH.origin_lng = loc.lng;
-        _RBCH.origin_alt = loc.alt;
+        _RBCH.origin_alt = loc.get_alt_cm();
     }
     WRITE_REPLAY_BLOCK_IFCHANGED(RBCH, _RBCH, old);
     if (bcon == nullptr) {
