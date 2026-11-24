@@ -5042,6 +5042,35 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_distance_to_home(3, 7, timeout=300)
         self.disarm_vehicle()
 
+    def BendyRulerExclusionZoneEscape(self):
+        '''BendyRuler drives out of an exclusion circle the vehicle finds itself inside'''
+        self.set_parameters({
+            "OA_TYPE": 1,
+        })
+        self.reboot_sitl()
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        start_loc = self.get_location()
+        loc = self.offset_location_ne(start_loc, 20, 0)
+        self.send_guided_mission_item(loc)
+        self.wait_location(loc, height_accuracy=None)
+
+        # the circle is loaded around the vehicle, so enabling the fence breaches it and RTLs
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
+                "radius": 10,
+                "loc": self.offset_location_ne(start_loc, 21, 0),
+            }),
+        ])
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+        })
+        self.wait_mode('RTL')
+        self.wait_distance_to_home(0, 5, timeout=120)
+        self.disarm_vehicle()
+
     def test_scripting_simple_loop(self):
         self.start_subtest("Scripting simple loop")
 
@@ -8658,6 +8687,7 @@ return update()
             self.SendToComponents,
             self.PolyFenceObjectAvoidanceBendyRulerEasierGuided,
             self.PolyFenceObjectAvoidanceBendyRulerEasierAuto,
+            self.BendyRulerExclusionZoneEscape,
             self.SlewRate,
             self.Scripting,
             self.ScriptingMAVLink,
