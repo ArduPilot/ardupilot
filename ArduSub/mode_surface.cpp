@@ -7,8 +7,8 @@ bool ModeSurface::init(bool ignore_checks)
 
     // initialize vertical speeds and acceleration
     // All limits must be positive
-    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
+    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
 
     // initialise position and desired velocity
     position_control->D_init_controller();

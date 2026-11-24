@@ -65,8 +65,8 @@ void ModeAuto::run()
     }
 }
 
-// auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void ModeAuto::auto_wp_start(const Vector3f& destination_neu_cm)
+// auto_wp_start_NEU_cm - initialises waypoint controller to implement flying to a particular destination
+void ModeAuto::auto_wp_start_NEU_cm(const Vector3f& destination_neu_cm)
 {
     sub.auto_mode = Auto_WP;
 
@@ -187,11 +187,11 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
 
     // check our distance from edge of circle
     Vector3f circle_edge_neu_cm;
-    float dist_to_edge;
-    sub.circle_nav.get_closest_point_on_circle_NEU_cm(circle_edge_neu_cm, dist_to_edge);
+    float dist_to_edge_cm;
+    sub.circle_nav.get_closest_point_on_circle_NEU_cm(circle_edge_neu_cm, dist_to_edge_cm);
 
     // if more than 3m then fly to edge
-    if (dist_to_edge > 300.0f) {
+    if (dist_to_edge_cm > 300.0f) {
         // set the state to move to the edge of the circle
         sub.auto_mode = Auto_CircleMoveToEdge;
 
@@ -208,8 +208,8 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        float dist_to_center = get_horizontal_distance((position_control->get_pos_estimate_NED_m().xy() * 100.0f).tofloat(), sub.circle_nav.get_center_NEU_cm().xy().tofloat());
-        if (dist_to_center > sub.circle_nav.get_radius_cm() && dist_to_center > 500) {
+        float dist_to_center_cm = get_horizontal_distance((position_control->get_pos_estimate_NED_m().xy() * 100.0f).tofloat(), sub.circle_nav.get_center_NEU_cm().xy().tofloat());
+        if (dist_to_center_cm > sub.circle_nav.get_radius_cm() && dist_to_center_cm > 500) {
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {
             // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
@@ -477,7 +477,7 @@ bool ModeAuto::auto_terrain_recover_start()
 // If recovery fails revert to failsafe action
 void ModeAuto::auto_terrain_recover_run()
 {
-    float target_climb_rate = 0;
+    float target_climb_rate_cms = 0;
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
@@ -495,18 +495,18 @@ void ModeAuto::auto_terrain_recover_run()
     switch (sub.rangefinder.status_orient(ROTATION_PITCH_270)) {
 
     case RangeFinder::Status::OutOfRangeLow:
-        target_climb_rate = sub.wp_nav.get_default_speed_up_cms();
+        target_climb_rate_cms = sub.wp_nav.get_default_speed_up_cms();
         rangefinder_recovery_ms = 0;
         break;
 
     case RangeFinder::Status::OutOfRangeHigh:
-        target_climb_rate = -sub.wp_nav.get_default_speed_down_cms();
+        target_climb_rate_cms = -sub.wp_nav.get_default_speed_down_cms();
         rangefinder_recovery_ms = 0;
         break;
 
     case RangeFinder::Status::Good: // exit on success (recovered rangefinder data)
 
-        target_climb_rate = 0; // Attempt to hold current depth
+        target_climb_rate_cms = 0; // Attempt to hold current depth
 
         if (sub.rangefinder_state.alt_healthy) {
 
@@ -567,7 +567,7 @@ void ModeAuto::auto_terrain_recover_run()
 
     /////////////////////
     // update z target //
-    position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate);
+    position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate_cms);
     position_control->D_update_controller();
 
     ////////////////////////////

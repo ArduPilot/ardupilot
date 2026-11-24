@@ -5,7 +5,7 @@
 // counter to verify contact with bottom
 static uint32_t bottom_detector_count = 0;
 static uint32_t surface_detector_count = 0;
-static float current_depth = 0;
+static float current_depth_m = 0;
 
 // checks if we have hit bottom or surface and updates the ap.at_bottom and ap.at_surface flags
 // called at MAIN_LOOP_RATE
@@ -18,20 +18,20 @@ void Sub::update_surface_and_bottom_detector()
         return;
     }
 
-    Vector3f velocity;
-    UNUSED_RESULT(ahrs.get_velocity_NED(velocity));
+    Vector3f velocity_ned_ms;
+    UNUSED_RESULT(ahrs.get_velocity_NED(velocity_ned_ms));
 
     // check that we are not moving up or down
-    bool vel_stationary = velocity.z > -0.05 && velocity.z < 0.05;
+    bool vel_stationary = velocity_ned_ms.z > -0.05 && velocity_ned_ms.z < 0.05;
 
     if (ap.depth_sensor_present && sensor_health.depth) { // we can use the external pressure sensor for a very accurate and current measure of our z axis position
-        current_depth = barometer.get_altitude(); // cm
+        current_depth_m = barometer.get_altitude(); // m
 
 
         if (ap.at_surface) {
-            set_surfaced(current_depth > g.surface_depth*0.01 - 0.05); // add a 5cm buffer so it doesn't trigger too often
+            set_surfaced(current_depth_m > g.surface_depth_cm*0.01 - 0.05); // add a 5cm buffer so it doesn't trigger too often
         } else {
-            set_surfaced(current_depth > g.surface_depth*0.01); // If we are above surface depth, we are surfaced
+            set_surfaced(current_depth_m > g.surface_depth_cm*0.01); // If we are above surface depth, we are surfaced
         }
 
 

@@ -17,8 +17,8 @@ bool ModeCircle::init(bool ignore_checks)
     // All limits must be positive
     position_control->NE_set_max_speed_accel_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
     position_control->NE_set_correction_speed_accel_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
-    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
+    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
 
     // initialise circle controller including setting the circle center based on vehicle speed
     sub.circle_nav.init();
@@ -31,12 +31,12 @@ bool ModeCircle::init(bool ignore_checks)
 void ModeCircle::run()
 {
     float target_yaw_rate = 0;
-    float target_climb_rate = 0;
+    float target_climb_rate_cms = 0;
 
     // update parameters, to allow changing at runtime
     // All limits must be positive
     position_control->NE_set_max_speed_accel_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
-    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
 
     // check for any change in params and update in real time
     sub.circle_nav.check_param_change();
@@ -60,7 +60,7 @@ void ModeCircle::run()
     }
 
     // get pilot desired climb rate
-    target_climb_rate = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    target_climb_rate_cms = sub.get_pilot_desired_climb_rate_cms(channel_throttle->get_control_in());
 
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -86,6 +86,6 @@ void ModeCircle::run()
     }
 
     // update altitude target and call position controller
-    position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate);
+    position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate_cms);
     position_control->D_update_controller();
 }

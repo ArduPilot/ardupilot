@@ -15,8 +15,8 @@
 // run at 400Hz on all systems
 # define MAIN_LOOP_RATE    400
 
-#ifndef SURFACE_DEPTH_DEFAULT
-# define SURFACE_DEPTH_DEFAULT -10.0f // pressure sensor reading 10cm depth means craft is considered surfaced
+#ifndef SURFACE_DEPTH_DEFAULT_CM
+# define SURFACE_DEPTH_DEFAULT_CM -10.0f // pressure sensor reading 10cm depth means craft is considered surfaced
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -77,8 +77,8 @@
 # define RANGEFINDER_SIGNAL_MIN_DEFAULT 90 // rangefinder readings with signal quality below this value are ignored
 #endif
 
-#ifndef SURFTRAK_DEPTH_DEFAULT
-# define SURFTRAK_DEPTH_DEFAULT -50.0f     // surftrak will try to keep the sub below this depth
+#ifndef SURFTRAK_DEPTH_DEFAULT_CM
+# define SURFTRAK_DEPTH_DEFAULT_CM -50.0f  // surftrak will try to keep the sub below this depth
 #endif
 
 // Avoidance (relies on Proximity and Fence)
@@ -134,8 +134,8 @@
 # define AUTO_YAW_SLEW_RATE    60              // degrees/sec
 #endif
 
-#ifndef YAW_LOOK_AHEAD_MIN_SPEED
-# define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before vehicle is aimed at ground course
+#ifndef YAW_LOOK_AHEAD_MIN_SPEED_CMS
+# define YAW_LOOK_AHEAD_MIN_SPEED_CMS  100         // minimum ground speed in cm/s required before vehicle is aimed at ground course
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -167,14 +167,14 @@
 #endif
 
 // default maximum velocities and acceleration the pilot may request
-#ifndef PILOT_VELZ_MAX
-# define PILOT_VELZ_MAX    500     // maximum vertical velocity in cm/s
+#ifndef PILOT_VELZ_MAX_CMS
+# define PILOT_VELZ_MAX_CMS    500 // maximum vertical velocity in cm/s
 #endif
-#ifndef PILOT_SPEED_DEFAULT
-# define PILOT_SPEED_DEFAULT 200 // maximum horizontal velocity in cm/s while under pilot control
+#ifndef PILOT_SPEED_DEFAULT_CMS
+# define PILOT_SPEED_DEFAULT_CMS 200 // maximum horizontal velocity in cm/s while under pilot control
 #endif
-#ifndef PILOT_ACCEL_Z_DEFAULT
-# define PILOT_ACCEL_Z_DEFAULT 100 // vertical acceleration in cm/s/s while altitude is under pilot control
+#ifndef PILOT_ACCEL_Z_DEFAULT_CMSS
+# define PILOT_ACCEL_Z_DEFAULT_CMSS 100 // vertical acceleration in cm/s/s while altitude is under pilot control
 #endif
 
 #ifndef AUTO_DISARMING_DELAY

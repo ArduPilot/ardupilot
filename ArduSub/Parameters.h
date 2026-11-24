@@ -196,10 +196,10 @@ public:
         k_param_rangefinder_gain, // deprecated
         k_param_wp_yaw_behavior = 170,
         k_param_xtrack_angle_limit, // Angle limit for crosstrack correction in Auto modes (degrees)
-        k_param_pilot_speed_up,     // renamed from k_param_pilot_velocity_z_max
-        k_param_pilot_accel_z,
+        k_param_pilot_speed_up_cms,     // renamed from k_param_pilot_velocity_z_max
+        k_param_pilot_accel_z_cmss,
         k_param_compass_enabled_deprecated,
-        k_param_surface_depth,
+        k_param_surface_depth_cm,
         k_param_rc_speed, // Main output pwm frequency
         k_param_gcs_pid_mask = 178,
         k_param_throttle_filt,
@@ -244,10 +244,10 @@ public:
 
         k_param_cam_slew_limit = 237, // deprecated
         k_param_lights_steps,
-        k_param_pilot_speed_dn,
+        k_param_pilot_speed_dn_cms,
         k_param_rangefinder_signal_min,
-        k_param_surftrak_depth,
-        k_param_pilot_speed,
+        k_param_surftrak_depth_cm,
+        k_param_pilot_speed_cms,
         k_param_failsafe_throttle,
         k_param_failsafe_throttle_value,
         k_param_vehicle = 257, // vehicle common block of parameters
@@ -262,7 +262,7 @@ public:
 
 #if AP_RANGEFINDER_ENABLED
     AP_Int8         rangefinder_signal_min;     // minimum signal quality for good rangefinder readings
-    AP_Float        surftrak_depth;             // surftrak will try to keep sub below this depth
+    AP_Float        surftrak_depth_cm;          // surftrak will try to keep sub below this depth
 #endif
 
     AP_Int8         failsafe_leak;              // leak detection failsafe behavior
@@ -283,10 +283,10 @@ public:
 
     // Waypoints
     //
-    AP_Int16        pilot_speed_up;             // maximum vertical ascending velocity the pilot may request
-    AP_Int16        pilot_speed_dn;             // maximum vertical descending velocity the pilot may request
-    AP_Int16        pilot_speed;                // maximum horizontal (xy) velocity the pilot may request
-    AP_Int16        pilot_accel_z;              // vertical acceleration the pilot may request
+    AP_Int16        pilot_speed_up_cms;         // maximum vertical ascending velocity the pilot may request
+    AP_Int16        pilot_speed_dn_cms;         // maximum vertical descending velocity the pilot may request
+    AP_Int16        pilot_speed_cms;            // maximum horizontal (xy) velocity the pilot may request
+    AP_Int16        pilot_accel_z_cmss;         // vertical acceleration the pilot may request
 
     // Throttle
     //
@@ -367,7 +367,7 @@ public:
     AP_Int8         flight_mode_chan;
 #endif 
 
-    AP_Float                surface_depth;
+    AP_Float                surface_depth_cm;
     AP_Int8                 frame_configuration;
 
     AP_Float surface_max_throttle;

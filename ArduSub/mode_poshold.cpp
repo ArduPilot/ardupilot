@@ -16,10 +16,10 @@ bool ModePoshold::init(bool ignore_checks)
 
     // initialize vertical speeds and acceleration
     // All limits must be positive
-    position_control->NE_set_max_speed_accel_cm(g.pilot_speed, g.pilot_accel_z);
-    position_control->NE_set_correction_speed_accel_cm(g.pilot_speed, g.pilot_accel_z);
-    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->NE_set_max_speed_accel_cm(g.pilot_speed_cms, g.pilot_accel_z_cmss);
+    position_control->NE_set_correction_speed_accel_cm(g.pilot_speed_cms, g.pilot_accel_z_cmss);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
+    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
 
     // initialise position and desired velocity
     position_control->NE_init_controller_stopping_point();
@@ -93,7 +93,7 @@ void ModePoshold::run()
     control_depth();
 
     // update xy axis
-    // call this after Sub::get_pilot_desired_climb_rate is called so that THR_DZ is reasonable
+    // call this after Sub::get_pilot_desired_climb_rate_cms is called so that THR_DZ is reasonable
     control_horizontal();
 }
 
@@ -103,8 +103,8 @@ void ModePoshold::control_horizontal() {
 
     // get desired rates in the body frame
     Vector2f body_rates_cms = {
-        sub.get_pilot_desired_horizontal_rate(channel_forward),
-        sub.get_pilot_desired_horizontal_rate(channel_lateral)
+        sub.get_pilot_desired_horizontal_rate_cms(channel_forward),
+        sub.get_pilot_desired_horizontal_rate_cms(channel_lateral)
     };
 
     if (sub.position_ok()) {
@@ -114,18 +114,18 @@ void ModePoshold::control_horizontal() {
         }
 
         // convert to the earth frame and set target rates
-        auto earth_rates_cms = ahrs.body_to_earth2D(body_rates_cms);
-        position_control->input_vel_accel_NE_cm(earth_rates_cms, {0, 0});
+        auto earth_rates_ne_cms = ahrs.body_to_earth2D(body_rates_cms);
+        position_control->input_vel_accel_NE_cm(earth_rates_ne_cms, {0, 0});
 
         // convert pos control roll and pitch angles back to lateral and forward efforts
         sub.translate_pos_control_rp(lateral_out, forward_out);
 
         // update the xy controller
         position_control->NE_update_controller();
-    } else if (g.pilot_speed > 0) {
+    } else if (g.pilot_speed_cms > 0) {
         // allow the pilot to reposition manually
-        forward_out = body_rates_cms.x / (float)g.pilot_speed;
-        lateral_out = body_rates_cms.y / (float)g.pilot_speed;
+        forward_out = body_rates_cms.x / (float)g.pilot_speed_cms;
+        lateral_out = body_rates_cms.y / (float)g.pilot_speed_cms;
     }
 
     motors.set_forward(forward_out);
