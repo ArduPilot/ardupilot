@@ -14,6 +14,7 @@ import shutil
 import statistics
 import struct
 import sys
+import tempfile
 import time
 
 from pymavlink import mavextra
@@ -584,6 +585,28 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.disarm_vehicle()
         self.context_pop()
         self.reboot_sitl()
+
+    def ControlOptionsInDefaultsFile(self):
+        '''control input options in a defaults file are not converted as old walking options'''
+        defaults_file = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        # steering on RC2
+        defaults_file.write("RC1_OPTION 0\nRC2_OPTION 201\n")
+        defaults_file.close()
+        # wipe so the conversions run as on a fresh install
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath(self.default_frame()) + [defaults_file.name],
+            wipe=True,
+        )
+        self.assert_parameter_value("RC1_OPTION", 0)
+        self.assert_parameter_value("RC2_OPTION", 201)
+        self.change_mode('MANUAL')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(2, 2000)
+        self.wait_servo_channel_value(1, 1800, comparator=operator.gt)
+        self.set_rc(2, 1500)
+        self.disarm_vehicle()
 
     def DriveRTL(self, timeout=120):
         '''Drive an RTL Mission'''
@@ -8571,6 +8594,7 @@ return update()
             self.ModeSwitch,
             self.AuxModeSwitch,
             self.AuxFunctionOnUnusedControlChannel,
+            self.ControlOptionsInDefaultsFile,
             self.DriveRTL,
             self.SmartRTL,
             self.DriveSquare,
