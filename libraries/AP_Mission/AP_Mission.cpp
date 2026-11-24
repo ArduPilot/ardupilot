@@ -773,6 +773,8 @@ bool AP_Mission::set_current_cmd(uint16_t index)
 
 // restart current navigation command.  Used to handle external changes to mission
 // returns true on success, false if mission is not running or current nav command is invalid
+// if the command being flown was removed the vehicle leaves any landing sequence or return path,
+// as it does when the restart succeeds
 bool AP_Mission::restart_current_nav_cmd()
 {
     // return immediately if mission is not running
@@ -782,14 +784,22 @@ bool AP_Mission::restart_current_nav_cmd()
 
     // return immediately if nav command index is invalid
     const uint16_t nav_cmd_index = get_current_nav_index();
-    if ((nav_cmd_index == 0) || (nav_cmd_index >= num_commands())) {
+    if (nav_cmd_index == 0) {
+        return false;
+    }
+    if (nav_cmd_index >= num_commands()) {
+        _flags.in_landing_sequence = false;
+        _flags.in_return_path = false;
         return false;
     }
 
     // the rejoin point may no longer be on the edited leg so continue to the end of the leg
     if (_flags.rejoining_return_path) {
-        // the leg end may have been removed by the mission change
+        // the leg end may have been removed by the mission change, the rejoin is kept
+        // so stop() restarts the new mission instead of resuming at the old leg start
         if (_rejoin_leg_end_index >= num_commands()) {
+            _flags.in_landing_sequence = false;
+            _flags.in_return_path = false;
             return false;
         }
         return set_current_cmd(_rejoin_leg_end_index);
