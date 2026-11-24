@@ -24389,8 +24389,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_current_waypoint(4, timeout=5)
 
-        # removing the leg end in AUTO during the rejoin keeps the return path,
-        # and leaving and re-entering AUTO then restarts the new mission
+        # removing the leg end in AUTO during the rejoin leaves Auto RTL, as any
+        # mission edit does, and leaving and re-entering AUTO then restarts the new mission
         start_loc = self.offset_location_ne(self.home_position_as_location(), 150, 150)
         start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
         self.change_mode('GUIDED')
@@ -24404,7 +24404,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             m = self.assert_receive_message('LOCAL_POSITION_NED')
             if m.x > 170:
                 raise NotAchievedException(f"Flew back up the return path to {m.x:.0f}m north")
-        self.assert_mode_is('AUTO_RTL')
+        self.assert_mode_is('AUTO')
         self.change_mode('GUIDED')
         self.change_mode('AUTO')
         self.wait_current_waypoint(1, timeout=10)
