@@ -308,6 +308,14 @@ void NavEKF3_core::ResetHeight(void)
     // set the variances to the measurement variance
     Pmut[9][9] = posDownObsNoise;
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // a height restarted from one range, as after a height timeout, is confirmed as one restarted
+    // at a switch to the range finder is
+    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+        rngHgtRestartConfirm = AGLKF_RESTART_CONFIRM_SAMPLES;
+    }
+#endif
+
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
     if (inFlight &&
