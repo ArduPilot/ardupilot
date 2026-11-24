@@ -29,9 +29,10 @@ python3 integration/test_dvl_mavlink_replay.py
 python3 integration/test_depth_native_replay.py
 python3 integration/test_dvl_native_ingest.py
 python3 integration/test_dvl_native_chain.py
+python3 integration/test_extnav_position_native.py
 ```
 
-The native replays require `build/linux/bin/ardusub` from `./waf configure --board=linux && ./waf sub -j4`. They create temporary loopback TCP/UDP links and pseudo-terminals; they do not open physical sensor or actuator ports. Read `docs/ardusub_migration/08_testing_and_validation.md` for each check's scope and outstanding hardware evidence.
+The native replays require `build/linux/bin/ardusub` from `./waf configure --board=linux && ./waf sub -j4`. They create temporary loopback TCP/UDP links and pseudo-terminals; they do not open physical sensor or actuator ports. `test_extnav_position_native.py` injects a fabricated pose and EKF origin into a disposable process to verify the native position-input path; it is not a vehicle position source. `mission_queue.py` structurally validates the ROS dashboard's local waypoint fields without uploading a mission. Read `docs/ardusub_migration/08_testing_and_validation.md` for each check's scope and outstanding hardware evidence.
 
 ## Provisional actuator protocol
 
