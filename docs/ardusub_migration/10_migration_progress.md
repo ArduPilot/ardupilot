@@ -57,3 +57,9 @@ Next, keep working in software: decide the documented ROS-versus-ArduSub saturat
 
 - Added a read-only Mission Status card using ArduSub `MISSION_CURRENT`. The normalized API and local CSV expose current item, total, state, mode, and a freshness flag; unknown and expired fields remain unavailable. There is no mission-command route.
 - Synthetic MAVLink2 loopback, unit tests, and native `SERIAL3` replay with `SR3_EXT_STAT=2` pass. The native empty vehicle reports “No mission” through HTTP and CSV. The browser waiting state shows unavailable values. Mission execution and navigation validity still require separate evidence.
+
+## 2026-11-24 guarded ArduSub serial integration
+
+- The opt-in native Linux RCOutput observer now feeds a guarded serial bridge. The bridge requires an explicit enable flag and an enabled temporary config, negotiates a fresh ESP32 session by challenge, maps the eight motor channels, limits PWM frames to 50 Hz, and stops on stale observations or MCU fault. Checked-in `actuators.enabled` remains `false`.
+- A staged ESP32 sketch contains the same bounded frame guard, session handshake, 250 ms timeout and latched fault behavior. It contains no GPIO/LEDC/ESC output. Its parser was compiled with host Arduino stubs, not an Arduino toolchain; no physical ESP32 has been flashed.
+- The native virtual-sensor replay now exercises ArduSub mixer → RCOutput observer → actual serial bridge → pseudo-terminal and validates the exact serial ARM/PWM/DISARM frames through the C++ guard. The full chain passed twice. Measured wiring, Arduino compilation, real USB-loss behavior, power isolation and wet tests remain for hardware bring-up.
