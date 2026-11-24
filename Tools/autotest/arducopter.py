@@ -6281,6 +6281,69 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("expected the second and first sets selected, logged EV %s, REV3 %s" %
                                        (str(events), str(replay_events)))
 
+    def EKF3PrimaryCoreSwitch(self):
+        '''an RC switch selects the EKF3 primary core'''
+        self.set_parameters({
+            "RC9_OPTION": 188,  # EKF Primary Core
+            "EK3_IMU_MASK": 3,  # cores 0 and 1 run, core 2 does not
+            "DISARM_DELAY": 0,  # stay armed on the ground
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        def wait_primary_core(core_index):
+            '''wait for XKF4 to log core_index as the primary core'''
+            tstart = self.get_sim_time()
+            while True:
+                primary = None
+                dfreader = self.dfreader_for_current_onboard_log()
+                while True:
+                    m = dfreader.recv_match(type='XKF4', condition='XKF4.C==0')
+                    if m is None:
+                        break
+                    primary = m.PI
+                if primary == core_index:
+                    return
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("primary core %s, want %u" % (primary, core_index))
+                self.delay_sim_time(1, "the primary core to reach the log")
+
+        def set_switch(pwm, text):
+            '''move the switch and wait for its own message, as each position has to outlast the debounce'''
+            self.context_clear_collection('STATUSTEXT')
+            self.set_rc(9, pwm)
+            self.wait_statustext(text, check_context=True)
+
+        self.context_collect('STATUSTEXT')
+        self.start_subtest("Disarmed, the switch selects a running core")
+        for pwm, core_index in (1000, 0), (1500, 1):
+            set_switch(pwm, "EKF primary core %u" % core_index)
+            self.assert_parameter_value("EK3_PRIMARY", core_index)
+            wait_primary_core(core_index)
+
+        self.start_subtest("A core that is not running is refused")
+        set_switch(2000, "EKF3 core 2 not running")
+        self.run_auxfunc(188, 2, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_parameter_value("EK3_PRIMARY", 1)
+
+        self.start_subtest("Armed, a core change needs EK3_OPTIONS bit 1")
+        set_switch(1500, "EKF primary core 1")
+        self.change_mode('STABILIZE')
+        self.arm_vehicle()
+        set_switch(1000, "EKF3 core change armed needs EK3_OPTIONS bit 1")
+        self.assert_parameter_value("EK3_PRIMARY", 1)
+        self.set_parameter("EK3_OPTIONS", 2)  # ManualLaneSwitch
+        set_switch(1500, "EKF primary core 1")
+        set_switch(1000, "EKF primary core 0")
+        self.assert_parameter_value("EK3_PRIMARY", 0)
+        wait_primary_core(0)
+        self.disarm_vehicle()
+
+        self.start_subtest("With another estimator configured the switch is refused")
+        self.set_parameter("AHRS_EKF_TYPE", 10)  # SITL
+        set_switch(1500, "EKF primary core needs EKF3")
+        self.assert_parameter_value("EK3_PRIMARY", 0)
+
     def AutoTuneSwitch(self):
         """Test autotune on a switch with gains being saved"""
 
@@ -27468,6 +27531,7 @@ return update, 1000
             self.TestEKF3CompassFailover,
             self.EKF3SRCPerCore,
             self.EKF3SRCPerCoreSelection,
+            self.EKF3PrimaryCoreSwitch,
             self.ToyModeDescentLimit,
         ])
         return ret
