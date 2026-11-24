@@ -1127,14 +1127,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         def offset_from_chord(pos, start, end):
+            '''distance from the chord, positive on the side a clockwise arc bulges to'''
             chord = (end[0] - start[0], end[1] - start[1])
             rel = (pos[0] - start[0], pos[1] - start[1])
-            return abs(chord[0] * rel[1] - chord[1] * rel[0]) / math.hypot(chord[0], chord[1])
+            return (chord[1] * rel[0] - chord[0] * rel[1]) / math.hypot(chord[0], chord[1])
 
         def fly_checking_arcs(items, arcs, during_flight=None):
-            '''fly items and check every 180 degree arc bulges away from its chord by close to
-            half the chord length.  arcs maps seq to a list of (name, start NE, end NE), one per
-            visit.  A start of None is the vehicle's position when the arc becomes current.
+            '''fly items and check every clockwise 180 degree arc bulges away from its chord on
+            the clockwise side by close to half the chord length.  arcs maps seq to a list of
+            (name, start NE, end NE), one per visit.  A start of None is the vehicle's position
+            when the arc becomes current.
             during_flight, if given, is called once the vehicle is flying the mission'''
             visits = {seq: [] for seq in arcs}
             current_seq = [None]
@@ -1185,7 +1187,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     sagitta = 0.5 * math.hypot(end[0] - start[0], end[1] - start[1])
                     self.progress(f"arc {name}: max offset from chord {offset:.1f}m, sagitta {sagitta:.1f}m")
                     if offset < 0.7 * sagitta:
-                        failures.append(f"arc {name} was flown straight")
+                        failures.append(f"arc {name} was flown straight or the wrong way")
+                    elif offset > 1.3 * sagitta:
+                        failures.append(f"arc {name} was flown too large")
             return failures
 
         def loiter_turns(n, e, radius):
