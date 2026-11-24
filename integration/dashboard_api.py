@@ -63,6 +63,12 @@ def make_app(telemetry, lock, recorder=None, demo_mode=False, commander=None,
 
     @app.get("/")
     def dashboard():
+        if control_enabled:
+            return classic_dashboard()
+        return send_file(Path(__file__).with_name("operator_dashboard.html"))
+
+    @app.get("/operator")
+    def operator_dashboard():
         return send_file(Path(__file__).with_name("operator_dashboard.html"))
 
     @app.get("/diagnostics")

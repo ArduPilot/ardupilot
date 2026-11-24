@@ -193,13 +193,32 @@
 
   // ── Interactive ArduSub wiring (active only when controlEnabled) ──
   const pidGroups = {
-    roll: ['ATC_ANG_RLL_P', 'ATC_RAT_RLL_P', 'ATC_RAT_RLL_I', 'ATC_RAT_RLL_D', 'ATC_RAT_RLL_IMAX'],
-    pitch: ['ATC_ANG_PIT_P', 'ATC_RAT_PIT_P', 'ATC_RAT_PIT_I', 'ATC_RAT_PIT_D', 'ATC_RAT_PIT_IMAX'],
-    yaw: ['ATC_ANG_YAW_P', 'ATC_RAT_YAW_P', 'ATC_RAT_YAW_I', 'ATC_RAT_YAW_D', 'ATC_RAT_YAW_IMAX'],
-    depth: ['PSC_D_POS_P', 'PSC_D_VEL_P', 'PSC_D_ACC_P', 'PSC_D_ACC_I', 'PSC_D_ACC_D'],
-    pos: ['PSC_NE_POS_P', 'PSC_NE_VEL_P', 'PSC_NE_VEL_I', 'PSC_NE_VEL_D'],
-    vel: ['WP_SPD', 'WP_SPD_DN', 'WP_SPD_UP', 'WP_RADIUS_M'],
-    gen: ['MOT_PWM_MIN', 'MOT_PWM_MAX', 'FRAME_CONFIG', 'BARO_SPEC_GRAV'],
+    roll: {
+      'Outer Loop': ['ATC_ANG_RLL_P', 'ATC_ACC_R_MAX', 'ATC_RATE_R_MAX'],
+      'Inner Loop': ['ATC_RAT_RLL_P', 'ATC_RAT_RLL_I', 'ATC_RAT_RLL_D', 'ATC_RAT_RLL_IMAX', 'ATC_RAT_RLL_FF', 'ATC_RAT_RLL_FLTD'],
+    },
+    pitch: {
+      'Outer Loop': ['ATC_ANG_PIT_P', 'ATC_ACC_P_MAX', 'ATC_RATE_P_MAX'],
+      'Inner Loop': ['ATC_RAT_PIT_P', 'ATC_RAT_PIT_I', 'ATC_RAT_PIT_D', 'ATC_RAT_PIT_IMAX', 'ATC_RAT_PIT_FF', 'ATC_RAT_PIT_FLTD'],
+    },
+    yaw: {
+      'Outer Loop': ['ATC_ANG_YAW_P', 'ATC_ACC_Y_MAX', 'ATC_RATE_Y_MAX'],
+      'Inner Loop': ['ATC_RAT_YAW_P', 'ATC_RAT_YAW_I', 'ATC_RAT_YAW_D', 'ATC_RAT_YAW_IMAX', 'ATC_RAT_YAW_FF', 'ATC_RAT_YAW_FLTE'],
+    },
+    depth: {
+      'Outer Loop': ['PSC_D_POS_P', 'PILOT_SPEED_UP', 'PILOT_SPEED_DN', 'PILOT_ACCEL_Z'],
+      'Inner Loop & Hover': ['PSC_D_VEL_P', 'PSC_D_VEL_I', 'PSC_D_VEL_D', 'PSC_D_ACC_P', 'PSC_D_ACC_I', 'MOT_THST_HOVER'],
+    },
+    pos: {
+      'Outer Loop': ['PSC_NE_POS_P', 'WP_RADIUS_M', 'WP_ACC', 'WP_YAW_BEHAVIOR'],
+    },
+    vel: {
+      'Inner Loop': ['PSC_NE_VEL_P', 'PSC_NE_VEL_I', 'PSC_NE_VEL_D', 'PSC_NE_VEL_IMAX'],
+      'Speeds': ['WP_SPD', 'WP_SPD_UP', 'WP_SPD_DN', 'PILOT_SPEED'],
+    },
+    gen: {
+      'Pool Vehicle Limits': ['MOT_THST_EXPO', 'MOT_YAW_HEADROOM', 'MOT_PWM_MIN', 'MOT_PWM_MAX', 'SURFACE_DEPTH', 'BARO_SPEC_GRAV'],
+    },
   };
   let activePidGroup = 'roll';
   let cachedParams = {};
@@ -212,15 +231,19 @@
   function renderPidGroup() {
     const box = $('p-fields');
     if (!box) return;
-    const keys = pidGroups[activePidGroup] || [];
-    box.innerHTML = keys.map((k) => {
-      const val = cachedParams[k];
-      const disp = Number.isFinite(val) ? val : '';
-      return `<div class="comp-row" style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;">` +
-        `<label style="font-size:10.5px;font-family:'JetBrains Mono',monospace;">${k}</label>` +
-        `<div style="display:flex;gap:4px;align-items:center;">` +
-        `<input type="number" step="any" data-atal-param="${k}" value="${disp}" style="width:74px;background:var(--bg0);color:var(--tx);border:1px solid var(--bd);border-radius:4px;padding:2px 5px;font-size:11px;font-family:'JetBrains Mono',monospace;">` +
-        `<button type="button" class="set-btn" data-atal-set-param="${k}">SET</button></div></div>`;
+    const folders = pidGroups[activePidGroup] || {};
+    box.innerHTML = Object.entries(folders).map(([folderName, keys]) => {
+      const hdr = `<div style="font-size:10px;font-weight:800;color:var(--ac);text-transform:uppercase;margin:8px 0 3px 6px;letter-spacing:0.08em;opacity:0.88;">${folderName}</div>`;
+      const rows = keys.map((k) => {
+        const val = cachedParams[k];
+        const disp = Number.isFinite(val) ? val : '';
+        return `<div class="comp-row" style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;">` +
+          `<label style="font-size:10.5px;font-family:'JetBrains Mono',monospace;">${k}</label>` +
+          `<div style="display:flex;gap:4px;align-items:center;">` +
+          `<input type="number" step="any" data-atal-param="${k}" value="${disp}" style="width:74px;background:var(--bg0);color:var(--tx);border:1px solid var(--bd);border-radius:4px;padding:2px 5px;font-size:11px;font-family:'JetBrains Mono',monospace;">` +
+          `<button type="button" class="set-btn" data-atal-set-param="${k}">SET</button></div></div>`;
+      }).join('');
+      return hdr + rows;
     }).join('');
     box.querySelectorAll('[data-atal-set-param]').forEach((btn) => {
       btn.addEventListener('click', async () => {

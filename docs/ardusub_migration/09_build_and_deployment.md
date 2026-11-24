@@ -32,3 +32,17 @@ The dashboard API can read a separate native MAVLink stream on `SERIAL3` while `
 Provisional vehicle geometry lives in `integration/vehicle_defaults.json`, with the matching ArduSub frame/direction/PWM parameter template in `integration/atal_motor_defaults.parm`. Change both when measured geometry or polarity changes, then re-run `python3 integration/check_layout.py`; the validator checks motor direction and `SERVO1`–`SERVO8` function assignments. The JSON is not loaded into ArduSub automatically. The native replay normally uses generic Linux `Empty::RCOutput`. For software-only output observation, `integration/atal_loopback_output.hwdef` selects `RCOutput_ATAL_Loopback`, which publishes raw channel values to localhost UDP port 14660; `python3 integration/test_rcoutput_native_loopback.py` exercises it with virtual sensors. No deployment launcher, firmware flashing or startup-service changes exist. The old ROS 2 deployment remains the rollback path, subject to its normal operator procedure.
 
 For development of the A50 velocity path, install the pinned `modules/mavlink/pymavlink` Python package and run the native binary with `--serial0 udp:127.0.0.1:14551` and private log/storage/terrain directories. Run `python3 integration/dvl_bridge.py --connect-a50` separately only when access to the A50 sensor is intended. The bridge accepts attitude from ArduSub system/component 1/1 and sends velocity-only MAVLink 2 on loopback; it has no actuator output. Physical Xsens and pressure inputs are still untested, so this is an interface exercise, not a usable autopilot launch or verified DVL fusion.
+
+## NUC Runtime Launcher (`integration/launch_nuc.py`)
+
+When running on the vehicle NUC after sensor and actuator qualification:
+
+```bash
+python3 integration/launch_nuc.py \
+  --xsens-dev /dev/ttyUSB0 \
+  --depth-dev /dev/ttyUSB1 \
+  --connect-a50 \
+  --http-port 8088
+```
+
+To also start the guarded ESP32 serial bridge (`actuator_serial_bridge.py --enable-hardware`), pass `--config <calibrated_vehicle_json>` (with `actuators.enabled: true`), `--esp32-dev /dev/ttyUSB2`, and `--enable-hardware` (requires building ArduSub with `--extra-hwdef integration/atal_loopback_output.hwdef`). Without `--enable-hardware`, physical thrusters stay disabled while ArduSub, `dvl_bridge.py`, and the full `--enable-control` dashboard run at `http://127.0.0.1:8088/`. Ensure legacy `ATAL_controller` low-level nodes are stopped before launching (`launch_nuc.py` verifies `find_competing_ros_processes()` and serial ownership).

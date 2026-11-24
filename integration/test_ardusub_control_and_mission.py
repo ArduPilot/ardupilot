@@ -275,8 +275,11 @@ class ArduSubControlAndMissionTests(unittest.TestCase):
         )
         client = app.test_client()
         try:
+            self.assertEqual(client.get("/").status_code, 200)
+            self.assertIn(b'data-atal-control="1"', client.get("/").data)
             self.assertEqual(client.get("/classic").status_code, 200)
             self.assertIn(b'data-atal-control="1"', client.get("/classic").data)
+            self.assertEqual(client.get("/operator").status_code, 200)
             self.assertEqual(client.get("/debug").status_code, 200)
             self.assertFalse(client.get("/api/autotune/state").json["supported"])
             self.assertTrue(client.get("/api/state").json["dvl_locked"])

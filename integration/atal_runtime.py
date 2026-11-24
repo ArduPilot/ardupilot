@@ -139,6 +139,9 @@ class RuntimeSupervisor:
         parm = work / "runtime.parm"
         parm.write_text(build_runtime_parm(include_dvl=True, include_motor=True), encoding="utf-8")
 
+        dvl_status_udp = "127.0.0.1:14655"
+        (ROOT / "integration/logs/ardusub").mkdir(parents=True, exist_ok=True)
+        (ROOT / "integration/logs/storage").mkdir(parents=True, exist_ok=True)
         cmd = [
             str(NATIVE_BINARY),
             "--serial0", mavlink_gcs,
@@ -147,10 +150,9 @@ class RuntimeSupervisor:
             "--serial3", dashboard_udp,
             "--defaults", str(parm),
             "--log-directory", str(ROOT / "integration/logs/ardusub"),
-            "--storage-directory", str(work / "storage"),
+            "--storage-directory", str(ROOT / "integration/logs/storage"),
             "--terrain-directory", str(work / "terrain"),
         ]
-        (ROOT / "integration/logs/ardusub").mkdir(parents=True, exist_ok=True)
         self.processes["ardusub"] = subprocess.Popen(
             cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True,
@@ -158,15 +160,16 @@ class RuntimeSupervisor:
         if connect_a50:
             self.processes["dvl_bridge"] = subprocess.Popen(
                 [sys.executable, str(ROOT / "integration/dvl_bridge.py"),
-                 "--config", str(self.config_path), "--connect-a50"],
+                 "--config", str(self.config_path), "--connect-a50",
+                 "--status-udp", dvl_status_udp],
                 cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 start_new_session=True,
             )
         if enable_hardware_actuators and actuator_dev:
             self.processes["actuator_serial_bridge"] = subprocess.Popen(
                 [sys.executable, str(ROOT / "integration/actuator_serial_bridge.py"),
-                 "--config", str(self.config_path), "--port", actuator_dev,
-                 "--enable-hardware"],
+                 "--config", str(self.config_path), "--device", actuator_dev,
+                 "--port", "14660", "--enable-hardware"],
                 cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 start_new_session=True,
             )
