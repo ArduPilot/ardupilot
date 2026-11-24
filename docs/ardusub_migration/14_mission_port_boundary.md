@@ -6,6 +6,8 @@ ArduSub's `MISSION_CURRENT` reports current item, total, mission state, and mode
 
 Do not map the ROS queue directly to AUTO yet. `ModeAuto::init` rejects entry unless `position_ok()` and a mission are present (`ArduSub/mode_auto.cpp`). `MAV_CMD_MISSION_START` also requires motors armed and a successful AUTO mode transition (`ArduSub/GCS_MAVLink_Sub.cpp`). The present virtual DVL profile selects external horizontal *velocity* only (`integration/atal_dvl_ekf_replay.parm`); it does not provide a validated position estimate. The generic mission-item parser supports global/relative/terrain frames, not the ROS queue's local NED frame (`libraries/AP_Mission/AP_Mission.cpp`, `mavlink_int_to_mission_cmd`). A coordinate-origin and depth-frame policy needs explicit validation before any conversion or upload.
 
+The combined virtual Xsens/Bar30/A50 replay has reported both `EKF_CONST_POS_MODE` with attitude/velocity flags and `EKF_UNINITIALIZED` across 15-second runs; neither had an absolute horizontal-position flag. That variability and missing position are direct software evidence for keeping mission commands disabled. The read-only dashboard displays these report flags without claiming to implement `position_ok()`.
+
 Next software-only steps:
 
 1. Establish a replayed, observable navigation source and verify `position_ok()` and estimator origin behavior without real motors. Do not infer position health from fresh `LOCAL_POSITION_NED` alone.

@@ -43,12 +43,15 @@ def main():
             "EAHRS_TYPE 12\nEAHRS_RATE 100\nEAHRS_SENSORS 2\n"
             "SERIAL1_PROTOCOL 36\nSERIAL1_BAUD 115\n"
             "SERIAL2_PROTOCOL 51\nSERIAL2_BAUD 115\n"
+            "SERIAL3_PROTOCOL 2\nSR3_EXTRA2 5\n"
             "LOG_DISARMED 1\n"
             + (ROOT / "integration/atal_dvl_ekf_replay.parm").read_text()
             + (ROOT / "integration/atal_motor_defaults.parm").read_text()
         )
         xsens_master, xsens_slave = pty.openpty()
         depth_master, depth_slave = pty.openpty()
+        status_link = mavutil.mavlink_connection("udpin:127.0.0.1:0")
+        status_port = status_link.port.getsockname()[1]
         bridge = subprocess.Popen(
             [sys.executable, str(ROOT / "integration/dvl_bridge.py"),
              "--config", str(config_path), "--connect-a50"],
@@ -57,12 +60,14 @@ def main():
         )
         native = None
         dvl = None
+        ekf_flags = None
         try:
             dvl, _ = tcp.accept()
             native = subprocess.Popen(
                 [str(BINARY), "--serial0", "udp:127.0.0.1:14551",
                  "--serial1", os.ttyname(xsens_slave),
                  "--serial2", os.ttyname(depth_slave),
+                 "--serial3", f"udp:127.0.0.1:{status_port}",
                  "--defaults", str(defaults),
                  "--log-directory", directory,
                  "--storage-directory", directory,
@@ -96,6 +101,9 @@ def main():
                               "time_of_validity": time.time_ns() // 1000}
                     dvl.sendall((json.dumps(report) + "\n").encode())
                     last_report = now
+                message = status_link.recv_match(blocking=False)
+                if message is not None and message.get_type() == "EKF_STATUS_REPORT":
+                    ekf_flags = message.flags
                 time.sleep(0.01)
         finally:
             if native is not None:
@@ -104,6 +112,7 @@ def main():
             if dvl is not None:
                 dvl.close()
             tcp.close()
+            status_link.close()
             for fd in (xsens_master, xsens_slave, depth_master, depth_slave):
                 os.close(fd)
             bridge_error = bridge.stderr.read().decode(errors="replace")
@@ -129,9 +138,11 @@ def main():
             raise AssertionError(f"Chain incomplete: accepted={len(accepted_times)}, "
                                  f"lock-loss gap={gap_s:.2f}s, EKF={ekf_velocity}, "
                                  f"bridge stderr={bridge_error}")
+        if ekf_flags is None or ekf_flags & 16:
+            raise AssertionError(f"Unexpected absolute-position status for velocity-only DVL replay: {ekf_flags}")
         print(f"Loopback A50 → bridge → native ArduSub EKF passed: "
               f"accepted={len(accepted_times)}, lock-loss gap={gap_s:.2f}s, "
-              f"EKF velocity={ekf_velocity}")
+              f"EKF velocity={ekf_velocity}, status flags={ekf_flags}")
 
 
 if __name__ == "__main__":
