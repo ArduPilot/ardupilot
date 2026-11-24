@@ -5634,16 +5634,54 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.wait_ready_to_arm(require_absolute=False, timeout=120)
 
-        self.start_subtest("Bias variance holds while resting on the floor")
-        # On the ground the height and its measurement both sit at the on-ground
+        def assert_on_floor_not_landed(since_s):
+            '''the vehicle has rested on the floor since a time without reporting itself landed'''
+            floor_m = max(self.get_parameter("RNGFND1_GNDCLR"), 0.05)  # the EKF's rngOnGnd
+            dfreader = self.dfreader_for_current_onboard_log()
+            landed_ev = None
+            rng = []
+            while True:
+                m = dfreader.recv_match(type=['EV', 'RFND'])
+                if m is None:
+                    break
+                if m.get_type() == 'EV' and m.Id in (18, 28):  # LogEvent::LAND_COMPLETE, NOT_LANDED
+                    landed_ev = m
+                elif m.get_type() == 'RFND' and m.Instance == 0 and m.TimeUS * 1.0e-6 >= since_s:
+                    if m.Stat != 4:  # RangeFinder::Status::Good
+                        raise NotAchievedException("range finder not Good on the floor (status %u)" % m.Stat)
+                    rng.append(m.Dist)
+            if landed_ev is None or landed_ev.Id != 28 or landed_ev.TimeUS * 1.0e-6 > since_s:
+                raise NotAchievedException("vehicle did not stay not landed since %.1f s" % since_s)
+            if len(rng) < 20 or max(rng) > floor_m:
+                raise NotAchievedException("vehicle did not stay on the floor since %.1f s (%u readings, highest %.2f m)" %
+                                           (since_s, len(rng), max(rng, default=0)))
+
+        self.start_subtest("Bias variance holds on the floor armed and not landed")
+        # On the floor the height and its measurement both sit at the on-ground
         # reading, so the innovation carries nothing about the bias and must not
-        # shrink its variance. No event marks the filter settling, so this is a delay
-        self.delay_sim_time(15, reason="AGL KF to settle on the on-ground reading")
+        # shrink its variance. Disarmed, or armed and landed, onGround keeps the bias
+        # out by itself, so hold the vehicle where only the floor test does: armed with
+        # the throttle above zero in STABILIZE, landed no longer but still on the floor,
+        # as every lift-off is for a moment and a slow manual spool-up is for longer
+        disarm_delay = self.get_parameter("DISARM_DELAY")
+        self.set_parameter("DISARM_DELAY", 0)
+        self.change_mode('STABILIZE')
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.set_rc(3, 1300)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_IN_AIR, timeout=10)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
+        floor_s = self.get_sim_time()
+        self.delay_sim_time(15, reason="armed and not landed on the floor")
+        assert_on_floor_not_landed(floor_s)
         bias_std = self.xkfa_recent_mean('BiasStd')
         self.progress("AGL KF bias std on the floor: %.4f" % bias_std)
         # nothing on the floor learns the bias, so its std only grows from its initial 1.0:
-        # measured 1.0003, against 0.90 when the floor fused between range samples learns it,
-        # 0.042 when the floor gate tests only the corrected reading and 0.030 with no gate
+        # measured 1.0004, against 0.069 with the gate on onGround alone, 0.90 when the floor
+        # fused between range samples learns it, 0.12 when the floor test sees only the
+        # corrected reading and 0.029 with no gate
         if bias_std < 0.95:
             raise NotAchievedException(
                 "AGL KF bias std collapsed on the floor (%.4f) with nothing to learn "
@@ -5653,14 +5691,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # the position offset correction moves the on-ground reading by the sensor's vertical
         # offset from the IMU in the earth frame, so a floor test made after it can miss the floor
         self.set_parameter("RNGFND1_POS_Z", 0.02)
+        offset_s = self.get_sim_time()
         self.delay_sim_time(15, reason="AGL KF to fuse the offset on-ground reading")
+        assert_on_floor_not_landed(offset_s)
         bias_std = self.xkfa_recent_mean('BiasStd')
         self.progress("AGL KF bias std on the floor with an offset: %.4f" % bias_std)
-        # 1.0006 measured, against 0.90, 0.024 and 0.019 for the same three faults
+        # 1.0007 measured, against 0.018, 0.90, 0.018 and 0.018 for the same four faults
         if bias_std < 0.95:
             raise NotAchievedException(
                 "AGL KF bias std collapsed on the floor with a range finder offset (%.4f)" % bias_std)
         self.set_parameter("RNGFND1_POS_Z", 0)
+        self.zero_throttle()
+        self.disarm_vehicle(force=True)  # still not landed, so a plain disarm is refused
+        self.set_parameter("DISARM_DELAY", disarm_delay)
 
         self.start_subtest("Bias variance holds armed on the ground with a reading above the floor")
         # a range finder whose on-ground reading rests above rngOnGnd, here about 0.06-0.10 m over
