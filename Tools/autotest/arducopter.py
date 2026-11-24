@@ -23988,6 +23988,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
         self.wait_disarmed(timeout=60)
 
+    def FenceBreachExclusionPolygonWithOA(self):
+        '''breach an exclusion polygon with BendyRuler enabled; RTL must leave it and get home'''
+        takeoff_loc = self.takeoff_for_fence_breach_test(oa_type=1)
+
+        # a 20m square centred 20m north of home
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(takeoff_loc, 30, -10),
+                self.offset_location_ne(takeoff_loc, 30, 10),
+                self.offset_location_ne(takeoff_loc, 10, 10),
+                self.offset_location_ne(takeoff_loc, 10, -10),
+            ]),
+        ])
+
+        # get to the far side before enabling the fence
+        loc = self.offset_location_ne(takeoff_loc, 40, 0)
+        self.send_do_reposition(loc)
+        self.wait_location(loc)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+        })
+
+        self.context_collect('STATUSTEXT')
+        self.send_do_reposition(self.offset_location_ne(takeoff_loc, -40, 0))
+        self.wait_mode('RTL')
+        self.wait_statustext('RTL: climb target fenced, climbing en route', check_context=True)
+        self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
+        self.wait_disarmed(timeout=60)
+
     def Clamp(self):
         '''test Copter docking clamp'''
         # the simulated clamp only grabs within 0.5m of home
@@ -26828,6 +26857,7 @@ return update, 1000
             self.GuidedModeThrust,
             self.FenceBreachWithOA,
             self.FenceBreachInclusionWithOA,
+            self.FenceBreachExclusionPolygonWithOA,
             self.CompassMot,
             self.CompassMotFastRate,
             self.FarOrigin,
