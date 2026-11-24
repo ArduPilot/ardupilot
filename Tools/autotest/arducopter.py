@@ -5194,11 +5194,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "AGL KF height did not return toward the floor (%.2f m)" % hgt)
 
         # measured on this test with the floor fused: +0.001 to +0.002 m/s before the accel-Z bias
-        # state and -0.016 to -0.017 m/s with it; with no floor handling, and the velocity decaying
-        # only across a range gap, -0.37 before it. So the bound sits between them with margin
-        # either side. One-sided deliberately - an upward velocity lifts the height off the floor
-        # and corrects itself, and it is only the downward one that the zero range innovation
-        # leaves to the floor to correct
+        # state, -0.016 to -0.017 m/s with it learning on the ground, and 0.000 once onGround stops
+        # that; with no floor handling, and the velocity decaying only across a range gap, -0.37
+        # before it. So the bound sits between them with margin either side. One-sided deliberately -
+        # an upward velocity lifts the height off the floor and corrects itself, and it is only the
+        # downward one that the zero range innovation leaves to the floor to correct
         if vel < -0.1:
             raise NotAchievedException(
                 "AGL KF velocity latched downward at the floor (%.3f m/s); nothing on the "
@@ -5661,6 +5661,53 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "AGL KF bias std collapsed on the floor with a range finder offset (%.4f)" % bias_std)
         self.set_parameter("RNGFND1_POS_Z", 0)
+
+        self.start_subtest("Bias variance holds armed on the ground with a reading above the floor")
+        # a range finder whose on-ground reading rests above rngOnGnd, here about 0.06-0.10 m over
+        # its 0.05 m minimum, is not on the floor, so only onGround keeps the bias from fitting itself
+        # to the ground. Armed, that rests on the vehicle reporting itself landed
+        gndclr = self.get_parameter("RNGFND1_GNDCLR")
+        disarm_delay = self.get_parameter("DISARM_DELAY")
+        self.set_parameters({
+            "RNGFND1_GNDCLR": 0.02,
+            "SIM_SONAR_OFFSET": 0.08,
+            "SIM_SONAR_RND": 0.02,
+            "DISARM_DELAY": 0,  # stay armed on the ground through the window
+        })
+        self.change_mode('LOITER')
+        self.zero_throttle()
+        self.arm_vehicle()
+        armed_s = self.get_sim_time()
+        self.delay_sim_time(15, reason="armed on the ground, long enough for the bias std to fall")
+        if not self.armed():
+            raise NotAchievedException("disarmed during the armed window on the ground")
+        # without readings above the floor the floor test alone would hold the std and pass
+        dfreader = self.dfreader_for_current_onboard_log()
+        rng = []
+        while True:
+            m = dfreader.recv_match(type='RFND', condition='RFND.Instance==0')
+            if m is None:
+                break
+            if m.TimeUS * 1.0e-6 >= armed_s and m.Stat == 4:  # RangeFinder::Status::Good
+                rng.append(m.Dist)
+        above = sum(1 for d in rng if d > 0.05)
+        if len(rng) < 20 or above < len(rng) // 2:
+            raise NotAchievedException("range finder did not read above the floor while armed (%u of %u)" %
+                                       (above, len(rng)))
+        bias_std = self.xkfa_recent_mean('BiasStd')
+        self.progress("AGL KF bias std armed on the ground above the floor: %.4f (%u of %u readings above)" %
+                      (bias_std, above, len(rng)))
+        # 1.0009 measured, against 0.018 with the floor test alone
+        if bias_std < 0.95:
+            raise NotAchievedException(
+                "AGL KF bias std collapsed armed on the ground above the floor (%.4f)" % bias_std)
+        self.disarm_vehicle()
+        self.set_parameters({
+            "RNGFND1_GNDCLR": gndclr,
+            "SIM_SONAR_OFFSET": 0,
+            "SIM_SONAR_RND": 0,
+            "DISARM_DELAY": disarm_delay,
+        })
 
         self.takeoff(altitude_min=10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
 
