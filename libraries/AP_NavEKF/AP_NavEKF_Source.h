@@ -80,8 +80,8 @@ public:
 
     SourceZ getPosZSource(uint8_t core_index) const;
 
-    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void setPosVelYawSourceSet(SourceSetSelection source_set_idx);
+    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary, returning false if not selected
+    bool setPosVelYawSourceSet(SourceSetSelection source_set_idx);
 
     // get/set velocity source
     SourceXY getVelXYSource(uint8_t core_index) const { return _source_set[getActiveSourceSet(core_index)].velxy; }
