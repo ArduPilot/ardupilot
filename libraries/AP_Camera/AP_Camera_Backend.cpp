@@ -74,7 +74,7 @@ void AP_Camera_Backend::update()
 
     const AP_AHRS &ahrs = AP::ahrs();
 
-    Location current_loc;
+    AbsAltLocation current_loc;
     if (!ahrs.get_location(current_loc)) {
         return;
     }
