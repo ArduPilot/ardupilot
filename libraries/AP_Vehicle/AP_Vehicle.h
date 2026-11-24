@@ -335,11 +335,7 @@ public:
 
 #if AP_AHRS_ENABLED
     virtual bool set_home_to_current_location(bool lock) WARN_IF_UNUSED { return false; }
-    virtual bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED { return false; }
-    // transitional; vehicles override this once converted to AbsAltLocation
-    virtual bool set_home(const AbsAltLocation& loc, bool lock) WARN_IF_UNUSED {
-        return set_home(static_cast<const Location&>(loc), lock);
-    }
+    virtual bool set_home(const AbsAltLocation& loc, bool lock) WARN_IF_UNUSED { return false; }
 #endif
 
 protected:
