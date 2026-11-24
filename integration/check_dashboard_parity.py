@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 REFERENCE = ROOT / "reference_dashboard"
 FETCH = re.compile(r"fetch\(\s*['\"](/api/[^'\"?]+)")
+EVENT_SOURCE = re.compile(r"new EventSource\(\s*['\"](/api/[^'\"?]+)")
 ROUTE = re.compile(r'@app\.(?:get|post)\("([^"]+)')
 
 
@@ -17,7 +18,9 @@ def routes():
     sources += list((REFERENCE / "static").glob("*.js"))
     original = set()
     for path in sources:
-        original.update(FETCH.findall(path.read_text()))
+        source = path.read_text()
+        original.update(FETCH.findall(source))
+        original.update(EVENT_SOURCE.findall(source))
     current = set(ROUTE.findall((ROOT / "dashboard_api.py").read_text()))
     return sorted(original), sorted(current), sorted(original - current)
 
