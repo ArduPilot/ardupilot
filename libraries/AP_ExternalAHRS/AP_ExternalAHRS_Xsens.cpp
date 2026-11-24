@@ -4,6 +4,7 @@
 
 #include "AP_ExternalAHRS_Xsens.h"
 
+#include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
@@ -56,6 +57,16 @@ void AP_ExternalAHRS_Xsens::publish(const AP_ExternalAHRS_Xsens_Parser::Sample &
     }
     const AP_ExternalAHRS::ins_data_message_t ins {accel, gyro, -300};
     AP::ins().handle_external(ins);
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
+    if (sample.have_mag && AP::externalAHRS().has_sensor(AP_ExternalAHRS::AvailableSensor::COMPASS)) {
+        // Xsens MTData2 0xC020 reports normalized magnetic field (earth field ~ 1.0 a.u.);
+        // scale to ~500 mGauss for AP_Compass / EKF3 mag state estimation.
+        const AP_ExternalAHRS::mag_data_message_t mag {
+            Vector3f{sample.mag_au[0], sample.mag_au[1], sample.mag_au[2]} * 500.0f
+        };
+        AP::compass().handle_external(mag);
+    }
+#endif
     last_sample_ms = AP_HAL::millis();
 }
 
@@ -69,17 +80,29 @@ void AP_ExternalAHRS_Xsens::update()
         port_open = true;
     }
     const uint32_t now = AP_HAL::millis();
-    static const uint8_t output_config[] {
+    static const uint8_t output_config_imu[] {
         0x20, 0x14, 0x00, 0x64, // quaternion in NED at 100 Hz
         0x80, 0x20, 0x00, 0x64, // gyro in sensor frame at 100 Hz
         0x40, 0x20, 0x00, 0x64, // acceleration in sensor frame at 100 Hz
         0x10, 0x20, 0x00, 0x64, // packet counter
     };
+    static const uint8_t output_config_imu_mag[] {
+        0x20, 0x14, 0x00, 0x64, // quaternion in NED at 100 Hz
+        0x80, 0x20, 0x00, 0x64, // gyro in sensor frame at 100 Hz
+        0x40, 0x20, 0x00, 0x64, // acceleration in sensor frame at 100 Hz
+        0xC0, 0x20, 0x00, 0x64, // magnetic field in sensor frame at 100 Hz
+        0x10, 0x20, 0x00, 0x64, // packet counter
+    };
+    const bool use_mag = AP::externalAHRS().has_sensor(AP_ExternalAHRS::AvailableSensor::COMPASS);
     if (setup_step == 0) {
         send_command(0x30, nullptr, 0); // GoToConfig
         setup_step = 1;
     } else if (setup_step == 1 && now - last_command_ms >= 100) {
-        send_command(0xC0, output_config, sizeof(output_config));
+        if (use_mag) {
+            send_command(0xC0, output_config_imu_mag, sizeof(output_config_imu_mag));
+        } else {
+            send_command(0xC0, output_config_imu, sizeof(output_config_imu));
+        }
         setup_step = 2;
     } else if (setup_step == 2 && now - last_command_ms >= 100) {
         send_command(0x10, nullptr, 0); // GoToMeasurement

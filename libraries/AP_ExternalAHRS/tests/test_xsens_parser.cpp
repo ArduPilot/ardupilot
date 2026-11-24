@@ -96,4 +96,32 @@ TEST(XsensParser, HandlesFragmentedStreamAndNoise)
     EXPECT_TRUE(parser.feed(packet.back(), sample));
 }
 
+TEST(XsensParser, DecodesOptionalMagnetometerField)
+{
+    AP_ExternalAHRS_Xsens_Parser parser;
+    AP_ExternalAHRS_Xsens_Parser::Sample sample {};
+    std::vector<uint8_t> payload;
+    const float quat[] = {1, 0, 0, 0};
+    const float accel[] = {0.0f, 0.0f, -9.81f};
+    const float gyro[] = {0.0f, 0.0f, 0.0f};
+    const float mag[] = {0.4f, -0.1f, 0.8f};
+    add_field(payload, 0x2014, quat, 4);
+    add_field(payload, 0x4020, accel, 3);
+    add_field(payload, 0x8020, gyro, 3);
+    add_field(payload, 0xC020, mag, 3);
+    payload.insert(payload.end(), {0x10, 0x20, 0x02, 0x00, 0x01});
+    std::vector<uint8_t> pkt {0xFA, 0xFF, 0x36, uint8_t(payload.size())};
+    pkt.insert(pkt.end(), payload.begin(), payload.end());
+    uint8_t sum = 0;
+    for (size_t i = 1; i < pkt.size(); i++) {
+        sum += pkt[i];
+    }
+    pkt.push_back(uint8_t(-sum));
+    EXPECT_TRUE(feed_packet(parser, pkt, sample));
+    EXPECT_TRUE(sample.have_mag);
+    EXPECT_FLOAT_EQ(sample.mag_au[0], 0.4f);
+    EXPECT_FLOAT_EQ(sample.mag_au[1], -0.1f);
+    EXPECT_FLOAT_EQ(sample.mag_au[2], 0.8f);
+}
+
 AP_GTEST_MAIN()

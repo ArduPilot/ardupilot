@@ -62,6 +62,7 @@ bool AP_ExternalAHRS_Xsens_Parser::decode(Sample &sample) const
     bool have_accel = false;
     bool have_gyro = false;
     bool have_counter = false;
+    bool have_mag = false;
     Sample parsed {};
     while (pos < end) {
         if (end - pos < 3) {
@@ -94,6 +95,15 @@ bool AP_ExternalAHRS_Xsens_Parser::decode(Sample &sample) const
             }
             (id == 0x4020 ? have_accel : have_gyro) = true;
             break;
+        case 0xC020: // calibrated magnetic field, arbitrary units
+            if (have_mag || length != 12) {
+                return false;
+            }
+            for (uint8_t i = 0; i < 3; i++) {
+                parsed.mag_au[i] = be_float(data + 4*i);
+            }
+            have_mag = true;
+            break;
         case 0x1020: // packet counter
             if (have_counter || length != 2) {
                 return false;
@@ -108,6 +118,14 @@ bool AP_ExternalAHRS_Xsens_Parser::decode(Sample &sample) const
     }
     if (!(have_quat && have_accel && have_gyro && have_counter)) {
         return false;
+    }
+    if (have_mag) {
+        for (float value : parsed.mag_au) {
+            if (!std::isfinite(value)) {
+                return false;
+            }
+        }
+        parsed.have_mag = true;
     }
     float norm2 = 0;
     for (float value : parsed.quaternion_wxyz) {

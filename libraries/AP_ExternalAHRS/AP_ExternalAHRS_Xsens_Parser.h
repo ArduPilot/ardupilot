@@ -15,7 +15,9 @@ public:
         float quaternion_wxyz[4];
         float accel_mps2[3];
         float gyro_rad_s[3];
+        float mag_au[3];
         uint16_t counter;
+        bool have_mag;
     };
 
     // Returns true only after a complete, valid MTData2 packet.
