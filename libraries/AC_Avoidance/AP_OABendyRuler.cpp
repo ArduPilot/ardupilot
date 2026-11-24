@@ -749,7 +749,9 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
         }
     }
 
-    // exclusion circles: exit straight out from the centre
+    // exclusion circles: exit straight out from the centre or, if that exit does not clear every
+    // fence, at the smallest angle either side of it that does.  From inside a circle the distance
+    // to a point on it grows with that angle, so the first exit found is the closest
     for (uint8_t i = 0; i < fence->polyfence().get_exclusion_circle_count(); i++) {
         Vector2f center_NE;
         float radius_m;
@@ -761,14 +763,32 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
             continue;
         }
         // at the centre there is no closest direction, so north is used
-        const Vector2f outward = center_to_vehicle.is_zero() ? Vector2f{1.0f, 0.0f} : center_to_vehicle.normalized();
-        const Vector2f candidate_NE = center_NE + outward * (radius_m * 100.0f + clearance_cm);
-        const float dist_sq = (candidate_NE - current_NE).length_squared();
-        Location candidate_loc;
-        if ((dist_sq < best_dist_sq) && exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, candidate_loc)) {
-            best_dist_sq = dist_sq;
-            exit_loc = candidate_loc;
-            found = true;
+        const Vector2f radial = center_to_vehicle.is_zero() ? Vector2f{1.0f, 0.0f} : center_to_vehicle.normalized();
+        const float exit_radius_cm = radius_m * 100.0f + clearance_cm;
+        bool done = false;
+        for (uint16_t step = 0; !done && (step <= 180 / OA_BENDYRULER_BEARING_INC_XY); step++) {
+            for (uint8_t side = 0; !done && (side <= 1); side++) {
+                // the first and last steps have a single direction
+                if ((side > 0) && ((step == 0) || (step == 180 / OA_BENDYRULER_BEARING_INC_XY))) {
+                    continue;
+                }
+                Vector2f outward = radial;
+                outward.rotate(radians(step * OA_BENDYRULER_BEARING_INC_XY * (side == 0 ? 1.0f : -1.0f)));
+                const Vector2f candidate_NE = center_NE + outward * exit_radius_cm;
+                const float dist_sq = (candidate_NE - current_NE).length_squared();
+                if (dist_sq >= best_dist_sq) {
+                    // every remaining exit from this circle is further away than the best so far
+                    done = true;
+                    continue;
+                }
+                Location candidate_loc;
+                if (exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, candidate_loc)) {
+                    best_dist_sq = dist_sq;
+                    exit_loc = candidate_loc;
+                    found = true;
+                    done = true;
+                }
+            }
         }
     }
 
