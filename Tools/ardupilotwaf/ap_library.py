@@ -266,7 +266,12 @@ def custom_flags_check(tgen):
     '''
     if not tgen.name.startswith("objs/"):
         return
+    # vehicle-dependent sources are in objs/<library>/<vehicle> (idx != 0);
+    # library names can contain '/' themselves (e.g. AP_ADSB/sagetech-sdk,
+    # modules/DroneCAN/libcanard/*.c), so only strip the vehicle
     libname = tgen.name[5:]
+    if tgen.idx != 0:
+        libname = libname.rsplit('/', 1)[0]
     # append_value() copies the list into this task generator's env first,
     # extend() would also change the list it shares with every other one
     if libname in tgen.env.AP_LIB_EXTRA_CXXFLAGS:
