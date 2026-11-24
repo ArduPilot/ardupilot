@@ -2390,6 +2390,8 @@ void AP_Param::check_removed_param(const char *pname)
 {
     static const char *const removed_prefixes[] {
         "RCMAP_",  // replaced by RCn_OPTION in ArduPilot-4.8
+        "FLTMODE_CH",  // replaced by RCn_OPTION=Mode in ArduPilot-4.8
+        "MODE_CH",  // Rover's FLTMODE_CH
     };
     if (_removed_param_in_defaults[0] != 0) {
         // report only the first
