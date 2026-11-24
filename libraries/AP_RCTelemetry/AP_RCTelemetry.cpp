@@ -321,7 +321,6 @@ float AP_RCTelemetry::get_vspeed_ms(void)
  */
 float AP_RCTelemetry::get_nav_alt_m(Location::AltFrame frame)
 {
-    Location loc;
     float current_height = 0;
 
     AP_AHRS &_ahrs = AP::ahrs();
@@ -332,6 +331,7 @@ float AP_RCTelemetry::get_nav_alt_m(Location::AltFrame frame)
         return -current_height;
     }
 
+    AbsAltLocation loc;
     if (_ahrs.get_location(loc)) {
         if (!loc.get_alt_m(frame, current_height)) {
             // ignore this error
