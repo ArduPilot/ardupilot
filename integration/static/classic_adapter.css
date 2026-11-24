@@ -1,0 +1,39 @@
+#atal-port-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10000;
+  padding: 9px 16px;
+  background: #12354c;
+  border-bottom: 1px solid #38bdf8;
+  color: #e7f6ff;
+  font: 600 12px Inter, sans-serif;
+  letter-spacing: .02em;
+}
+#atal-port-banner.demo { background: #594013; border-color: #fbbf24; }
+#atal-port-banner.disconnected { background: #601d27; border-color: #fb7185; }
+#atal-port-banner a { color: inherit; text-decoration: underline; margin-left: 12px; }
+.atal-readonly-card { padding: 14px; margin-bottom: 10px; }
+.atal-readonly-card .atal-kv { display: flex; justify-content: space-between; gap: 12px;
+  padding: 7px 0; border-bottom: 1px solid var(--bd2); font-size: 12px; }
+.atal-readonly-card .atal-kv b { font-family: 'JetBrains Mono', monospace; }
+.atal-unported { max-width: 900px; margin: 14px auto; padding: 12px 16px; border: 1px solid #fbbf24;
+  border-radius: 6px; background: rgba(251, 191, 36, .10); color: var(--tx); font-size: 12px; }
+.atal-disabled { opacity: .45 !important; cursor: not-allowed !important; }
+#atal-raw { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.5 'JetBrains Mono', monospace;
+  background: var(--bg0); color: var(--tx); padding: 16px; border: 1px solid var(--bd2); border-radius: 8px; }
+body { overflow-x: hidden; }
+.nav { max-width: 100vw; overflow-x: auto; white-space: nowrap; }
+.nav button, .nav a { flex: 0 0 auto; }
+.sum-grid { min-width: 0; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); }
+.sum-col, .sum-col .card { min-width: 0; }
+#p-sum .effort-section { display: none; }
+.panel:not(#p-sum):not(#p-raw):not(#p-gate) > :not(.atal-unported):not(.atal-supported) { opacity: .42; pointer-events: none; }
+#p-gate .gate-bar, #p-gate #gate-aim-view { display: none; }
+.atal-chart { display: block; width: 100%; height: 220px; border: 1px solid var(--bd2);
+  border-radius: 6px; background: var(--bg0); margin: 10px 0 18px; }
+.atal-chart-note { color: var(--tx3); font-size: 11px; line-height: 1.5; }
+@media (max-width: 1100px) {
+  .sum-grid { grid-template-columns: minmax(0, 1fr); }
+  .hdr { flex-wrap: wrap; gap: 10px; }
+  .hdr-pills { flex-wrap: wrap; }
+}

@@ -63,8 +63,19 @@ def main():
                     assert ("AUV-IITK Control" in page and "Motor output / SERVO channels" in page
                             and "Mission Status" in page and 'id="ekf-status"' in page
                             and 'id="p-mission-builder"' in page and 'id="mission-validate"' in page)
+                    with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/classic", timeout=0.5) as response:
+                        classic = response.read().decode("utf-8")
+                        assert response.headers["Content-Security-Policy"].startswith("default-src 'self'")
+                    assert ('id="ai-canvas"' in classic and 'id="v-r"' in classic
+                            and 'id="p-raw"' in classic and 'id="p-mission"' in classic)
+                    assert classic.count("<script") == 1
+                    assert '<script src="/static/classic_adapter.js"></script>' in classic
+                    assert "function toggleArm" not in classic
                     for asset in ("ros_dashboard.css", "operator_dashboard.css", "operator_dashboard.js", "img/auv_logo.svg"):
                         with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/static/{asset}", timeout=0.5) as response:
+                            assert response.status == 200 and response.read()
+                    for asset in ("dashboard.css", "img/auv_logo.svg"):
+                        with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/reference-static/{asset}", timeout=0.5) as response:
                             assert response.status == 200 and response.read()
                     with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/diagnostics", timeout=0.5) as response:
                         assert "Vehicle telemetry" in response.read().decode()

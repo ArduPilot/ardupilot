@@ -10,16 +10,32 @@ import threading
 import time
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, request, send_file
+from flask import Flask, Response, jsonify, request, send_file, send_from_directory
 from pymavlink import mavutil
 
 from dashboard_telemetry import DashboardTelemetry
 from dashboard_recorder import DashboardRecorder
 from mission_queue import validate_ros_waypoints
+from classic_dashboard import render_classic_dashboard
 
 
 def make_app(telemetry, lock, recorder=None, demo_mode=False):
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder="reference_dashboard/templates")
+
+    @app.get("/classic")
+    def classic_dashboard():
+        response = Response(render_classic_dashboard(), mimetype="text/html")
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; connect-src 'self'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    @app.get("/reference-static/<path:filename>")
+    def reference_static(filename):
+        return send_from_directory(Path(__file__).with_name("reference_dashboard") / "static", filename)
 
     @app.get("/")
     def dashboard():
