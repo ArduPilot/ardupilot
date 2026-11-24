@@ -24003,6 +24003,18 @@ RTL_ALT_M 111
         # SYSTEM_TIME is not sent in the config error loop
         self.wait_statustext("Config Error: RCMAP_ROLL in defaults file", wallclock_timeout=True)
 
+    def FlightModeChannelInDefaultsFile(self):
+        '''test that FLTMODE_CH in a defaults file is a config error'''
+        defaults_file = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults_file.write("FLTMODE_CH 6\n")
+        defaults_file.close()
+        # wipe so a previous FLTMODE_CH conversion can't mask the problem
+        self.customise_SITL_commandline([],
+                                        defaults_filepath=defaults_file.name,
+                                        wipe=True)
+        # SYSTEM_TIME is not sent in the config error loop
+        self.wait_statustext("Config Error: FLTMODE_CH in defaults file", wallclock_timeout=True)
+
     def ControlChannelBinding(self):
         '''control inputs are bound at boot; a missing or moved one is a pre-arm failure'''
         self.context_push()
@@ -26064,6 +26076,7 @@ return update, 1000
             self.ReadOnlyDefaults,
             self.SerialPassthru,
             self.RCMAPInDefaultsFile,
+            self.FlightModeChannelInDefaultsFile,
             self.ControlChannelBinding,
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,

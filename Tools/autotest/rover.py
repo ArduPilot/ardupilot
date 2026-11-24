@@ -7470,6 +7470,18 @@ return update()
         self.assert_prearm_failure("Duplicate Aux Switch Options")
         self.assert_arm_failure("Duplicate Aux Switch Options")
 
+    def ModeChannelInDefaultsFile(self):
+        '''test that MODE_CH in a defaults file is a config error'''
+        defaults_file = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults_file.write("MODE_CH 7\n")
+        defaults_file.close()
+        # wipe so a previous MODE_CH conversion can't mask the problem
+        self.customise_SITL_commandline([],
+                                        defaults_filepath=defaults_file.name,
+                                        wipe=True)
+        # SYSTEM_TIME is not sent in the config error loop
+        self.wait_statustext("Config Error: MODE_CH in defaults file", wallclock_timeout=True)
+
     def RCModeChannelChanged(self):
         '''ensure moving the mode channel without a reboot is a pre-arm failure'''
         self.context_push()
@@ -8714,6 +8726,7 @@ return update()
             self.OpticalFlow,
             self.RCDuplicateOptionsExist,
             self.RCModeChannelChanged,
+            self.ModeChannelInDefaultsFile,
             self.ClearMission,
             self.JammingSimulation,
             self.BatteryInvalid,
