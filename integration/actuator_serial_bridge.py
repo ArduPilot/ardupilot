@@ -54,8 +54,9 @@ def read_session(serial_port, timeout_s=5):
     raise TimeoutError("ESP32 session announcement not received")
 
 
-def run(serial_port, udp_port, session, stop):
-    adapter = ActuatorAdapter(load_motor_order(), session, pwm_interval_ms=20)
+def run(serial_port, udp_port, session, stop, order=None):
+    adapter = ActuatorAdapter(load_motor_order() if order is None else order,
+                              session, pwm_interval_ms=20)
     status = StatusMonitor()
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as receiver:
         receiver.bind(("127.0.0.1", udp_port))
@@ -91,6 +92,7 @@ def main():
     args = parser.parse_args()
     if not args.enable_hardware or not json.loads(args.config.read_text())["actuators"]["enabled"]:
         parser.error("serial bridge disabled: require --enable-hardware and actuators.enabled=true")
+    order = load_motor_order(args.config, allow_enabled=True)
     import serial
     stopping = False
 
@@ -101,7 +103,7 @@ def main():
     signal.signal(signal.SIGTERM, request_stop)
     with serial.Serial(args.device, 115200, timeout=0.1, write_timeout=0.2) as serial_port:
         session = read_session(serial_port)
-        run(serial_port, args.port, session, lambda: stopping)
+        run(serial_port, args.port, session, lambda: stopping, order)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from actuator_serial_bridge import StatusMonitor, read_session, run
+from rcoutput_mapping import load_motor_order, motors_in_esp_order
 from test_actuator_adapter import observation
 
 
@@ -70,7 +71,15 @@ class SessionTests(unittest.TestCase):
         tty.setraw(master)
         with tempfile.TemporaryDirectory() as tmp:
             config = Path(tmp) / "vehicle.json"
-            config.write_text(json.dumps({"actuators": {"enabled": True}}))
+            defaults = json.loads(Path(__file__).with_name("vehicle_defaults.json").read_text())
+            defaults["actuators"]["enabled"] = True
+            motors = defaults["actuators"]["motors"]
+            motors[0]["esp32_gpio"], motors[1]["esp32_gpio"] = (
+                motors[1]["esp32_gpio"], motors[0]["esp32_gpio"])
+            config.write_text(json.dumps(defaults))
+            native_motors = (1550, 1550, 1450, 1450, 1500, 1500, 1500, 1500)
+            expected = motors_in_esp_order(native_motors,
+                                           load_motor_order(config, allow_enabled=True))
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
                 probe.bind(("127.0.0.1", 0))
                 port = probe.getsockname()[1]
@@ -94,7 +103,7 @@ class SessionTests(unittest.TestCase):
                     time.sleep(0.15)
                     sender.sendto(observation(False), ("127.0.0.1", port))
                     time.sleep(0.05)
-                    sender.sendto(observation(True), ("127.0.0.1", port))
+                    sender.sendto(observation(True, native_motors), ("127.0.0.1", port))
                     last_observation_at = time.monotonic()
                 output = b""
                 deadline = time.monotonic() + 2
@@ -103,6 +112,8 @@ class SessionTests(unittest.TestCase):
                         output += os.read(master, 4096)
                 self.assertIn(b"A1,ARM,1234ABCD,1,", output)
                 self.assertIn(b"A1,PWM,1234ABCD,2,", output)
+                pwm = next(line for line in output.decode("ascii").splitlines() if ",PWM," in line)
+                self.assertEqual(tuple(map(int, pwm.split(",")[4:12])), expected)
                 deadline = time.monotonic() + 2
                 while b",DISARM," not in output and time.monotonic() < deadline:
                     if select.select([master], [], [], 0.1)[0]:

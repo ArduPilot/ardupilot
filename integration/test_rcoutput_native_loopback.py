@@ -65,7 +65,9 @@ def main():
             bridge_master, bridge_slave = pty.openpty()
             tty.setraw(bridge_master)
             bridge_config = Path(directory) / "bridge.json"
-            bridge_config.write_text(json.dumps({"actuators": {"enabled": True}}))
+            bridge_defaults = json.loads((ROOT / "integration/vehicle_defaults.json").read_text())
+            bridge_defaults["actuators"]["enabled"] = True
+            bridge_config.write_text(json.dumps(bridge_defaults))
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
                 probe.bind(("127.0.0.1", 0))
                 bridge_port = probe.getsockname()[1]

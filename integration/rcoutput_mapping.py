@@ -9,9 +9,10 @@ import json
 from check_layout import CONFIG, MOTOR_DEFAULTS, MOTORS, check_motor_defaults, mapping, upstream_factors
 
 
-def load_motor_order():
-    config = json.loads(CONFIG.read_text())
-    resolved = mapping(config, upstream_factors(MOTORS.read_text()))
+def load_motor_order(config_path=CONFIG, allow_enabled=False):
+    config = json.loads(config_path.read_text())
+    resolved = mapping(config, upstream_factors(MOTORS.read_text()),
+                       require_disabled=not allow_enabled)
     check_motor_defaults(resolved, config["actuators"], MOTOR_DEFAULTS.read_text())
     return tuple(resolved[number]["esp32_id"] - 1 for number in range(1, 9))
 

@@ -49,10 +49,12 @@ def rank(rows, tolerance=1e-9):
     return pivots
 
 
-def mapping(config, upstream):
+def mapping(config, upstream, require_disabled=True):
     actuators = config["actuators"]
-    if actuators["enabled"] is not False:
+    if require_disabled and actuators["enabled"] is not False:
         raise ValueError("Development configuration must keep actuators disabled")
+    if type(actuators["enabled"]) is not bool:
+        raise ValueError("actuators.enabled must be a boolean")
     motors = actuators["motors"]
     pins = actuators["firmware_esp32_id_to_gpio"]
     if len(motors) != 8 or len(pins) != 8 or len(set(pins)) != 8:
