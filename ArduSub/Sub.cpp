@@ -436,7 +436,7 @@ float Sub::get_alt_msl() const
         return 0;
     }
 
-    Location origin;
+    AbsAltLocation origin;
     if (!ahrs.get_origin(origin)) {
         return 0;
     }
@@ -449,7 +449,7 @@ float Sub::get_alt_msl() const
     }
 
     // add in the ekf origin altitude
-    posD -= static_cast<float>(origin.alt) * 0.01f;
+    posD -= static_cast<float>(origin.get_alt_cm()) * 0.01f;
 
     // convert down to up
     return -posD;

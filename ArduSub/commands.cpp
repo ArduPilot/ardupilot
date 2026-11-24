@@ -16,7 +16,7 @@ void Sub::update_home_from_EKF()
 bool Sub::set_home_to_current_location(bool lock)
 {
     // get current location from EKF
-    Location temp_loc;
+    AbsAltLocation temp_loc;
     if (ahrs.get_location(temp_loc)) {
 
         // Make home always at the water's surface.
@@ -31,7 +31,7 @@ bool Sub::set_home_to_current_location(bool lock)
 
 // set_home - sets ahrs home (used for RTL) to specified location
 //  returns true if home location set successfully
-bool Sub::set_home(const Location& loc, bool lock)
+bool Sub::set_home(const AbsAltLocation& loc, bool lock)
 {
     // check if EKF origin has been set
     if (!ahrs.has_origin()) {

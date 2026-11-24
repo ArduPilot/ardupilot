@@ -637,7 +637,8 @@ void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
             // silently ignore this failure
         }
     } else {
-        if (!set_home(cmd.content.location, false)) {
+        AbsAltLocation loc;
+        if (!loc.from(cmd.content.location) || !set_home(loc, false)) {
             // silently ignore this failure
         }
     }
