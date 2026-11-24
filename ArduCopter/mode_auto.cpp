@@ -325,14 +325,23 @@ bool ModeAuto::return_path_or_jump_to_landing_sequence_auto_RTL(ModeReason reaso
 
 // moving a stopped mission starts its nav command, which overwrites the current
 // mode's waypoint destination, so run set_mode's checks for AUTO before moving it.
-// ModeAuto::init() can still refuse afterwards
+// The landing sequence or return path is chosen from the position estimate, and the
+// submode set_mode() would check is only known once the mission has moved, so a
+// position is required here.  ModeAuto::init() can still refuse afterwards
 bool ModeAuto::auto_rtl_entry_allowed(ModeReason reason)
 {
     if (copter.flightmode == this) {
         return true;
     }
-    return copter.gcs_mode_change_allowed(Number::AUTO, reason) &&
-           copter.mode_change_checks_passed(this, !motors->armed(), reason);
+    if (!copter.gcs_mode_change_allowed(Number::AUTO, reason) ||
+        !copter.mode_change_checks_passed(this, !motors->armed(), reason)) {
+        return false;
+    }
+    if (motors->armed() && !copter.position_ok()) {
+        copter.mode_change_failed(this, "requires position");
+        return false;
+    }
+    return true;
 }
 
 // Enter auto rtl pseudo mode
