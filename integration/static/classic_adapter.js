@@ -71,6 +71,8 @@
     '<div class="atal-kv">Mission <b id="atal-mission">—</b></div>';
   const sum = $('p-sum');
   const columns = sum ? sum.querySelectorAll('.sum-col') : [];
+  const outputHeading = $('octo-canvas')?.parentElement?.querySelector('.ct');
+  if (outputHeading) outputHeading.textContent = 'SERVO 1–8 · REPORTED PWM';
   if (columns.length) {
     // Keep the original orientation/depth/thruster card. Other dashboard cards
     // display ROS controller state or controls that have no ArduSub equivalent.
@@ -209,7 +211,7 @@
       const delta = Number.isFinite(pwm) ? pwm - 1500 : 0;
       ctx.fillStyle = '#a8c3d5';
       ctx.textAlign = 'left';
-      ctx.fillText(`M${index + 1}  ${pwm ?? '—'} μs`, x, y);
+      ctx.fillText(`S${index + 1}  ${pwm ?? '—'} μs`, x, y);
       ctx.fillStyle = delta > 0 ? '#22c55e' : delta < 0 ? '#fb7185' : '#64748b';
       ctx.fillRect(x, y + 8, Math.min(110, Math.abs(delta) / 4), 7);
     });
