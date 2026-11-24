@@ -5315,8 +5315,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.takeoff(3, mode="LOITER")
         self.delay_sim_time(10, reason="AGL KF to settle in the hover")
+        rng_hover = self.get_rangefinder_distance()
         step_s = self.get_sim_time()
         self.set_parameter("SIM_SONAR_OFFSET", 1)
+        # the half second is counted from the range finder reporting the step, not from the
+        # parameter being acknowledged, which lands a varying time after the step
+        self.wait_rangefinder_distance(rng_hover + 0.8, rng_hover + 1.5)
         self.delay_sim_time(0.5, reason="AGL KF to pick up an upward velocity from the step")
         self.set_parameter("RNGFND1_MIN", 10)
         low_s = self.get_sim_time()
