@@ -55,7 +55,7 @@ def main():
         raise SystemExit("Build with integration/atal_loopback_output.hwdef first")
     receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     receiver.bind(("127.0.0.1", 14660))
-    receiver.settimeout(0.2)
+    receiver.settimeout(0.01)
     with tempfile.TemporaryDirectory(prefix="atal-rcoutput-") as directory:
         bridge = None
         bridge_master = bridge_slave = None
@@ -94,21 +94,33 @@ def main():
             os.write(bridge_master, b"A1,SESSION,1234ABCD," + challenge + b"\n")
         xsens_master, xsens_slave = pty.openpty()
         depth_master, depth_slave = pty.openpty()
+        tty.setraw(xsens_master)
+        tty.setraw(depth_master)
+        tty.setraw(xsens_slave)
+        tty.setraw(depth_slave)
         defaults = Path(directory) / "defaults.parm"
         defaults.write_text(
             "EAHRS_TYPE 12\nEAHRS_RATE 100\nEAHRS_SENSORS 2\n"
             "SERIAL1_PROTOCOL 36\nSERIAL1_BAUD 115\n"
             "SERIAL2_PROTOCOL 51\nSERIAL2_BAUD 115\n"
+            "SERIAL3_PROTOCOL 2\nSERIAL3_BAUD 115\n"
             "BARO_SPEC_GRAV 1.0\n"
-            + ("ARMING_CHECK 0\n" if active else "")
+            + ("ARMING_CHECK 0\nFS_PILOT_INPUT 0\nFS_GCS_ENABLE 0\n" if active else "")
             + (ROOT / "integration/atal_motor_defaults.parm").read_text()
         )
-        connection = mavutil.mavlink_connection("udpin:127.0.0.1:0")
-        telemetry_port = connection.port.getsockname()[1]
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sp:
+            sp.bind(("127.0.0.1", 0))
+            telemetry_port = sp.getsockname()[1]
+        connection = mavutil.mavlink_connection(f"udpin:127.0.0.1:{telemetry_port}")
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s0_probe:
+            s0_probe.bind(("127.0.0.1", 0))
+            serial0_port = s0_probe.getsockname()[1]
         process = subprocess.Popen(
-            [str(BINARY), "--serial0", f"udp:127.0.0.1:{telemetry_port}",
+            [str(BINARY), "--serial0", f"udp:127.0.0.1:{serial0_port}",
              "--serial1", os.ttyname(xsens_slave),
-             "--serial2", os.ttyname(depth_slave), "--defaults", str(defaults),
+             "--serial2", os.ttyname(depth_slave),
+             "--serial3", f"udp:127.0.0.1:{telemetry_port}",
+             "--defaults", str(defaults),
              "--log-directory", directory, "--storage-directory", directory,
              "--terrain-directory", directory],
             cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -116,9 +128,11 @@ def main():
         )
         payload = (
             data_item(0x2014, struct.pack(">4f", 1, 0, 0, 0))
-            + data_item(0x8020, struct.pack(">3f", 0.1, 0.2, 0.3))
-            + data_item(0x4020, struct.pack(">3f", 1.0, 2.0, -9.81))
+            + data_item(0x8020, struct.pack(">3f", 0.0, 0.0, 0.0))
+            + data_item(0x4020, struct.pack(">3f", 0.0, 0.0, -9.81))
         )
+        statustexts = []
+        ack_results = []
         count = 0
         seen = 0
         arm_requested = False
@@ -128,21 +142,45 @@ def main():
         arm_frame = None
         target_pwm_frame = None
         disarm_frame = None
+        seen_mtypes = set()
+        got_heartbeat = False
+        last_sensor_s = 0.0
+        last_arm_req_s = 0.0
+        arm_attempts = 0
         try:
             deadline = time.monotonic() + (12 if active else 8)
             while time.monotonic() < deadline and process.poll() is None:
-                os.write(xsens_master, packet(0x36, payload + data_item(0x1020, count.to_bytes(2, "big"))))
-                os.write(depth_master, b"DEPTH:1025.50,23.40,1.2500\n")
-                message = connection.recv_match(blocking=False)
-                if active and seen >= 10 and message is not None and not arm_requested:
+                now = time.monotonic()
+                if now - last_sensor_s >= 0.01:
+                    if select.select([], [xsens_master], [], 0)[1]:
+                        os.write(xsens_master, packet(0x36, payload + data_item(0x1020, count.to_bytes(2, "big"))))
+                        count = (count + 1) & 0xFFFF
+                    if select.select([], [depth_master], [], 0)[1]:
+                        os.write(depth_master, b"DEPTH:1025.50,23.40,1.2500\n")
+                    last_sensor_s = now
+                while True:
+                    message = connection.recv_match(blocking=False)
+                    if message is None:
+                        break
+                    mtype = message.get_type()
+                    seen_mtypes.add(mtype)
+                    if mtype == "HEARTBEAT":
+                        got_heartbeat = True
+                    elif mtype == "STATUSTEXT":
+                        statustexts.append(message.text)
+                    elif mtype == "COMMAND_ACK":
+                        ack_results.append((message.command, message.result))
+                if (active and got_heartbeat and seen >= 25
+                        and not disarm_requested and not arm_frame and (now - last_arm_req_s >= 0.4)):
                     connection.mav.command_long_send(
                         1, 1, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                        0, 1, 0, 0, 0, 0, 0, 0,
+                        0, 1, 21196, 0, 0, 0, 0, 0,
                     )
                     arm_requested = True
+                    arm_attempts += 1
+                    last_arm_req_s = now
                 if active and arm_requested and not disarm_requested:
                     connection.mav.manual_control_send(1, 500, 0, 500, 0, 0)
-                count = (count + 1) & 0xFFFF
                 try:
                     frame = receiver.recv(256)
                 except socket.timeout:
@@ -174,7 +212,7 @@ def main():
                         target_pwm_frame = next((command for command in adapter_frames if ",PWM," in command), None)
                         if forward_seen_ms is None:
                             forward_seen_ms = time.monotonic()
-                        if serial_pty and time.monotonic() - forward_seen_ms < 0.1:
+                        if serial_pty and time.monotonic() - forward_seen_ms < 0.25:
                             continue
                         connection.mav.command_long_send(
                             1, 1, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -215,7 +253,11 @@ def main():
                 if not active and seen >= 10 and any(values[:8]):
                     print(f"Observed {seen} disarmed native RCOutput frames on localhost; motor channels={values[:8]}")
                     return
-            raise SystemExit(f"No expected RCOutput stream; frames={seen}, arm_requested={arm_requested}, disarm_requested={disarm_requested}, process={process.poll()}")
+            raise SystemExit(
+                f"No expected RCOutput stream; frames={seen}, arm_requested={arm_requested}, "
+                f"disarm_requested={disarm_requested}, process={process.poll()}, "
+                f"mtypes={sorted(seen_mtypes)}, acks={ack_results[-5:]}, statustexts={statustexts[-5:]}"
+            )
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
