@@ -3835,11 +3835,12 @@ function ahrs:set_home(loc) end
 ---@return Vector3f_ud|nil
 function ahrs:get_vel_innovations_and_variances_for_source(source) end
 
--- desc
+-- set the EKF position, velocity and yaw source set, returning false if it was not selected
 ---@param source_set_idx integer
 ---| '0' # PRIMARY
 ---| '1' # SECONDARY
 ---| '2' # TERTIARY
+---@return boolean
 function ahrs:set_posvelyaw_source_set(source_set_idx) end
 
 -- desc
