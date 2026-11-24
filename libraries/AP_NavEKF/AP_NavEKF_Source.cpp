@@ -149,7 +149,8 @@ AP_NavEKF_Source::AP_NavEKF_Source()
 }
 
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void AP_NavEKF_Source::setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelection source_set_idx)
+// returns false if the set was not selected, leaving the active set as it was
+bool AP_NavEKF_Source::setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelection source_set_idx)
 {
     // sanity check source idx
     if ((uint8_t)source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
@@ -162,7 +163,9 @@ void AP_NavEKF_Source::setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelectio
         };
         AP::logger().Write_Event(evt[active_source_set]);
 #endif
+        return true;
     }
+    return false;
 }
 
 // true/false of whether velocity source should be used
