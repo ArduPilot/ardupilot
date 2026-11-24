@@ -1,5 +1,7 @@
 # Editable vehicle defaults and software checks
 
+For the migration brief's complete open-item list, see `docs/ardusub_migration/16_remaining_work.md`. The entries below are software development defaults, not a vehicle deployment configuration.
+
 `atal_companion.launch.py` starts only the ROS 2 gate link and proposal-only guidance nodes. Source ROS Humble and a build of `auv_interfaces_ros2` plus `auv_control_ros2` from the read-only reference, then run `ros2 launch integration/atal_companion.launch.py`. It does not start the reference `control_system.launch.py`, open sensor/actuator ports, or send MAVLink commands. Nano gate detections are an independent input; no ArduSub guidance-command bridge exists yet.
 
 To show those ROS proposals on the read-only dashboard, start `dashboard_api.py` from the same sourced shell with `--gate-ros`. Without it, the Gate Guidance card remains unavailable. The optional subscriber reads only the gate link and guidance topics; it sends no MAVLink or ROS commands. Proposal axes clear after 0.5 s without a fresh valid linked message. A disposable ROS package build and live companion/API smoke test confirmed the card's backing API receives `WAIT_FOR_LINK` while no Nano detections exist.

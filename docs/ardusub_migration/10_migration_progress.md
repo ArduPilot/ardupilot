@@ -20,7 +20,7 @@
 
 ## Current state
 
-M1 reference baseline: complete. M2 native build and software-test runtime: complete; physical sensor and output paths are unverified. The generic Linux board has no default IMU and an `Empty::RCOutput` driver. `integration/vehicle_defaults.json` and `integration/atal_sensor_defaults.parm` preserve editable provisional ROS defaults; `integration/check_layout.py` validates the geometry's six-axis rank and unique mapping to upstream Vectored-6DOF factors. The non-actuating A50 velocity bridge has passed a native synthetic EKF chain replay with bottom-lock loss and recovery; real A50 and navigation readiness remain unverified. No actuator driver, firmware change or real vehicle operation has been performed. Physical actuator interface remains absent.
+M1 reference baseline: complete. M2 native build and software-test runtime: complete; physical sensor and output paths are unverified. The generic Linux board has no default IMU and an `Empty::RCOutput` driver. `integration/vehicle_defaults.json` and `integration/atal_sensor_defaults.parm` preserve editable provisional ROS defaults; `integration/check_layout.py` validates the geometry's six-axis rank and unique mapping to upstream Vectored-6DOF factors. The non-actuating A50 velocity bridge has passed a native synthetic EKF chain replay with bottom-lock loss and recovery; real A50 and navigation readiness remain unverified. This earlier snapshot predated the opt-in RCOutput observer and guarded serial bridge described below. Physical actuator output remains absent.
 
 ## 2026-11-21 software continuation
 
@@ -34,7 +34,7 @@ M1 reference baseline: complete. M2 native build and software-test runtime: comp
 
 ## Next evidence
 
-Next, keep working in software: decide the documented ROS-versus-ArduSub saturation/PWM policy; assemble a ROS companion launch containing only high-level modules; and port remaining dashboard mission and camera workflows to explicit ArduSub-facing APIs. The guarded frame path now passes an isolated simulator replay using native mixer observations, but no deployed ESP32 firmware or actuator transport consumes it. Prove single-owner behavior and injected fault recovery in loopback/SITL before any physical output path is enabled. Leave measured Xsens/A50 mounting, Bar30 surface zero, real sensor timing, ESP32 wiring/firmware confirmation, E-stop verification and wet commissioning for the final supervised hardware phase. All current values remain editable ROS-derived placeholders.
+Next, keep working in software: decide the documented ROS-versus-ArduSub saturation/PWM policy; extend the proposal-only ROS companion to a validated high-level interface; and port remaining dashboard mission and camera workflows to explicit ArduSub-facing APIs. The guarded frame path now passes a native mixer-to-serial pseudo-terminal replay, but no deployed ESP32 firmware or physical actuator output consumes it. Prove single-owner behavior and injected fault recovery in loopback/SITL before any physical output path is enabled. Leave measured Xsens/A50 mounting, Bar30 surface zero, real sensor timing, ESP32 wiring/firmware confirmation, E-stop verification and wet commissioning for the final supervised hardware phase. All current values remain editable ROS-derived placeholders.
 
 ## 2026-11-22 dashboard UI continuation
 
