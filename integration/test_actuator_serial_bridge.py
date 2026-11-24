@@ -95,6 +95,7 @@ class SessionTests(unittest.TestCase):
                     sender.sendto(observation(False), ("127.0.0.1", port))
                     time.sleep(0.05)
                     sender.sendto(observation(True), ("127.0.0.1", port))
+                    last_observation_at = time.monotonic()
                 output = b""
                 deadline = time.monotonic() + 2
                 while b",PWM," not in output and time.monotonic() < deadline:
@@ -102,12 +103,14 @@ class SessionTests(unittest.TestCase):
                         output += os.read(master, 4096)
                 self.assertIn(b"A1,ARM,1234ABCD,1,", output)
                 self.assertIn(b"A1,PWM,1234ABCD,2,", output)
-                process.terminate()
                 deadline = time.monotonic() + 2
                 while b",DISARM," not in output and time.monotonic() < deadline:
                     if select.select([master], [], [], 0.1)[0]:
                         output += os.read(master, 4096)
                 self.assertIn(b",DISARM,", output)
+                self.assertLess(time.monotonic() - last_observation_at, 0.8)
+                self.assertIsNone(process.poll(), "bridge should stay alive after source timeout")
+                process.terminate()
                 self.assertEqual(process.wait(timeout=2), 0)
             finally:
                 if process.poll() is None:
