@@ -87,7 +87,9 @@ function render(s, requestFailed = false) {
   $('imu-rate').textContent = s.imu_alive ? number(s.imu_hz, 0) : '—';
   const banner = $('conn-banner');
   banner.className = s.link_alive ? 'live' : hadLink || requestFailed ? 'lost' : '';
-  banner.textContent = requestFailed ? 'Dashboard cannot reach telemetry API' : s.link_alive ? 'ArduSub telemetry connected · read-only display' : hadLink ? 'ArduSub telemetry lost · values shown only when fresh' : 'Waiting for ArduSub telemetry';
+  banner.textContent = requestFailed ? 'Dashboard cannot reach telemetry API' : s.demo_mode ?
+    s.link_alive ? 'SOFTWARE DEMO · synthetic sensors · no vehicle connected' : 'SOFTWARE DEMO · waiting for synthetic ArduSub telemetry' :
+    s.link_alive ? 'ArduSub telemetry connected · read-only display' : hadLink ? 'ArduSub telemetry lost · values shown only when fresh' : 'Waiting for ArduSub telemetry';
 
   for (const key of ['roll', 'pitch', 'yaw']) $(key).textContent = s.imu_alive ? number(s[key]) : '—';
   const horizon = $('horizon');

@@ -1,0 +1,81 @@
+<div id="p-mission" class="panel">
+  <style>
+    #p-mission .tm-wrap {max-width:1360px;margin:16px auto;padding:0 12px;display:grid;gap:14px;}
+    #p-mission .card {padding:18px;min-width:0;}
+    #p-mission .tm-grid {display:grid;grid-template-columns:240px 1fr 300px;gap:14px;align-items:start;}
+    #p-mission .tm-actions {display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+    #p-mission .tm-actions button {width:auto;margin:0;padding:8px 12px;}
+    #p-mission button:disabled {opacity:.4;cursor:not-allowed;}
+    #p-mission .tm-muted {font-size:12px;color:var(--tx3);line-height:1.6;}
+    #p-mission input,#p-mission select {box-sizing:border-box;width:100%;padding:8px;margin:5px 0 12px;background:var(--bg3);color:var(--tx);border:1px solid var(--bd2);border-radius:5px;}
+    #p-mission label {font-size:12px;display:block;}
+    #p-mission #tm-fields {display:grid;grid-template-columns:1fr 1fr;gap:0 10px;}
+    #p-mission #tm-fields label {min-width:0;}
+    #p-mission .tm-block {display:flex;align-items:center;gap:10px;padding:12px;margin:8px 0;border:1px solid var(--bd2);border-left:4px solid #38bdf8;border-radius:7px;background:var(--bg3);}
+    #p-mission .tm-block.selected {border-color:#38bdf8;}
+    #p-mission .tm-block.current {border-left-color:#34d399;box-shadow:0 0 0 1px #34d399;}
+    #p-mission .tm-block button {cursor:pointer;background:transparent;color:var(--tx);border:0;padding:5px;}
+    #p-mission .tm-select {text-align:left;flex:1;min-width:0;}
+    #p-mission .tm-lane {display:flex;min-height:34px;margin:5px 0;}
+    #p-mission .tm-segment {min-width:1px;overflow:hidden;border:1px solid var(--bg0);padding:6px 2px;box-sizing:border-box;font-size:11px;white-space:nowrap;cursor:pointer;}
+    #p-mission .tm-track {min-width:600px;}
+    #p-mission .tm-playhead {position:absolute;top:0;bottom:0;width:2px;background:#fbbf24;pointer-events:none;}
+    #p-mission progress {width:100%;accent-color:#34d399;}
+    @media(max-width:1000px) { #p-mission .tm-grid {grid-template-columns:1fr;} }
+  </style>
+  <div class="tm-wrap">
+    <div class="card">
+      <div class="ct">MISSION BUILDER · CONTROLLER TARGETS</div>
+      <h2 style="margin:10px 0;">Build a sequence. See it on the timeline.</h2>
+      <p class="tm-muted">Reach roll/pitch/yaw/depth targets using your existing controllers, add timed translation, and insert settling breaks anywhere. No waypoint navigation.</p>
+      <div id="tm-feedback" role="status" aria-live="polite">Loading mission library…</div>
+    </div>
+    <div class="tm-grid">
+      <div class="card">
+        <div class="ct">MISSION LIBRARY</div>
+        <select id="tm-library" aria-label="Saved missions"><option value="">Choose a saved mission</option></select>
+        <div class="tm-actions"><button class="btn btn-k" id="tm-new">New</button><button class="btn btn-bl" id="tm-load">Load</button><button class="btn btn-d" id="tm-delete">Delete saved</button></div>
+        <label>Mission name<input id="tm-name" maxlength="80" value="Untitled mission"></label>
+        <label>Repeat sequence<input id="tm-repeat" type="number" min="1" max="20" step="1" value="1"></label>
+        <label>Overall maximum time (seconds, includes pauses)<input id="tm-max_time_s" type="number" min="0.1" max="900" step="1" value="120"></label>
+        <div class="tm-actions"><button class="btn btn-go" id="tm-save">Save</button><button class="btn btn-k" id="tm-save-copy">Save copy</button></div>
+        <div class="tm-actions"><button class="btn btn-k" id="tm-export">Export JSON</button><button class="btn btn-k" id="tm-import">Import JSON</button></div>
+        <input id="tm-file" type="file" accept="application/json,.json" hidden>
+        <p class="tm-muted">Saved on the NUC. Draft edits never change an active run.</p>
+      </div>
+      <div class="card">
+        <div class="ct">ACTION BLOCKS</div>
+        <div class="tm-actions" id="tm-palette"></div>
+        <div id="tm-blocks"></div>
+        <p class="tm-muted">Select a card to edit. Move cards with ↑ / ↓ or drag them into order. Duplicate a card to repeat a maneuver.</p>
+        <div class="tm-actions"><button class="btn btn-k" id="tm-undo">Undo</button><button class="btn btn-k" id="tm-redo">Redo</button></div>
+      </div>
+      <div class="card">
+        <div class="ct">SELECTED BLOCK</div>
+        <fieldset id="tm-editor" style="border:0;padding:0;margin:12px 0;">
+          <label>Label<input id="tm-label" maxlength="60"></label>
+          <div id="tm-fields"></div>
+          <button class="btn btn-bl" id="tm-apply">Apply block edits</button>
+        </fieldset>
+        <p class="tm-muted">RPY targets use degrees in the controller-corrected frame; depth uses metres. Target blocks need every axis within tolerance continuously for the stable dwell. Forward/lateral movement inputs are normalized effort, not metres or m/s.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">TIMELINE · MAXIMUM STEP BUDGETS</div>
+      <p class="tm-muted" id="tm-duration">0 seconds</p>
+      <div style="overflow-x:auto;"><div class="tm-track" id="tm-timeline"></div></div>
+      <p class="tm-muted">Target segments show their maximum wait budget and finish early when reached. Movement and Break segments use fixed durations. A Break holds the last RPYD targets with zero translation. Actual mission duration may be shorter than this timeline.</p>
+    </div>
+    <div class="card">
+      <div class="ct">EXECUTE ON THE NUC</div>
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:12px 0;"><b id="tm-status">IDLE</b><span id="tm-live">No active mission</span></div>
+      <progress id="tm-progress" max="100" value="0" aria-label="Overall deadline consumed"></progress>
+      <p id="tm-stable" class="tm-muted"></p>
+      <div style="overflow-x:auto;"><table style="width:100%;font-size:12px;text-align:left;"><thead><tr><th>Axis</th><th>Target</th><th>Measured</th><th>Error</th></tr></thead><tbody id="tm-rpyd"></tbody></table></div>
+      <ul id="tm-events" class="tm-muted"></ul>
+      <p id="tm-reason" class="tm-muted"></p>
+      <div class="tm-actions"><button class="btn btn-go" id="tm-start">Start mission</button><button class="btn btn-bl" id="tm-pause">Pause</button><button class="btn btn-bl" id="tm-resume">Resume</button><button class="btn btn-d" id="tm-abort">Abort &amp; disarm</button></div>
+      <p class="tm-muted">Start sends the mission without arming or changing your controller settings. Pause holds targets and freezes the step clock; the overall deadline continues. Abort, completion and overall timeout request disarm. RPYD targets need valid feedback to confirm arrival. Timing runs on the NUC; the controller and dashboard’s existing failsafes still apply.</p>
+    </div>
+  </div>
+</div>

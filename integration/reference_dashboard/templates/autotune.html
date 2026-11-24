@@ -1,0 +1,80 @@
+<div id="p-autotune" class="panel">
+  <style>
+    #p-autotune .at-wrap {max-width:1300px;margin:16px auto;padding:0 12px;display:grid;gap:14px;}
+    #p-autotune .at-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    #p-autotune .card {padding:18px;min-width:0;}
+    #p-autotune .at-fields {display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    #p-autotune label {display:block;font-size:12px;line-height:1.5;}
+    #p-autotune input {display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:8px;background:var(--bg3);color:var(--tx);border:1px solid var(--bd2);border-radius:5px;}
+    #p-autotune input[type=checkbox] {display:inline;width:auto;margin-right:8px;}
+    #p-autotune .at-actions {display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+    #p-autotune .at-actions button {width:auto;margin:0;padding:9px 14px;}
+    #p-autotune button:disabled {opacity:.4;cursor:not-allowed;}
+    #p-autotune .at-muted {font-size:12px;color:var(--tx3);line-height:1.6;}
+    #p-autotune .at-metrics {display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0;}
+    #p-autotune .at-metrics b {display:block;font-size:18px;margin-top:5px;}
+    #p-autotune progress {width:100%;height:12px;accent-color:var(--ac);}
+    #p-autotune fieldset {border:0;padding:0;margin:0;min-width:0;}
+    #p-autotune table {width:100%;border-collapse:collapse;font-size:12px;}
+    #p-autotune th,#p-autotune td {text-align:left;padding:10px 6px;border-bottom:1px solid var(--bd2);vertical-align:top;}
+    #p-autotune a {color:var(--ac);}
+    @media(max-width:800px) { #p-autotune .at-grid {grid-template-columns:1fr;} #p-autotune .at-fields {grid-template-columns:1fr;} #p-autotune .at-metrics {grid-template-columns:1fr;} }
+  </style>
+  <div class="at-wrap">
+    <div class="card">
+      <div class="ct">AUTOTUNE · YAW EXPERIMENT</div>
+      <h2 style="margin:8px 0;">Measure the response. Keep your current tune.</h2>
+      <p class="at-muted">Release A records bounded yaw experiments. It does not calculate or apply new gains. Use the existing dashboard controls to launch the vehicle system and establish normal stabilization.</p>
+      <div id="at-feedback" role="status" aria-live="polite" style="margin-top:10px;">Connecting to autotune…</div>
+    </div>
+    <div class="at-grid">
+      <div class="card">
+        <div class="ct">1 · PREPARE &amp; CHECK</div>
+        <ul id="at-checks" style="font-size:13px;line-height:1.9;"><li>Waiting for live state</li></ul>
+        <p class="at-muted" id="at-reason">Supervisor not connected.</p>
+        <label><input type="checkbox" id="at-ack">I checked the test area, submerged operation, motor mapping, and recovery procedure.</label>
+        <div class="at-actions">
+          <button class="btn btn-bl" id="at-prepare">Prepare supervisor</button>
+          <button class="btn btn-k" id="at-enable" disabled>Enable experiments</button>
+        </div>
+        <p class="at-muted">Preparation never arms the AUV. Settings and opt-in can change only between runs. Cancelling removes excitation and retains normal stabilization; it does not surface or disarm the vehicle.</p>
+      </div>
+      <div class="card">
+        <div class="ct">2 · EXPERIMENT SETTINGS</div>
+        <fieldset id="at-settings"><div class="at-fields">
+          <label>Amplitude (rad/s)<input id="at-amplitude_rad_s" type="number" value="0.04" min="0.001" max="0.08" step="0.005"></label>
+          <label>Frequencies (Hz, comma separated)<input id="at-frequencies_hz" value="0.2, 0.35, 0.5"></label>
+          <label>Cycles per frequency<input id="at-cycles" type="number" value="3" min="1" step="1"></label>
+          <label>Entry / exit ramp (s)<input id="at-ramp_sec" type="number" value="2" min="0.1" step="0.5"></label>
+          <label>Initial settle (s)<input id="at-settle_sec" type="number" value="3" min="0.1" step="0.5"></label>
+          <label>Recovery per frequency (s)<input id="at-recover_sec" type="number" value="3" min="0.1" step="0.5"></label>
+          <label>Maximum duration (s)<input id="at-max_duration_sec" type="number" value="90" min="1" max="110"></label>
+          <label>Minimum depth (m)<input id="at-min_depth_m" type="number" value="0.1" min="0" step="0.1"></label>
+          <label>Maximum depth (m)<input id="at-max_depth_m" type="number" value="3" min="0.1" step="0.1"></label>
+          <label>Maximum depth excursion (m)<input id="at-max_depth_excursion_m" type="number" value="0.3" min="0.01" step="0.05"></label>
+        </div></fieldset>
+        <div class="at-actions"><button class="btn btn-k" id="at-save" disabled>Save experiment settings</button><button class="btn btn-k" id="at-reload">Reload saved settings</button></div>
+        <p class="at-muted">Review limits for your pool. The controller independently caps excitation, motion, lease duration and session length.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">3 · RUN &amp; MONITOR</div>
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 0;"><b id="at-stage">OFFLINE</b><span class="at-muted" id="at-run-id">No run selected</span></div>
+      <progress id="at-progress" max="100" value="0" aria-label="Experiment progress"></progress>
+      <div class="at-metrics">
+        <div class="at-muted">Requested excitation<b id="at-requested">—</b></div>
+        <div class="at-muted">Applied excitation<b id="at-applied">—</b></div>
+        <div class="at-muted">Depth<b id="at-depth">—</b></div>
+      </div>
+      <canvas id="at-chart" height="110" style="width:100%;height:110px;" aria-label="Recent requested and applied yaw excitation"></canvas>
+      <p class="at-muted">Recent excitation: requested (blue), applied (green). Values are controller commands, not measured thrust.</p>
+      <div class="at-actions"><button class="btn btn-go" id="at-start" disabled>Start yaw experiment</button><button class="btn btn-d" id="at-cancel">Cancel experiment</button></div>
+      <p class="at-muted">A completed run is a recording, not an accepted tune. Model fitting, gain design, A/B validation and Accept/Discard will be added in later releases.</p>
+    </div>
+    <div class="card">
+      <div class="ct">4 · RUN HISTORY</div>
+      <p class="at-muted">Download metadata and samples from terminated runs. Incomplete recordings are shown for diagnosis.</p>
+      <div style="overflow-x:auto;"><table><thead><tr><th>Started</th><th>Result</th><th>Reason</th><th>Files</th></tr></thead><tbody id="at-runs"><tr><td colspan="4">No recordings yet.</td></tr></tbody></table></div>
+    </div>
+  </div>
+</div>

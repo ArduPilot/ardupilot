@@ -18,7 +18,7 @@ from dashboard_recorder import DashboardRecorder
 from mission_queue import validate_ros_waypoints
 
 
-def make_app(telemetry, lock, recorder=None):
+def make_app(telemetry, lock, recorder=None, demo_mode=False):
     app = Flask(__name__)
 
     @app.get("/")
@@ -32,7 +32,9 @@ def make_app(telemetry, lock, recorder=None):
     @app.get("/api/state")
     def state():
         with lock:
-            return jsonify(telemetry.snapshot())
+            snapshot = telemetry.snapshot()
+        snapshot["demo_mode"] = demo_mode
+        return jsonify(snapshot)
 
     @app.get("/api/health")
     def health():
@@ -53,6 +55,7 @@ def make_app(telemetry, lock, recorder=None):
             while True:
                 with lock:
                     snapshot = telemetry.snapshot()
+                snapshot["demo_mode"] = demo_mode
                 yield f"data: {json.dumps(snapshot)}\n\n"
                 time.sleep(0.1)
 
@@ -109,6 +112,7 @@ def main():
     parser.add_argument("--system-id", type=int, default=1)
     parser.add_argument("--http-port", type=int, default=8088)
     parser.add_argument("--recording-dir", default="integration/logs/dashboard")
+    parser.add_argument("--demo-mode", action="store_true", help="label synthetic input in the operator dashboard")
     parser.add_argument("--gate-ros", action="store_true",
                         help="subscribe to proposal-only ROS gate status (requires sourced ROS packages)")
     args = parser.parse_args()
@@ -158,7 +162,7 @@ def main():
             time.sleep(0.1)
 
     threading.Thread(target=record_loop, daemon=True).start()
-    make_app(telemetry, lock, recorder).run(host="127.0.0.1", port=args.http_port, debug=False)
+    make_app(telemetry, lock, recorder, demo_mode=args.demo_mode).run(host="127.0.0.1", port=args.http_port, debug=False)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AUV Debug — Thruster Freeze Diagnostics</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg0: #07090f; --bg1: #0f1520; --bg2: #161e30;
+      --bg3: #1e2840; --bd: rgba(100,180,255,0.15); --bd2: rgba(100,180,255,0.3);
+      --tx: #e0eaff; --tx2: #8ba0c0; --tx3: #4a6080;
+      --ac: #38bdf8; --gn: #22c55e; --rd: #f87171; --or: #fb923c; --yw: #fbbf24;
+      --pu: #a78bfa; --mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg0); color: var(--tx); font-family: 'Inter', sans-serif;
+      font-size: 13px; min-height: 100vh; }
+
+    /* ── Header ── */
+    .hdr { background: var(--bg1); border-bottom: 1px solid var(--bd2);
+      padding: 10px 20px; display: flex; align-items: center; gap: 16px; }
+    .hdr h1 { font-size: 1.1rem; font-weight: 700; color: var(--ac); letter-spacing: 0.04em; }
+    .hdr a { color: var(--tx2); text-decoration: none; font-size: 0.85rem;
+      border: 1px solid var(--bd); padding: 4px 10px; border-radius: 6px; }
+    .hdr a:hover { color: var(--ac); border-color: var(--ac); }
+    .poll-badge { margin-left: auto; font-size: 0.75rem; color: var(--tx3);
+      font-family: var(--mono); }
+
+    /* ── Layout ── */
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; padding: 16px; }
+    .col2 { grid-column: span 2; }
+    .col3 { grid-column: span 3; }
+
+    /* ── Card ── */
+    .card { background: var(--bg1); border: 1px solid var(--bd);
+      border-radius: 10px; padding: 14px; }
+    .card-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--tx2); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px; }
+    .card-title .icon { font-size: 1rem; }
+
+    /* ── Status Badges ── */
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge { display: flex; align-items: center; gap: 6px; padding: 5px 12px;
+      border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+      border: 1px solid transparent; }
+    .badge.ok  { background: rgba(34,197,94,0.13); border-color: rgba(34,197,94,0.35); color: var(--gn); }
+    .badge.err { background: rgba(248,113,113,0.13); border-color: rgba(248,113,113,0.35); color: var(--rd); }
+    .badge.warn{ background: rgba(251,146,60,0.13); border-color: rgba(251,146,60,0.35); color: var(--or); }
+    .badge.off { background: rgba(100,120,160,0.13); border-color: var(--bd); color: var(--tx3); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot.ok  { background: var(--gn); box-shadow: 0 0 6px var(--gn); }
+    .dot.err { background: var(--rd); box-shadow: 0 0 6px var(--rd); animation: pulse 1s infinite; }
+    .dot.warn{ background: var(--or); box-shadow: 0 0 6px var(--or); animation: pulse 1.5s infinite; }
+    .dot.off { background: var(--tx3); }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── Stat Table ── */
+    .stat-grid { display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; align-items: baseline; }
+    .stat-label { color: var(--tx2); font-size: 0.78rem; }
+    .stat-val { font-family: var(--mono); font-size: 0.88rem; color: var(--tx); }
+    .stat-val.red { color: var(--rd); font-weight: 700; }
+    .stat-val.green { color: var(--gn); }
+    .stat-val.orange { color: var(--or); font-weight: 700; }
+    .stat-val.yellow { color: var(--yw); }
+
+    /* ── PWM Chart ── */
+    .chart-wrap { position: relative; height: 200px; }
+
+    /* ── Event Timeline ── */
+    .event-list { max-height: 260px; overflow-y: auto; display: flex;
+      flex-direction: column; gap: 5px; }
+    .event { padding: 6px 10px; border-radius: 6px; font-family: var(--mono);
+      font-size: 0.75rem; border-left: 3px solid transparent; }
+    .event.watchdog_trip, .event.esp32_watchdog {
+      background: rgba(248,113,113,0.12); border-color: var(--rd); color: var(--rd); }
+    .event.write_error {
+      background: rgba(251,146,60,0.12); border-color: var(--or); color: var(--or); }
+    .event.invalid_frame {
+      background: rgba(251,191,36,0.12); border-color: var(--yw); color: var(--yw); }
+    .event.reconnect {
+      background: rgba(167,139,250,0.12); border-color: var(--pu); color: var(--pu); }
+    .event.info, .event.ok {
+      background: rgba(34,197,94,0.08); border-color: var(--gn); color: var(--tx2); }
+    .event .ts { opacity: 0.5; margin-right: 8px; }
+
+    /* ── USB List ── */
+    .usb-list { display: flex; flex-direction: column; gap: 4px; }
+    .usb-item { font-family: var(--mono); font-size: 0.75rem; color: var(--tx2);
+      padding: 4px 8px; background: var(--bg2); border-radius: 5px;
+      border-left: 3px solid var(--bd); }
+    .usb-item.highlight { border-color: var(--or); color: var(--or); }
+
+    /* ── Log Console ── */
+    .log-console { background: var(--bg0); border: 1px solid var(--bd);
+      border-radius: 8px; padding: 10px; height: 220px; overflow-y: auto;
+      font-family: var(--mono); font-size: 0.72rem; color: var(--tx2); }
+    .log-console .WARN, .log-console .warn { color: var(--or); }
+    .log-console .ERROR, .log-console .error, .log-console .FATAL { color: var(--rd); }
+    .log-console .INFO  { color: var(--tx2); }
+    .log-console .DEBUG { color: var(--tx3); }
+    .log-line { padding: 1px 0; }
+    .log-line.hl { background: rgba(248,113,113,0.15); }
+
+    /* ── Motor PWM Bars ── */
+    .motor-bars { display: flex; flex-direction: column; gap: 6px; }
+    .motor-row { display: flex; align-items: center; gap: 8px; }
+    .motor-label { width: 28px; font-family: var(--mono); font-size: 0.75rem; color: var(--tx2); }
+    .bar-outer { flex: 1; background: var(--bg3); border-radius: 4px; height: 14px;
+      position: relative; overflow: hidden; }
+    .bar-inner { height: 100%; background: var(--ac); border-radius: 4px;
+      transition: width 0.1s, background 0.2s; position: absolute; left: 50%; }
+    .bar-inner.neg { left: auto; right: 50%; background: var(--or); }
+    .bar-inner.frozen { background: var(--rd) !important; animation: pulse 0.5s infinite; }
+    .motor-pwm { width: 42px; font-family: var(--mono); font-size: 0.75rem;
+      color: var(--tx); text-align: right; }
+    .motor-thrust { width: 50px; font-family: var(--mono); font-size: 0.72rem;
+      color: var(--tx2); text-align: right; }
+    .neutral-line { position: absolute; left: 50%; top: 0; width: 1px;
+      height: 100%; background: var(--bd2); pointer-events: none; }
+
+    /* ── Freeze Alert Banner ── */
+    #freeze-alert { display: none; background: var(--rd); color: #fff;
+      font-weight: 700; text-align: center; padding: 10px;
+      font-size: 0.95rem; border-radius: 8px; margin-bottom: 14px;
+      animation: pulse 0.8s infinite; letter-spacing: 0.04em; }
+
+    /* ── Pipeline Status ── */
+    .pipeline { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .pipe-node { padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+      border: 1px solid var(--bd); background: var(--bg2); color: var(--tx2); text-align: center; }
+    .pipe-node.alive { border-color: rgba(34,197,94,0.5); color: var(--gn);
+      background: rgba(34,197,94,0.08); }
+    .pipe-node.dead { border-color: rgba(248,113,113,0.5); color: var(--rd);
+      background: rgba(248,113,113,0.08); }
+    .pipe-arrow { color: var(--tx3); font-size: 1rem; }
+    .pipe-node small { display: block; font-size: 0.65rem; opacity: 0.6; margin-top: 2px; }
+
+    /* ── Section Dividers ── */
+    .section-hdr { grid-column: span 3; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--tx3);
+      padding: 6px 0 2px; border-bottom: 1px solid var(--bd); margin-top: 4px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>🔬 AUV Debug — Thruster Freeze Diagnostics</h1>
+  <a href="/">← Dashboard</a>
+  <span class="poll-badge" id="poll-ts">Polling at 10 Hz…</span>
+  <span class="poll-badge" id="uptime-badge"></span>
+</div>
+
+<div style="padding: 14px 16px 0;">
+  <div id="freeze-alert">⚠ THRUSTER FREEZE DETECTED — One or more thrusters stuck at 1500 while ARMED</div>
+</div>
+
+<div class="grid">
+
+  <!-- ── Status Overview ── -->
+  <div class="card col3">
+    <div class="card-title"><span class="icon">🚦</span>System Status Overview</div>
+    <div class="badges" id="status-badges">
+      <div class="badge off" id="badge-armed"><div class="dot off"></div>DISARMED</div>
+      <div class="badge off" id="badge-imu"><div class="dot off"></div>IMU — Hz</div>
+      <div class="badge off" id="badge-thr"><div class="dot off"></div>Thruster — Hz</div>
+      <div class="badge off" id="badge-serial"><div class="dot off"></div>Serial</div>
+      <div class="badge off" id="badge-proc"><div class="dot off"></div>ROS Process</div>
+      <div class="badge off" id="badge-freeze"><div class="dot off"></div>No Freeze</div>
+    </div>
+  </div>
+
+  <!-- ── Controller Pipeline ── -->
+  <div class="card col3">
+    <div class="card-title"><span class="icon">🔗</span>Controller Pipeline — Data Flow</div>
+    <div class="pipeline">
+      <div class="pipe-node" id="pipe-imu">Xsens IMU<small>100 Hz</small></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-att">Attitude<br>Controller<small>/auv/control/attitude_output</small></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-mix">Motor<br>Mixer<small>/auv/control/thrusters</small></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-esp">ESP32<br>Bridge<small>USB Serial</small></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-esc">ESCs<br>+ Thrusters<small>PWM 1100–1900</small></div>
+    </div>
+  </div>
+
+  <!-- ── Serial / ESP32 Diagnostics ── -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📡</span>Serial Health (NUC→ESP32)</div>
+    <div class="stat-grid">
+      <span class="stat-label">Write Errors</span>
+      <span class="stat-val" id="d-write-errors">0</span>
+      <span class="stat-label">Last Write Error</span>
+      <span class="stat-val" id="d-last-werr" style="font-size:0.7rem;word-break:break-all;">—</span>
+      <span class="stat-label">Write Latency</span>
+      <span class="stat-val" id="d-write-lat">— ms</span>
+      <span class="stat-label">Reconnects</span>
+      <span class="stat-val" id="d-reconnects">0</span>
+      <span class="stat-label">Invalid Frames (ESP32)</span>
+      <span class="stat-val" id="d-invalid">0</span>
+      <span class="stat-label">NUC Watchdog Trips</span>
+      <span class="stat-val" id="d-nuc-wd">0</span>
+      <span class="stat-label">ESP32 Watchdog Trips</span>
+      <span class="stat-val" id="d-esp-wd">0</span>
+      <span class="stat-label">Depth Msgs Received</span>
+      <span class="stat-val" id="d-depth-rx">0</span>
+    </div>
+  </div>
+
+  <!-- ── Attitude Controller Output ── -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🎯</span>Controller Efforts (→ Mixer)</div>
+    <div class="stat-grid">
+      <span class="stat-label">Roll Effort</span>
+      <span class="stat-val" id="d-roll-eff">0.000</span>
+      <span class="stat-label">Pitch Effort</span>
+      <span class="stat-val" id="d-pitch-eff">0.000</span>
+      <span class="stat-label">Yaw Effort</span>
+      <span class="stat-val" id="d-yaw-eff">0.000</span>
+      <span class="stat-label">Depth Effort</span>
+      <span class="stat-val" id="d-dep-eff">0.000</span>
+      <span class="stat-label">Fwd Effort</span>
+      <span class="stat-val" id="d-fwd-eff">0.000</span>
+      <span class="stat-label">Lat Effort</span>
+      <span class="stat-val" id="d-lat-eff">0.000</span>
+      <span class="stat-label">IMU Hz</span>
+      <span class="stat-val" id="d-imu-hz">0</span>
+      <span class="stat-label">Thruster Hz</span>
+      <span class="stat-val" id="d-thr-hz">0</span>
+      <span class="stat-label">Depth (m)</span>
+      <span class="stat-val" id="d-depth">0.000</span>
+      <span class="stat-label">Pressure (mbar)</span>
+      <span class="stat-val" id="d-pressure">0.0</span>
+      <span class="stat-label">Water Temp (°C)</span>
+      <span class="stat-val" id="d-wtemp">0.0</span>
+      <span class="stat-label">CPU Temp (°C)</span>
+      <span class="stat-val" id="d-cputemp">0.0</span>
+    </div>
+  </div>
+
+  <!-- ── PID Internals ── -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🧮</span>PID Internals (Inner Loop)</div>
+    <div class="stat-grid">
+      <span class="stat-label">Roll err / P / I / D</span>
+      <span class="stat-val" id="d-roll-pid">—</span>
+      <span class="stat-label">Pitch err / P / I / D</span>
+      <span class="stat-val" id="d-pitch-pid">—</span>
+      <span class="stat-label">Yaw err / P / I / D</span>
+      <span class="stat-val" id="d-yaw-pid">—</span>
+      <span class="stat-label">Depth err / P / I / D</span>
+      <span class="stat-val" id="d-dep-pid">—</span>
+      <span class="stat-label">Roll (°)</span>
+      <span class="stat-val" id="d-roll">0.0°</span>
+      <span class="stat-label">Pitch (°)</span>
+      <span class="stat-val" id="d-pitch">0.0°</span>
+      <span class="stat-label">Yaw (°)</span>
+      <span class="stat-val" id="d-yaw">0.0°</span>
+      <span class="stat-label">Gyro R/P/Y (°/s)</span>
+      <span class="stat-val" id="d-gyro">—</span>
+    </div>
+  </div>
+
+  <!-- ── Per-Motor PWM Bars ── -->
+  <div class="card col2">
+    <div class="card-title"><span class="icon">⚡</span>Per-Motor PWM — Live (freeze = stuck at 1500 while armed)</div>
+    <div class="motor-bars" id="motor-bars">
+      <!-- generated by JS -->
+    </div>
+  </div>
+
+  <!-- ── Event Timeline ── -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span>Event Timeline
+      <button id="btn-clear-events" onclick="clearEvents()"
+        style="margin-left:auto;padding:2px 8px;font-size:0.7rem;background:var(--bg3);
+        border:1px solid var(--bd);color:var(--tx2);border-radius:4px;cursor:pointer;">Clear</button>
+    </div>
+    <div class="event-list" id="event-list">
+      <div class="event info">Waiting for events…</div>
+    </div>
+  </div>
+
+  <!-- ── PWM Rolling Chart ── -->
+  <div class="card col3">
+    <div class="card-title"><span class="icon">📈</span>PWM Time Series — All 8 Motors (last 60s, freeze detectable as flat-1500 lines while armed)</div>
+    <div class="chart-wrap">
+      <canvas id="pwm-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- ── USB Devices ── -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🔌</span>USB Devices (lsusb)</div>
+    <div class="usb-list" id="usb-list">
+      <div class="usb-item">Scanning…</div>
+    </div>
+  </div>
+
+  <!-- ── Log Console ── -->
+  <div class="card col2">
+    <div class="card-title"><span class="icon">📟</span>ROS2 Log Console (last 50 lines — highlighted: watchdog/serial errors)
+      <button onclick="document.getElementById('log-console').scrollTop=9999"
+        style="margin-left:auto;padding:2px 8px;font-size:0.7rem;background:var(--bg3);
+        border:1px solid var(--bd);color:var(--tx2);border-radius:4px;cursor:pointer;">↓ End</button>
+    </div>
+    <div class="log-console" id="log-console"></div>
+  </div>
+
+</div><!-- /grid -->
+
+<script>
+// ── State ──
+let lastData = null;
+let eventCache = [];
+let startTime = Date.now();
+const FREEZE_THRESHOLD_MS = 2000; // Flag if any motor stays at 1500 while armed for >2s
+let motorFreezeTimers = new Array(8).fill(0); // ms spent at neutral while armed
+
+// ── Chart ──
+const CHART_WINDOW = 60; // seconds
+const MAX_POINTS  = 600; // 10Hz * 60s
+const motorColors = [
+  '#38bdf8','#a78bfa','#22c55e','#fb923c',
+  '#f87171','#fbbf24','#34d399','#e879f9'
+];
+const pwmLabels = [];
+const pwmDatasets = Array.from({length:8}, (_, i) => ({
+  label: `M${i+1}`,
+  data: [],
+  borderColor: motorColors[i],
+  backgroundColor: 'transparent',
+  borderWidth: 1.5,
+  pointRadius: 0,
+  tension: 0.1,
+}));
+
+const ctx = document.getElementById('pwm-chart').getContext('2d');
+const pwmChart = new Chart(ctx, {
+  type: 'line',
+  data: { labels: pwmLabels, datasets: pwmDatasets },
+  options: {
+    animation: false,
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#8ba0c0', font: {size:11}, boxWidth:12 } },
+      tooltip: { mode:'index', intersect:false },
+    },
+    scales: {
+      x: { display: false },
+      y: {
+        min: 1050, max: 1950,
+        grid: { color: 'rgba(100,180,255,0.07)' },
+        ticks: { color: '#4a6080', font:{family:'JetBrains Mono',size:10} },
+      }
+    }
+  }
+});
+
+// ── Build Motor Bars ──
+const motorBarsEl = document.getElementById('motor-bars');
+for (let i = 0; i < 8; i++) {
+  motorBarsEl.innerHTML += `
+    <div class="motor-row">
+      <span class="motor-label">M${i+1}</span>
+      <div class="bar-outer">
+        <div class="neutral-line"></div>
+        <div class="bar-inner" id="mbar-${i}" style="width:0%"></div>
+      </div>
+      <span class="motor-pwm" id="mpwm-${i}">1500</span>
+      <span class="motor-thrust" id="mthr-${i}">0.000</span>
+    </div>`;
+}
+
+// ── Helpers ──
+function fmt(v, d=3) { return typeof v==='number' ? v.toFixed(d) : '—'; }
+function fmtMs(v) { return typeof v==='number' ? v.toFixed(2)+' ms' : '—'; }
+
+function colorClass(v, okBelow, warnBelow) {
+  if (v === 0) return 'green';
+  if (v < okBelow) return '';
+  if (v < warnBelow) return 'yellow';
+  return 'red';
+}
+
+function setVal(id, txt, cls='') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = txt;
+  el.className = 'stat-val' + (cls ? ' '+cls : '');
+}
+
+function setBadge(id, label, state) {
+  // state: 'ok' | 'err' | 'warn' | 'off'
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `badge ${state}`;
+  el.innerHTML = `<div class="dot ${state}"></div>${label}`;
+}
+
+function setPipe(id, alive) {
+  const el = document.getElementById(id);
+  if (el) el.className = `pipe-node ${alive ? 'alive' : 'dead'}`;
+}
+
+// ── Clear Events ──
+let _clearedBefore = 0;
+function clearEvents() {
+  _clearedBefore = Date.now();
+  document.getElementById('event-list').innerHTML = '<div class="event info">Events cleared.</div>';
+}
+
+// ── Update ──
+function update(d) {
+  lastData = d;
+  const now = Date.now();
+  const armed = d.armed;
+
+  // ── Uptime ──
+  const elapsed = Math.floor((now - startTime) / 1000);
+  document.getElementById('uptime-badge').textContent = `Session: ${elapsed}s`;
+  document.getElementById('poll-ts').textContent = new Date().toLocaleTimeString();
+
+  // ── Status Badges ──
+  setBadge('badge-armed', armed ? 'ARMED' : 'DISARMED', armed ? 'err' : 'off');
+  const imuHz = d.imu_hz || 0;
+  const thrHz = d.thruster_hz || 0;
+  setBadge('badge-imu', `IMU ${imuHz} Hz`, imuHz > 50 ? 'ok' : (imuHz > 5 ? 'warn' : 'err'));
+  setBadge('badge-thr', `Thr ${thrHz} Hz`, thrHz > 30 ? 'ok' : (thrHz > 5 ? 'warn' : 'err'));
+  const sd = d.serial_diag || {};
+  const hasSerialErr = (sd.write_errors||0) > 0 || (sd.reconnects||0) > 0;
+  setBadge('badge-serial', 'Serial ' + (hasSerialErr ? '⚠' : 'OK'),
+    hasSerialErr ? 'warn' : 'ok');
+  setBadge('badge-proc', 'ROS ' + (d.nodes?.proc_running ? 'Running' : 'Stopped'),
+    d.nodes?.proc_running ? 'ok' : 'err');
+
+  // ── Freeze Detection ──
+  const pwm = d.pwm || new Array(8).fill(1500);
+  let anyFrozen = false;
+  if (armed) {
+    for (let i = 0; i < 8; i++) {
+      if (Math.abs(pwm[i] - 1500) < 5) {
+        motorFreezeTimers[i] += 100; // ms since last poll (10 Hz)
+      } else {
+        motorFreezeTimers[i] = 0;
+      }
+      if (motorFreezeTimers[i] > FREEZE_THRESHOLD_MS) anyFrozen = true;
+    }
+  } else {
+    motorFreezeTimers.fill(0);
+  }
+  document.getElementById('freeze-alert').style.display = (armed && anyFrozen) ? 'block' : 'none';
+  setBadge('badge-freeze', anyFrozen ? '⚠ FREEZE DETECTED' : 'No Freeze',
+    anyFrozen ? 'err' : (armed ? 'ok' : 'off'));
+
+  // ── Controller Pipeline ──
+  const imuAlive = d.nodes?.imu_alive;
+  const thrAlive = d.nodes?.thr_alive;
+  const procOk = d.nodes?.proc_running;
+  setPipe('pipe-imu', imuAlive);
+  setPipe('pipe-att', imuAlive);
+  setPipe('pipe-mix', thrAlive);
+  setPipe('pipe-esp', procOk);
+  setPipe('pipe-esc', thrAlive && !anyFrozen);
+
+  // ── Serial Diagnostics ──
+  const wErrs = sd.write_errors || 0;
+  const recons = sd.reconnects || 0;
+  const invFr = sd.invalid_frames || 0;
+  const nucWd = sd.watchdog_trips || 0;
+  const espWd = (d.debug_events || []).filter(e => e.type === 'esp32_watchdog').length;
+
+  setVal('d-write-errors', wErrs, colorClass(wErrs, 1, 3));
+  setVal('d-last-werr', sd.last_write_error || '—', wErrs>0?'orange':'');
+  setVal('d-write-lat', fmtMs(sd.write_latency_ms));
+  setVal('d-reconnects', recons, colorClass(recons, 1, 3));
+  setVal('d-invalid', invFr, colorClass(invFr, 1, 5));
+  setVal('d-nuc-wd', nucWd, colorClass(nucWd, 1, 3));
+  setVal('d-esp-wd', espWd, colorClass(espWd, 1, 3));
+  setVal('d-depth-rx', sd.depth_rx_count || 0);
+
+  // ── Controller Efforts ──
+  const co = d.ctrl_output || [0,0,0];
+  setVal('d-roll-eff', fmt(co[0]));
+  setVal('d-pitch-eff', fmt(co[1]));
+  setVal('d-yaw-eff', fmt(co[2]));
+  setVal('d-dep-eff', fmt(d.depth_output));
+  setVal('d-fwd-eff', fmt(d.fwd_effort));
+  setVal('d-lat-eff', fmt(d.lat_effort));
+  setVal('d-imu-hz', imuHz, imuHz > 50 ? 'green' : 'red');
+  setVal('d-thr-hz', thrHz, thrHz > 30 ? 'green' : 'red');
+  setVal('d-depth', fmt(d.depth_m));
+  setVal('d-pressure', fmt(d.pressure_mbar, 1));
+  setVal('d-wtemp', fmt(d.water_temp, 1));
+  setVal('d-cputemp', fmt(d.cpu_temp, 1));
+
+  // ── PID Internals ──
+  const pd = d.pid_debug || new Array(24).fill(0);
+  // Layout: [err, target_rate, meas_rate, P, I, D] × 4 axes (roll,pitch,yaw,depth)
+  const fmtPid = (base) =>
+    `${fmt(pd[base],2)} | P:${fmt(pd[base+3],3)} I:${fmt(pd[base+4],3)} D:${fmt(pd[base+5],3)}`;
+  setVal('d-roll-pid', fmtPid(0));
+  setVal('d-pitch-pid', fmtPid(6));
+  setVal('d-yaw-pid', fmtPid(12));
+  setVal('d-dep-pid', fmtPid(18));
+  setVal('d-roll', fmt(d.roll,1)+'°');
+  setVal('d-pitch', fmt(d.pitch,1)+'°');
+  setVal('d-yaw', fmt(d.yaw,1)+'°');
+  const g = d.gyro||[0,0,0];
+  setVal('d-gyro', `${fmt(g[0],1)} / ${fmt(g[1],1)} / ${fmt(g[2],1)}`);
+
+  // ── Motor PWM Bars ──
+  const thrust = d.thrust || new Array(8).fill(0);
+  for (let i = 0; i < 8; i++) {
+    const p = pwm[i] || 1500;
+    const deviation = p - 1500;  // -400 to +400
+    const pct = Math.abs(deviation) / 400 * 50; // 0-50%
+    const bar = document.getElementById(`mbar-${i}`);
+    if (bar) {
+      bar.style.width = pct + '%';
+      bar.className = 'bar-inner' + (deviation < 0 ? ' neg' : '') +
+        ((armed && motorFreezeTimers[i] > FREEZE_THRESHOLD_MS) ? ' frozen' : '');
+    }
+    setVal(`mpwm-${i}`, p);
+    setVal(`mthr-${i}`, fmt(thrust[i], 3));
+  }
+
+  // ── PWM Chart ──
+  const ts = new Date().toLocaleTimeString();
+  pwmLabels.push(ts);
+  for (let i = 0; i < 8; i++) {
+    pwmDatasets[i].data.push(pwm[i] || 1500);
+    if (pwmDatasets[i].data.length > MAX_POINTS) pwmDatasets[i].data.shift();
+  }
+  if (pwmLabels.length > MAX_POINTS) pwmLabels.shift();
+  pwmChart.update('none');
+
+  // ── Events ──
+  const events = (d.debug_events || []).filter(e => e.ts * 1000 > _clearedBefore);
+  if (events.length !== eventCache.length) {
+    eventCache = events;
+    const el = document.getElementById('event-list');
+    if (events.length === 0) {
+      el.innerHTML = '<div class="event info">No events yet. Run the AUV and trigger large commands.</div>';
+    } else {
+      el.innerHTML = [...events].reverse().map(e => {
+        const t = new Date(e.ts * 1000).toLocaleTimeString();
+        return `<div class="event ${e.type}"><span class="ts">${t}</span>${e.msg}</div>`;
+      }).join('');
+    }
+  }
+
+  // ── USB Devices ──
+  const usbEl = document.getElementById('usb-list');
+  const usb = d.usb_devices || [];
+  if (usb.length) {
+    usbEl.innerHTML = usb.map(u => {
+      const hl = u.toLowerCase().includes('esp') ||
+                 u.toLowerCase().includes('cp210') ||
+                 u.toLowerCase().includes('ch340') ||
+                 u.toLowerCase().includes('acm');
+      return `<div class="usb-item${hl?' highlight':''}">${u}</div>`;
+    }).join('');
+  } else {
+    usbEl.innerHTML = '<div class="usb-item">lsusb unavailable or no devices</div>';
+  }
+
+  // ── Log Console ──
+  const logEl = document.getElementById('log-console');
+  const logs = d.logs || [];
+  const keywords = ['watchdog','invalid','serial','error','warn','reconnect','freeze','WARN','ERROR'];
+  logEl.innerHTML = logs.map(line => {
+    const isHl = keywords.some(k => line.toLowerCase().includes(k.toLowerCase()));
+    let cls = '';
+    if (line.includes('[WARN]')) cls = 'WARN';
+    else if (line.includes('[ERROR]') || line.includes('[FATAL]')) cls = 'ERROR';
+    else if (line.includes('[DEBUG]')) cls = 'DEBUG';
+    else cls = 'INFO';
+    return `<div class="log-line ${cls}${isHl?' hl':''}">${line}</div>`;
+  }).join('');
+  // Auto-scroll to bottom only if near bottom
+  if (logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 60) {
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+}
+
+// ── Poll ──
+async function poll() {
+  try {
+    const r = await fetch('/api/debug_state');
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    update(d);
+  } catch (e) {
+    console.warn('Debug poll error:', e);
+    document.getElementById('poll-ts').textContent = '⚠ Connection lost…';
+  }
+}
+
+poll();
+setInterval(poll, 100); // 10 Hz
+</script>
+</body>
+</html>

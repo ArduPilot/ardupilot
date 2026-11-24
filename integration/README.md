@@ -49,6 +49,8 @@ The same native replay starts a CSV recording and verifies a row contains fresh 
 
 `python3 integration/test_dashboard_api_loopback.py` starts the actual local HTTP service, sends synthetic MAVLink from autopilot system/component 1/1 over UDP, and verifies `/api/state` receives it. It opens only loopback sockets.
 
+For a continuously running, non-actuating demonstration, build the normal Linux Sub and run `python3 integration/demo_native_dashboard.py` from the repository root. Open `http://127.0.0.1:8089/`; the page explicitly says **SOFTWARE DEMO**. The launcher creates temporary Xsens/Bar30 pseudo-terminals, starts native ArduSub and the dashboard, and removes them on Ctrl-C. It does not connect to a real sensor, ESP32, ESC or thruster. Port 8089 is separate from the ordinary dashboard on 8088; pass `--http-port` if needed.
+
 When ArduSub sends `EKF_STATUS_REPORT` on the dashboard link (`SR3_EXTRA2` in the native replay), `/api/state`, `/api/health`, and CSV expose its freshness and status bits. A fresh `LOCAL_POSITION_NED` feed alone does not prove navigation readiness; the API does not claim to reproduce ArduSub's internal `position_ok()`. In the current virtual native dashboard replay the reported EKF flag was `1024` (`EKF_UNINITIALIZED`), so mission controls remain unavailable.
 
 The Mission Status card displays only fresh ArduSub `MISSION_CURRENT` telemetry. Set the dashboard link's extended-status stream rate (for example `SR3_EXT_STAT=2` for the replay's SERIAL3 link) to receive item, total, state, and mode. This display cannot start a mission or establish navigation validity. The flight-plan and mission-builder command labels remain inert.

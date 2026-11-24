@@ -168,6 +168,7 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.assertEqual(client.get("/api/state").json["source"], "ardusub_mavlink")
         self.assertIsNone(client.get("/api/state").json["dvl_locked"])
         self.assertFalse(client.get("/api/health").json["mission_alive"])
+
         self.assertFalse(client.get("/api/health").json["ekf_status_alive"])
         self.assertFalse(client.get("/api/health").json["gate_link_alive"])
         stream = client.get("/api/stream", buffered=False)
@@ -177,6 +178,12 @@ class DashboardTelemetryTests(unittest.TestCase):
         stream.close()
         self.assertEqual(client.post("/api/arm").status_code, 404)
         self.assertEqual(client.post("/api/state").status_code, 405)
+
+    def test_demo_mode_is_explicit_in_state(self):
+        client = make_app(self.telemetry, threading.Lock(), demo_mode=True).test_client()
+        self.assertTrue(client.get("/api/state").json["demo_mode"])
+        client = make_app(self.telemetry, threading.Lock()).test_client()
+        self.assertFalse(client.get("/api/state").json["demo_mode"])
 
     def test_mission_current_is_read_only_and_expires(self):
         self.telemetry.ingest(Message("HEARTBEAT", base_mode=0))
