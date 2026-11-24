@@ -61,6 +61,7 @@ def main():
         native = None
         dvl = None
         ekf_flags = None
+        phase_flags = {"startup": set(), "lock_loss": set(), "recovery": set()}
         try:
             dvl, _ = tcp.accept()
             native = subprocess.Popen(
@@ -104,6 +105,9 @@ def main():
                 message = status_link.recv_match(blocking=False)
                 if message is not None and message.get_type() == "EKF_STATUS_REPORT":
                     ekf_flags = message.flags
+                    phase = ("startup" if now - started < 7 else
+                             "lock_loss" if now - started < 10 else "recovery")
+                    phase_flags[phase].add(ekf_flags)
                 time.sleep(0.01)
         finally:
             if native is not None:
@@ -138,11 +142,15 @@ def main():
             raise AssertionError(f"Chain incomplete: accepted={len(accepted_times)}, "
                                  f"lock-loss gap={gap_s:.2f}s, EKF={ekf_velocity}, "
                                  f"bridge stderr={bridge_error}")
-        if ekf_flags is None or ekf_flags & 16:
-            raise AssertionError(f"Unexpected absolute-position status for velocity-only DVL replay: {ekf_flags}")
+        if any(not flags for flags in phase_flags.values()):
+            raise AssertionError(f"Missing EKF telemetry during a replay phase: {phase_flags}")
+        if any(flag & 16 for flags in phase_flags.values() for flag in flags):
+            raise AssertionError(f"Unexpected absolute-position status for velocity-only DVL replay: {phase_flags}")
+        observed_flags = {name: sorted(flags) for name, flags in phase_flags.items()}
         print(f"Loopback A50 → bridge → native ArduSub EKF passed: "
               f"accepted={len(accepted_times)}, lock-loss gap={gap_s:.2f}s, "
-              f"EKF velocity={ekf_velocity}, status flags={ekf_flags}")
+              f"EKF velocity={ekf_velocity}, status flags={ekf_flags}, "
+              f"phase flags={observed_flags}")
 
 
 if __name__ == "__main__":

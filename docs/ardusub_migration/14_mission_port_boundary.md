@@ -23,6 +23,8 @@ The reference dashboard creates each queued waypoint with `north`, `east`, `dept
 
 The A50 `position_local` report is **not** a ready-made origin: [Water Linked's dead-reckoning guide](https://docs.waterlinked.com/dvl/dead-reckoning/) says its frame is reset/startup-relative, its yaw zeroes on reset, and in-air drift can be significant. The bridge now parses and can display that report for alignment work, but never forwards it as ArduSub position. A mission transfer client remains blocked on a validated navigation frame, estimator readiness and a concrete mapping of these behavioral fields.
 
+`integration/mission_queue.py` is the first non-actuating contract boundary. It requires all seven behavior fields, finite numbers, positive speed/tolerance, nonnegative depth/dwell, and no unrecognized keys; the old UI's `status: pending` may be present but is not a vehicle command. It returns a complete local waypoint queue for later conversion. These are structural checks, not vehicle-specific speed/depth limits or proof that the queue can be uploaded. The current dashboard has no route that invokes this validator or sends mission commands.
+
 Next software-only steps:
 
 1. Establish a replayed, observable navigation source and verify `position_ok()` and estimator origin behavior without real motors. Do not infer position health from fresh `LOCAL_POSITION_NED` alone.
