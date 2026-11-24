@@ -6153,6 +6153,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("EK3_SRC1_POSZ", 1)  # baro
         check_reset_waited_for_restart("the range height's")
 
+        # with the range finder still the height source but every reading rejected, the height times
+        # out after 5 s and restarts from the next one, and the recovery waits for that restart too
+        self.start_subtest("AGL KF off, range finder the height source: the recovery waits for its height's timeout restart")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("EK3_SRC1_POSZ", 2)  # range finder
+        fly_with_stuck_flow_axis(0, inject=False)
+        # a reading 4 m long is outside the height gate. A long restart narrows the flow gate, so the
+        # lockout outlasts it, where a short one widens it and the axis passes again. The vehicle
+        # descends by the step once its height restarts, so climb for it first
+        self.set_rc(3, 1700)
+        self.wait_rangefinder_distance(6, 8)
+        self.set_rc(3, 1500)
+        self.set_parameters({"SIM_SONAR_OFFSET": 4, "SIM_FLOW_OFS_X": 1.0})
+        for imu in ("IMU0", "IMU1"):
+            self.wait_statustext("%s flow vel reset" % imu, check_context=True, timeout=30)
+        self.set_parameters({"SIM_FLOW_OFS_X": 0, "SIM_SONAR_OFFSET": 0})
+        self.disarm_vehicle(force=True)
+        self.set_parameter("EK3_SRC1_POSZ", 1)  # baro
+        check_reset_waited_for_restart("the range height's timeout")
+
         # with no downward range finder the flow is scaled by a height nothing measures, and a reset
         # would adopt that height's error, so the lockout is left alone
         self.start_subtest("No range finder: the lockout is not recovered")
