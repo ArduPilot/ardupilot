@@ -182,6 +182,7 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     if (imuSampleTime_ms - flowSampleRecvTime_ms > frontend->sensorIntervalMin_ms) {
         flowRatesSum.zero();
         flowGyroRatesSum.zero();
+        flowBodyRateZSum = 0.0f;
         flowSampleCount = 0;
     }
     flowSampleRecvTime_ms = imuSampleTime_ms;
@@ -189,6 +190,10 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         (flowSampleCount < UINT8_MAX)) {
         flowRatesSum += rawFlowRates;
         flowGyroRatesSum += rawGyroRates;
+        // the sensor interface doesn't provide a z axis rate so use the nav sensor's latest, or zero
+        if (imuDataNew.delAngDT > 0.001f) {
+            flowBodyRateZSum += imuDataNew.delAng.z / imuDataNew.delAngDT;
+        }
         flowSampleCount++;
     }
 
@@ -201,13 +206,16 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     // bias estimate below, as they did before, but nothing is written
     Vector2f flowRates;
     Vector2f gyroRates = rawGyroRates;
+    ftype bodyRateZ = 0.0f;
     const bool haveUsableSample = (flowSampleCount > 0);
     if (haveUsableSample) {
         flowRates = flowRatesSum / flowSampleCount;
         gyroRates = flowGyroRatesSum / flowSampleCount;
+        bodyRateZ = flowBodyRateZSum / flowSampleCount;
     }
     flowRatesSum.zero();
     flowGyroRatesSum.zero();
+    flowBodyRateZSum = 0.0f;
     flowSampleCount = 0;
 
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
@@ -236,17 +244,9 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         of_elements ofDataNew {};
         ofDataNew.bodyRadXYZ.x = gyroRates.x - flowGyroBias.x;
         ofDataNew.bodyRadXYZ.y = gyroRates.y - flowGyroBias.y;
-        // the sensor interface doesn't provide a z axis rate so use the rate from the nav sensor instead
-        if (delTimeOF > 0.001f) {
-            // first preference is to use the rate averaged over the same sampling period as the flow sensor
-            ofDataNew.bodyRadXYZ.z = delAngBodyOF.z / delTimeOF;
-        } else if (imuDataNew.delAngDT > 0.001f){
-            // second preference is to use most recent IMU data
-            ofDataNew.bodyRadXYZ.z = imuDataNew.delAng.z / imuDataNew.delAngDT;
-        } else {
-            // third preference is use zero
-            ofDataNew.bodyRadXYZ.z =  0.0f;
-        }
+        // averaged over the same samples as the flow rather than taken from delAngBodyOF, which is summed
+        // at the fusion time horizon and so lags the flow by the filter's buffer delay
+        ofDataNew.bodyRadXYZ.z = bodyRateZ;
         // write uncorrected flow rate measurements
         // note correction for different axis and sign conventions used by the px4flow sensor
         ofDataNew.flowRadXY = - flowRates.toftype(); // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
