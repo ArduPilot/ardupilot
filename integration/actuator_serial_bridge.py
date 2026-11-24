@@ -34,7 +34,7 @@ def read_session(serial_port, timeout_s=5):
 
 
 def run(serial_port, udp_port, session, stop):
-    adapter = ActuatorAdapter(load_motor_order(), session)
+    adapter = ActuatorAdapter(load_motor_order(), session, pwm_interval_ms=20)
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as receiver:
         receiver.bind(("127.0.0.1", udp_port))
         receiver.settimeout(0.05)
@@ -48,7 +48,9 @@ def run(serial_port, udp_port, session, stop):
                         raise RuntimeError("ESP32 session changed; restart bridge")
                 try:
                     packet = receiver.recv(256)
-                    while select.select([receiver], [], [], 0)[0]:
+                    for _ in range(64):
+                        if not select.select([receiver], [], [], 0)[0]:
+                            break
                         packet = receiver.recv(256)
                     frames = adapter.ingest(packet, time.monotonic_ns() // 1_000_000)
                 except socket.timeout:

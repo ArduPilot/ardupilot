@@ -43,6 +43,18 @@ class ActuatorAdapterTests(unittest.TestCase):
         self.assertEqual([frame.split(",")[1] for frame in self.adapter.tick(251)], ["DISARM"])
         self.assertEqual(self.adapter.ingest(observation(True), 260), ())
 
+    def test_serial_rate_limit_keeps_latest_output_and_disarm(self):
+        adapter = ActuatorAdapter(load_motor_order(), 0x1234ABCD, pwm_interval_ms=20)
+        adapter.ingest(observation(False), 0)
+        self.assertEqual([frame.split(",")[1] for frame in adapter.ingest(observation(True), 1)],
+                         ["ARM", "PWM"])
+        self.assertEqual(adapter.ingest(observation(True, (1600,) * 8), 10), ())
+        frames = adapter.ingest(observation(True, (1600,) * 8), 21)
+        self.assertEqual(len(frames), 1)
+        self.assertEqual(tuple(map(int, frames[0].split(",")[4:12])), (1600,) * 8)
+        self.assertEqual([frame.split(",")[1] for frame in adapter.ingest(observation(False), 22)],
+                         ["DISARM"])
+
     def test_udp_process_emits_frames_and_disarms_on_shutdown(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
             probe.bind(("127.0.0.1", 0))

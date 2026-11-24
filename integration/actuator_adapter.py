@@ -19,13 +19,15 @@ from rcoutput_mapping import load_motor_order, motors_in_esp_order, parse_observ
 class ActuatorAdapter:
     TIMEOUT_MS = 200  # Shorter than ActuatorGuard's 250 ms output watchdog.
 
-    def __init__(self, order, session):
+    def __init__(self, order, session, pwm_interval_ms=0):
         self.order = order
         self.session = session
+        self.pwm_interval_ms = pwm_interval_ms
         self.sequence = 0
         self.ready = False
         self.armed = False
         self.last_observation_ms = None
+        self.last_pwm_ms = None
 
     def _frame(self, command, pwms=None):
         if self.sequence == 0xFFFFFFFF:
@@ -35,6 +37,7 @@ class ActuatorAdapter:
 
     def _stop(self):
         self.ready = False
+        self.last_pwm_ms = None
         if not self.armed:
             return ()
         self.armed = False
@@ -66,6 +69,9 @@ class ActuatorAdapter:
         if not self.armed:
             self.armed = True
             frames = (self._frame("ARM"),)
+        if self.last_pwm_ms is not None and now_ms - self.last_pwm_ms < self.pwm_interval_ms:
+            return expired + frames
+        self.last_pwm_ms = now_ms
         return expired + frames + (self._frame("PWM", mapped),)
 
 
