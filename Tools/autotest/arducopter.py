@@ -1235,13 +1235,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             15: [("after loiter turns", None, (80, 110))],
         }))
 
-        # the jump starts the arc from waypoint B, where the vehicle is
+        # the hold before the jump stops the arc being preloaded, so the
+        # jump starts it from that waypoint, where the vehicle is
         self.start_subtest("Jump to an arc")
         failures.extend(fly_checking_arcs([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 0, 20),
             (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 10, 40, 20, {"p1": 180}),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 40, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 40, 20, {"p1": 1}),
             self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=3, p2=1),
             (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
         ], {
