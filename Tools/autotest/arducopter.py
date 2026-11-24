@@ -17544,7 +17544,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # The depth of the dwell inside the band decides the result, and ALT_HOLD holds a
         # height the ground effect has already disturbed, settling 0.75-0.9m above the ground.
         # Measure it on the range finder, which reads the true height, rather than assume it.
-        self.context_collect('STATUSTEXT')
         heights = []
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < 25:
@@ -17553,7 +17552,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("dwell height %.2f m mean, %.2f to %.2f m" % (mean_height, min(heights), max(heights)))
         if not 0.6 <= mean_height <= 1.2:
             raise NotAchievedException("dwell was not about 0.9m above the ground (mean %.2f m)" % mean_height)
-        reopened_in_dwell = self.statustext_in_collections("terrain offset reopened")
         self.change_mode('LAND')
         self.wait_disarmed()
 
@@ -17566,6 +17564,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         arm_time = None
         on_ground = []
         dwell_errors = []
+        dwell_herr_min = math.inf
+        dwell_herr_rise = 0
         while True:
             m = dfreader.recv_match(type=['XKF5', 'RFND', 'EV'])
             if m is None:
@@ -17580,6 +17580,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 continue
             if m.C == 0 and rangefinder_good and arm_time is not None and 5e6 <= m.TimeUS - arm_time <= 20e6:
                 dwell_errors.append(m.HAGL - range_m)
+            if m.C == 0 and arm_time is not None and 5e6 <= m.TimeUS - arm_time <= 20e6:
+                dwell_herr_min = min(dwell_herr_min, m.Herr)
+                dwell_herr_rise = max(dwell_herr_rise, m.Herr - dwell_herr_min)
             if m.C != 0 or arm_time is None:
                 continue
             if m.TimeUS - arm_time < 1e6:
@@ -17603,8 +17606,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # band moves both, so the bound sits between them with margin either side
         if rms > 0.42:
             raise NotAchievedException("height above ground error %.2f m rms in the dwell" % rms)
-        if not reopened_in_dwell:
-            raise NotAchievedException("terrain offset uncertainty was not reopened in the dwell")
+        # the reopen lifts the uncertainty to EK3_RNG_M_NSE, 0.5 m, from under 0.1 m in the hover,
+        # and it has halved within 0.2 s, so XKF5 logs a rise of 0.26-0.31 m; without the reopen
+        # it only falls through the flight
+        reopen_rise_min_m = 0.25 * self.get_parameter("EK3_RNG_M_NSE")
+        self.progress("terrain offset uncertainty rose %.2f m in the dwell" % dwell_herr_rise)
+        if dwell_herr_rise < reopen_rise_min_m:
+            raise NotAchievedException("terrain offset uncertainty was not reopened in the dwell (rose %.2f m)" %
+                                       dwell_herr_rise)
 
     def TakeoffGroundEffectAlt(self):
         '''Test GNDEFF_ALT and GNDEFF_TMO gate the ground-effect compensation window'''
