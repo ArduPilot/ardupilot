@@ -9,6 +9,8 @@ static ActuatorGuard guard(0);
 static char line[128];
 static size_t used;
 static bool overflow;
+static char last_challenge[9];
+static uint32_t current_session;
 
 static void report_new_fault(ActuatorGuard::State before) {
     if (before != ActuatorGuard::State::Fault &&
@@ -18,10 +20,15 @@ static void report_new_fault(ActuatorGuard::State before) {
 }
 
 static void new_session(const char *challenge) {
-    uint32_t session = esp_random();
-    if (session == 0) session = 1;
-    guard.restart_session(session);
-    Serial.printf("A1,SESSION,%08lX,%s\n", (unsigned long)session, challenge);
+    // Retried HELLOs reuse the nonce, so a delayed response cannot select a
+    // session that the MCU immediately replaces with another one.
+    if (strcmp(last_challenge, challenge) != 0) {
+        current_session = esp_random();
+        if (current_session == 0) current_session = 1;
+        memcpy(last_challenge, challenge, 9);
+    }
+    guard.restart_session(current_session);
+    Serial.printf("A1,SESSION,%08lX,%s\n", (unsigned long)current_session, challenge);
 }
 
 void setup() {
@@ -34,7 +41,8 @@ void loop() {
     const ActuatorGuard::State before_tick = guard.state();
     guard.tick(millis());
     report_new_fault(before_tick);
-    while (Serial.available()) {
+    // Return to tick() even if the host floods USB without line endings.
+    for (unsigned processed = 0; processed < 256 && Serial.available(); ++processed) {
         const char c = char(Serial.read());
         if (c == '\n') {
             const ActuatorGuard::State before_frame = guard.state();

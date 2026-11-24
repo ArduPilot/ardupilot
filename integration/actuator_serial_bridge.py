@@ -18,6 +18,27 @@ from rcoutput_mapping import load_motor_order
 SESSION = re.compile(rb"A1,SESSION,([0-9A-Fa-f]{8}),([0-9A-F]{8})\r?\n")
 
 
+class StatusMonitor:
+    """Bound MCU status buffering so a noisy USB port cannot starve RCOutput."""
+
+    def __init__(self):
+        self.pending = b""
+
+    def ingest(self, data):
+        self.pending += data
+        if len(self.pending) > 256:
+            raise RuntimeError("ESP32 status stream overflow; restart bridge")
+        while b"\n" in self.pending:
+            line, self.pending = self.pending.split(b"\n", 1)
+            line = line.rstrip(b"\r")
+            if line == b"A1,FAULT":
+                raise RuntimeError("ESP32 guard fault; inspect and restart")
+            if line.startswith(b"A1,SESSION,"):
+                raise RuntimeError("ESP32 session changed; restart bridge")
+            if line:
+                raise RuntimeError("Unexpected ESP32 status; restart bridge")
+
+
 def read_session(serial_port, timeout_s=5):
     challenge = f"{secrets.randbits(32):08X}".encode("ascii")
     deadline = time.monotonic() + timeout_s
@@ -35,17 +56,15 @@ def read_session(serial_port, timeout_s=5):
 
 def run(serial_port, udp_port, session, stop):
     adapter = ActuatorAdapter(load_motor_order(), session, pwm_interval_ms=20)
+    status = StatusMonitor()
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as receiver:
         receiver.bind(("127.0.0.1", udp_port))
         receiver.settimeout(0.05)
         try:
             while not stop():
-                while serial_port.in_waiting:
-                    line = serial_port.readline()
-                    if line.startswith(b"A1,FAULT"):
-                        raise RuntimeError("ESP32 guard fault; inspect and restart")
-                    if line.startswith(b"A1,SESSION,"):
-                        raise RuntimeError("ESP32 session changed; restart bridge")
+                available = serial_port.in_waiting
+                if available:
+                    status.ingest(serial_port.read(min(available, 256)))
                 try:
                     packet = receiver.recv(256)
                     for _ in range(64):

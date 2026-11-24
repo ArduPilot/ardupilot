@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from actuator_serial_bridge import read_session, run
+from actuator_serial_bridge import StatusMonitor, read_session, run
 from test_actuator_adapter import observation
 
 
@@ -37,7 +37,7 @@ class SessionTests(unittest.TestCase):
         class FakeSerial:
             in_waiting = 9
 
-            def readline(self):
+            def read(self, _size):
                 return b"A1,FAULT\n"
 
             def flush(self):
@@ -45,6 +45,18 @@ class SessionTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "ESP32 guard fault"):
             run(FakeSerial(), 0, 0x1234ABCD, lambda: False)
+
+    def test_status_monitor_bounds_partial_and_unexpected_input(self):
+        monitor = StatusMonitor()
+        monitor.ingest(b"A1,FA")
+        with self.assertRaisesRegex(RuntimeError, "ESP32 guard fault"):
+            monitor.ingest(b"ULT\n")
+        with self.assertRaisesRegex(RuntimeError, "status stream overflow"):
+            StatusMonitor().ingest(b"X" * 257)
+        with self.assertRaisesRegex(RuntimeError, "Unexpected ESP32 status"):
+            StatusMonitor().ingest(b"garbage\n")
+        with self.assertRaisesRegex(RuntimeError, "session changed"):
+            StatusMonitor().ingest(b"A1,SESSION,00000001,ABCDEF12\n")
 
     def test_bridge_requires_both_enable_switches(self):
         script = str(Path(__file__).with_name("actuator_serial_bridge.py"))

@@ -44,6 +44,10 @@ int main() {
     Serial.feed("A1,HELLO,89ABCDEF\n");
     loop();
     assert(Serial.output == "A1,SESSION,1234ABCD,89ABCDEF\n");
+    Serial.feed("A1,HELLO,89ABCDEF\n");
+    loop();
+    assert(Serial.output == "A1,SESSION,1234ABCD,89ABCDEF\n"
+                            "A1,SESSION,1234ABCD,89ABCDEF\n");
     Serial.feed(frame("A1,ARM,1234ABCD,1"));
     loop();
     assert(guard.state() == ActuatorGuard::State::Armed);
@@ -68,6 +72,10 @@ int main() {
     assert(guard.state() == ActuatorGuard::State::Disarmed);
     Serial.feed(frame("A1,ARM,87654321,3"));
     loop();
+    Serial.feed(std::string(1000, 'X'));
+    loop();
+    assert(guard.state() == ActuatorGuard::State::Armed);
+    assert(!Serial.input.empty());
     test_ms = 251;
     loop();
     assert(guard.state() == ActuatorGuard::State::Fault);
