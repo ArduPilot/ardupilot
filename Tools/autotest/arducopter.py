@@ -24017,6 +24017,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
         self.wait_disarmed(timeout=60)
 
+    def FenceBreachWithoutOA(self):
+        '''breach an exclusion circle with object avoidance off; RTL must still climb before returning'''
+        takeoff_loc = self.takeoff_for_fence_breach_test(oa_type=0)
+
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
+                "radius": 10,
+                "loc": self.offset_location_ne(takeoff_loc, 20, 0),
+            }),
+        ])
+
+        loc = self.offset_location_ne(takeoff_loc, 40, 0)
+        self.send_do_reposition(loc)
+        self.wait_location(loc)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+        })
+
+        self.context_collect('STATUSTEXT')
+        self.send_do_reposition(self.offset_location_ne(takeoff_loc, -40, 0))
+        self.wait_mode('RTL')
+
+        # RTL climbs above its stopping point, inside the circle, before heading home
+        self.wait_altitude(14, 16, relative=True, timeout=60)
+        self.assert_distance(self.get_location(), takeoff_loc, 10, 30)
+        if self.statustext_in_collections('climbing en route') is not None:
+            raise NotAchievedException("RTL skipped its climb without object avoidance")
+
+        self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
+        self.wait_disarmed(timeout=60)
+
     def Clamp(self):
         '''test Copter docking clamp'''
         # the simulated clamp only grabs within 0.5m of home
@@ -26858,6 +26889,7 @@ return update, 1000
             self.FenceBreachWithOA,
             self.FenceBreachInclusionWithOA,
             self.FenceBreachExclusionPolygonWithOA,
+            self.FenceBreachWithoutOA,
             self.CompassMot,
             self.CompassMotFastRate,
             self.FarOrigin,
