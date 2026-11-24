@@ -23950,6 +23950,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
         self.wait_disarmed(timeout=60)
 
+    def takeoff_for_fence_breach_test(self, oa_type):
+        '''set OA_TYPE, reboot and take off to 10m in GUIDED; returns the takeoff location'''
+        self.set_parameters({
+            "OA_TYPE": oa_type,
+        })
+        self.reboot_sitl()
+        self.takeoff(10, mode='GUIDED')
+        return self.get_location()
+
+    def FenceBreachInclusionWithOA(self):
+        '''breach an inclusion polygon with BendyRuler enabled; RTL must bring us back inside and home'''
+        takeoff_loc = self.takeoff_for_fence_breach_test(oa_type=1)
+
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(takeoff_loc, 30, -30),
+                self.offset_location_ne(takeoff_loc, 30, 30),
+                self.offset_location_ne(takeoff_loc, -30, 30),
+                self.offset_location_ne(takeoff_loc, -30, -30),
+            ]),
+        ])
+
+        # Guided refuses a destination outside an enabled fence, so get
+        # outside the polygon first and then enable the fence
+        loc = self.offset_location_ne(takeoff_loc, 40, 0)
+        self.send_do_reposition(loc)
+        self.wait_location(loc)
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+        })
+        self.wait_mode('RTL')
+        # the stopping point is outside the inclusion polygon
+        self.wait_statustext('RTL: climb target fenced, climbing en route', check_context=True)
+        self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
+        self.wait_disarmed(timeout=60)
+
     def Clamp(self):
         '''test Copter docking clamp'''
         # the simulated clamp only grabs within 0.5m of home
@@ -26789,6 +26827,7 @@ return update, 1000
             self.LoiterToGuidedHomeVSOrigin,
             self.GuidedModeThrust,
             self.FenceBreachWithOA,
+            self.FenceBreachInclusionWithOA,
             self.CompassMot,
             self.CompassMotFastRate,
             self.FarOrigin,
