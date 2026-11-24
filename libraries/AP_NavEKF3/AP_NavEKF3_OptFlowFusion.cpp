@@ -1015,9 +1015,12 @@ void NavEKF3_core::UpdateAglKf()
     // A measurement at the on-ground floor carries nothing about the bias; fusing it would only
     // shrink the bias variance and lock in whatever the start-up transient left there. The reading
     // is tested before the position offset correction, which can move it off the floor, and the
-    // corrected height as well, which a tilted reading reaches only after the tilt correction
+    // corrected height as well, which a tilted reading reaches only after the tilt correction.
+    // A reading that rests above the floor on the ground would fit the bias to the ground, where
+    // the residual is not the one in flight, so onGround closes the gate too. It cannot replace
+    // the floor test: it clears before lift-off, and only some vehicles report it while armed
     const bool onFloor = rangeDataDelayed.onFloor || ((aglKf.hgt <= rngOnGnd) && (hgtMeas <= rngOnGnd));
-    FuseAglKfHeight(hgtInnov, measNoiseVar, !onFloor);
+    FuseAglKfHeight(hgtInnov, measNoiseVar, !(onFloor || onGround));
 
     aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
     aglKfLastRngHgt = hgtMeas;
