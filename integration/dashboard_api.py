@@ -15,6 +15,7 @@ from pymavlink import mavutil
 
 from dashboard_telemetry import DashboardTelemetry
 from dashboard_recorder import DashboardRecorder
+from mission_queue import validate_ros_waypoints
 
 
 def make_app(telemetry, lock, recorder=None):
@@ -63,6 +64,18 @@ def make_app(telemetry, lock, recorder=None):
     @app.get("/api/recording")
     def recording_status():
         return jsonify(recorder.status() if recorder is not None else {"active": False, "file": None, "rows": 0})
+
+    @app.post("/api/mission/validate")
+    def mission_validate():
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict):
+            return jsonify({"error": "Expected a JSON object with wps"}), 400
+        try:
+            waypoints = validate_ros_waypoints(body.get("wps"))
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify({"count": len(waypoints), "frame": "local_ned_unaligned",
+                        "upload_ready": False, "wps": waypoints})
 
     @app.post("/api/recording/start")
     def recording_start():

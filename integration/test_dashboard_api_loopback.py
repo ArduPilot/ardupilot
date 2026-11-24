@@ -13,7 +13,7 @@ import urllib.request
 from pathlib import Path
 
 os.environ.setdefault("MAVLINK20", "1")
-from pymavlink import mavutil
+from pymavlink import mavutil  # noqa: E402
 
 
 def unused_port():
@@ -32,8 +32,9 @@ def main():
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         start_new_session=True,
     )
-    sender = mavutil.mavlink_connection(f"udpout:127.0.0.1:{mavlink_port}",
-                                       source_system=1, source_component=1)
+    sender = mavutil.mavlink_connection(
+        f"udpout:127.0.0.1:{mavlink_port}", source_system=1, source_component=1,
+    )
     try:
         deadline = time.monotonic() + 6
         while time.monotonic() < deadline:
@@ -69,6 +70,24 @@ def main():
                     with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/api/stream", timeout=0.5) as response:
                         stream_state = json.loads(response.readline().removeprefix(b"data: "))
                     assert stream_state["link_alive"] and stream_state["imu_alive"]
+                    waypoint = {"north": 3, "east": -2, "depth": 0.8, "yaw": 45,
+                                "max_vel": 0.4, "tolerance": 0.2, "hold_sec": 2,
+                                "status": "pending"}
+                    url = f"http://127.0.0.1:{http_port}/api/mission/validate"
+                    valid = urllib.request.Request(url, data=json.dumps({"wps": [waypoint]}).encode(),
+                                                   headers={"Content-Type": "application/json"})
+                    with urllib.request.urlopen(valid, timeout=0.5) as response:
+                        preview = json.load(response)
+                    assert preview["count"] == 1 and preview["frame"] == "local_ned_unaligned"
+                    assert preview["upload_ready"] is False and preview["wps"][0]["depth"] == 0.8
+                    invalid = urllib.request.Request(url, data=json.dumps({"wps": [waypoint | {"depth": -1}]}).encode(),
+                                                     headers={"Content-Type": "application/json"})
+                    try:
+                        urllib.request.urlopen(invalid, timeout=0.5)
+                    except urllib.error.HTTPError as exc:
+                        assert exc.code == 400
+                    else:
+                        raise AssertionError("Invalid mission waypoint was accepted")
                     print("Dashboard view, API and SSE + MAVLink loopback passed")
                     return
             except (urllib.error.URLError, TimeoutError):
