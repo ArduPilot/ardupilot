@@ -64,11 +64,17 @@ def main():
                         continue
                     for byte in data:
                         message = decoder.parse_char(bytes([byte]))
-                        if message and message.get_type() == "VISION_SPEED_ESTIMATE":
+                        if message and (message.get_type().startswith("VISION_") or
+                                        message.get_type() == "ODOMETRY"):
                             found.append(message)
                 return found
 
             receive_for(0.2)  # establish the loopback peer and fresh attitude
+            position = {"type": "position_local", "status": 0, "ts": 49056.809,
+                        "x": 12.4, "y": 64.6, "z": 1.7, "std": 0.002}
+            device.sendall((json.dumps(position) + "\n").encode())
+            if receive_for(0.3):
+                raise AssertionError("unaligned A50 position emitted navigation MAVLink")
             device.sendall((json.dumps(dict(report, velocity_valid=False)) + "\n").encode())
             if receive_for(0.3):
                 raise AssertionError("invalid A50 bottom lock emitted MAVLink velocity")

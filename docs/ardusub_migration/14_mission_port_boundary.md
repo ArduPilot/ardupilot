@@ -8,6 +8,21 @@ Do not map the ROS queue directly to AUTO yet. `ModeAuto::init` rejects entry un
 
 The combined virtual Xsens/Bar30/A50 replay has reported both `EKF_CONST_POS_MODE` with attitude/velocity flags and `EKF_UNINITIALIZED` across 15-second runs; neither had an absolute horizontal-position flag. That variability and missing position are direct software evidence for keeping mission commands disabled. The read-only dashboard displays these report flags without claiming to implement `position_ok()`.
 
+## ROS waypoint contract to preserve
+
+The reference dashboard creates each queued waypoint with `north`, `east`, `depth`, `yaw`, `max_vel`, `tolerance`, `hold_sec`, and a display-only `status` (`web_dashboard/templates/index.html`, mission builder). The worker treats north/east as local metres, depth as positive-down metres, yaw as degrees, `max_vel` as the ROS position controller's horizontal speed limit, `tolerance` as horizontal arrival distance in metres, and `hold_sec` as time spent inside that tolerance. The worker's arrival check currently uses **horizontal distance only**; it does not gate hold completion on depth or yaw. The port should preserve or deliberately revise that behavior, rather than silently copying fields into a MAVLink mission item.
+
+| ROS field | Required ArduSub decision before upload |
+| --- | --- |
+| `north`, `east` | A verified local-to-global origin and yaw alignment; ArduSub's mission parser does not accept the local NED queue directly. |
+| `depth` | Positive-down reference and conversion to the mission frame's altitude sign/reference, verified against Bar30 and EKF origin. |
+| `yaw` | Whether a separate yaw command is needed at each waypoint, with ACK and completion checks; do not assume a waypoint item preserves it. |
+| `max_vel` | A bounded speed command and restoration policy; not an intrinsic waypoint coordinate. |
+| `tolerance`, `hold_sec` | Horizontal arrival and dwell semantics matched to the old worker; decide whether depth/yaw gates should be added, with timeout/cancel behavior. |
+| `status` | Companion display state only; it must come from ArduSub mission/current/ACK telemetry after porting. |
+
+The A50 `position_local` report is **not** a ready-made origin: [Water Linked's dead-reckoning guide](https://docs.waterlinked.com/dvl/dead-reckoning/) says its frame is reset/startup-relative, its yaw zeroes on reset, and in-air drift can be significant. The bridge now parses and can display that report for alignment work, but never forwards it as ArduSub position. A mission transfer client remains blocked on a validated navigation frame, estimator readiness and a concrete mapping of these behavioral fields.
+
 Next software-only steps:
 
 1. Establish a replayed, observable navigation source and verify `position_ok()` and estimator origin behavior without real motors. Do not infer position health from fresh `LOCAL_POSITION_NED` alone.

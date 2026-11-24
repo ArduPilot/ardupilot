@@ -19,6 +19,37 @@ class DvlVelocity:
     received_monotonic_s: float
 
 
+@dataclass(frozen=True)
+class DvlPosition:
+    """A50 dead-reckoned displacement in its reset-time vehicle frame."""
+    local_m: tuple[float, float, float]
+    position_std_m: float
+    report_time_s: float
+    received_monotonic_s: float
+
+
+def parse_position(line, received_monotonic_s):
+    """Parse a position_local report without claiming it is navigation NED.
+
+    The A50's origin and axes are established at startup or dead-reckoning
+    reset; neither can be inferred from the JSON report alone.
+    """
+    try:
+        report = json.loads(line)
+        if not isinstance(report, dict) or report.get("type") != "position_local":
+            return None
+        if type(report.get("status")) is not int or report["status"] != 0:
+            return None
+        position = _vec3((report["x"], report["y"], report["z"]))
+        std = float(report["std"])
+        stamp = float(report["ts"])
+        if not (math.isfinite(std) and std >= 0 and math.isfinite(stamp) and stamp >= 0):
+            return None
+        return DvlPosition(position, std, stamp, received_monotonic_s)
+    except (ValueError, TypeError, KeyError, IndexError, json.JSONDecodeError):
+        return None
+
+
 def _vec3(values):
     if len(values) != 3:
         raise ValueError("expected three vector elements")

@@ -4,7 +4,7 @@ import json
 import math
 import unittest
 
-from dvl_velocity import parse_velocity, rotate, to_ned, mavlink_covariance
+from dvl_velocity import parse_position, parse_velocity, rotate, to_ned, mavlink_covariance
 
 
 class DvlVelocityTests(unittest.TestCase):
@@ -50,6 +50,20 @@ class DvlVelocityTests(unittest.TestCase):
                            now_monotonic_s=10.1)
         self.assertEqual(corrected, (1, -1, 0))
         self.assertEqual(rotate((1, 0, 0, 0), (1, 2, 3)), (1, 2, 3))
+
+    def test_dead_reckoning_report_is_separate_from_velocity(self):
+        report = {"type": "position_local", "status": 0, "format": "json_v3.3",
+                  "ts": 49056.809, "x": 12.4, "y": 64.6, "z": 1.7,
+                  "std": 0.002, "roll": 0.6, "pitch": 0.6, "yaw": 0.6}
+        line = json.dumps(report)
+        sample = parse_position(line, 10.0)
+        self.assertEqual(sample.local_m, (12.4, 64.6, 1.7))
+        self.assertEqual(sample.report_time_s, 49056.809)
+        self.assertIsNone(parse_velocity(line, 10.0))
+        for change in ({"status": 1}, {"x": float("nan")}, {"std": -1},
+                       {"ts": float("inf")}, {"type": "velocity"}, {"y": None}):
+            with self.subTest(change=change):
+                self.assertIsNone(parse_position(json.dumps(report | change), 10.0))
 
 
 if __name__ == "__main__":

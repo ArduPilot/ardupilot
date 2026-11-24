@@ -13,7 +13,7 @@ from pathlib import Path
 import socket
 import time
 
-from dvl_velocity import mavlink_covariance, parse_velocity, to_ned
+from dvl_velocity import mavlink_covariance, parse_position, parse_velocity, to_ned
 
 
 def measurement(line, received_s, attitude, config):
@@ -65,6 +65,8 @@ def main():
                         help="loopback MAVLink endpoint; match ArduSub --serial0 udp:127.0.0.1:14551")
     parser.add_argument("--connect-a50", action="store_true",
                         help="explicitly enable the live A50 TCP sensor connection")
+    parser.add_argument("--observe-position", action="store_true",
+                        help="print raw A50 dead-reckoning reports; never forward position to ArduSub")
     args = parser.parse_args()
     if not args.connect_a50:
         parser.error("live sensor access requires --connect-a50")
@@ -102,6 +104,14 @@ def main():
             while b"\n" in buffer:
                 line, buffer = buffer.split(b"\n", 1)
                 now = time.monotonic()
+                if args.observe_position:
+                    position = parse_position(line, now)
+                    if position is not None:
+                        print(json.dumps({"type": "a50_position_observation",
+                                          "frame": "a50_reset_local_unaligned",
+                                          "xyz_m": position.local_m,
+                                          "std_m": position.position_std_m,
+                                          "report_time_s": position.report_time_s}), flush=True)
                 result = measurement(line, now, attitude, config)
                 if result is None:
                     continue
