@@ -18408,6 +18408,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LOG_REPLAY": 1,
             "LOG_DISARMED": 1,
+            # faster than EKF3 fuses flow, so Replay has to average the samples as the vehicle did
+            "SIM_FLOW_RATE": 100,
         })
 
         old_onboard_logs = sorted(self.log_list())
