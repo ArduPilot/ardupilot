@@ -1938,6 +1938,19 @@ bool AP_AHRS::set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection sour
 #endif
 }
 
+#if AP_AHRS_NAVEKF3_ENABLED
+// set the configured EKF's preferred primary core without saving it. Only EKF3 offers it, so
+// with another estimator configured nothing is set and this returns false. Each refusal says why
+bool AP_AHRS::set_primary_core_for_configured_backend(uint8_t core_index)
+{
+    if (configured_ekf_type() != EKFType::THREE) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF primary core needs EKF3");
+        return false;
+    }
+    return ekf3.EKF3.setPrimaryCore(core_index, hal.util->get_soft_armed());
+}
+#endif  // AP_AHRS_NAVEKF3_ENABLED
+
 //returns active source set used, 0=primary, 1=secondary, 2=tertiary
 uint8_t AP_AHRS::get_posvelyaw_source_set() const
 {
