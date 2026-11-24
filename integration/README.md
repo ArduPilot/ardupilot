@@ -90,3 +90,11 @@ The native `--active --guard-sim --serial-pty` replay also sends live ArduSub mi
 The operator dashboard includes an optional camera preview. Enter a browser-reachable HTTP image or MJPEG URL and select Connect; the URL is saved in that browser for later editing, but the feed does not reconnect automatically. Disconnect stops loading it. The camera server and GoPro transport are not launched by this dashboard; an RTSP camera needs a separate web-stream bridge. Test with any local HTTP image before connecting real hardware.
 
 The Power card reads ArduSub `SYS_STATUS` voltage (mV), current (cA), and reported remaining percentage. It clears values when the message or vehicle link expires, and treats MAVLink unknown sentinels as unavailable. `battery_alive` and these normalized values are also exposed through the read-only API and CSV recorder. This is reported telemetry, not a calibrated energy estimate.
+
+## Interactive control, missions, dynamics & single-command validation
+
+When `dashboard_api.py` is started with `--enable-control`, it attaches `ardusub_control.py` (`ArduSubCommander`), `mission_client.py` (`MissionClient`, `GuidedMissionRunner`), `timed_mission.py` + `flight_plan_runner.py` (`TimedMissionRunner`, `FlightPlanRunner`), `gate_bridge.py` (`GateGuidanceBridge`), and `atal_runtime.py` (`RuntimeSupervisor`) to wire `/classic` and `/debug`. Read-only mode remains the default without `--enable-control`, and `/api/flash_firmware` and `/api/flight_plan/arm_untethered` stay blocked (`403`).
+
+- **A50 `VISION_POSITION_DELTA` & status:** `dvl_bridge.py` defaults to `--mode body_delta` (`VISION_POSITION_DELTA`, `writeBodyFrameOdom` in EKF3) and optional `--status-udp` `atal_dvl_status` telemetry.
+- **Closed-loop 6-DoF sim:** `vehicle_dynamics_sim.py` (`UnderwaterDynamicsSim`) and `test_closed_loop_dynamics.py` exercise `STABILIZE`, `ALT_HOLD`, and `GUIDED` waypoint execution against loopback native `ardusub`.
+- **Single-command suite:** Run `python3 integration/run_validation_suite.py` on the ordinary `--board=linux` build (or `python3 integration/run_validation_suite.py --with-loopback` to include the `atal_loopback_output.hwdef` dynamics and guarded serial PTY checks and restore the ordinary build).

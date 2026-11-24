@@ -33,3 +33,7 @@ Next software-only steps:
 4. Exercise upload/read-back and start/pause/abort/skip behavior in SITL with disarmed and fault cases. Verify mode/arming acknowledgements and neutral/failsafe behavior before surfacing active controls in the familiar dashboard shell.
 
 Physical sensor mounting, actuator wiring, E-stop behavior, and wet mission commissioning remain the final supervised hardware phase. The current card is operational status only.
+
+## 2026-11-25 software implementation update
+
+`integration/mission_client.py` (`local_ned_to_global`, `ros_waypoints_to_mission_items`, `MissionClient`, `GuidedMissionRunner`) implements ArduSub 4.7 mission upload/readback (`MAV_FRAME_GLOBAL_INT` + `MAV_CMD_NAV_WAYPOINT`) and GUIDED local-NED waypoint sequencing (`WP_SPD` in m/s), wired into `dashboard_api.py --enable-control` (`/api/mission/upload`, `/readback`, `/set_queue`, `/start`, `/pause`, `/abort`, `/skip`, `/status`). `test_ardusub_control_and_mission.py`, `test_native_end_to_end.py` (4-item native upload/readback), and `test_closed_loop_dynamics.py` (`GuidedMissionRunner` arrival in 6-DoF sim) verify the software workflow; wet pool verification remains hardware-stage work.

@@ -12,3 +12,7 @@ Port order for software work:
 4. Treat untethered launch as a separate safety-critical feature. It needs an independent trigger, power and communications design, explicit cancel path, and supervised hardware validation. It must not be enabled by copying the ROS Ethernet-carrier watcher.
 
 The companion logger may eventually reuse the familiar ROS panel and report format, but source values must be ArduSub telemetry or explicit companion observations. Unknown controller targets, effort, DVL lock, and mission milestones stay blank until those producers exist.
+
+## 2026-11-25 software implementation update
+
+`integration/timed_mission.py` adapts the validated `TimedMission` engine and `integration/flight_plan_runner.py` implements `TimedMissionRunner` and `FlightPlanRunner` (CSV/SRT/summary logs + ArduSub mode/failsafe sequencing), wired under `dashboard_api.py --enable-control`. `/api/flight_plan/arm_untethered` remains intentionally blocked with HTTP `403` pending hardware E-stop and tether-drop failsafe qualification.
