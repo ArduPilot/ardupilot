@@ -236,11 +236,10 @@ void AP_ExternalAHRS_GSOF::post_filter() const
     state.velocity = Vector3f{ins_full_nav.vel_n, ins_full_nav.vel_e, ins_full_nav.vel_d};
     state.have_velocity = true;
 
-    state.location = Location(
+    state.location = AbsAltLocation(
         ins_full_nav.latitude * 1E7,
         ins_full_nav.longitude * 1E7,
-        (ins_full_nav.altitude - undulation) * 1E2,
-        Location::AltFrame::ABSOLUTE);
+        (ins_full_nav.altitude - undulation) * 1E2);
     state.have_location = true;
 
     state.quat.from_euler(

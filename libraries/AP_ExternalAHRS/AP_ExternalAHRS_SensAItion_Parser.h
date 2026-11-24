@@ -62,7 +62,7 @@ public:
         Quaternion orientation;
 
         // Packet 2 (INS) Data
-        Location location;          // Lat/Lon/Alt
+        AbsAltLocation location;    // Lat/Lon/Alt
         Vector3f velocity_ned;      // North/East/Down (m/s)
 
         // Accuracy Metrics (Vectors as requested)

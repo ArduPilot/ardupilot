@@ -53,7 +53,7 @@ struct Measurement {
     Quaternion orientation;
 
     // Packet 2 (INS) Data
-    Location location;          // Lat/Lon/Alt
+    AbsAltLocation location;    // Lat/Lon/Alt
     Vector3f velocity_ned;      // North/East/Down m/s
 
     // Accuracy Metrics (Vectors)
@@ -153,7 +153,7 @@ static void fill_simulated_packet(uint8_t* data, size_t& data_length,
         fill_be32(data, idx, m.velocity_ned.z * 1000);
 
         // Altitude
-        fill_be32(data, idx, m.location.alt * 10); // cm -> mm
+        fill_be32(data, idx, m.location.get_alt_cm() * 10); // cm -> mm
 
         // 33: Alignment
         fill_u8(data, idx, m.alignment_status);
@@ -218,7 +218,7 @@ static Measurement default_measurement(Parser::MeasurementType type)
     if (type == Parser::MeasurementType::INS) {
         m.location.lat = 590000000;
         m.location.lng = 180000000;
-        m.location.alt = 5000;
+        m.location.set_alt_cm(5000);
         m.velocity_ned = Vector3f(1, 0, 0);
 
         m.pos_accuracy = Vector3f(0.5f, 0.5f, 0.8f);
@@ -271,7 +271,7 @@ static bool cmp_packages(Measurement& in, Parser::Measurement& out)
     case Parser::MeasurementType::INS:
         if (in.location.lat != out.location.lat ||
             in.location.lng != out.location.lng ||
-            in.location.alt != out.location.alt ||
+            in.location.get_alt_cm() != out.location.get_alt_cm() ||
             !is_equal(in.velocity_ned[0], out.velocity_ned[0]) ||
             !is_equal(in.velocity_ned[1], out.velocity_ned[1]) ||
             !is_equal(in.velocity_ned[2], out.velocity_ned[2]) ||

@@ -332,24 +332,14 @@ void AP_ExternalAHRS_SensAItion::handle_ins(const AP_ExternalAHRS_SensAItion_Par
     // STATE
     {
         WITH_SEMAPHORE(state.sem);
-        state.location = Location(
-                             meas.location.lat,
-                             meas.location.lng,
-                             meas.location.alt,
-                             Location::AltFrame::ABSOLUTE
-                         );
+        state.location = meas.location;
         state.velocity = meas.velocity_ned;
         state.have_location = true;
         state.have_velocity = true;
         state.last_location_update_us = AP_HAL::micros();
 
         if (!state.have_origin && meas.alignment_status) {
-            state.origin = Location(
-                               meas.location.lat,
-                               meas.location.lng,
-                               meas.location.alt,
-                               Location::AltFrame::ABSOLUTE
-                           );
+            state.origin = meas.location;
             state.have_origin = true;
             GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "KEBNI: Origin Set.");
         }
@@ -386,7 +376,7 @@ void AP_ExternalAHRS_SensAItion::handle_ins(const AP_ExternalAHRS_SensAItion_Par
     // Note: SensAItion reports altitude relative to WGS84, not MSL.
     // But we expect the user to reset the altitude to 0 at start,
     // so the absolute reference should not matter.
-    gps.msl_altitude = meas.location.alt;
+    gps.msl_altitude = meas.location.get_alt_cm();
     gps.ned_vel_north = meas.velocity_ned.x;
     gps.ned_vel_east = meas.velocity_ned.y;
     gps.ned_vel_down = meas.velocity_ned.z;

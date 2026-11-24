@@ -338,11 +338,10 @@ void AP_ExternalAHRS_Aeron_plx::publish_nav_para1(const NavPara1Payload &data)
         // MSL altitude (i.e. undulation is valid). Velocity above has no
         // such dependency and is always published.
         if (undulation_valid) {
-            state.location = Location {
+            state.location = AbsAltLocation {
                 int32_t(data.position[0] * 1.0e7),
                 int32_t(data.position[1] * 1.0e7),
-                int32_t((data.height_abv_ellip - undulation_m) * 1.0e2),
-                Location::AltFrame::ABSOLUTE
+                int32_t((data.height_abv_ellip - undulation_m) * 1.0e2)
             };
             state.have_location           = true;
             state.last_location_update_us = AP_HAL::micros();
@@ -676,11 +675,10 @@ void AP_ExternalAHRS_Aeron_plx::format_and_push_gps(AeronDeferredMsgs &msgs)
     if (gps_msg.fix_type >= AP_GPS_FixType::FIX_3D) {
         WITH_SEMAPHORE(state.sem);
         if (!state.have_origin) {
-            state.origin = Location {
+            state.origin = AbsAltLocation {
                 int32_t(snap.gps_position[0] * 1.0e7),
                 int32_t(snap.gps_position[1] * 1.0e7),
-                int32_t((snap.gps_height_ellip_m - snap.gps_undulation_m) * 1.0e2),
-                Location::AltFrame::ABSOLUTE
+                int32_t((snap.gps_height_ellip_m - snap.gps_undulation_m) * 1.0e2)
             };
             state.have_origin = true;
         }

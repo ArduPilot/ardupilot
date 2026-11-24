@@ -357,7 +357,7 @@ void AP_ExternalAHRS_SensAItion_Parser::decode_ins(const uint8_t* payload, Measu
 
     // --- 2. POPULATE & CONVERT ---
     const float mm_to_cm = 0.1f;
-    measurement.location = Location(lat_raw, lon_raw, alt_raw_mm * mm_to_cm, Location::AltFrame::ABSOLUTE);
+    measurement.location = AbsAltLocation(lat_raw, lon_raw, alt_raw_mm * mm_to_cm);
 
     const float mms_to_ms = 0.001f;
     const float mm_to_m = 0.001f;
