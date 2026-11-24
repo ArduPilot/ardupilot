@@ -22,6 +22,12 @@ def check_local_port(port):
         sock.bind(("127.0.0.1", port))
 
 
+def unused_udp_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--http-port", type=int, default=8089)
@@ -32,9 +38,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix="atal-demo-") as directory:
         xsens_master, xsens_slave = pty.openpty()
         depth_master, depth_slave = pty.openpty()
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.bind(("127.0.0.1", 0))
-            dashboard_port = sock.getsockname()[1]
+        dashboard_port = unused_udp_port()
+        gcs_port = unused_udp_port()
         defaults = Path(directory) / "demo.parm"
         defaults.write_text(
             "EAHRS_TYPE 12\nEAHRS_RATE 100\nEAHRS_SENSORS 2\n"
@@ -53,7 +58,7 @@ def main():
             start_new_session=True,
         )
         vehicle = subprocess.Popen(
-            [str(BINARY), "--serial0", "udp:127.0.0.1:14551",
+            [str(BINARY), "--serial0", f"udp:127.0.0.1:{gcs_port}",
              "--serial1", os.ttyname(xsens_slave), "--serial2", os.ttyname(depth_slave),
              "--serial3", f"udp:127.0.0.1:{dashboard_port}",
              "--defaults", str(defaults), "--log-directory", directory,
