@@ -32,7 +32,7 @@ def main():
         config_path.write_text(json.dumps(config))
         process = subprocess.Popen(
             [sys.executable, str(ROOT / "integration/dvl_bridge.py"),
-             "--config", str(config_path), "--connect-a50"],
+             "--config", str(config_path), "--connect-a50", "--mode", "ned_vel"],
             cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
             start_new_session=True,
         )

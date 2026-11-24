@@ -4,7 +4,7 @@ import json
 import math
 import unittest
 
-from dvl_velocity import parse_position, parse_velocity, rotate, to_ned, mavlink_covariance
+from dvl_velocity import parse_position, parse_velocity, rotate, to_body_delta, to_ned, mavlink_covariance
 
 
 class DvlVelocityTests(unittest.TestCase):
@@ -64,6 +64,21 @@ class DvlVelocityTests(unittest.TestCase):
                        {"ts": float("inf")}, {"type": "velocity"}, {"y": None}):
             with self.subTest(change=change):
                 self.assertIsNone(parse_position(json.dumps(report | change), 10.0))
+
+    def test_body_position_delta_scaling_and_limits(self):
+        sample = self.sample()
+        self.assertAlmostEqual(sample.interval_s, 0.1)
+        pos_d, ang_d, dt_us, conf = to_body_delta(
+            sample, 0.1, offset_m_frd=(1, 0, 0), body_rates_rad_s=(0, 0, 1),
+            fom_max_mps=0.25, now_monotonic_s=10.05,
+        )
+        self.assertEqual(dt_us, 100000)
+        self.assertAlmostEqual(pos_d[0], 0.1, places=6)
+        self.assertAlmostEqual(pos_d[1], -0.1, places=6)
+        self.assertAlmostEqual(ang_d[2], 0.1, places=6)
+        self.assertTrue(1.0 <= conf <= 100.0)
+        with self.assertRaisesRegex(ValueError, "interval"):
+            to_body_delta(sample, 0.005, now_monotonic_s=10.05)
 
 
 if __name__ == "__main__":

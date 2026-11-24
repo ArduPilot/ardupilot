@@ -17,6 +17,7 @@ class DvlVelocity:
     velocity_error_mps: float
     validity_unix_us: Optional[int]
     received_monotonic_s: float
+    interval_s: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -121,9 +122,29 @@ def parse_velocity(line, received_monotonic_s, fom_max_mps=0.25):
         if stamp is not None:
             if type(stamp) is not int or stamp <= 0:
                 return None
-        return DvlVelocity(velocity, vel_error, stamp, received_monotonic_s)
+        interval_s = None
+        raw_time_ms = report.get("time")
+        if raw_time_ms is not None:
+            val_ms = float(raw_time_ms)
+            if math.isfinite(val_ms) and val_ms > 0:
+                interval_s = val_ms / 1000.0
+        return DvlVelocity(velocity, vel_error, stamp, received_monotonic_s, interval_s)
     except (ValueError, TypeError, KeyError, IndexError, json.JSONDecodeError):
         return None
+
+
+def body_velocity_at_cg(sample, dvl_to_body_wxyz=(1, 0, 0, 0),
+                        offset_m_frd=(0, 0, 0), body_rates_rad_s=(0, 0, 0),
+                        now_monotonic_s=None, max_age_s=0.75):
+    """Transform DVL body velocity into vehicle-body FRD velocity at CG."""
+    if now_monotonic_s is not None and not 0 <= now_monotonic_s - sample.received_monotonic_s <= max_age_s:
+        raise ValueError("stale DVL velocity")
+    vx, vy, vz = rotate(dvl_to_body_wxyz, sample.body_frd_mps)
+    ox, oy, oz = _vec3(offset_m_frd)
+    wx, wy, wz = _vec3(body_rates_rad_s)
+    return (vx - (wy * oz - wz * oy),
+            vy - (wz * ox - wx * oz),
+            vz - (wx * oy - wy * ox))
 
 
 def to_ned(sample, body_to_ned_wxyz, dvl_to_body_wxyz=(1, 0, 0, 0),
@@ -134,15 +155,34 @@ def to_ned(sample, body_to_ned_wxyz, dvl_to_body_wxyz=(1, 0, 0, 0),
     Attitude and body rates must come from the same fresh autopilot telemetry.
     Caller owns that freshness gate; a stale DVL sample is rejected here.
     """
-    if now_monotonic_s is not None and not 0 <= now_monotonic_s - sample.received_monotonic_s <= max_age_s:
-        raise ValueError("stale DVL velocity")
-    vx, vy, vz = rotate(dvl_to_body_wxyz, sample.body_frd_mps)
-    ox, oy, oz = _vec3(offset_m_frd)
-    wx, wy, wz = _vec3(body_rates_rad_s)
-    velocity_at_cg = (vx - (wy * oz - wz * oy),
-                      vy - (wz * ox - wx * oz),
-                      vz - (wx * oy - wy * ox))
+    velocity_at_cg = body_velocity_at_cg(
+        sample, dvl_to_body_wxyz=dvl_to_body_wxyz, offset_m_frd=offset_m_frd,
+        body_rates_rad_s=body_rates_rad_s, now_monotonic_s=now_monotonic_s, max_age_s=max_age_s,
+    )
     return rotate(body_to_ned_wxyz, velocity_at_cg)
+
+
+def to_body_delta(sample, dt_s, dvl_to_body_wxyz=(1, 0, 0, 0),
+                  offset_m_frd=(0, 0, 0), body_rates_rad_s=(0, 0, 0),
+                  fom_max_mps=0.25, now_monotonic_s=None, max_age_s=0.75):
+    """Convert valid DVL velocity into ArduPilot VISION_POSITION_DELTA fields.
+
+    Returns (position_delta_frd_m, angle_delta_frd_rad, time_delta_usec, confidence_pct).
+    Enforces dt_s >= 0.02s so ArduPilot EKF3 bodyOdm never drops the sample.
+    """
+    if not math.isfinite(dt_s) or not 0.02 <= dt_s <= max_age_s:
+        raise ValueError("invalid DVL integration interval")
+    vel_cg = body_velocity_at_cg(
+        sample, dvl_to_body_wxyz=dvl_to_body_wxyz, offset_m_frd=offset_m_frd,
+        body_rates_rad_s=body_rates_rad_s, now_monotonic_s=now_monotonic_s, max_age_s=max_age_s,
+    )
+    wx, wy, wz = _vec3(body_rates_rad_s)
+    pos_delta = (vel_cg[0] * dt_s, vel_cg[1] * dt_s, vel_cg[2] * dt_s)
+    ang_delta = (wx * dt_s, wy * dt_s, wz * dt_s)
+    time_delta_usec = int(round(dt_s * 1_000_000))
+    scale = max(float(fom_max_mps), 1e-3)
+    confidence = max(1.0, min(100.0, 100.0 * (1.0 - sample.velocity_error_mps / scale)))
+    return pos_delta, ang_delta, time_delta_usec, confidence
 
 
 def mavlink_covariance(error_mps):

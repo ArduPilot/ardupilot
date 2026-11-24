@@ -83,7 +83,7 @@ def main():
             last_depth = 0.0
             last_report = 0.0
             started = time.monotonic()
-            deadline = started + 15
+            deadline = started + 18
             while time.monotonic() < deadline:
                 if bridge.poll() is not None or native.poll() is not None:
                     raise AssertionError(f"Process exited: bridge={bridge.poll()}, native={native.poll()}")
@@ -95,10 +95,10 @@ def main():
                     os.write(depth_master, b"DEPTH:1025.50,23.40,1.2500\n")
                     last_depth = now
                 if now - last_report >= 0.2:
-                    bottom_lock = not 7 <= now - started < 10
+                    bottom_lock = not 7 <= now - started < 12
                     report = {"type": "velocity", "velocity_valid": bottom_lock,
-                              "status": 0, "altitude": 2.0, "fom": 0.1,
-                              "vx": 0.4, "vy": -0.2, "vz": 0.1,
+                              "status": 0, "altitude": 2.0, "fom": 0.05, "time": 200.0,
+                              "vx": 0.4, "vy": -0.2, "vz": 0.0,
                               "time_of_validity": time.time_ns() // 1000}
                     dvl.sendall((json.dumps(report) + "\n").encode())
                     last_report = now
@@ -106,7 +106,7 @@ def main():
                 if message is not None and message.get_type() == "EKF_STATUS_REPORT":
                     ekf_flags = message.flags
                     phase = ("startup" if now - started < 7 else
-                             "lock_loss" if now - started < 10 else "recovery")
+                             "lock_loss" if now - started < 12 else "recovery")
                     phase_flags[phase].add(ekf_flags)
                 time.sleep(0.01)
         finally:
@@ -129,16 +129,16 @@ def main():
         ekf_velocity = None
         for log_file in log_files:
             log = mavutil.mavlink_connection(str(log_file))
-            while message := log.recv_match(type=["VISV", "XKF1"]):
-                if message.get_type() == "VISV" and message.Ign == 0:
-                    if abs(message.VX - 0.4) < 0.05 and abs(message.VY + 0.2) < 0.05:
+            while message := log.recv_match(type=["VISO", "XKF1"]):
+                if message.get_type() == "VISO":
+                    if abs(message.PosDX / max(message.dt, 1e-3) - 0.4) < 0.05 and abs(message.PosDY / max(message.dt, 1e-3) + 0.2) < 0.05:
                         accepted_times.append(message.TimeUS)
                 elif message.get_type() == "XKF1":
                     ekf_velocity = (message.VN, message.VE)
             log.close()
         gap_s = max(((b - a) / 1e6 for a, b in zip(accepted_times, accepted_times[1:])),
                     default=0.0)
-        if len(accepted_times) < 6 or gap_s < 2.5 or ekf_velocity is None or ekf_velocity[0] < 0.2:
+        if len(accepted_times) < 6 or gap_s < 4.0 or ekf_velocity is None or ekf_velocity[0] < 0.2:
             raise AssertionError(f"Chain incomplete: accepted={len(accepted_times)}, "
                                  f"lock-loss gap={gap_s:.2f}s, EKF={ekf_velocity}, "
                                  f"bridge stderr={bridge_error}")
@@ -146,6 +146,10 @@ def main():
             raise AssertionError(f"Missing EKF telemetry during a replay phase: {phase_flags}")
         if any(flag & 16 for flags in phase_flags.values() for flag in flags):
             raise AssertionError(f"Unexpected absolute-position status for velocity-only DVL replay: {phase_flags}")
+        if not any(flag & 8 for flag in phase_flags["startup"]) or not any(flag & 8 for flag in phase_flags["recovery"]):
+            raise AssertionError(f"Expected EKF_POS_HORIZ_REL in startup and recovery: {phase_flags}")
+        if any(flag & 1024 for flag in phase_flags["lock_loss"] | phase_flags["recovery"]):
+            raise AssertionError(f"EKF became uninitialized during lock loss or recovery: {phase_flags}")
         observed_flags = {name: sorted(flags) for name, flags in phase_flags.items()}
         print(f"Loopback A50 → bridge → native ArduSub EKF passed: "
               f"accepted={len(accepted_times)}, lock-loss gap={gap_s:.2f}s, "
