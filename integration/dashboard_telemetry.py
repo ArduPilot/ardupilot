@@ -25,6 +25,7 @@ class DashboardTelemetry:
         self._servo_at = None
         self._mission_at = None
         self._battery_at = None
+        self._ekf_at = None
         self._gate_link_at = None
         self._gate_guidance_at = None
         self._state = {
@@ -39,6 +40,9 @@ class DashboardTelemetry:
             "mission_seq": None, "mission_total": None,
             "mission_state": None, "mission_mode": None,
             "battery_v": None, "battery_a": None, "battery_percent": None,
+            "ekf_flags": None, "ekf_attitude_ok": None, "ekf_velocity_horizontal_ok": None,
+            "ekf_absolute_position_ok": None, "ekf_predicted_position_ok": None,
+            "ekf_constant_position": None, "ekf_uninitialized": None,
             "gate_link_ok": None, "gate_state": None, "gate_proposal_valid": None,
             "gate_forward": None, "gate_lateral": None, "gate_vertical": None, "gate_yaw": None,
         }
@@ -131,6 +135,19 @@ class DashboardTelemetry:
             s["battery_a"] = current / 100.0 if current >= 0 else None
             s["battery_percent"] = remaining if 0 <= remaining <= 100 else None
             self._battery_at = now
+        elif kind == "EKF_STATUS_REPORT":
+            flags = getattr(msg, "flags", None)
+            if not isinstance(flags, int) or not 0 <= flags <= 65535:
+                return
+            # EKF_STATUS_FLAGS from the pinned MAVLink ardupilotmega.xml.
+            s["ekf_flags"] = flags
+            s["ekf_attitude_ok"] = bool(flags & 1)
+            s["ekf_velocity_horizontal_ok"] = bool(flags & 2)
+            s["ekf_absolute_position_ok"] = bool(flags & 16)
+            s["ekf_constant_position"] = bool(flags & 128)
+            s["ekf_predicted_position_ok"] = bool(flags & 512)
+            s["ekf_uninitialized"] = bool(flags & 1024)
+            self._ekf_at = now
 
     def snapshot(self):
         now = self._now()
@@ -166,6 +183,12 @@ class DashboardTelemetry:
         s["battery_alive"] = s["link_alive"] and self._battery_at is not None and now - self._battery_at < 3.0
         if not s["battery_alive"]:
             for key in ("battery_v", "battery_a", "battery_percent"):
+                s[key] = None
+        s["ekf_status_alive"] = s["link_alive"] and self._ekf_at is not None and now - self._ekf_at < 3.0
+        if not s["ekf_status_alive"]:
+            for key in ("ekf_flags", "ekf_attitude_ok", "ekf_velocity_horizontal_ok",
+                        "ekf_absolute_position_ok", "ekf_predicted_position_ok",
+                        "ekf_constant_position", "ekf_uninitialized"):
                 s[key] = None
         s["gate_link_alive"] = self._gate_link_at is not None and now - self._gate_link_at < 0.5
         s["gate_guidance_alive"] = self._gate_guidance_at is not None and now - self._gate_guidance_at < 0.5

@@ -75,6 +75,11 @@ function render(s, requestFailed = false) {
   for (const [name, alive] of [['imu', s.imu_alive], ['pressure', s.pressure_alive], ['position', s.position_alive], ['motor', s.output_alive]]) {
     status(`${name}-status`, alive ? 'Fresh' : 'Unavailable', alive ? 'good' : 'warn');
   }
+  const ekfText = !s.ekf_status_alive ? 'Unavailable' : s.ekf_uninitialized ? 'Uninitialized' :
+    s.ekf_constant_position ? 'Constant position' : s.ekf_absolute_position_ok ? 'Absolute position flag' :
+    s.ekf_predicted_position_ok ? 'Predicted position flag' : s.ekf_velocity_horizontal_ok ? 'Velocity flag' :
+    s.ekf_attitude_ok ? 'Attitude flag' : 'No health flags';
+  status('ekf-status', ekfText, 'warn');
   $('state-text').textContent = !s.armed_known ? 'UNKNOWN' : s.armed ? 'ARMED' : 'DISARMED';
   $('state-dot').className = `dot ${!s.armed_known ? 'warn' : s.armed ? 'err' : 'on'}`;
   $('imu-dot').className = `dot ${s.imu_alive ? 'on' : 'warn'}`;

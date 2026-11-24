@@ -41,6 +41,7 @@ The depth gauge's 10 m range is a display-only default in `operator_dashboard.ht
 
 The Mission Status card follows the same read-only instrument style. It reads ArduSub `MISSION_CURRENT` only; unknown or stale state and counts appear unavailable. It never starts a mission or establishes navigation validity.
 The System Control card shows the reported ArduSub flight mode beside link and arming state; the mode clears when heartbeat is stale.
+It also shows the latest EKF status report as a qualified observation. Uninitialized, constant-position, predicted-position and absolute-position flags use explicit text; no flag is presented as mission permission or a substitute for ArduSub's internal `position_ok()`.
 The Gate Guidance card shows fresh ROS link health and proposal values only when the optional ROS subscriber is enabled. Guidance is advisory telemetry and never an ArduSub command. Missing, expired, or invalid proposals have no numeric output.
 The Subsea Camera card accepts an editable HTTP image or MJPEG URL, retaining the address in browser storage without automatically reconnecting. Its empty, connecting, live, and error messages use the same card language. Stream transport and camera hardware configuration remain separate from the telemetry API.
 The Power card shows fresh ArduSub SYS_STATUS voltage, current, and remaining percentage when those values are reported. Missing values and expired messages remain unavailable rather than displaying a guessed charge state.

@@ -14,6 +14,8 @@ FIELDS = (
     "vel_fwd", "vel_lat", "vel_z", "mission_alive", "mission_seq", "mission_total",
     "mission_state", "mission_mode",
     "battery_alive", "battery_v", "battery_a", "battery_percent",
+    "ekf_status_alive", "ekf_flags", "ekf_attitude_ok", "ekf_velocity_horizontal_ok",
+    "ekf_absolute_position_ok", "ekf_predicted_position_ok", "ekf_constant_position", "ekf_uninitialized",
     "gate_link_alive", "gate_link_ok", "gate_guidance_alive", "gate_state",
     "gate_proposal_valid", "gate_forward", "gate_lateral", "gate_vertical", "gate_yaw",
     "output_alive", *(f"pwm_{i}" for i in range(1, 9)),
@@ -85,6 +87,11 @@ class DashboardRecorder:
                     row[key] = None
             if not snapshot.get("battery_alive"):
                 for key in ("battery_v", "battery_a", "battery_percent"):
+                    row[key] = None
+            if not snapshot.get("ekf_status_alive"):
+                for key in ("ekf_flags", "ekf_attitude_ok", "ekf_velocity_horizontal_ok",
+                            "ekf_absolute_position_ok", "ekf_predicted_position_ok",
+                            "ekf_constant_position", "ekf_uninitialized"):
                     row[key] = None
             if not snapshot.get("gate_link_alive"):
                 row["gate_link_ok"] = None

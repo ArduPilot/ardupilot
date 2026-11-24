@@ -4,6 +4,8 @@
 
 The operator dashboard reuses the reference topbar, color scheme, theme, and navigation vocabulary. Dashboard, Plots, Raw Data, theme toggle, and the diagnostic link are active. ROS-dependent control destinations are inert labels with an explicit integration-pending notice. There are no arm, kill, motor, parameter, mission, or calibration controls yet. Any future command UI must define acknowledgement, arming, timeout, and fault behavior before activation. Browser-native buttons, links, focus, and scrolling are canonical; the theme choice is stored locally.
 
+The System Control EKF row displays fresh `EKF_STATUS_REPORT` flags as text. Missing reports become unavailable; an uninitialized flag is explicit. A position flag is never labelled mission-ready because `Sub::position_ok()` also depends on estimator and failsafe state unavailable to this read-only page.
+
 ## Canonical UI Map
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |

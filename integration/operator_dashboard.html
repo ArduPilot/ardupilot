@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
   <link rel="stylesheet" href="/static/ros_dashboard.css">
   <link rel="stylesheet" href="/static/operator_dashboard.css">
-  <script src="/static/operator_dashboard.js?v=2" defer></script>
+  <script src="/static/operator_dashboard.js?v=3" defer></script>
 </head>
 <body>
   <div class="topbar">
@@ -58,8 +58,10 @@
               <div><span>IMU</span><strong id="imu-status">Waiting</strong></div>
               <div><span>Pressure</span><strong id="pressure-status">Waiting</strong></div>
               <div><span>Position feed</span><strong id="position-status">Waiting</strong></div>
+              <div><span>EKF report</span><strong id="ekf-status">Unavailable</strong></div>
               <div><span>Motor output</span><strong id="motor-status">Waiting</strong></div>
             </div>
+            <p class="fineprint">EKF flags describe the estimate; they do not confirm that ArduSub permits navigation.</p>
           </section>
           <section class="card" aria-labelledby="motion-heading">
             <h2 class="ct" id="motion-heading">Vehicle Motion</h2>
@@ -104,7 +106,7 @@
           <section class="card" aria-labelledby="camera-heading">
             <h2 class="ct" id="camera-heading">Subsea Camera</h2>
             <div class="camera-view"><img id="camera-image" alt="Live subsea camera feed" hidden><span id="camera-placeholder">No camera stream connected</span></div>
-            <form id="camera-form" class="camera-controls">
+            <form id="camera-form" class="camera-controls" novalidate>
               <label for="camera-url">HTTP/MJPEG stream URL</label>
               <div><input id="camera-url" type="url" placeholder="http://localhost:8080/stream?topic=/camera/image_raw" autocomplete="url"><button type="submit">Connect</button><button type="button" id="camera-disconnect">Disconnect</button></div>
             </form>

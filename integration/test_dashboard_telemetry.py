@@ -110,6 +110,26 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.telemetry.ingest(Message("HEARTBEAT", base_mode=0))
         self.assertFalse(self.telemetry.snapshot()["battery_alive"])
 
+    def test_ekf_flags_are_reported_without_claiming_navigation_readiness(self):
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=0))
+        self.telemetry.ingest(Message("EKF_STATUS_REPORT", source=255, flags=1 | 2 | 16))
+        self.assertFalse(self.telemetry.snapshot()["ekf_status_alive"])
+        self.telemetry.ingest(Message("EKF_STATUS_REPORT", flags=1 | 2 | 512))
+        state = self.telemetry.snapshot()
+        self.assertTrue(state["ekf_status_alive"])
+        self.assertTrue(state["ekf_attitude_ok"])
+        self.assertTrue(state["ekf_velocity_horizontal_ok"])
+        self.assertTrue(state["ekf_predicted_position_ok"])
+        self.assertFalse(state["ekf_absolute_position_ok"])
+        self.assertFalse(state["ekf_uninitialized"])
+        self.telemetry.ingest(Message("EKF_STATUS_REPORT", flags=-1))
+        self.assertEqual(self.telemetry.snapshot()["ekf_flags"], 1 | 2 | 512)
+        self.time[0] = 3.1
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=0))
+        stale = self.telemetry.snapshot()
+        self.assertFalse(stale["ekf_status_alive"])
+        self.assertIsNone(stale["ekf_absolute_position_ok"])
+
     def test_gate_proposals_require_fresh_link_and_validity(self):
         self.telemetry.ingest_gate_link(True)
         self.telemetry.ingest_gate_guidance(Message("GATE", state="ALIGN", command_valid=True,
@@ -148,6 +168,7 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.assertEqual(client.get("/api/state").json["source"], "ardusub_mavlink")
         self.assertIsNone(client.get("/api/state").json["dvl_locked"])
         self.assertFalse(client.get("/api/health").json["mission_alive"])
+        self.assertFalse(client.get("/api/health").json["ekf_status_alive"])
         self.assertFalse(client.get("/api/health").json["gate_link_alive"])
         stream = client.get("/api/stream", buffered=False)
         self.assertEqual(stream.mimetype, "text/event-stream")

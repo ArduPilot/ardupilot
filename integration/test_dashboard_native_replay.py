@@ -73,7 +73,7 @@ def main():
         recording_started = False
         live_since = None
         try:
-            deadline = time.monotonic() + 10
+            deadline = time.monotonic() + 22
             while time.monotonic() < deadline and process.poll() is None and dashboard.poll() is None:
                 now = time.monotonic()
                 os.write(xsens_master, packet(0x36, imu +
@@ -94,10 +94,11 @@ def main():
                             assert json.load(response)["active"]
                         recording_started = True
                     if (state["link_alive"] and state["imu_alive"] and state["pressure_alive"]
-                            and state["mission_alive"] and state["battery_alive"]):
+                            and state["mission_alive"] and state["battery_alive"]
+                            and state["ekf_status_alive"]):
                         if live_since is None:
                             live_since = time.monotonic()
-                        if time.monotonic() - live_since < 0.3:
+                        if time.monotonic() - live_since < 15.0:
                             time.sleep(0.01)
                             continue
                         assert abs(state["pressure_mbar"] - 1025.5) < 0.2
@@ -117,10 +118,12 @@ def main():
                             rows = list(csv.DictReader(file))
                         if any(row["link_alive"] == "True" and row["imu_alive"] == "True" and
                                row["battery_alive"] == "True" and
+                               row["ekf_status_alive"] == "True" and row["ekf_flags"] != "" and
                                row["mission_alive"] == "True" and row["mission_state"] == "No mission" and
                                abs(float(row["pressure_mbar"]) - 1025.5) < 0.2
                                for row in rows if row["pressure_mbar"]):
-                            print("Native ArduSub serial3 → dashboard HTTP, SSE and CSV passed")
+                            print("Native ArduSub serial3 → dashboard HTTP, SSE and CSV passed; "
+                                  f"EKF flags={state.get('ekf_flags')}")
                             return
                         raise AssertionError(f"Recorded CSV lacks live native telemetry: {recording}")
                 except (urllib.error.URLError, TimeoutError):
