@@ -22,13 +22,15 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             watchdogTimer = new LimitTimer(machine.ClockSource, frequency, this,
                 "AP_STM32_IWDG", reload + 1, enabled: false,
                 eventEnabled: true, autoUpdate: true, divider: 4);
-            watchdogTimer.LimitReached += () =>
+                        watchdogTimer.LimitReached += () =>
             {
                 this.Log(LogLevel.Info, "Watchdog timed out; resetting the machine");
+                foreach(var rcc in machine.GetPeripheralsOfType<AP_STM32F4_RCC>())
+                {
+                    rcc.NextResetCause = AP_STM32F4_RCC.ResetCause.Watchdog;
+                }
                 machine.RequestReset();
             };
-            Reset();
-        }
 
         public long Size => 0x400;
 
