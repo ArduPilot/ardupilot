@@ -2194,7 +2194,10 @@ void RC_Channels::convert_options(const RC_Channel::AUX_FUNC old_option, const R
             // odd?
             continue;
         }
-        if ((RC_Channel::AUX_FUNC)c->option.get() == old_option) {
+        // a value from a defaults file was written for this firmware,
+        // so only stored values hold the old meaning
+        if (c->option.configured_in_storage() &&
+            (RC_Channel::AUX_FUNC)c->option.get() == old_option) {
             c->option.set_and_save((int16_t)new_option);
         }
     }
