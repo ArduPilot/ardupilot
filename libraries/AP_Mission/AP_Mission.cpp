@@ -3311,7 +3311,7 @@ void AP_Mission::format_conversion(uint8_t tag_byte, const Mission_Command &cmd,
 #if AP_EXTERNAL_BINDING_ENABLED
 bool AP_Mission::jump_to_landing_sequence(void)
 {
-    Location loc;
+    AbsAltLocation loc;
     if (AP::ahrs().get_location(loc)) {
         return jump_to_landing_sequence(loc);
     }
@@ -3321,7 +3321,7 @@ bool AP_Mission::jump_to_landing_sequence(void)
 
 bool AP_Mission::jump_to_abort_landing_sequence(void)
 {
-    Location loc;
+    AbsAltLocation loc;
     if (AP::ahrs().get_location(loc)) {
         return jump_to_abort_landing_sequence(loc);
     }
