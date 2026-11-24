@@ -1360,7 +1360,7 @@ private:
     static constexpr uint32_t rngFreshTime_ms = 500;
     // with no range sample for this long on the ground, the on-ground range is used in its place
     static constexpr uint32_t rngOnGndNoDataTime_ms = 200;
-#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+#if EK3_FEATURE_OPTFLOW_AGL_KF && EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     uint32_t rngOutOfRangeLowTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES]; // time stamps of the latest out of range low report from each downward range finder (msec)
 #endif
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)

@@ -44,9 +44,11 @@ void NavEKF3_core::readRangeFinder(void)
             if (sensor == nullptr) {
                 continue;
             }
+#if EK3_FEATURE_OPTFLOW_AGL_KF && EK3_FEATURE_RANGEFINDER_MEASUREMENTS
             if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow)) {
                 rngOutOfRangeLowTime_ms[sensorIndex] = imuSampleTime_ms;
             }
+#endif
             if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == AP_DAL_RangeFinder::Status::Good)) {
                 rngMeasIndex[sensorIndex] ++;
                 if (rngMeasIndex[sensorIndex] > 2) {
