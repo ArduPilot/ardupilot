@@ -51,10 +51,10 @@ public:
     // its historical synthetic airspeed:
     bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
 
-    bool get_origin(Location &ret) const override {
+    bool get_origin(AbsAltLocation &ret) const override {
         return EKF3.getOriginLLH(ret);
     }
-    bool set_origin(const Location &loc) override {
+    bool set_origin(const AbsAltLocation &loc) override {
         return EKF3.setOriginLLH(loc);
     }
 

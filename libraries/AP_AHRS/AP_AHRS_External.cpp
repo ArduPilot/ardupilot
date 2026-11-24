@@ -82,7 +82,7 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.provides_common_origin = true;
 
     // origin-relative position:
-    Location orgn;
+    AbsAltLocation orgn;
     if (extahrs.get_origin(orgn) &&
         results.location_valid) {
         const Vector3p posNED = orgn.get_distance_NED_postype(results.location);
@@ -153,12 +153,12 @@ bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, 
     return AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len);
 }
 
-bool AP_AHRS_External::get_origin(Location &ret) const
+bool AP_AHRS_External::get_origin(AbsAltLocation &ret) const
 {
     return AP::externalAHRS().get_origin(ret);
 }
 
-bool AP_AHRS_External::set_origin(const Location &loc)
+bool AP_AHRS_External::set_origin(const AbsAltLocation &loc)
 {
     return AP::externalAHRS().set_origin(loc);
 }

@@ -79,7 +79,7 @@ public:
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override { return true; }
 
     // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
+    bool get_origin(AbsAltLocation &ret) const override;
 
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
 
@@ -89,7 +89,7 @@ private:
     bool get_filter_status(nav_filter_status &status) const;
 
     // dead-reckoning support
-    bool get_location(Location &loc) const;
+    bool get_location(AbsAltLocation &loc) const;
 
 #if HAL_NAVEKF3_AVAILABLE
     // a reference to the EKF3 backend that we can use to send in

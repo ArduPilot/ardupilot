@@ -227,7 +227,7 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
         // DCM calculates in global co-ordinates and here converts
         // back to relative-to-origin by subtracting the current
         // location from the origin:
-        Location origin;
+        AbsAltLocation origin;
         if (get_origin(origin) && results.location_valid) {
             const Vector3p posNED = origin.get_distance_NED_postype(results.location);
             results.position_NE = posNED.xy();
@@ -1228,7 +1228,7 @@ void AP_AHRS_Backend::set_external_wind_estimate(float speed, float direction) {
 
 // return our current position estimate using
 // dead-reckoning or GPS
-bool AP_AHRS_DCM::get_location(Location &loc) const
+bool AP_AHRS_DCM::get_location(AbsAltLocation &loc) const
 {
     if (_last_lat == 0 && _last_lng == 0) {
         // we have never had a position
@@ -1241,11 +1241,11 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
     int32_t alt_cm;
     if (_gps_use == GPSUse::EnableWithHeight &&
         gps.status() >= AP_GPS_FixType::FIX_3D) {
-        alt_cm = gps.location().alt;
+        alt_cm = gps.location().get_alt_cm();
     } else {
-        alt_cm = baro.get_altitude() * 100 + AP::ahrs().get_home().alt;
+        alt_cm = baro.get_altitude() * 100 + AP::ahrs().get_home().get_alt_cm();
     }
-    loc.set_alt_cm(alt_cm, Location::AltFrame::ABSOLUTE);
+    loc.set_alt_cm(alt_cm);
     loc.offset(_position_offset_north, _position_offset_east);
     if (_have_position) {
         const uint32_t now = AP_HAL::millis();
@@ -1501,7 +1501,7 @@ bool AP_AHRS_DCM::synthetic_airspeed_EAS(const Estimates &results, float &airspe
 /*
   relative-origin functions for fallback in AP_InertialNav
 */
-bool AP_AHRS_DCM::get_origin(Location &ret) const
+bool AP_AHRS_DCM::get_origin(AbsAltLocation &ret) const
 {
     ret = last_origin;
     if (ret.is_zero()) {
