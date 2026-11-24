@@ -24048,6 +24048,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
         self.wait_disarmed(timeout=60)
 
+    def OAExclusionExitAvoidsOtherZone(self):
+        '''the closest exit from an exclusion circle lies in another one; BendyRuler must use a different exit'''
+        takeoff_loc = self.takeoff_for_fence_breach_test(oa_type=1)
+
+        # two touching circles, A due north of home and B east of A.  From
+        # near A's centre the closest exit is due east, inside B
+        circle_a_centre = self.offset_location_ne(takeoff_loc, 20, 0)
+        circle_b_centre = self.offset_location_ne(takeoff_loc, 20, 20)
+        start_loc = self.offset_location_ne(takeoff_loc, 20, 2)
+        self.send_do_reposition(start_loc)
+        self.wait_location(start_loc)
+
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
+                "radius": 10,
+                "loc": circle_a_centre,
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
+                "radius": 10,
+                "loc": circle_b_centre,
+            }),
+        ])
+
+        def assert_outside_circle_b(mav, m):
+            if m.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+            dist = self.get_distance(here, circle_b_centre)
+            if dist < 10:
+                raise NotAchievedException(f"Entered exclusion circle B ({dist=:.1f}m from its centre)")
+
+        self.install_message_hook_context(assert_outside_circle_b)
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+        })
+        self.wait_mode('RTL')
+        self.wait_statustext('RTL: climb target fenced, climbing en route', check_context=True)
+        self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
+        self.wait_disarmed(timeout=60)
+
     def Clamp(self):
         '''test Copter docking clamp'''
         # the simulated clamp only grabs within 0.5m of home
@@ -26890,6 +26932,7 @@ return update, 1000
             self.FenceBreachInclusionWithOA,
             self.FenceBreachExclusionPolygonWithOA,
             self.FenceBreachWithoutOA,
+            self.OAExclusionExitAvoidsOtherZone,
             self.CompassMot,
             self.CompassMotFastRate,
             self.FarOrigin,
