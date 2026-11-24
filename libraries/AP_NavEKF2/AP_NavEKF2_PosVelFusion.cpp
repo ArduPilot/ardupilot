@@ -294,20 +294,14 @@ bool NavEKF2_core::resetHeightDatum(void)
         posDownAtLastMagReset = stateStruct.position.z;
     }
 
-    // the same applies to the filtered baro height that ground effect floors
-    // the height observation at: it only refilters while takeoff is not
-    // expected, and arming makes that true and holds it true on the ground,
-    // so it would pin the observation at the drift that was just cleared
-    meaHgtAtTakeOff = 0.0f;
-
-    // position.z is now zero and the recalibrated baro reads
-    // BARO_ALT_OFFSET, so zero is the steady state only while that is unset.
-    // EKF3 takes the value from the first sample after the reset; the floors
-    // above need one here and now, so EKF2 keeps the zero.  With
-    // BARO_ALT_OFFSET set the estimate then stands that far above the datum
-    // and stays there - calcFiltBaroOffset() only runs while baro is not the
-    // height source, so nothing pulls it back
-    baroHgtOffset = 0.0f;
+    // the recalibrated baro reads BARO_ALT_OFFSET, not zero, and that value is
+    // not readable here, so take the offset from the first sample after the
+    // reset instead.  The filtered baro height that ground effect floors the
+    // height observation at is taken from it too: it only refilters while
+    // takeoff is not expected, and arming makes that true and holds it true
+    // on the ground, so it would pin the observation at the drift that was
+    // just cleared
+    baroHgtOffsetNeedsInit = true;
 
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
 
@@ -1126,7 +1120,8 @@ void NavEKF2_core::selectHeightForFusion()
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
         if (motorsArmed && dal.get_takeoff_expected() && !assume_zero_sideslip()) {
-            hgtMea = MAX(hgtMea, meaHgtAtTakeOff);
+            // meaHgtAtTakeOff is a raw baro height, so remove the same offset
+            hgtMea = MAX(hgtMea, meaHgtAtTakeOff - baroHgtOffset);
         }
     } else {
         fuseHgtData = false;
