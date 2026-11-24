@@ -64,7 +64,7 @@ private:
 
     // get payload location
     // returns true on success and fills in payload_loc argument, false on failure
-    bool get_payload_location(Location& payload_loc) const;
+    bool get_payload_location(AbsAltLocation& payload_loc) const;
 
     // update the slung payload's position, velocity, acceleration
     // vehicle position, velocity, acceleration and wind should be in earth-frame NED frame

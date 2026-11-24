@@ -254,7 +254,7 @@ void MAVLinkGimbalv2::update_gimbal(const Aircraft &aircraft)
     // if tracking an ROI, continuously recompute the earth-frame target
     // (replicates AP_Mount_Backend::get_angle_target_to_location())
     if (_roi.valid) {
-        Location veh;
+        AbsAltLocation veh;
         if (!_estimator.get_location(now_ms, veh)) {
             _gimbal.set_demanded_rates(Vector3f{});
             return;

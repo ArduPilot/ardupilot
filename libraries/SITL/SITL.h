@@ -61,7 +61,7 @@ struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
     uint64_t timestamp_us;
     uint64_t flightaxis_imu_frame_num; // the sitl frame number that should have a corresponding imu sample
-    Location home;
+    AbsAltLocation home;
     double latitude, longitude; // degrees
     double altitude;  // MSL
     double heading;   // degrees

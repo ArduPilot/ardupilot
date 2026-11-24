@@ -20,7 +20,7 @@ public:
     void handle_attitude(const mavlink_autopilot_state_for_gimbal_device_t &packet, uint32_t now_ms);
     bool position_valid(uint32_t now_ms) const;
     bool attitude_valid(uint32_t now_ms) const;
-    bool get_location(uint32_t now_ms, Location &location) const;
+    bool get_location(uint32_t now_ms, AbsAltLocation &location) const;
     bool get_attitude(uint32_t now_ms, const Vector3f &encoders,
                       Matrix3f &vehicle_dcm, Matrix3f &gimbal_dcm) const;
     const Vector3f &vehicle_rates() const
@@ -36,7 +36,7 @@ private:
     uint32_t _attitude_ms = 0;
     uint32_t _attitude_sample_us = 0;
     uint16_t _estimator_status = 0;
-    Location _location;
+    AbsAltLocation _location;
     Vector3f _velocity;
     Quaternion _attitude;
     Vector3f _vehicle_rates;
