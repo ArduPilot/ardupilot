@@ -22931,6 +22931,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AutoRTLRefusedInFenceRecovery,
             self.AutoRTLRefusedByGCSBlock,
             self.AutoRTLFailsafeInFenceRecovery,
+            self.AutoRTLRefusedWithoutPosition,
             self.GripperReleaseOnThrustLoss,
             self.ScriptingAHRSSource,
             self.CompassLearnCopyFromSIM,
@@ -24779,6 +24780,42 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_mode("AUTO_RTL", timeout=10)
         self.wait_disarmed(timeout=180)
         self.reboot_sitl()  # landed away from the start location
+
+    def AutoRTLRefusedWithoutPosition(self):
+        '''Test Auto RTL refused for no position does not move the mission'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+        alt = 20
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),      # 1
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_ATTITUDE_TIME, p1=60),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, alt),     # 3
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, alt),    # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 10, alt),   # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 10, 10, 0),         # 6
+        ])
+
+        self.progress("Leaving AUTO in NAV_ATTITUDE_TIME, which does not require a position")
+        self.wait_current_waypoint(2, timeout=60)
+        self.set_rc(3, 1500)
+        self.change_mode('ALT_HOLD')
+        self.wait_gps_disable()
+
+        mission_current = self.assert_receive_message('MISSION_CURRENT').seq
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.wait_statustext("failed: requires position", check_context=True)
+        self.context_pop()
+        seq = self.assert_receive_message('MISSION_CURRENT').seq
+        if seq != mission_current:
+            raise NotAchievedException(f"Refused Auto RTL moved the mission from item {mission_current} to {seq}")
+        self.assert_mode_is('ALT_HOLD')
+
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.reboot_sitl()  # GPS was disabled in flight
 
     def EK3_OGN_HGT_MASK(self):
         '''test baraometer-alt-compensation based on long-term GPS readings'''
