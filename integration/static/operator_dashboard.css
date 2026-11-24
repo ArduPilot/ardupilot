@@ -82,6 +82,18 @@ main { padding: 16px 22px 32px; }
 .camera-controls button { padding: 8px 10px; border: 1px solid var(--bd2); border-radius: var(--rad-sm); background: var(--bg3); color: var(--tx); cursor: pointer; }
 .camera-controls button:hover { border-color: var(--ac); }
 .tab-card { max-width: 1400px; margin: 0 auto; }
+.mission-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.mission-actions button, .mission-import, .mission-table button { padding: 8px 10px; border: 1px solid var(--bd2); border-radius: var(--rad-sm); background: var(--bg3); color: var(--tx); cursor: pointer; font: inherit; font-size: 12px; }
+.mission-actions button:hover, .mission-import:hover, .mission-table button:hover { border-color: var(--ac); }
+.mission-import input { width: 1px; height: 1px; opacity: 0; position: absolute; }
+.mission-import:focus-within { outline: 2px solid var(--ac); outline-offset: 3px; }
+.mission-table-wrap { overflow-x: auto; }
+.mission-table { width: 100%; min-width: 850px; border-collapse: collapse; font-size: 12px; }
+.mission-table th, .mission-table td { padding: 8px 6px; border-bottom: 1px solid var(--bd); text-align: left; }
+.mission-table thead th { color: var(--tx2); white-space: nowrap; }
+.mission-table input { width: 100%; min-width: 70px; padding: 7px; border: 1px solid var(--bd2); border-radius: var(--rad-sm); background: var(--bg0); color: var(--tx); font: 12px ui-monospace, monospace; }
+.mission-table input:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+#mission-feedback.good { color: var(--gn); }
 .plot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
 .plot-grid > div { min-width: 0; background: var(--bg0); border: 1px solid var(--bd); border-radius: var(--rad-sm); padding: 12px; }
 .plot-grid h3 { color: var(--tx2); font-size: 12px; margin-bottom: 10px; }

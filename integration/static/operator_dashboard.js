@@ -222,6 +222,115 @@ $('theme-toggle').addEventListener('click', toggleTheme);
 document.querySelectorAll('.nav button[data-tab]').forEach(button => {
   button.addEventListener('click', () => selectTab(button.dataset.tab));
 });
+
+const missionFields = ['north', 'east', 'depth', 'yaw', 'max_vel', 'tolerance', 'hold_sec'];
+const missionDefaults = { north: 0, east: 0, depth: 0, yaw: 0, max_vel: 0.3, tolerance: 0.5, hold_sec: 0 };
+let missionRows = [];
+function missionMessage(message, valid = false) {
+  $('mission-feedback').textContent = message;
+  $('mission-feedback').classList.toggle('good', valid);
+}
+function saveMission() {
+  try { localStorage.setItem('atal-mission-draft', JSON.stringify(missionRows)); }
+  catch (_) { missionMessage('Browser storage unavailable. Export JSON to keep this plan.'); }
+}
+function renderMission() {
+  const body = $('mission-rows');
+  body.replaceChildren();
+  missionRows.forEach((waypoint, index) => {
+    const row = document.createElement('tr');
+    const ordinal = document.createElement('th');
+    ordinal.scope = 'row';
+    ordinal.textContent = String(index + 1);
+    row.append(ordinal);
+    for (const field of missionFields) {
+      const cell = document.createElement('td');
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.step = 'any';
+      input.required = true;
+      input.setAttribute('aria-label', `Waypoint ${index + 1} ${field.replace('_', ' ')}`);
+      input.value = waypoint[field] ?? '';
+      input.addEventListener('input', () => {
+        waypoint[field] = input.value === '' ? null : Number(input.value);
+        saveMission();
+        missionMessage('Draft changed. Validate before export.');
+      });
+      cell.append(input);
+      row.append(cell);
+    }
+    const action = document.createElement('td');
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = 'Remove';
+    remove.setAttribute('aria-label', `Remove waypoint ${index + 1}`);
+    remove.addEventListener('click', () => {
+      missionRows.splice(index, 1);
+      saveMission();
+      renderMission();
+      missionMessage('Waypoint removed. Validate the updated plan.');
+    });
+    action.append(remove);
+    row.append(action);
+    body.append(row);
+  });
+}
+async function validateMission() {
+  if (!missionRows.length) { missionMessage('Add at least one waypoint.'); return null; }
+  try {
+    const response = await fetch('/api/mission/validate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wps: missionRows })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Validation failed');
+    missionMessage(`${result.count} waypoint${result.count === 1 ? '' : 's'} valid. Local draft only; upload is unavailable.`, true);
+    return result.wps;
+  } catch (error) {
+    missionMessage(error.message === 'Failed to fetch' ? 'Validation API unavailable.' : error.message);
+    return null;
+  }
+}
+$('mission-add').addEventListener('click', () => {
+  if (missionRows.length >= 100) { missionMessage('Maximum 100 waypoints.'); return; }
+  missionRows.push({ ...missionDefaults });
+  saveMission();
+  renderMission();
+  missionMessage('Waypoint added. Edit its values, then validate.');
+});
+$('mission-validate').addEventListener('click', validateMission);
+$('mission-export').addEventListener('click', async () => {
+  const waypoints = await validateMission();
+  if (!waypoints) return;
+  const url = URL.createObjectURL(new Blob([JSON.stringify({ wps: waypoints }, null, 2)], { type: 'application/json' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'atal-mission-draft.json';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+$('mission-file').addEventListener('change', async event => {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  if (file.size > 100000) { missionMessage('Mission file exceeds 100 KB.'); return; }
+  try {
+    const parsed = JSON.parse(await file.text());
+    const response = await fetch('/api/mission/validate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(parsed)
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Invalid mission file');
+    missionRows = result.wps;
+    saveMission();
+    renderMission();
+    missionMessage(`Imported ${result.count} validated waypoints. Upload is unavailable.`, true);
+  } catch (error) { missionMessage(error.message); }
+});
+try {
+  const saved = JSON.parse(localStorage.getItem('atal-mission-draft') || '[]');
+  if (Array.isArray(saved) && saved.length <= 100) missionRows = saved;
+} catch (_) { missionMessage('Saved draft could not be loaded. Import a JSON plan.'); }
+renderMission();
 function toggleTheme() {
   const light = !document.documentElement.classList.contains('light');
   localStorage.setItem('atal-theme', light ? 'light' : 'dark');

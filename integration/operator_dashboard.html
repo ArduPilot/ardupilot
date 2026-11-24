@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
   <link rel="stylesheet" href="/static/ros_dashboard.css">
   <link rel="stylesheet" href="/static/operator_dashboard.css">
-  <script src="/static/operator_dashboard.js?v=3" defer></script>
+  <script src="/static/operator_dashboard.js?v=4" defer></script>
 </head>
 <body>
   <div class="topbar">
@@ -33,7 +33,7 @@
       <span class="nav-future">Control Lab</span>
       <span class="nav-future">Throttle Control</span>
       <span class="nav-future">Flight Plan</span>
-      <span class="nav-future">Mission Builder</span>
+      <button type="button" data-tab="mission-builder">Mission Builder</button>
       <span class="nav-future">Nano Perception</span>
       <span class="nav-future">Gate Guidance</span>
       <span class="nav-future">Waypoint Navigation</span>
@@ -173,6 +173,15 @@
     </section>
     <section id="p-raw" class="view" aria-label="Raw Data" hidden>
       <div class="card tab-card"><h2 class="ct">Raw Data</h2><p class="fineprint">Current normalized ArduSub telemetry snapshot. Values may be stale; check the corresponding alive flags.</p><pre id="raw-data">Waiting for telemetry</pre></div>
+    </section>
+    <section id="p-mission-builder" class="view" aria-label="Mission Builder" hidden>
+      <div class="card tab-card">
+        <h2 class="ct">Mission Builder</h2>
+        <p class="fineprint">Plan local north/east/depth waypoints. Plans stay in this browser and can be exported. Validation does not upload or run a mission.</p>
+        <div class="mission-actions"><button type="button" id="mission-add">Add waypoint</button><button type="button" id="mission-validate">Validate plan</button><button type="button" id="mission-export">Export JSON</button><label class="mission-import">Import JSON <input type="file" id="mission-file" accept="application/json,.json"></label></div>
+        <div class="mission-table-wrap"><table class="mission-table"><thead><tr><th scope="col">#</th><th scope="col">North m</th><th scope="col">East m</th><th scope="col">Depth m</th><th scope="col">Yaw °</th><th scope="col">Max m/s</th><th scope="col">Tolerance m</th><th scope="col">Hold s</th><th scope="col">Edit</th></tr></thead><tbody id="mission-rows"></tbody></table></div>
+        <p id="mission-feedback" class="fineprint" role="status" aria-live="polite">Add a waypoint to begin. Mission upload is unavailable.</p>
+      </div>
     </section>
   </main>
 </body>

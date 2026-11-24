@@ -61,7 +61,8 @@ def main():
                     with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/", timeout=0.5) as response:
                         page = response.read().decode("utf-8")
                     assert ("AUV-IITK Control" in page and "Motor output / SERVO channels" in page
-                            and "Mission Status" in page and 'id="ekf-status"' in page)
+                            and "Mission Status" in page and 'id="ekf-status"' in page
+                            and 'id="p-mission-builder"' in page and 'id="mission-validate"' in page)
                     for asset in ("ros_dashboard.css", "operator_dashboard.css", "operator_dashboard.js", "img/auv_logo.svg"):
                         with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/static/{asset}", timeout=0.5) as response:
                             assert response.status == 200 and response.read()

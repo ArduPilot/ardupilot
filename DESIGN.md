@@ -27,7 +27,7 @@ omitted:
 
 ## Purpose and source
 
-The ArduSub dashboard at `/` is the first read-only port of the operator UI in `ATAL_controller/web_dashboard`. It uses that reference's `dashboard.css` and three SVG assets, along with its topbar, navigation labels, dark/light colors, and three-column instrument arrangement. `integration/static/ros_dashboard.css` is the preserved reference stylesheet; `integration/static/operator_dashboard.css` owns only the ArduSub adaptation. The earlier small instrument view remains at `/diagnostics`.
+The ArduSub dashboard at `/` is the first telemetry-focused port of the operator UI in `ATAL_controller/web_dashboard`. It uses that reference's `dashboard.css` and three SVG assets, along with its topbar, navigation labels, dark/light colors, and three-column instrument arrangement. `integration/static/ros_dashboard.css` is the preserved reference stylesheet; `integration/static/operator_dashboard.css` owns only the ArduSub adaptation. The earlier small instrument view remains at `/diagnostics`.
 
 ## Visual rules
 
@@ -35,7 +35,7 @@ Use the reference dark navy surfaces and cyan instrument accent. Light mode uses
 
 ## Behavior rules
 
-Show link, arming, IMU, pressure, position, and output freshness in text as well as color. Missing and stale readings use an em dash. The old ROS command areas appear only as unavailable navigation labels until real ArduSub behavior is implemented; they do not look clickable. Dashboard, Plots, Raw Data, theme toggle, and diagnostic link work now. The plot retains up to 60 seconds of received data and leaves gaps for missing samples. Raw Data displays the normalized API snapshot, including freshness flags, without implying every retained value is current.
+Show link, arming, IMU, pressure, position, and output freshness in text as well as color. Missing and stale readings use an em dash. The old ROS command areas appear only as unavailable navigation labels until real ArduSub behavior is implemented; they do not look clickable. Dashboard, Plots, Raw Data, Mission Builder, theme toggle, and diagnostic link work now. Mission Builder uses the same card and form language for local drafts with validation and JSON import/export, without implying upload readiness. The plot retains up to 60 seconds of received data and leaves gaps for missing samples. Raw Data displays the normalized API snapshot, including freshness flags, without implying every retained value is current.
 
 The depth gauge's 10 m range is a display-only default in `operator_dashboard.html` (`data-display-range-m`); edit it when the operator's useful scale is known. It is not a pressure sensor calibration or depth limit. Motor channel names remain SERVO 1–8 until physical wiring is verified. No browser action can command or arm the vehicle yet.
 
