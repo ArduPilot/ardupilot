@@ -222,7 +222,7 @@ int32_t AP_Landing::loc_alt_AMSL_cm(const Location &loc) const
     if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
         // if we can't get true terrain then assume flat terrain
         // around home
-        return loc.alt + ahrs.get_home().alt;
+        return loc.alt + ahrs.get_home().get_alt_cm();
     }
 
     // this should not happen, but return a value
@@ -528,7 +528,7 @@ bool AP_Landing::restart_landing_sequence()
     }
 
     uint16_t do_land_start_index = 0;
-    Location loc;
+    AbsAltLocation loc;
     if (ahrs.get_location(loc)) {
         do_land_start_index = mission.get_landing_sequence_start(loc);
     }
