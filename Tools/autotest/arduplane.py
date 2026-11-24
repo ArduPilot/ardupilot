@@ -2593,6 +2593,42 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if not self.current_onboard_log_contains_message("RFND"):
             raise NotAchievedException("No RFND messages in log")
 
+    def TerrainEstimatorWithoutFlowSensor(self):
+        '''Check EKF3's terrain estimator fuses no flow when no flow sensor is fitted'''
+        # with EK3_FLOW_USE at terrain, Plane's default, the estimator also runs on range finder
+        # samples alone, and must not treat the missing flow sample as a measured zero
+        self.set_parameter("EK3_FLOW_USE", 2)
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+
+        # the RangeFinder test's mission, flown at 10 m within the range finder's range
+        self.load_mission_from_filepath(
+            os.path.join(testdir, "ArduPlane_Tests", "RangeFinder", "plane-gripper-mission.txt"))
+        self.set_parameter("RTL_AUTOLAND", 1)
+        self.set_current_waypoint(1)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_statustext("Auto disarmed", timeout=120)
+
+        # AFI is the terrain estimator's flow innovation, set whenever it tests a flow sample.
+        # RI, its range innovation, is set only when it runs on a range finder sample, so
+        # rows with it show the estimator was running and found no flow to test
+        dfreader = self.dfreader_for_current_onboard_log()
+        ranged = 0
+        while True:
+            m = dfreader.recv_match(type='XKF5')
+            if m is None:
+                break
+            if m.AFI != 0:
+                raise NotAchievedException(
+                    "terrain estimator tested flow with no flow sensor (XKF5.AFI=%d at %u us)" % (m.AFI, m.TimeUS))
+            if m.RI != 0:
+                ranged += 1
+        if ranged == 0:
+            raise NotAchievedException("terrain estimator never ran on a range finder sample (XKF5.RI)")
+        self.progress("%u XKF5 rows with a range innovation, no flow tested" % ranged)
+
     def TemperatureSensorRangefinder(self):
         '''Test that AP_TemperatureSensor can push temperature into a rangefinder'''
         self.progress("Configure rangefinder and temperature sensor")
@@ -16190,6 +16226,7 @@ return update, 200
             self.TestGripperMission,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,
+            self.TerrainEstimatorWithoutFlowSensor,
             self.FenceRTLRally,
             self.FenceMinAltEnableAutoland,
             self.FenceAutoEnableDisableSwitch,
