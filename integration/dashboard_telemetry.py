@@ -28,24 +28,42 @@ class DashboardTelemetry:
         self._ekf_at = None
         self._gate_link_at = None
         self._gate_guidance_at = None
+        self._dvl_at = None
+        self._target_att_at = None
+        self._target_pos_at = None
         self._state = {
             "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
             "gyro": [0.0, 0.0, 0.0], "pwm": [1500] * 8,
             "armed": False, "armed_known": False,
-            "vehicle_mode": None,
+            "vehicle_mode": None, "ctrl_mode": None,
             "pressure_mbar": None, "water_temp": None, "depth_m": None,
             "pos_n": None, "pos_e": None, "vel_fwd": None,
-            "vel_lat": None, "vel_z": None, "dvl_locked": None,
+            "vel_lat": None, "vel_z": None,
+            "dvl_locked": None, "dvl_altitude": None, "dvl_fom": None, "dvl_hz": None,
+            "target_roll": None, "target_pitch": None, "target_yaw": None,
+            "target_depth": None, "target_pos_n": None, "target_pos_e": None,
             "timestamp": 0.0, "imu_hz": 0.0,
             "mission_seq": None, "mission_total": None,
             "mission_state": None, "mission_mode": None,
             "battery_v": None, "battery_a": None, "battery_percent": None,
             "ekf_flags": None, "ekf_attitude_ok": None, "ekf_velocity_horizontal_ok": None,
+            "ekf_relative_position_ok": None, "ekf_predicted_rel_ok": None,
             "ekf_absolute_position_ok": None, "ekf_predicted_position_ok": None,
             "ekf_constant_position": None, "ekf_uninitialized": None,
             "gate_link_ok": None, "gate_state": None, "gate_proposal_valid": None,
             "gate_forward": None, "gate_lateral": None, "gate_vertical": None, "gate_yaw": None,
         }
+
+    def ingest_dvl_status(self, payload):
+        now = self._now()
+        if not isinstance(payload, dict) or payload.get("type") != "atal_dvl_status":
+            return
+        if self._dvl_at is not None and now > self._dvl_at:
+            self._state["dvl_hz"] = 1.0 / (now - self._dvl_at)
+        self._dvl_at = now
+        self._state["dvl_locked"] = bool(payload.get("dvl_locked"))
+        self._state["dvl_altitude"] = payload.get("dvl_altitude")
+        self._state["dvl_fom"] = payload.get("dvl_fom")
 
     def ingest_gate_link(self, ok):
         was_ok = self._state["gate_link_ok"]
@@ -143,11 +161,30 @@ class DashboardTelemetry:
             s["ekf_flags"] = flags
             s["ekf_attitude_ok"] = bool(flags & 1)
             s["ekf_velocity_horizontal_ok"] = bool(flags & 2)
+            s["ekf_relative_position_ok"] = bool(flags & 8)
             s["ekf_absolute_position_ok"] = bool(flags & 16)
             s["ekf_constant_position"] = bool(flags & 128)
+            s["ekf_predicted_rel_ok"] = bool(flags & 256)
             s["ekf_predicted_position_ok"] = bool(flags & 512)
             s["ekf_uninitialized"] = bool(flags & 1024)
             self._ekf_at = now
+        elif kind == "ATTITUDE_TARGET":
+            q = getattr(msg, "q", None)
+            if q and len(q) == 4 and all(math.isfinite(float(v)) for v in q):
+                w, x, y, z = (float(v) for v in q)
+                s["target_roll"] = math.degrees(math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y)))
+                sinp = max(-1.0, min(1.0, 2 * (w * y - z * x)))
+                s["target_pitch"] = math.degrees(math.asin(sinp))
+                s["target_yaw"] = math.degrees(math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)))
+                self._target_att_at = now
+        elif kind == "POSITION_TARGET_LOCAL_NED":
+            if all(math.isfinite(float(getattr(msg, k, float("nan")))) for k in ("x", "y", "z")):
+                s["target_pos_n"] = float(msg.x)
+                s["target_pos_e"] = float(msg.y)
+                s["target_depth"] = float(msg.z)
+                if math.isfinite(float(getattr(msg, "yaw", float("nan")))):
+                    s["target_yaw"] = math.degrees(float(msg.yaw))
+                self._target_pos_at = now
 
     def snapshot(self):
         now = self._now()
@@ -187,9 +224,21 @@ class DashboardTelemetry:
         s["ekf_status_alive"] = s["link_alive"] and self._ekf_at is not None and now - self._ekf_at < 3.0
         if not s["ekf_status_alive"]:
             for key in ("ekf_flags", "ekf_attitude_ok", "ekf_velocity_horizontal_ok",
+                        "ekf_relative_position_ok", "ekf_predicted_rel_ok",
                         "ekf_absolute_position_ok", "ekf_predicted_position_ok",
                         "ekf_constant_position", "ekf_uninitialized"):
                 s[key] = None
+        s["ctrl_mode"] = s["vehicle_mode"]
+        s["dvl_alive"] = self._dvl_at is not None and now - self._dvl_at < 2.0
+        if not s["dvl_alive"]:
+            for key in ("dvl_locked", "dvl_altitude", "dvl_fom", "dvl_hz"):
+                s[key] = None
+        if self._target_att_at is None or now - self._target_att_at >= 3.0:
+            s["target_roll"] = s["target_pitch"] = None
+            if self._target_pos_at is None or now - self._target_pos_at >= 3.0:
+                s["target_yaw"] = None
+        if self._target_pos_at is None or now - self._target_pos_at >= 3.0:
+            s["target_pos_n"] = s["target_pos_e"] = s["target_depth"] = None
         s["gate_link_alive"] = self._gate_link_at is not None and now - self._gate_link_at < 0.5
         s["gate_guidance_alive"] = self._gate_guidance_at is not None and now - self._gate_guidance_at < 0.5
         if not s["gate_link_alive"]:

@@ -65,8 +65,8 @@ def main():
             start_new_session=True,
         )
         imu = (data_item(0x2014, struct.pack(">4f", 1, 0, 0, 0))
-               + data_item(0x8020, struct.pack(">3f", 0.1, 0.2, 0.3))
-               + data_item(0x4020, struct.pack(">3f", 1, 2, -9.81)))
+               + data_item(0x8020, struct.pack(">3f", 0.0, 0.0, 0.0))
+               + data_item(0x4020, struct.pack(">3f", 0.0, 0.0, -9.81)))
         counter = 0
         last_depth = 0.0
         state = None
@@ -129,7 +129,10 @@ def main():
                 except (urllib.error.URLError, TimeoutError):
                     pass
                 time.sleep(0.01)
-            raise AssertionError(f"Dashboard HTTP telemetry incomplete: {state}; process={process.poll()}, api={dashboard.poll()}")
+            raise AssertionError(
+                f"Dashboard HTTP telemetry incomplete: {state}; "
+                f"process={process.poll()}, api={dashboard.poll()}"
+            )
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
