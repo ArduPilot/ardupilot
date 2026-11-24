@@ -340,6 +340,9 @@ public:
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary, returning false if not selected
     bool setPosVelYawSourceSet(uint8_t source_set_idx);
 
+    // set EK3_PRIMARY, the core preferred as primary, without saving it, given whether the vehicle is armed now; false if refused
+    bool setPrimaryCore(uint8_t core_index, bool armed);
+
     // write EKF information to on-board logs
     void Log_Write();
 
