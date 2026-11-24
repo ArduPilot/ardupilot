@@ -5078,6 +5078,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("non-finite XKFA.%s" % field)
         return sum(vals) / nsamples
 
+    def wait_xkfa_valid_window(self, nsamples=50, since_s=0, timeout=30):
+        '''wait for the onboard log to hold nsamples valid XKFA (core 0) samples in a row, logged since a time'''
+        tstart = self.get_sim_time()
+        while True:
+            dfreader = self.dfreader_for_current_onboard_log()
+            run = 0
+            while True:
+                m = dfreader.recv_match(type='XKFA', condition='XKFA.C==0')
+                if m is None:
+                    break
+                if m.TimeUS * 1.0e-6 >= since_s:
+                    run = run + 1 if m.Valid else 0
+            if run >= nsamples:
+                return
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise AutoTestTimeoutException("%u valid XKFA samples in a row after %u s, want %u" %
+                                               (run, timeout, nsamples))
+            self.delay_sim_time(1, reason="more XKFA samples in the onboard log")
+
+    def wait_optical_flow_ground_distance(self, dist_min, dist_max, timeout=30, **kwargs):
+        '''wait for OPTICAL_FLOW.ground_distance, the EKF's height above ground, in metres'''
+        # with EK3_OPTIONS bit 3 that height is the AGL KF's, so this is what a GCS sees of it
+        self.wait_and_maintain(
+            value_name="OpticalFlowGroundDistance",
+            target=dist_min,
+            current_value_getter=lambda: self.assert_receive_message('OPTICAL_FLOW').ground_distance,
+            accuracy=(dist_max - dist_min),
+            validator=lambda value, target: dist_min <= value <= dist_max,
+            timeout=timeout,
+            **kwargs
+        )
+
     def xkfa_peak_deviation(self, field, baseline, since_s):
         '''largest deviation from a baseline of an XKFA (core 0) field since a time; every sample must be valid'''
         dfreader = self.dfreader_for_current_onboard_log()
@@ -5127,9 +5159,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
         self.wait_ready_to_arm(require_absolute=False, timeout=120)
-
-        # no event marks the filter settling on a constant range, so this is a delay
-        self.delay_sim_time(15, reason="AGL KF to settle on the on-ground reading")
+        self.wait_xkfa_valid_window()
 
         # starting on the floor, any 2 m deviation from it has to be upward
         hgt_floor = self.xkfa_recent_mean('HAgl')
@@ -5137,13 +5167,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("AGL KF height not on its floor before the step (%.2f m)" % hgt_floor)
         step_start = self.get_sim_time()
         self.set_parameter("SIM_SONAR_OFFSET", 3)
-        # as above, no event marks the filter following the step, so these are delays
-        self.delay_sim_time(6, reason="AGL KF to follow the range up")
+        # settled on the step rather than passing through it, so the step down starts from rest
+        self.wait_optical_flow_ground_distance(2.9, 3.3, minimum_duration=2)
         self.set_parameter("SIM_SONAR_OFFSET", 0)
-        # xkfa_recent_mean reads the last 50 XKFA samples, and disarmed XKFA streams at
-        # LOG_DARM_RATEMAX, 5 Hz, so that is a 10 s window. Settle for longer than the
-        # window or the mean spans the recovery transient rather than the settled state
-        self.delay_sim_time(20, reason="AGL KF to settle back onto the floor")
+        # not from zero: the message reports 0 when the EKF has no height above ground
+        self.wait_optical_flow_ground_distance(0.01, 0.5)
+        # the means below cover what the velocity settles to on the floor, not the descent
+        self.wait_xkfa_valid_window(since_s=self.get_sim_time())
 
         # the helpers require every sample they read to be valid, so a filter that had
         # stopped fusing cannot pass on its pre-provocation history
@@ -5163,8 +5193,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "AGL KF height did not return toward the floor (%.2f m)" % hgt)
 
-        # measured on this test: -0.0001 m/s with the floor fused, +0.0001 m/s with the
-        # velocity cleared at the floor, and -0.431 to -0.439 with neither, so the bound sits
+        # measured on this test: +0.001 to +0.002 m/s with the floor fused, and -0.37 with no
+        # floor handling and the velocity decaying only across a range gap, so the bound sits
         # between them with margin either side. One-sided deliberately - an upward velocity
         # lifts the height off the floor and corrects itself, and it is only the downward one
         # that the zero range innovation leaves to the floor to correct
