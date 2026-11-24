@@ -8466,6 +8466,97 @@ return update()
 
         self.disarm_vehicle()
 
+    def WaypointPassBy(self):
+        '''test NAV_WAYPOINT param3 (pass-by distance) and its interaction with param2'''
+        # Fly a rectangle where each corner is a waypoint with a
+        # different combination of param2 (acceptance radius) and
+        # param3 (pass-by distance).  For each corner record where the
+        # vehicle is when the waypoint completes, measured along the
+        # inbound leg from the corner (positive is beyond the corner).
+        #
+        # Expected behaviour:
+        #  - p3=0: normal early turn, completes before the corner
+        #  - p3=60: target moves 60m beyond the corner along the
+        #    inbound leg and the acceptance distance becomes zero, so
+        #    the waypoint completes on the finish line 60m beyond it
+        #  - p3=60, p2=80: the 80m acceptance radius applies around
+        #    the moved target, so the waypoint completes about 20m
+        #    before the corner
+        corners = {
+            # seq: (north, east, p2, p3, inbound unit vector (n, e), min along, max along, completion text)
+            3: (800, 0, 0, 0, (1, 0), -200, 0, "Reached"),
+            4: (800, 700, 0, 60, (0, 1), 45, 75, "Passed"),
+            5: (100, 700, 80, 60, (-1, 0), -40, -5, "Reached"),
+        }
+
+        items = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 0, 100),  # 2, start of the first leg
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 100),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 700, 100),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 700, 100),  # 5
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 0, 100),  # 6
+        ])
+        for seq, (north, east, p2, p3, inbound, along_min, along_max, text) in corners.items():
+            items[seq].param2 = p2
+            items[seq].param3 = p3
+        self.check_mission_upload_download(items)
+
+        home = self.home_position_as_location()
+        completions = {}
+        last_position = {}
+
+        def record_completions(mav, m):
+            t = m.get_type()
+            if t == 'GLOBAL_POSITION_INT':
+                last_position['loc'] = (m.lat * 1e-7, m.lon * 1e-7)
+            elif t == 'STATUSTEXT':
+                match = re.match(r"(Reached|Passed) waypoint #(\d+)", m.text)
+                if match is not None and 'loc' in last_position:
+                    completions[int(match.group(2))] = (match.group(1), last_position['loc'])
+
+        self.context_push()
+        self.install_message_hook_context(record_completions)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(6, timeout=300)
+
+        # "Reached waypoint #5" can arrive after MISSION_CURRENT has
+        # moved on, so keep processing messages until every corner is
+        # recorded
+        tstart = self.get_sim_time()
+        while not all(seq in completions for seq in corners):
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Missing completion message(s) for waypoint(s) %s" %
+                                           [seq for seq in corners if seq not in completions])
+            self.mav.recv_match(blocking=True, timeout=1)
+
+        self.context_pop()
+
+        for seq, (north, east, p2, p3, inbound, along_min, along_max, text) in corners.items():
+            if seq not in completions:
+                raise NotAchievedException("No completion message for waypoint #%u" % seq)
+            (got_text, (lat, lng)) = completions[seq]
+            corner = self.offset_location_ne(home, north, east)
+            offset_n = (lat - corner.lat) * 111319.5
+            offset_e = (lng - corner.lng) * 111319.5 * math.cos(math.radians(corner.lat))
+            along = offset_n * inbound[0] + offset_e * inbound[1]
+            cross = offset_e * inbound[0] - offset_n * inbound[1]
+            self.progress("waypoint #%u p2=%u p3=%u: %s, %.1fm along the inbound leg from the corner, %.1fm across" %
+                          (seq, p2, p3, got_text, along, cross))
+            if got_text != text:
+                raise NotAchievedException("Expected '%s waypoint #%u', got '%s'" % (text, seq, got_text))
+            if along < along_min or along > along_max:
+                raise NotAchievedException(
+                    "waypoint #%u completed %.1fm along the inbound leg, expected %d to %d" %
+                    (seq, along, along_min, along_max))
+            if abs(cross) > 25:
+                raise NotAchievedException("waypoint #%u completed %.1fm off the inbound leg" % (seq, cross))
+
+        self.fly_home_land_and_disarm()
+
     def InteractTest(self):
         '''just takeoff'''
 
@@ -16245,6 +16336,7 @@ return update, 200
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.MAV_CMD_DO_AUTOTUNE_ENABLE,
             self.MAV_CMD_NAV_ALTITUDE_WAIT,
+            self.WaypointPassBy,
             self.InteractTest,
             self.MAV_CMD_MISSION_START,
             self.TerrainRally,
