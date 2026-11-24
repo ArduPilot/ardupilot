@@ -534,7 +534,7 @@ bool Plane::set_home_to_current_location(bool _lock)
     }
     return true;
 }
-bool Plane::set_home(const Location& loc, bool _lock)
+bool Plane::set_home(const AbsAltLocation& loc, bool _lock)
 {
     if (!ahrs.set_home(loc, _lock)) {
         return false;
