@@ -5780,6 +5780,80 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if max_SH_core0 < 0.9:
             raise NotAchievedException("BARO glitch did not raise SH in core 0")
 
+    def EKF3SRCPerCoreSelection(self):
+        '''a source set selection is refused while each EKF core runs its own set'''
+        # core 1 runs the second set, so give it the first set's sources for the cores to agree before arming
+        self.set_parameters({
+            "EK3_SRC_OPTIONS": 8,  # UsePerCoreEKFSources
+            "EK3_SRC2_POSXY": 3,  # GPS
+            "EK3_SRC2_VELXY": 3,  # GPS
+            "EK3_SRC2_POSZ": 1,  # baro
+            "EK3_SRC2_VELZ": 3,  # GPS
+            "EK3_SRC2_YAW": 1,  # compass
+            "RC9_OPTION": 90,  # EKF Source Set
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        def wait_logged_source_set(source_set, since_s):
+            '''wait for XKFS to log the selected set on core 0 after since_s, and only that set'''
+            tstart = self.get_sim_time()
+            while True:
+                dfreader = self.dfreader_for_current_onboard_log()
+                logged = []
+                while True:
+                    m = dfreader.recv_match(type='XKFS', condition='XKFS.C==0')
+                    if m is None:
+                        break
+                    if m.TimeUS * 1.0e-6 >= since_s:
+                        logged.append(m.SS)
+                if len(logged) >= 5:
+                    break
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("XKFS not logged after %.1f s" % since_s)
+                self.delay_sim_time(1, "XKFS to reach the log")
+            if any(ss != source_set for ss in logged[2:]):
+                raise NotAchievedException("source set %s logged after %.1f s, want %u" % (str(logged), since_s, source_set))
+
+        self.context_collect('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        # low selects the first set, which no switch move below waits on, so its message cannot answer one
+        self.run_auxfunc(90, 0, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        # each switch position has to be held through the debounce, so wait for its own message
+        for pwm, source_set in (2000, 3), (1500, 2):
+            self.context_clear_collection('STATUSTEXT')
+            self.set_rc(9, pwm)
+            self.wait_statustext("EKF Source Set %u refused" % source_set, check_context=True)
+
+        self.start_subtest("Without a set per core the same selections are made")
+        # with the bit clear core 0 runs the selected set, which the refusals must have left on the first
+        self.set_parameter("EK3_SRC_OPTIONS", 0)
+        wait_logged_source_set(0, self.get_sim_time())
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        wait_logged_source_set(1, self.get_sim_time())
+        self.run_auxfunc(90, 0)  # low selects the first set
+        wait_logged_source_set(0, self.get_sim_time())
+
+        # the source set library logs each selection it makes, and the EKF each one for Replay, so
+        # the log holds only these two. Their absence means something only in a complete log
+        self.assert_log_has_no_dropped_blocks(self.current_onboard_log_filepath())
+        dfreader = self.dfreader_for_current_onboard_log()
+        events = []
+        replay_events = []
+        while True:
+            m = dfreader.recv_match(type=['EV', 'REV3'])
+            if m is None:
+                break
+            if m.get_type() == 'EV' and m.Id in (85, 86, 87):  # LogEvent::EK3_SOURCES_SET_TO_PRIMARY to TERTIARY
+                events.append(m.Id)
+            elif m.get_type() == 'REV3' and m.Event in (13, 14, 15):  # AP_DAL::Event::setSourceSet0 to 2
+                replay_events.append(m.Event)
+        if events != [86, 85] or replay_events != [14, 13]:
+            raise NotAchievedException("expected the second and first sets selected, logged EV %s, REV3 %s" %
+                                       (str(events), str(replay_events)))
+
     def AutoTuneSwitch(self):
         """Test autotune on a switch with gains being saved"""
 
@@ -25990,6 +26064,7 @@ return update, 1000
             self.OSDFirstBackendFails,
             self.TestEKF3CompassFailover,
             self.EKF3SRCPerCore,
+            self.EKF3SRCPerCoreSelection,
             self.ToyModeDescentLimit,
         ])
         return ret
