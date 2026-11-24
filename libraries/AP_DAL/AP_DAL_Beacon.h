@@ -14,11 +14,11 @@ public:
         return _RBCH.count;
     }
 
-    bool get_origin(Location &loc) const {
+    bool get_origin(AbsAltLocation &loc) const {
         loc.zero();
         loc.lat = _RBCH.origin_lat;
         loc.lng = _RBCH.origin_lng;
-        loc.alt = _RBCH.origin_alt;
+        loc.set_alt_cm(_RBCH.origin_alt);
         return _RBCH.get_origin_returncode;
     }
 
