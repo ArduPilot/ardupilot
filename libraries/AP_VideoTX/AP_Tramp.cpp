@@ -559,6 +559,13 @@ void AP_Tramp::update()
                 vtx.frequency_rejected(false);
                 returned = true;
             } else if (vtx.update_frequency() && vtx.get_configured_frequency_mhz() == _last_conf_freq &&
+                vtx.get_frequency_mhz() != 0 && _packets_rcvd == _last_conf_rcvd) {
+                // the VTX has not answered since this frequency was asked
+                // for (unpowered, or the replies are being lost), so it has
+                // not refused anything: keep asking until it does answer
+                retry_count = VTX_TRAMP_MAX_RETRIES;
+                returned = true;
+            } else if (vtx.update_frequency() && vtx.get_configured_frequency_mhz() == _last_conf_freq &&
                 vtx.get_frequency_mhz() != 0) {
                 vtx.frequency_rejected();
                 returned = true;
@@ -576,6 +583,7 @@ void AP_Tramp::update()
                     _last_conf_freq = conf_freq;
                     _last_conf_band = vtx.get_configured_band();
                     _last_conf_channel = vtx.get_configured_channel();
+                    _last_conf_rcvd = _packets_rcvd;
                     set_frequency(conf_freq);
                 }
             }

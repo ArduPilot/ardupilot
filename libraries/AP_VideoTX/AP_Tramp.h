@@ -156,6 +156,8 @@ private:
     // the band and channel VTX_FREQ went with when it was last asked for
     uint8_t _last_conf_band;
     uint8_t _last_conf_channel;
+    // replies received when it was last asked for
+    uint16_t _last_conf_rcvd;
     uint16_t _last_conf_power;
     uint16_t _last_conf_options;
     bool _power_warn_pending;

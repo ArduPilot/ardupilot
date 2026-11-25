@@ -190,6 +190,8 @@ private:
     uint8_t _sent_band;
     uint8_t _sent_channel;
     uint8_t _freq_attempts;
+    // replies received when the frequency was last asked for
+    uint16_t _freq_attempt_rcvd;
     bool _vtx_power_change_pending;
     bool _vtx_options_change_pending;
     bool _vtx_changes_pending;

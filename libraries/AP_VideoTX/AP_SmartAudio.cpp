@@ -236,7 +236,14 @@ void AP_SmartAudio::update_vtx_params()
                 if (freq != _freq_attempt_mhz) {
                     _freq_attempt_mhz = freq;
                     _freq_attempts = 0;
+                } else if (_packets_rcvd != _freq_attempt_rcvd && vtx.update_frequency()) {
+                    // the VTX has answered since it was last asked and is
+                    // still not on the frequency. A VTX that is not answering
+                    // (unpowered, or the replies are being lost) has not
+                    // refused anything: keep asking until it does answer
+                    _freq_attempts++;
                 }
+                _freq_attempt_rcvd = _packets_rcvd;
                 if (_freq_attempts >= VTX_MAX_FREQUENCY_ATTEMPTS) {
                     // the VTX does not take this frequency (it may be out of
                     // its range, or locked): stop asking so that other changes
@@ -246,7 +253,6 @@ void AP_SmartAudio::update_vtx_params()
                     _freq_attempts = 0;
                     return;
                 }
-                _freq_attempts++;
                 _sent_band = vtx.get_configured_band();
                 _sent_channel = vtx.get_configured_channel();
                 set_frequency(freq, false);
