@@ -600,6 +600,44 @@ TEST(VTXRejected, ChannelChangeSupersedesRefusedFrequency)
     EXPECT_FALSE(vtx.rejected_frequency_superseded());
 }
 
+// a refusal is forgotten once the configuration has moved off it, so that
+// going back to the refused slot is tried, and warned about, again. It used
+// to be remembered until reboot, and the slot was then ignored in silence
+TEST(VTXRejected, ForgottenOnceConfigurationMovesOn)
+{
+    TestVTX test_vtx;
+    AP_VideoTX &vtx = test_vtx.vtx;
+    const int16_t none[8] {};
+    set_user_band(vtx.table(), -1, none);
+    vtx.set_defaults();
+
+    // configured R1, VTX stays on R4
+    vtx.set_configured_band(4);
+    vtx.set_configured_channel(0);
+    vtx.set_configured_frequency_mhz(5658);
+    vtx.set_band(4);
+    vtx.set_channel(3);
+    vtx.set_frequency_mhz(5769);
+    vtx.frequency_rejected();
+    vtx.update_rejected();
+    EXPECT_TRUE(vtx.configured_rejected());
+    EXPECT_FALSE(vtx.update_frequency());
+
+    // the channel alone is changed: the backend has still to take the
+    // frequency from it, so the refusal is kept until it has
+    vtx.set_configured_channel(1);
+    vtx.update_rejected();
+    EXPECT_TRUE(vtx.rejected_frequency_superseded());
+    vtx.update_configured_frequency();
+    vtx.update_rejected();
+
+    // back on the refused slot: it is asked for again
+    vtx.set_configured_channel(0);
+    vtx.set_configured_frequency_mhz(5658);
+    EXPECT_FALSE(vtx.configured_rejected());
+    EXPECT_TRUE(vtx.update_frequency());
+}
+
 #endif  // AP_VIDEOTX_ENABLED
 
 AP_GTEST_MAIN()

@@ -709,6 +709,8 @@ void AP_VideoTX::update(void)
         return;
     }
 
+    update_rejected();
+
     // manipulate pitmode if pitmode-on-disarm or power-on-arm is set
     if (has_option(VideoOptions::VTX_PITMODE_ON_DISARM) || has_option(VideoOptions::VTX_PITMODE_UNTIL_ARM)) {
         if (hal.util->get_soft_armed() && has_option(VideoOptions::VTX_PITMODE)) {
@@ -944,10 +946,11 @@ void AP_VideoTX::frequency_rejected(bool warn)
     if (warn && !configured_rejected()) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: rejected frequency %uMHz", unsigned(_frequency_mhz.get()));
     }
-    _rejected = true;
+    // set the flag last: update() reads these from another thread
     _rejected_band = _band;
     _rejected_channel = _channel;
     _rejected_frequency = _frequency_mhz;
+    _rejected = true;
 }
 
 // the VTX has replied to a frequency command. The reply says what the VTX is
