@@ -153,6 +153,11 @@ public:
     bool configured_rejected() const {
         return _rejected && _band == _rejected_band && _channel == _rejected_channel && _frequency_mhz == _rejected_frequency;
     }
+    // true if VTX_FREQ still holds the frequency the VTX did not take but the
+    // band or channel has been changed since, so they are what is wanted now
+    bool rejected_frequency_superseded() const {
+        return _rejected && _frequency_mhz == _rejected_frequency && (_band != _rejected_band || _channel != _rejected_channel);
+    }
     // the VTX has replied to a frequency or channel command sent for the
     // given configured band, channel and frequency
     void frequency_command_reply(uint8_t sent_band, uint8_t sent_channel, uint16_t sent_freq, uint16_t freq);

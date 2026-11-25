@@ -563,6 +563,43 @@ TEST(VTXRejected, ConfigurationKept)
     EXPECT_TRUE(vtx.update_frequency());
 }
 
+// after a refusal VTX_FREQ still holds the refused frequency. A band or
+// channel change on its own must be seen as replacing it, or a backend that
+// lets the frequency win takes the refused frequency as the request again
+// and the VTX can never be moved by band and channel
+TEST(VTXRejected, ChannelChangeSupersedesRefusedFrequency)
+{
+    TestVTX test_vtx;
+    AP_VideoTX &vtx = test_vtx.vtx;
+    const int16_t none[8] {};
+    set_user_band(vtx.table(), -1, none);
+    vtx.set_defaults();
+
+    // configured R1, VTX stays on R4
+    vtx.set_configured_band(4);
+    vtx.set_configured_channel(0);
+    vtx.set_configured_frequency_mhz(5658);
+    vtx.set_band(4);
+    vtx.set_channel(3);
+    vtx.set_frequency_mhz(5769);
+    EXPECT_FALSE(vtx.rejected_frequency_superseded());
+    vtx.frequency_rejected();
+    EXPECT_FALSE(vtx.rejected_frequency_superseded());
+
+    // only the channel is changed
+    vtx.set_configured_channel(1);
+    EXPECT_TRUE(vtx.rejected_frequency_superseded());
+    vtx.update_configured_frequency();
+    EXPECT_EQ(vtx.get_configured_frequency_mhz(), 5695);
+    EXPECT_FALSE(vtx.rejected_frequency_superseded());
+    EXPECT_TRUE(vtx.update_frequency());
+
+    // a new frequency set directly is not replaced by the band and channel
+    vtx.frequency_rejected();
+    vtx.set_configured_frequency_mhz(5732);
+    EXPECT_FALSE(vtx.rejected_frequency_superseded());
+}
+
 #endif  // AP_VIDEOTX_ENABLED
 
 AP_GTEST_MAIN()
