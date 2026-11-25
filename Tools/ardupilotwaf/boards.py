@@ -445,7 +445,9 @@ class Board:
             env.PRIVATE_KEY = cfg.options.private_key
             
         env.CXXFLAGS += [
-            '-std=gnu++11',
+            '-std=gnu++17',
+            # our operator delete ignores the size, don't pass it
+            '-fno-sized-deallocation',
 
             '-fdata-sections',
             '-ffunction-sections',
