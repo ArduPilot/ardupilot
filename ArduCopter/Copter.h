@@ -734,7 +734,6 @@ private:
     void rate_thread_motors_output(bool full_push) override { motors_output(full_push); }
     RateThreadLogging get_rate_thread_logging() override;
     void rate_thread_log_update() override;
-    void update_dynamic_notch_at_specified_rate_main();
 #endif
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED

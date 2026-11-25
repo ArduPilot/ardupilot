@@ -52,14 +52,4 @@ void Copter::rate_thread_log_update()
 #endif
 }
 
-// run notch update at either loop rate or 200Hz
-void Copter::update_dynamic_notch_at_specified_rate_main()
-{
-    if (using_rate_thread()) {
-        return;
-    }
-
-    update_dynamic_notch_at_specified_rate();
-}
-
 #endif // AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
