@@ -214,9 +214,15 @@ void AP_Beacon_Nooploop::parse_node_frame2()
 
     set_vehicle_position(pos_m, pos_err);
 
+    // valid_nodes comes from the sensor, so only read the id and distance of
+    // nodes that were received (the last byte of the frame is the crc) and
+    // fit in _msgbuf
     const uint8_t valid_nodes = _msgbuf[NOOPLOOP_NODE_FRAME2_VALID_NODES];
     for (uint8_t i = 0; i < valid_nodes; i++) {
         uint16_t offset = NOOPLOOP_NODE_FRAME2_NODE_BLOCK + i * 13;
+        if (offset + 5 >= _frame_len || offset + 5 > NOOPLOOP_MSG_BUF_MAX) {
+            break;
+        }
         uint8_t id = _msgbuf[offset+1]; //nooploop id starts from 0, increments clockwise, 0 -> 1 define Y axis.
         const int32_t dist = ((int32_t)_msgbuf[offset+2+2] << 24 | (int32_t)_msgbuf[offset+2+1] << 16 | (int32_t)_msgbuf[offset+2] << 8) >> 8;
         set_beacon_distance(id, dist * 0.001f);
