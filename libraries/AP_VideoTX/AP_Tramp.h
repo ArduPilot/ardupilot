@@ -153,6 +153,9 @@ private:
 
     // retry counter only re-arms when one of these changes
     uint16_t _last_conf_freq;
+    // the band and channel VTX_FREQ went with when it was last asked for
+    uint8_t _last_conf_band;
+    uint8_t _last_conf_channel;
     uint16_t _last_conf_power;
     uint16_t _last_conf_options;
     bool _power_warn_pending;

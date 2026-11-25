@@ -544,10 +544,12 @@ void AP_Tramp::update()
             // stop asking for it until the configuration changes, so other
             // changes can go out. VTX_BAND, VTX_CHANNEL and VTX_FREQ are left
             // as the user set them, so a reboot tries again
-            if (vtx.rejected_frequency_superseded()) {
-                // VTX_FREQ is still the frequency the VTX refused and the band
-                // or channel has been changed since: follow them, or the
-                // refused frequency is taken as the request again
+            if (vtx.get_configured_frequency_mhz() == _last_conf_freq &&
+                (vtx.get_configured_band() != _last_conf_band || vtx.get_configured_channel() != _last_conf_channel)) {
+                // the band or channel has been changed since this frequency
+                // was asked for and VTX_FREQ has not: follow them. Otherwise
+                // the old frequency, which the VTX may be refusing or may
+                // already have refused, is taken as the request again
                 vtx.update_configured_frequency();
             }
             bool returned = false;
@@ -572,6 +574,8 @@ void AP_Tramp::update()
                 // leaving nothing to command
                 if (vtx.configured_selectable() && conf_freq != _last_conf_freq) {
                     _last_conf_freq = conf_freq;
+                    _last_conf_band = vtx.get_configured_band();
+                    _last_conf_channel = vtx.get_configured_channel();
                     set_frequency(conf_freq);
                 }
             }
