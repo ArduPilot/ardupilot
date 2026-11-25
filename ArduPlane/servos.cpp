@@ -875,8 +875,10 @@ void Plane::set_servos(void)
 {
     // start with output corked. the cork is released when we run
     // servos_output(), which is run from all code paths in this
-    // function
-    AP::srv().cork();
+    // function. The rate thread corks and pushes for itself.
+    if (!using_rate_thread()) {
+        AP::srv().cork();
+    }
 
     // this is to allow the failsafe module to deliberately crash 
     // the plane. Only used in extreme circumstances to meet the
@@ -1030,8 +1032,14 @@ void Plane::indicate_waiting_for_rud_neutral_to_takeoff(void)
  */
 void Plane::servos_output(void)
 {
+    // the rate thread sends the outputs this loop works out, so leave it the
+    // only one writing to them
+    const bool rate_thread_sends_outputs = using_rate_thread();
+
     auto &srv = AP::srv();
-    srv.cork();
+    if (!rate_thread_sends_outputs) {
+        srv.cork();
+    }
 
     // support twin-engine aircraft
     servos_twin_engine_mix();
@@ -1065,11 +1073,15 @@ void Plane::servos_output(void)
         SRV_Channels::copy_radio_in_out_mask(g2.manual_rc_mask);
     }
 
+    // with the thread too, so that it only ever sends the finished outputs of a
+    // whole loop and the slew limits and output overrides count main loops
     SRV_Channels::calc_pwm();
 
-    SRV_Channels::output_ch_all();
+    if (!rate_thread_sends_outputs) {
+        SRV_Channels::output_ch_all();
 
-    srv.push();
+        srv.push();
+    }
 
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();

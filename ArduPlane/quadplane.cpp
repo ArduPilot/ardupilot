@@ -581,6 +581,22 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 10
     AP_GROUPINFO("RTL_PAUSE_TIME", 43, QuadPlane, qrtl_pause_time, 0),
 
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // @Param: FSTRATE_ENABLE
+    // @DisplayName: Enable the VTOL fast rate thread
+    // @Description: Run the VTOL rate controller and the outputs in their own thread at a fraction of the gyro rate, set by Q_FSTRATE_DIV, rather than at the main loop rate. With Enabled-Dynamic the divisor is scaled from Q_FSTRATE_DIV to avoid overrun in the gyro sample buffer and main loop slow-downs; the other values fix it to Q_FSTRATE_DIV on arming or always. Motors with Q_M_PWM_TYPE PWMRange or PWMAngle still update at the main loop rate. Not available on tailsitters or tiltrotors.
+    // @User: Advanced
+    // @Values: 0:Disabled,1:Enabled-Dynamic,2:Enabled-FixedWhenArmed,3:Enabled-Fixed
+    AP_GROUPINFO("FSTRATE_ENABLE", 44, QuadPlane, fast_rate_enable, 0),
+
+    // @Param: FSTRATE_DIV
+    // @DisplayName: VTOL fast rate thread divisor
+    // @Description: Fast rate thread divisor used to control the maximum fast rate update rate. The actual rate is the gyro rate in Hz divided by this value. This value is scaled depending on the configuration of Q_FSTRATE_ENABLE.
+    // @User: Advanced
+    // @Range: 1 10
+    AP_GROUPINFO("FSTRATE_DIV", 45, QuadPlane, fast_rate_decimation, 1),
+#endif
+
     AP_GROUPEND
 };
 
@@ -873,6 +889,12 @@ void QuadPlane::setup_defaults(void)
     AP_Param::set_default_by_name("EK2_CHECK_SCALE",100);
     AP_Param::set_default_by_name("EK3_CHECK_SCALE",100);
 
+}
+
+// true while QSTABILIZE runs an ESC calibration, which writes the motors directly
+bool QuadPlane::esc_calibration_running() const
+{
+    return esc_calibration && AP_Notify::flags.esc_calibration && plane.control_mode == &plane.mode_qstabilize;
 }
 
 // run ESC calibration
@@ -1657,7 +1679,7 @@ void SLT_Transition::update()
 
     case State::DONE:
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-        motors->output();
+        quadplane.motors_output_main();
         set_last_fw_pitch();
         in_forced_transition = false;
         return;
@@ -1710,7 +1732,7 @@ void QuadPlane::update(void)
 #if AP_ADVANCEDFAILSAFE_ENABLED
     if (plane.afs.should_crash_vehicle() && !plane.afs.terminating_vehicle_via_landing()) {
         set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-        motors->output();
+        motors_output_main();
         return;
     }
 #endif
@@ -1749,7 +1771,7 @@ void QuadPlane::update(void)
             // in manual modes quad motors are always off
             if (!tailsitter.enabled()) {
                 set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-                motors->output();
+                motors_output_main();
             }
             transition->force_transition_complete();
             assisted_flight = false;
@@ -1956,7 +1978,7 @@ void QuadPlane::motors_output(bool run_rate_controller)
         if (plane.arming.get_delay_arming()) {
             // delay motor start after arming
             set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-            motors->output();
+            motors_output_main();
             return;
         }
     }
@@ -1969,10 +1991,10 @@ void QuadPlane::motors_output(bool run_rate_controller)
     if (!plane.arming.is_armed_and_safety_off() || SRV_Channels::get_emergency_stop()) {
 #endif
         set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-        motors->output();
+        motors_output_main();
         return;
     }
-    if (esc_calibration && AP_Notify::flags.esc_calibration && plane.control_mode == &plane.mode_qstabilize) {
+    if (esc_calibration_running()) {
         // output is direct from run_esc_calibration()
         return;
     }
@@ -1998,11 +2020,14 @@ void QuadPlane::motors_output(bool run_rate_controller)
 
         // run low level rate controllers that only require IMU data and set loop time
         const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
-        motors->set_dt_s(last_loop_time_s);
         attitude_control->set_dt_s(last_loop_time_s);
         pos_control->set_dt_s(last_loop_time_s);
-        attitude_control->rate_controller_run();
-        // reset sysid and other temporary inputs
+        if (!plane.using_rate_thread()) {
+            // the rate thread runs its own rate controller and sets the motors' dt
+            motors->set_dt_s(last_loop_time_s);
+            attitude_control->rate_controller_run();
+        }
+        // reset sysid and other temporary inputs, first handing them to the rate thread
         attitude_control->rate_controller_target_reset();
         last_att_control_ms = now;
     }
@@ -2010,7 +2035,7 @@ void QuadPlane::motors_output(bool run_rate_controller)
     // see if motors should be shut down
     update_throttle_suppression();
 
-    motors->output();
+    motors_output_main();
 
     // Run thrust loss check, reset if motors have not been active
     const bool motors_inactive = (now - last_motors_active_ms) > 100;
@@ -2022,6 +2047,56 @@ void QuadPlane::motors_output(bool run_rate_controller)
     }
 
 }
+
+/*
+  send the motor demands from the main loop. While the rate thread runs
+  it sends them itself, from the spool state and throttle the main loop
+  has set, so the main loop only sets them.
+ */
+void QuadPlane::motors_output_main()
+{
+    if (plane.using_rate_thread()) {
+        return;
+    }
+    motors->output();
+}
+
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+/*
+  send the outputs from the rate thread: the VTOL motors from the rate
+  controller it has just run, and every other channel as the main loop last
+  worked it out in Plane::servos_output(). The motors write their outputs
+  directly, so they are corked first to go out together; a motor type
+  written as a scaled output (PWMRange, PWMAngle) waits for the main loop's
+  calc_pwm(). full_push adds the updates that run at the main loop rate, such
+  as serial and CAN servos.
+ */
+void QuadPlane::rate_thread_output(bool full_push)
+{
+    auto &srv = AP::srv();
+    srv.cork();
+
+    if (!main_loop_owns_motors()) {
+        motors->output();
+    }
+
+    SRV_Channels::output_ch_all();
+    if (full_push) {
+        srv.push();
+    } else {
+        hal.rcout->push();
+    }
+}
+
+/*
+  a motor test and an ESC calibration write the motors directly from the
+  main loop, so the rate thread leaves the motors to it while either runs
+ */
+bool QuadPlane::main_loop_owns_motors() const
+{
+    return motor_test.running || esc_calibration_running();
+}
+#endif  // AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
 /*
   handle a MAVLink DO_VTOL_TRANSITION
@@ -4040,7 +4115,7 @@ void QuadPlane::afs_terminate(void)
 {
     if (available()) {
         set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-        motors->output();
+        motors_output_main();
     }
 }
 

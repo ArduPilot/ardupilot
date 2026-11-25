@@ -409,7 +409,8 @@ void Plane::one_second_loop()
 
     const float loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.available()) {
+    // the rate thread sets its own rate controller's notch sample rate
+    if (quadplane.available() && !using_rate_thread()) {
         quadplane.attitude_control->set_notch_sample_rate(loop_rate);
     }
 #endif

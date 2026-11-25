@@ -17,6 +17,7 @@
 #include <AP_Logger/LogStructure.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 #include "qautotune.h"
 #include "defines.h"
 #include "tailsitter.h"
@@ -279,6 +280,8 @@ private:
 
     bool should_relax(void);
     void motors_output(bool run_rate_controller = true);
+    // send the motor demands from the main loop, unless the rate thread sends them
+    void motors_output_main();
     void Log_Write_QControl_Tuning();
     void log_QPOS(void);
     float landing_descent_rate_ms(float height_above_ground_m);
@@ -367,6 +370,8 @@ private:
     // control ESC throttle calibration
     AP_Int8 esc_calibration;
     void run_esc_calibration(void);
+    // true while QSTABILIZE runs an ESC calibration, which writes the motors directly
+    bool esc_calibration_running() const;
 
     // ICEngine control on landing
     AP_Int8 land_icengine_cut;
@@ -755,6 +760,16 @@ private:
             return (options.get() & int32_t(option)) != 0;
         }
     } thrust_loss;
+
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // send the outputs from AP_Vehicle's rate thread; full_push adds the main loop rate updates
+    void rate_thread_output(bool full_push);
+    // true while the main loop drives the VTOL motors itself: a motor test or an ESC calibration
+    bool main_loop_owns_motors() const;
+
+    AP_Int8 fast_rate_enable;       // Q_FSTRATE_ENABLE, AP_Vehicle::FastRateType
+    AP_Int8 fast_rate_decimation;   // Q_FSTRATE_DIV, gyro samples per rate thread iteration
+#endif
 
     static QuadPlane *_singleton;
 };
