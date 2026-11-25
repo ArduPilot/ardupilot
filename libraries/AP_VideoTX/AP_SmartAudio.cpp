@@ -695,21 +695,18 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
                 vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
             vtx.set_power_dbm(power);
-            vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         case SMARTAUDIO_SPEC_PROTOCOL_v2:
             if (vtx.get_configured_power_level() != power) {
                 vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
             vtx.set_power_level(power);
-            vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         default:
             if (vtx.get_configured_power_dac() != power) {
                 vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
             vtx.set_power_dac(power);
-            vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         }
         debug("Power was set to %d", power);
