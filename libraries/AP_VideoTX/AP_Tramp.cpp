@@ -558,6 +558,11 @@ void AP_Tramp::update()
         _freq_sent = false;
         _freq_answered = 0;
     }
+    if (vtx.get_power_mw() == vtx.get_configured_power_mw()) {
+        // likewise for the power: the VTX took it, so if it is moved off it
+        // later it has not refused it
+        _power_warn_pending = false;
+    }
 
     if (vtx.have_params_changed() && retry_count == 0) {
         // check changes in the order they will be processed; re-arm retries
