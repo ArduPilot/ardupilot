@@ -6969,6 +6969,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # asks for a broadcast STATUSTEXT instead.
         self.context_collect('STATUSTEXT')
         for seq in failed_indices:
+            # failed_indices comes from MIS_TOTAL, so these are floats; the
+            # sequence number is packed as a uint16 and must be an int.
+            seq = int(seq)
             self.context_clear_collection('STATUSTEXT')
             self.set_current_waypoint_using_mission_set_current(seq, check_afterwards=False)
             self.wait_statustext("Mission: unable to set current to %u" % seq, check_context=True)
