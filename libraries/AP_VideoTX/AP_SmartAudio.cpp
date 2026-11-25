@@ -556,7 +556,10 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     vtx.set_enabled(true);
     // it seems like the spec is wrong, on a unify pro32 this setting is inverted
     _vtx_use_set_freq = !(settings.mode & 1);
-    vtx.set_reported_state(settings.band, settings.channel, settings.frequency, !_vtx_use_set_freq);
+    // in channel mode the settings frequency is the VTX's stored user
+    // frequency, not the one it is on, so reported_frequency() leaves it out
+    // and the VTX is placed by its band and channel
+    vtx.set_reported_state(settings.band, settings.channel, reported_frequency(settings), !_vtx_use_set_freq);
     // SA21 sends us a complete packet with the supported power levels
     if (settings.version == SMARTAUDIO_SPEC_PROTOCOL_v21) {
         vtx.set_power_dbm(settings.power_in_dbm);
