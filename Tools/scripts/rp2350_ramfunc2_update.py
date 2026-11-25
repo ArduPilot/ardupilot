@@ -179,13 +179,15 @@ def sym_size(syms, name):
 
 
 class Entry:
-    def __init__(self, reg, idx, path, name, size, active):
+    def __init__(self, reg, idx, path, name, size, active, programs):
         self.reg = reg
         self.idx = idx
         self.path = path
         self.name = name
         self.size = size
         self.active = active
+        # the programs a "[<program>,...]" entry is placed in, or None for all
+        self.programs = programs
 
 
 def load_registries():
@@ -206,8 +208,13 @@ def load_registries():
             sym, _, comment = rest.partition("#")
             sym = re.sub(r"\s+", "", sym)
             m = re.search(r"(\d+)\s*B\b", comment)
+            # as the generator reads them: every bracketed name list in the
+            # comment other than [inlinable]
+            programs = {p for tag in re.findall(r"\[([A-Za-z_][\w,-]*)\]", comment) if tag != "inlinable"
+                        for p in tag.split(",")}
             if sym:
-                entries.append(Entry(reg, idx, path, sym, int(m.group(1)) if m else None, active))
+                entries.append(Entry(reg, idx, path, sym, int(m.group(1)) if m else None, active,
+                                     programs or None))
     return lines, entries
 
 
@@ -561,7 +568,9 @@ def verify(elf, buildroot, prefix):
     """Report registered functions, and functions the port defines in SRAM, that
     the link put in flash. Returns the number found."""
     _, entries = load_registries()
-    wanted = {e.name for e in entries if e.active and e.path != "(archive)"}
+    # entries marked for other programs are not placed in this one
+    wanted = {e.name for e in entries if e.active and e.path != "(archive)"
+              and (e.programs is None or elf.name in e.programs)}
     out = run([f"{prefix}-nm", "-S", "--defined-only", str(elf)]).stdout
     rows = [line.split() for line in out.splitlines()]
     # a weak label with no size is a default handler in vectors.S, such as an
