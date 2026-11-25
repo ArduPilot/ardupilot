@@ -358,21 +358,23 @@ void AP_Tramp::process_requests()
         // A pit mode change is prioritised over every other pending change
         // and retried on its own schedule so a refused or missed value can
         // neither strand the VTX in pit mode nor burn the retry budget armed
-        // for frequency/power changes
-        if (pitmode_disagreed) {
-            if ((now_ms - _last_pitmode_send_ms) >= VTX_TRAMP_PITMODE_RETRY_MS) {
-                debug("Changing pitmode");
-                // intentionally ignores race lock: a race-locked VTX would
-                // ignore the request anyway
-                send_command('I', vtx.has_option(AP_VideoTX::VideoOptions::VTX_PITMODE) ? 0 : 1);
-                _last_pitmode_send_ms = now_ms;
+        // for frequency/power changes. Between its retries the other changes
+        // still go out, so a VTX that will not change pit mode can still be
+        // moved to another channel
+        bool pitmode_sent = false;
+        if (pitmode_disagreed && (now_ms - _last_pitmode_send_ms) >= VTX_TRAMP_PITMODE_RETRY_MS) {
+            debug("Changing pitmode");
+            // intentionally ignores race lock: a race-locked VTX would
+            // ignore the request anyway
+            send_command('I', vtx.has_option(AP_VideoTX::VideoOptions::VTX_PITMODE) ? 0 : 1);
+            _last_pitmode_send_ms = now_ms;
+            pitmode_sent = true;
 
-                // Update last time
-                last_time_us = now;
+            // Update last time
+            last_time_us = now;
 
-                // Advance state
-                set_status(TrampStatus::TRAMP_STATUS_ONLINE_CONFIG);
-            }
+            // Advance state
+            set_status(TrampStatus::TRAMP_STATUS_ONLINE_CONFIG);
         } else if (retry_count > 0 && ((now - last_time_us) >= TRAMP_MIN_REQUEST_PERIOD_US)) {
             if (!is_race_lock_enabled() && vtx.update_frequency() && vtx.configured_selectable()) {
                 debug("Updating frequency to %uMhz", vtx.get_configured_frequency_mhz());
@@ -388,7 +390,7 @@ void AP_Tramp::process_requests()
 
                 // Set flag
                 configUpdateRequired = true;
-            } else if (vtx.update_options()) {
+            } else if (!pitmode_disagreed && vtx.update_options()) {
                 // Pit mode needs to be updated, issue request
                 send_command('I', vtx.has_option(AP_VideoTX::VideoOptions::VTX_PITMODE) ? 0 : 1);
 
@@ -412,7 +414,7 @@ void AP_Tramp::process_requests()
         }
 
         /* Was a config update made? */
-        if (!configUpdateRequired && !pitmode_disagreed) {
+        if (!configUpdateRequired && !pitmode_sent) {
             /* No, look to continue monitoring */
             if ((now - last_time_us) >= TRAMP_STATUS_REQUEST_PERIOD_US) {
                 // Request period exceeded, issue freq/power/pit query
@@ -534,7 +536,7 @@ void AP_Tramp::update()
         _pitmode_warned = false;
     }
 
-    if (vtx.have_params_changed() && retry_count == 0 && !pitmode_disagreed) {
+    if (vtx.have_params_changed() && retry_count == 0) {
         // check changes in the order they will be processed; re-arm retries
         // only on real changes so a VTX rejecting a value can't loop forever
         if (vtx.update_frequency() || vtx.update_band() || vtx.update_channel()) {
