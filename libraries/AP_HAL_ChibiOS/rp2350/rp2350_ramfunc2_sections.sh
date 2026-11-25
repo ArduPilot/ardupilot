@@ -14,17 +14,35 @@ export LC_ALL=C
 # the bootloader and other vehicles legitimately lack most of their entries.
 # --toolchain names the cross toolchain prefix, so the symbols are read and
 # demangled by the cross binutils the build uses, not whatever the host has.
+# --program names a program this build links for hardware, once per program,
+# as <name>[:<vehicle directory>]: an entry marked with a list of programs, as
+# "[arduplane]" or "[arducopter,arduplane]", is placed, and its miss is fatal,
+# only when one of them is named, and is ignored otherwise. Given the directory,
+# its picks name those programs' own objects and library archives, so another
+# program linked from the same section lists cannot take them.
 usage() {
-    echo "usage: $0 <buildroot> [--strict] [--toolchain <prefix>]" >&2
+    echo "usage: $0 <buildroot> [--strict] [--toolchain <prefix>] [--program <name>[:<dir>]]..." >&2
     exit 2
 }
+# the programs a marker may name, as the vehicle wscripts call them; any other
+# name fails, so a misspelt "[inlinable]" cannot drop an entry from every build
+known_programs="antennatracker arducopter arducopter-heli arduplane ardurover ardusub blimp AP_Periph"
 strict=0
 toolchain=arm-none-eabi
 buildroot=""
+programs=()
+declare -A program_dir=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --strict) strict=1 ;;
         --toolchain) [[ $# -ge 2 ]] || usage; toolchain="$2"; shift ;;
+        --program)
+            [[ $# -ge 2 ]] || usage
+            programs+=("${2%%:*}")
+            if [[ "$2" == *:* ]]; then
+                program_dir["${2%%:*}"]="${2#*:}"
+            fi
+            shift ;;
         *) [[ -z "$buildroot" ]] || usage; buildroot="$1" ;;
     esac
     shift
@@ -178,6 +196,15 @@ define_disabled() {
     value_is_off "$val"
 }
 
+# Is a program named by --program? Used by the "[<program>,...]" marker.
+program_built() {
+    local p
+    for p in "${programs[@]+"${programs[@]}"}"; do
+        [[ "$p" == "$1" ]] && return 0
+    done
+    return 1
+}
+
 # generate_ld_from_registry <registry_file> <out_ld> <header_comment>
 generate_ld_from_registry() {
     local registry="$1"
@@ -187,7 +214,11 @@ generate_ld_from_registry() {
     local symbols_txt="$tmpdir/syms_$(basename "$registry").txt"
     local archives_txt="$tmpdir/arch_$(basename "$registry").txt"
 
-    awk -F'|' '
+    awk -F'|' -v programs="$known_programs" '
+        BEGIN {
+            n = split(programs, k, " ")
+            for (i = 1; i <= n; i++) known[k[i]] = 1
+        }
         /^[[:space:]]*#/ { next }
         /^[[:space:]]*$/ { next }
         NF >= 2 {
@@ -204,11 +235,31 @@ generate_ld_from_registry() {
             } else if (match($0, /\[inlinable\]/)) {
                 cond = "inlinable"
             }
+            # a comment "[<program>,...]" rides in the condition field after
+            # an "@", so an entry without one prints, and sorts, as before
+            c = index($0, "#")
+            rest = c ? substr($0, c + 1) : ""
+            progs = ""
+            while (match(rest, /\[[A-Za-z_][A-Za-z0-9_,-]*\]/)) {
+                tag = substr(rest, RSTART + 1, RLENGTH - 2)
+                rest = substr(rest, RSTART + RLENGTH)
+                if (tag == "inlinable") { continue }
+                n = split(tag, names, ",")
+                for (i = 1; i <= n; i++) {
+                    if (!(names[i] in known)) {
+                        print FILENAME ":" FNR ": \"" names[i] "\" in [" tag "] is not a program" > "/dev/stderr"
+                        bad = 1
+                    }
+                }
+                progs = progs (progs == "" ? "" : ",") tag
+            }
+            if (progs != "") { cond = cond "@" progs }
             s=$2
             gsub(/#.*/, "", s)
             gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
             if (s != "") print s "\t" cond
         }
+        END { exit bad }
     ' "$registry" | sort -u > "$symbols_txt"
 
     # Archive-member entries pick a whole object out of a prebuilt library.
@@ -232,15 +283,38 @@ generate_ld_from_registry() {
     {
         echo "/* auto-generated from $(basename "$registry"); do not edit */"
         while IFS=$'\t' read -r wanted cond; do
+            only=""
+            files="*"
+            if [[ "$cond" == *@* ]]; then
+                only="${cond#*@}"
+                cond="${cond%%@*}"
+                # a pick names each listed program's objects and library
+                # archive, or everything when waf gave no directory
+                files=""
+                IFS=, read -ra listed <<< "$only"
+                for p in "${listed[@]}"; do
+                    program_built "$p" || continue
+                    if [[ -z "${program_dir[$p]:-}" ]]; then
+                        files="*"
+                        break
+                    fi
+                    files+=" *lib${program_dir[$p]}_libs.a:* *${program_dir[$p]}/*"
+                done
+                # other programs' code: neither placed nor checked here
+                [[ -n "$files" ]] || continue
+            fi
             norm_wanted="$(printf '%s' "$wanted" | sed 's/[[:space:]]//g')"
-            picks="$(awk -F'|' -v want="$norm_wanted" '
+            picks="$(awk -F'|' -v want="$norm_wanted" -v files="$files" '
                 $1 == want {
                     raw=$2
-                    print "        *(.text." raw ")"
-                    print "        *(.text.hot." raw ")"
-                    print "        *(.text.startup." raw ")"
-                    print "        *(.text.unlikely." raw ")"
-                    print "        *(.gnu.linkonce.t." raw ")"
+                    n = split(files, f, " ")
+                    for (i = 1; i <= n; i++) {
+                        print "        " f[i] "(.text." raw ")"
+                        print "        " f[i] "(.text.hot." raw ")"
+                        print "        " f[i] "(.text.startup." raw ")"
+                        print "        " f[i] "(.text.unlikely." raw ")"
+                        print "        " f[i] "(.gnu.linkonce.t." raw ")"
+                    }
                 }
             ' "$map_txt")"
             if [[ -z "$picks" ]]; then
@@ -260,7 +334,7 @@ generate_ld_from_registry() {
                 if [[ "$cond" == "inlinable" ]]; then
                     continue
                 fi
-                if [[ $strict -eq 1 ]]; then
+                if [[ $strict -eq 1 || -n "$only" ]]; then
                     echo "rp2350_ramfunc2_sections: $(basename "$registry"): no symbol match for '$wanted'" >&2
                     echo "$wanted" >> "$misses_txt"
                 fi
