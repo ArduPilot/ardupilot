@@ -342,11 +342,11 @@ private:
     AP_Int16 _frequency_mhz;
     uint16_t _current_frequency;
     // the last state report was for a VTX commanded by band/channel index
-    bool _reported_by_index {false};
+    bool _reported_by_index;
 
     // power output in mw
     AP_Int16 _power_mw;
-    uint16_t _current_power {0};
+    uint16_t _current_power;
     int32_t _actual_power_mw {-1};
     AP_Int16 _max_power_mw;
 

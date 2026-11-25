@@ -161,14 +161,14 @@ private:
     bool _power_warn_pending;
     // pit mode changes are retried periodically while the VTX disagrees, so
     // that a refused or missed request cannot strand the VTX with no way back
-    uint32_t _last_pitmode_send_ms {0};
+    uint32_t _last_pitmode_send_ms;
     // whether the current pit mode disagreement is being timed
-    bool _pitmode_disagreement_started {false};
+    bool _pitmode_disagreement_started;
     // when the current pit mode disagreement began
-    uint32_t _pitmode_disagree_ms {0};
-    bool _pitmode_warned {false};
+    uint32_t _pitmode_disagree_ms;
+    bool _pitmode_warned;
     // last time the retry budget was re-armed for a pending power change
-    uint32_t _last_power_rearm_ms {0};
+    uint32_t _last_power_rearm_ms;
 
     // Receive state machine
     enum class ReceiveState {
