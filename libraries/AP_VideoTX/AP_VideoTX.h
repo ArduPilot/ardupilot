@@ -289,8 +289,12 @@ public:
     bool have_params_changed() const;
     // set configured defaults from current settings, return true if defaults were set
     bool set_defaults();
-    // display the current VTX settings in the GCS
+    // display the current VTX settings in the GCS once a backend has made a
+    // change. With user bands built in report_state_changes() announces
+    // every change the VTX reports, so this does nothing
     void announce_vtx_settings() const;
+    // send the current VTX settings to the GCS
+    void send_vtx_settings() const;
 #if AP_VIDEOTX_TABLE_ENABLED
     // announce and log what the VTX reports whenever it changes
     void report_state_changes();

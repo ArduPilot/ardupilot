@@ -768,7 +768,7 @@ void AP_VideoTX::report_state_changes()
     _last_reported.power_mw = power_mw;
     _last_reported.actual_power_mw = _actual_power_mw;
 
-    announce_vtx_settings();
+    send_vtx_settings();
 
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: VTX
@@ -1085,6 +1085,13 @@ bool AP_VideoTX::set_defaults()
 }
 
 void AP_VideoTX::announce_vtx_settings() const
+{
+#if !AP_VIDEOTX_TABLE_ENABLED
+    send_vtx_settings();
+#endif
+}
+
+void AP_VideoTX::send_vtx_settings() const
 {
     // what the VTX reports it is on, not what is being asked of it. The power
     // is the one it has taken, with what it says it is putting out if that
