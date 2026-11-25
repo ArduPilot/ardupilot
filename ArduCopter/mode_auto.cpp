@@ -50,6 +50,10 @@ bool ModeAuto::init(bool ignore_checks)
         // initialise LOITER_TURNS circle state
         circle = {};
 
+        // the mission starts or resumes from wherever the vehicle is
+        nav_cmd_completed = false;
+        nav_cmd_has_defined_start = false;
+
         // set flag to start mission
         waiting_to_start = true;
 
@@ -764,6 +768,12 @@ bool ModeAuto::set_speed_down_ms(float speed_down_ms)
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
+    if (AP_Mission::is_nav_cmd(cmd)) {
+        // the start is defined only if the mission advanced here from a command it completed
+        nav_cmd_has_defined_start = nav_cmd_completed;
+        nav_cmd_completed = false;
+    }
+
     switch(cmd.id) {
 
     ///
@@ -895,6 +905,10 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 
     default:
         // unable to use the command, allow the vehicle to try the next command
+        if (AP_Mission::is_nav_cmd(cmd)) {
+            // the vehicle has not moved, so the next command starts where this one would have
+            nav_cmd_completed = nav_cmd_has_defined_start;
+        }
         return false;
     }
 
@@ -905,6 +919,9 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 // exit_mission - function that is called once the mission completes
 void ModeAuto::exit_mission()
 {
+    // a command started after the mission completes does not follow on from the last one
+    nav_cmd_completed = false;
+
     // play a tone
     AP_Notify::events.mission_complete = 1;
     // if we are not on the ground switch to loiter or land
@@ -1034,7 +1051,11 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
-        return verify_loiter_to_alt();
+        if (!verify_loiter_to_alt()) {
+            return false;
+        }
+        nav_cmd_completed = true;
+        return true;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         cmd_complete = verify_RTL();
@@ -1112,6 +1133,10 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
     }
 
+
+    if (cmd_complete && AP_Mission::is_nav_cmd(cmd)) {
+        nav_cmd_completed = true;
+    }
 
     // send message to GCS
     if (cmd_complete) {
@@ -1597,7 +1622,8 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // get waypoint's location from command and send to wp_nav
     Location target_loc;
-    const float arc_rad = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) ? cmd.get_arc_angle_rad() : 0.0f;
+    // an arc is only flown from a start the mission defines, otherwise the leg is straight
+    const float arc_rad = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT && nav_cmd_has_defined_start) ? cmd.get_arc_angle_rad() : 0.0f;
     if (!get_loc_from_cmd(cmd, default_loc, target_loc) || !wp_start(target_loc, arc_rad)) {
         // failure to get the location or set next destination can only be because of missing terrain data or unhealthy rangefinder
         copter.failsafe_terrain_on_event();
@@ -1863,7 +1889,11 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
         copter.failsafe_terrain_on_event();
         return;
     }
-    if (!wp_nav->set_spline_destination_loc(dest_loc, next_dest_loc, next_dest_loc_is_spline)) {
+    // a spline is only flown from a start the mission defines, otherwise the leg is straight
+    const bool dest_set = nav_cmd_has_defined_start ?
+        wp_nav->set_spline_destination_loc(dest_loc, next_dest_loc, next_dest_loc_is_spline) :
+        wp_nav->set_wp_destination_loc(dest_loc);
+    if (!dest_set) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
