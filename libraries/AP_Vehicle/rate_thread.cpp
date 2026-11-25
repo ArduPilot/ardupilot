@@ -346,7 +346,10 @@ void AP_Vehicle::rate_controller_thread()
         // run the rate controller on all available samples
         // it is important not to drop samples otherwise the filtering will be fubar
         // there is no need to output to the motors more than once for every batch of samples
-        attitude_control->rate_controller_run_dt(gyro + ahrs.get_gyro_drift(), sensor_dt, ang_vel_body_rads);
+        // the controller works in its AHRS view, which a vehicle may rotate: QuadPlane by Q_TRIM_PITCH
+        Vector3f gyro_rads = gyro + ahrs.get_gyro_drift();
+        attitude_control->rotate_into_view(gyro_rads);
+        attitude_control->rate_controller_run_dt(gyro_rads, sensor_dt, ang_vel_body_rads);
 
 #ifdef RATE_LOOP_TIMING_DEBUG
         rate_controller_time_us += AP_HAL::micros() - rate_now_us;
