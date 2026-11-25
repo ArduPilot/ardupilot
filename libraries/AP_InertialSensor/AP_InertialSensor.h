@@ -848,7 +848,7 @@ private:
         return (raw_logging_options.get() & int32_t(option)) != 0;
     }
     // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
-    // Support for the fast rate thread in copter
+    // Support for the fast rate thread
     FastRateBuffer* fast_rate_buffer;
     bool fast_rate_buffer_enabled;
 
