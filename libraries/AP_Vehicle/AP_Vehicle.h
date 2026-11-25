@@ -338,6 +338,9 @@ public:
     virtual bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED { return false; }
 #endif
 
+    // true while the rate thread runs the rate controller and sends the outputs
+    bool using_rate_thread() const { return rate_thread_active; }
+
 protected:
 
     virtual void init_ardupilot() = 0;
@@ -589,6 +592,32 @@ protected:
     void update_dynamic_notch_at_specified_rate();
 #endif // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
+    // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // the rate thread's modes, as the values of the vehicle's fast rate enable parameter
+    enum class FastRateType : uint8_t {
+        FAST_RATE_DISABLED            = 0,
+        FAST_RATE_DYNAMIC             = 1,
+        FAST_RATE_FIXED_ARMED         = 2,
+        FAST_RATE_FIXED               = 3,
+    };
+    // the rate thread mode the vehicle asks for; disabled until it can run the thread
+    virtual FastRateType get_rate_thread_type() const { return FastRateType::FAST_RATE_DISABLED; }
+    // the gyro samples per rate loop iteration the vehicle asks for, 1 or more
+    virtual uint8_t get_rate_thread_decimation() const { return 1; }
+    // send the outputs from the rate thread; full_push adds the main loop rate updates
+    virtual void rate_thread_motors_output(bool full_push) {}
+
+    // how often the rate thread logs what it updates
+    enum class RateThreadLogging : uint8_t {
+        NONE,
+        MEDIUM,     // 10Hz
+        FAST,       // the main loop rate, or 1kHz if the rate loop is faster
+    };
+    virtual RateThreadLogging get_rate_thread_logging() { return RateThreadLogging::NONE; }
+    // log what the rate thread updates, at the rate get_rate_thread_logging() asks for
+    virtual void rate_thread_log_update() {}
+    // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+
     // Bitmask of modes to disable from gcs
     AP_UInt32 flight_mode_GCS_block;
 
@@ -611,6 +640,36 @@ private:
     // decimation for 1Hz update
     uint8_t one_Hz_counter;
     void one_Hz_update();
+
+    // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // decimations of the rate loop for the work the rate thread does more slowly
+    struct RateControllerRates {
+        uint8_t fast_logging_rate;
+        uint8_t medium_logging_rate;
+        uint8_t filter_rate;
+        uint8_t main_loop_rate;
+    };
+
+    // start the rate thread once the vehicle asks for one
+    void start_rate_thread();
+    // the decimation of the rate loop that gives rate_hz, at least 1
+    uint8_t calc_gyro_decimation(uint8_t gyro_decimation, uint16_t rate_hz) const;
+    // the rate thread's loop, run for the life of the vehicle
+    void rate_controller_thread();
+    // update the harmonic notch centres and the backend filters from the rate thread
+    void rate_controller_filter_update();
+    // set the rate loop's rate from rate_decimation, and the decimations for the slower work
+    void rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high);
+    // hand the rate controller and the outputs to the rate thread
+    void enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates& rates);
+    // hand the rate controller and the outputs back to the main loop
+    void disable_fast_rate_loop(RateControllerRates& rates);
+    // log the rate thread's timing as RTDT
+    void Log_Write_Rate_Thread_Dt(float dt, float dtAvg, float dtMax, float dtMin);
+
+    bool rate_thread_started;   // true once the thread has been created
+    bool rate_thread_active;    // written by the rate thread, read by the main loop
+    // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true
