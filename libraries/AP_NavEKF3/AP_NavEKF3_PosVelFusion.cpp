@@ -1248,7 +1248,9 @@ void NavEKF3_core::selectHeightForFusion()
     readBaroData();
     baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
 
+#if AP_RANGEFINDER_ENABLED
     bool rangeFinderDataIsFresh = (imuSampleTime_ms - rngValidMeaTime_ms < rngFreshTime_ms);
+#endif
 #if EK3_FEATURE_EXTERNAL_NAV
     const bool extNavDataIsFresh = (imuSampleTime_ms - extNav.measTime_ms < 500);
 #endif
@@ -1314,7 +1316,11 @@ void NavEKF3_core::selectHeightForFusion()
     }
 
     // Use Baro alt as a fallback if we lose range finder, GPS, external nav or Beacon
+#if AP_RANGEFINDER_ENABLED
     bool lostRngHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && !rangeFinderDataIsFresh);
+#else
+    const bool lostRngHgt = false;
+#endif
     bool lostGpsHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000 || !gpsAccuracyGoodForAltitude));
 #if EK3_FEATURE_BEACON_FUSION
     bool lostRngBcnHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) && ((imuSampleTime_ms - rngBcn.dataDelayed.time_ms) > 2000));
