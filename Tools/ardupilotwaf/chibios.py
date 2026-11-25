@@ -156,6 +156,8 @@ class rp2350_ramfunc2_gen(Task.Task):
         cmd = ['bash', script, buildroot, '--toolchain', self.env.get_flat('TOOLCHAIN')]
         if self.strict:
             cmd.append('--strict')
+        for program in sorted(set(self.programs)):
+            cmd += ['--program', '%s:%s' % program]
         ret = subprocess.call(cmd)
         if ret:
             self.err_msg = 'rp2350_ramfunc2_sections.sh failed, see above'
@@ -706,6 +708,7 @@ def chibios_firmware(self):
         if rf2_task is None:
             rf2_task = self.create_task('rp2350_ramfunc2_gen')
             rf2_task.strict = False
+            rf2_task.programs = []
             self.bld.rp2350_ramfunc2_task = rf2_task
         rf2_task.inputs.extend(self.link_task.inputs)
         rf2_task.dep_nodes.extend(self.link_task.dep_nodes)
@@ -713,6 +716,11 @@ def chibios_firmware(self):
         # under simulation with no SPI bus, most entries are absent
         if getattr(self, 'program_name', None) == 'arducopter' and not self.env.SIM_ENABLED:
             rf2_task.strict = True
+        # an entry marked with programs, as [arduplane], is placed and checked
+        # only when one of them is linked for real hardware, and only from
+        # their own objects and lib<vehicle directory>_libs.a
+        if getattr(self, 'program_name', None) and not self.env.SIM_ENABLED:
+            rf2_task.programs.append((self.program_name, self.path.name))
         self.link_task.set_run_after(rf2_task)
         for ld_name in RP2350_GENERATED_LD:
             self.link_task.dep_nodes.append(self.bld.bldnode.find_or_declare(ld_name))
