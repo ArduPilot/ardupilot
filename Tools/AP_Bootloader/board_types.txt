@@ -371,6 +371,8 @@ AP_HW_FLYINGRCH7DPRO                 1242
 
 AP_HW_PRINCIPIOT_H7PI                1248
 
+AP_HW_ZESTUDIO_ZEPITOT               1249
+
 AP_HW_KT_FMU_F1                      1250
 
 # IDs 1251-1260 reserved for Simplifly
