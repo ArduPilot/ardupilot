@@ -899,9 +899,11 @@ void AP_VideoTX::update_user_bands()
 void AP_VideoTX::resolve_reported(const AP_VideoTX_Table &table, uint8_t cfg_band, uint8_t cfg_channel,
                                   bool by_index, uint8_t &band, uint8_t &channel, uint16_t &freq)
 {
+#if AP_VIDEOTX_TABLE_ENABLED
     // the table may be rebuilt from the main thread while a VTX report is
     // placed in it from a backend thread
     WITH_SEMAPHORE(table.get_semaphore());
+#endif
 
     // a VTX's own band/channel indices refer to its factory band map, not to
     // the user table
@@ -994,7 +996,9 @@ void AP_VideoTX::set_reported_frequency(uint16_t freq)
     if (freq == 0) {
         return;
     }
+#if AP_VIDEOTX_TABLE_ENABLED
     WITH_SEMAPHORE(_table.get_semaphore());
+#endif
     uint8_t band = UINT8_MAX, channel = UINT8_MAX;
     _table.band_and_channel_for_frequency(freq, band, channel);
     resolve_reported(_table, _band.get(), _channel.get(), _reported_by_index, band, channel, freq);

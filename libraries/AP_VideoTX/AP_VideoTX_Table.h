@@ -49,6 +49,7 @@ public:
         uint16_t freq[MAX_CHANNELS]; // MHz, 0 = channel disabled/unused
     };
 
+#if AP_VIDEOTX_TABLE_ENABLED
     // a user band as given by its parameters
     struct UserBand {
         // factory band to replace, or -1 to add the band after the factory bands
@@ -66,6 +67,12 @@ public:
 
     // rebuild the table from the factory bands and the given user bands
     void set_user_bands(const UserBand bands[NUM_USER_BANDS]);
+#else
+    // without user bands the table is the compiled-in factory band map: it
+    // holds nothing and never changes
+    AP_VideoTX_Table() {}
+    CLASS_NO_COPY(AP_VideoTX_Table);
+#endif
 
     // frequency of a band/channel in the compiled-in factory band map, which
     // is what a VTX's own band/channel indices refer to; 0 if out of range
@@ -76,22 +83,30 @@ public:
     // -- band / frequency accessors (band, channel are zero-based) --
     uint8_t num_bands() const { return MAX_BANDS; }
     uint8_t num_channels() const { return MAX_CHANNELS; }
-    // frequency for a band/channel, 0 if out of range or channel disabled
-    uint16_t frequency(uint8_t band, uint8_t channel) const;
     // reverse lookup: first band/channel whose frequency matches, false if none
     bool band_and_channel_for_frequency(uint16_t freq, uint8_t &band, uint8_t &channel) const;
     // single-letter band id, '?' if out of range
     char band_letter(uint8_t band) const;
+#if AP_VIDEOTX_TABLE_ENABLED
+    // frequency for a band/channel, 0 if out of range or channel disabled
+    uint16_t frequency(uint8_t band, uint8_t channel) const;
     bool band_is_factory(uint8_t band) const;
 
     // held across a sequence of lookups that must see one consistent table
     HAL_Semaphore &get_semaphore() const { return _sem; }
+#else
+    uint16_t frequency(uint8_t band, uint8_t channel) const { return factory_frequency(band, channel); }
+    // there are only factory bands. The user band indices have no
+    // frequencies, so nothing is ever commanded for them
+    bool band_is_factory(uint8_t band) const { return true; }
+#endif
 
     // plausible channel frequencies in MHz; anything else disables a user
     // band channel
     static const uint16_t MIN_FREQ = 1000;
     static const uint16_t MAX_FREQ = 6000;
 
+#if AP_VIDEOTX_TABLE_ENABLED
 private:
     // fill the model with the factory bands and empty user bands, without
     // locking: also used by the constructor, which runs during static
@@ -102,6 +117,7 @@ private:
     // the table is rebuilt from the main thread while other threads (e.g.
     // CRSF telemetry) look up frequencies
     mutable HAL_Semaphore _sem;
+#endif  // AP_VIDEOTX_TABLE_ENABLED
 };
 
 #endif  // AP_VIDEOTX_ENABLED

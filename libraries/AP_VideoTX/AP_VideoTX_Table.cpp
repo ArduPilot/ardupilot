@@ -41,6 +41,7 @@ static const DefaultBand default_bands[AP_VideoTX_Table::NUM_FACTORY_BANDS] = {
     { 'D', { 3170, 3190, 3210, 3230, 3250, 3270, 3290, 3310 } },  // 3G3 B
 };
 
+#if AP_VIDEOTX_TABLE_ENABLED
 // letters for the user bands added after the factory bands
 static const char user_band_letters[AP_VideoTX_Table::NUM_USER_BANDS] = { 'Y', 'Z' };
 
@@ -78,6 +79,7 @@ void AP_VideoTX_Table::set_user_bands(const UserBand bands[NUM_USER_BANDS])
         }
     }
 }
+#endif  // AP_VIDEOTX_TABLE_ENABLED
 
 uint16_t AP_VideoTX_Table::factory_frequency(uint8_t band, uint8_t channel)
 {
@@ -99,6 +101,7 @@ bool AP_VideoTX_Table::is_factory_frequency(uint16_t freq)
     return false;
 }
 
+#if AP_VIDEOTX_TABLE_ENABLED
 uint16_t AP_VideoTX_Table::frequency(uint8_t band, uint8_t channel) const
 {
     WITH_SEMAPHORE(_sem);
@@ -143,5 +146,34 @@ bool AP_VideoTX_Table::band_is_factory(uint8_t band) const
     }
     return _bands[band].is_factory;
 }
+
+#else  // AP_VIDEOTX_TABLE_ENABLED
+
+// without user bands the table is the factory band map
+bool AP_VideoTX_Table::band_and_channel_for_frequency(uint16_t freq, uint8_t &band, uint8_t &channel) const
+{
+    if (freq == 0) {
+        return false;
+    }
+    for (uint8_t b = 0; b < NUM_FACTORY_BANDS; b++) {
+        for (uint8_t c = 0; c < MAX_CHANNELS; c++) {
+            if (default_bands[b].freq[c] == freq) {
+                band = b;
+                channel = c;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+char AP_VideoTX_Table::band_letter(uint8_t band) const
+{
+    if (band >= NUM_FACTORY_BANDS) {
+        return '?';
+    }
+    return default_bands[band].letter;
+}
+#endif  // AP_VIDEOTX_TABLE_ENABLED
 
 #endif  // AP_VIDEOTX_ENABLED
