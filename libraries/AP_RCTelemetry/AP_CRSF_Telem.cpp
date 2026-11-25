@@ -947,20 +947,21 @@ void AP_CRSF_Telem::update_vtx_params()
             } else {
                 _telem.ext.command.payload[1] = 0;
             }
-        } else if (_vtx_freq_change_pending && vtx.configured_band_is_custom() &&
-                   _vtx_freq_attempts >= VTX_MAX_FREQUENCY_ATTEMPTS) {
-            // the VTX does not take this frequency (it may be out of its
-            // range, or locked): stop asking so that other changes can go out
-            vtx.frequency_rejected();
-            _vtx_freq_change_pending = false;
-            _vtx_freq_attempts = 0;
-            return;
         } else if (_vtx_freq_change_pending && vtx.configured_band_is_custom()) {
             // a custom band is not in the VTX's own band map, so command the
-            // configured frequency rather than a band/channel index
+            // configured frequency rather than a band/channel index. A new
+            // frequency starts its own count
             if (vtx.get_configured_frequency_mhz() != _vtx_freq_attempt_mhz) {
                 _vtx_freq_attempt_mhz = vtx.get_configured_frequency_mhz();
                 _vtx_freq_attempts = 0;
+            }
+            if (_vtx_freq_attempts >= VTX_MAX_FREQUENCY_ATTEMPTS) {
+                // the VTX does not take this frequency (it may be out of its
+                // range, or locked): stop asking so that other changes can go out
+                vtx.frequency_rejected();
+                _vtx_freq_change_pending = false;
+                _vtx_freq_attempts = 0;
+                return;
             }
             _vtx_freq_attempts++;
             _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_VTX_FREQ;
