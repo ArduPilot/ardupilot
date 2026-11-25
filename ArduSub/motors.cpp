@@ -17,6 +17,13 @@ void Sub::motors_output()
     
     // Motor detection mode controls the thrusters directly
     if (control_mode == Mode::Number::MOTOR_DETECT){
+        // with MOT_PWM_TYPE PWMRange or PWMAngle the thruster outputs
+        // are scaled values that only become PWM in calc_pwm()
+        auto &srv = AP::srv();
+        srv.cork();
+        SRV_Channels::calc_pwm();
+        SRV_Channels::output_ch_all();
+        srv.push();
         return;
     }
     // check if we are performing the motor test
