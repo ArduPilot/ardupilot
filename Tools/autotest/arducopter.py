@@ -1318,6 +1318,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             4: [("arc after resume", "straight", None, (40, 50))],
         }, during_flight=resume_on_arc))
 
+        # restarting a completed mission on an arc starts it from where the vehicle loiters
+        self.start_subtest("Restart on an arc after the mission completed")
+
+        def wait_mission_complete():
+            self.wait_message_field_values('MISSION_CURRENT', {
+                'mission_state': mavutil.mavlink.MISSION_STATE_COMPLETE,
+            }, timeout=120)
+
+        def restart_on_arc():
+            wait_mission_complete()
+            self.wait_groundspeed(0, 0.5, minimum_duration=3)
+            self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=3, reset=1)
+            self.wait_current_waypoint(3, timeout=10)
+            self.wait_current_waypoint(4, timeout=120)
+            wait_mission_complete()
+            self.change_mode('RTL')
+
+        failures.extend(fly_checking_legs([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 10, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 40, 10, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 50, 20),
+        ], {
+            3: [("arc after its waypoint", "arc", (0, 10), (40, 10)),
+                ("arc after restart of a completed mission", "straight", None, (40, 10))],
+        }, during_flight=restart_on_arc))
+
         # each spline is followed by a waypoint that a spline leg curves towards
         self.start_subtest("Splines")
 
