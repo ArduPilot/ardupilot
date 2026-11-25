@@ -4333,6 +4333,36 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode('QLAND')
         self.wait_disarmed(timeout=120)
 
+    def FastRateThread(self):
+        '''fly with the VTOL rate controller in the fast rate thread'''
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("Q_FSTRATE_ENABLE", 1)
+        self.wait_statustext("Rate CPU normal", check_context=True)
+
+        # disarmed with the stick raised, the forward throttle must stay at its
+        # minimum: the main loop writes the stick throttle before it zeroes it,
+        # and the thread must never send the value in between
+        thr_min = self.get_parameter("SERVO3_MIN")
+        self.change_mode("FBWA")
+        self.set_rc(3, 1800)
+        self.context_set_message_rate_hz('SERVO_OUTPUT_RAW', 50)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 10:
+            m = self.assert_receive_message('SERVO_OUTPUT_RAW')
+            if m.servo3_raw != thr_min:
+                raise NotAchievedException(f"disarmed throttle output {m.servo3_raw}, want {thr_min}")
+        self.set_rc(3, 1000)
+
+        self.takeoff(10, mode="QHOVER")
+        self.change_mode("FBWA")
+        self.set_rc(3, 2000)
+        self.wait_statustext("Transition done", check_context=True)
+        self.set_rc(3, 1500)
+        self.change_mode("QLOITER")
+        self.wait_groundspeed(0, 2, timeout=60)
+        self.change_mode("QLAND")
+        self.wait_disarmed(timeout=120)
+
     def HIGH_LATENCY2_VTOL(self):
         '''check HIGH_LATENCY2 navigation targets in VTOL modes'''
         self.takeoff(60, mode='QHOVER', timeout=60)
@@ -4763,6 +4793,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.FenceRelativeToTerrainMinAlt,
             # anomalous: ~9 minutes on CI against ~20s on a desktop; to be investigated
             self.CircuitStatusScript,
+            self.FastRateThread,
         ])
         return ret
 
