@@ -31,11 +31,8 @@
 #     rate-loop rate; the rate thread's call runs later and wins, but the two
 #     disagree for any non-zero value.
 #
-# Main loop at 200 Hz: the 2 kHz rate loop on core1 handles the fast attitude
-# path, so core0's main loop (nav, EKF inline, GCS, logging) needs only a
-# modest rate. It was set at the 225 MHz core clock; at 200 MHz with the
-# 100 MHz flash clock the main loop has more headroom, not less.
-SCHED_LOOP_RATE 200
+# The main loop rate is not set here: hwdef.dat lowers Copter's default and
+# leaves other vehicles at theirs.
 INS_FAST_SAMPLE 1
 INS_GYRO_RATE 2
 FSTRATE_DIV 2

@@ -206,6 +206,15 @@ define HAL_BARO_ALLOW_INIT_NO_BARO 1
 # lower rate than the 400 Hz default to leave cycles for them.
 define AP_GCS_UPDATE_RATE_HZ 25
 
+# Copter's main loop at 200 Hz rather than 400: the 2 kHz rate loop on core1
+# handles the fast attitude path, so core0's main loop (nav, EKF inline, GCS,
+# logging) needs only a modest rate. It was set at the 225 MHz core clock;
+# 200 MHz with the 100 MHz flash clock gives the main loop more headroom on
+# RPI_UAVFC, not less. Other vehicles keep their own default, as
+# SCHED_LOOP_RATE in defaults.parm would not: Plane has no rate thread and
+# defaults to 50 Hz.
+define AP_SCHEDULER_COPTER_DEFAULT_LOOP_RATE_HZ 200
+
 # The rate controller thread runs on core1 with a deeper call chain than the
 # 1536 byte default allows. Static analysis (ArduPilot/ardupilot#34623) puts
 # its worst case at 1.6 KB plus 320 bytes of saved context; it peaked at
