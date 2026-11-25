@@ -512,7 +512,7 @@ void Copter::update_flight_mode()
     flightmode->run();
 
     // hand this loop's gain scales and sysid inputs to the rate thread as soon as they are complete
-    if (using_rate_thread) {
+    if (using_rate_thread()) {
         attitude_control->record_rate_modifiers();
     }
 }

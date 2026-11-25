@@ -637,13 +637,13 @@ void Copter::loop_rate_logging()
 {
    if (should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
-        if (!using_rate_thread) {
+        if (!using_rate_thread()) {
             Log_Write_Rate();
             Log_Write_PIDS(); // only logs if PIDS bitmask is set
         }
     }
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-    if (should_log(MASK_LOG_FTN_FAST) && !using_rate_thread) {
+    if (should_log(MASK_LOG_FTN_FAST) && !using_rate_thread()) {
         AP::ins().write_notch_log_messages();
     }
 #endif
@@ -663,13 +663,13 @@ void Copter::ten_hz_logging_loop()
     // log attitude controller data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
-        if (!using_rate_thread) {
+        if (!using_rate_thread()) {
             Log_Write_Rate();
         }
     }
     if (!should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
     // log at 10Hz if PIDS bitmask is selected, even if no ATT bitmask is selected; logs at looprate if ATT_FAST and PIDS bitmask set
-        if (!using_rate_thread) {
+        if (!using_rate_thread()) {
             Log_Write_PIDS();
         }
     }
@@ -811,25 +811,12 @@ void Copter::one_hz_loop()
     AP_Notify::flags.flying = !ap.land_complete;
 
     // slowly update the PID notches with the average loop rate
-    if (!using_rate_thread) {
+    if (!using_rate_thread()) {
         attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
     }
     pos_control->D_get_accel_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
-#endif
-
-#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
-    // see if we should have a separate rate thread
-    if (!started_rate_thread && get_fast_rate_type() != FastRateType::FAST_RATE_DISABLED) {
-        if (hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
-                                         "rate",
-                                         1536, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
-            started_rate_thread = true;
-        } else {
-            AP_BoardConfig::allocation_error("rate thread");
-        }
-    }
 #endif
 }
 
