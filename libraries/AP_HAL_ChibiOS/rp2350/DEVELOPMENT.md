@@ -721,6 +721,18 @@ Unpicked function sections fall through to `.text_rest` in flash.
 - `[needs DEFINE]` excuses a miss when the define is off in the generated
   `hwdef.h`, `[unless DEFINE]` when `hwdef.h` sets it to 0 or FALSE, and
   `[inlinable]` a header function the compiler may inline away.
+- A list of programs, as `[arduplane]` or `[arducopter,arduplane]`,
+  limits an entry to them: waf passes
+  `--program <name>:<vehicle directory>` for each program it links for
+  hardware, and the entry is placed, and its miss is fatal, only when one
+  of its programs is named. Its picks name those programs' objects and
+  `lib<vehicle>_libs.a`, so an entry can name code Copter shares, such as
+  EKF3, without moving Copter's copy, even when one waf run links both;
+  code from shared archives (ChibiOS, libc, libm) cannot be limited this
+  way. A name that is not a vehicle program fails the build, so a
+  misspelt `[inlinable]` is not taken for one. Plane's per-loop path,
+  navigation path, EKF3 and AHRS are listed this way as `[arduplane]`, so
+  a Copter build places exactly what it would without them.
 - `(archive)|lib_a-<name>.o` moves a whole library object; that is how
   newlib's single-precision trig and `powf`/`logf` cores are placed. Newer
   newlib spells libm's members `libm_a-<name>.o`; the script takes either,
