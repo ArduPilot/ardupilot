@@ -75,7 +75,20 @@ warning: "CONFIG_SUPPORT_STATIC_ALLOCATION" is not defined
 
 this means your 'sdkconfig' file that the IDF relies on is perhaps a bit out of date or out of sync with your IDF. This should not happen, please file a bug if it does!
 
-Changing the sdkconfig.defaults file will cause the sdkconfig to be deleted and regenerated. The sdkconfig will also be regenerated if it is manually deleted.
+The ESP-IDF configuration is generated from `sdkconfig.defaults` files. There are two possible locations for these files:
+
+- **Target defaults:** `libraries/AP_HAL_ESP32/targets/<target>/esp-idf/sdkconfig.defaults`
+- **Board defaults:** `libraries/AP_HAL_ESP32/hwdef/<board>/sdkconfig.defaults`
+
+The target defaults are always loaded. If a board-specific `sdkconfig.defaults` file exists, it is loaded afterwards and can override settings from the target defaults.
+
+The board-specific file is optional. Boards without one will use the target defaults only.
+
+Changing either defaults file will cause the generated `sdkconfig` to be deleted and regenerated during the next build. The `sdkconfig` will also be regenerated if it is manually deleted.
+
+Use board-specific defaults for ESP-IDF configuration options that depend on the hardware of an individual board. For example, PSRAM configuration and execute-in-place (XIP) settings depend on the type and configuration of the installed PSRAM.
+
+Before enabling such options, check the board's hardware configuration, including the PSRAM type and the GPIO pins used by its interface.
 
 If you need to change sdkconfig (which will not cause it to be deleted), you can edit sdkconfig manually or to use ninja menuconfig:
 
