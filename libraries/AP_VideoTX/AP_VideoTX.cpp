@@ -402,17 +402,19 @@ void AP_VideoTX::set_configured_power_mw(uint16_t power)
 uint8_t AP_VideoTX::get_configured_power_dbm() const
 {
     const uint8_t idx = find_current_power();
-    if (_power_levels[idx].mw == _power_mw) {
-        return _power_levels[idx].dbm;
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
+    if (_power_levels[idx].mw != _power_mw) {
+        // a level with no table entry, e.g. a VTX_PWRTBL entry on a transport
+        // that takes an arbitrary power: derive its dbm rather than reporting
+        // the 0mW entry that find_current_power() falls back to
+        const int16_t power = _power_mw.get();
+        if (power <= 0) {
+            return 0;
+        }
+        return uint8_t(roundf(10.0f * log10f(float(power))));
     }
-    // a level with no table entry, e.g. a VTX_PWRTBL entry on a transport that
-    // takes an arbitrary power: derive its dbm rather than reporting the 0mW
-    // entry that find_current_power() falls back to
-    const int16_t power = _power_mw.get();
-    if (power <= 0) {
-        return 0;
-    }
-    return uint8_t(roundf(10.0f * log10f(float(power))));
+#endif
+    return _power_levels[idx].dbm;
 }
 
 // get the power "level"
@@ -1104,15 +1106,17 @@ void AP_VideoTX::send_vtx_settings() const
     // is the one it has taken, with what it says it is putting out if that
     // differs
     const uint16_t power_mw = get_pitmode() ? 0 : get_power_mw();
+#if AP_VIDEOTX_TABLE_ENABLED
     if (!get_pitmode() && _actual_power_mw >= 0 && _actual_power_mw != power_mw) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %c%d %dMHz, PWR: %dmW (actual %dmW)",
             _table.band_letter(_current_band), _current_channel + 1, _current_frequency,
             power_mw, int(_actual_power_mw));
-    } else {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %c%d %dMHz, PWR: %dmW",
-            _table.band_letter(_current_band), _current_channel + 1, _current_frequency,
-            power_mw);
+        return;
     }
+#endif
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %c%d %dMHz, PWR: %dmW",
+        _table.band_letter(_current_band), _current_channel + 1, _current_frequency,
+        power_mw);
 }
 
 // change the video power based on switch input
