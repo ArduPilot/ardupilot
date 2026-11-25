@@ -318,13 +318,16 @@ class TestBuildOptions(object):
             feature_define_whitelist.add(r'AP_MOTORS_FRAME_.*_ENABLED')
             feature_define_whitelist.add('AP_MOTORS_TRI_ENABLED')
             feature_define_whitelist.add('AP_COPTER_ADVANCED_FAILSAFE_ENABLED')
-            feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
             feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
             feature_define_whitelist.add('AP_COPTER_CUSTOMCONTROL_ENABLED')
             feature_define_whitelist.add('AP_RC_TRANSMITTER_TUNING_ENABLED')
             feature_define_whitelist.add('AP_AVOIDANCE_ALTHOLD_ENABLED')
             feature_define_whitelist.add(r'AP_MOTORS_COAX_ENABLED')
             feature_define_whitelist.add(r'AP_MOTORS_SINGLE_ENABLED')
+
+        if target.lower() not in ['copter', 'plane']:
+            # only Copter and Plane, for QuadPlane, run a rate thread
+            feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
 
         if target.lower() in ['antennatracker', 'blimp', 'sub', 'plane', 'copter']:
             # plane has a dependency for AP_Follow which is not
