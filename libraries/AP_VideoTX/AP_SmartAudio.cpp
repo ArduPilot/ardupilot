@@ -172,7 +172,10 @@ void AP_SmartAudio::update_vtx_params()
     if (_vtx_freq_change_pending || _vtx_power_change_pending || _vtx_options_change_pending) {
         // make the desired frequency match the desired band and channel
         if (_vtx_freq_change_pending) {
-            if (vtx.update_band() || vtx.update_channel()) {
+            // VTX_FREQ may still be a frequency the VTX refused: a band or
+            // channel change since then is what is wanted, even one back to
+            // the channel the VTX is on
+            if (vtx.update_band() || vtx.update_channel() || vtx.rejected_frequency_superseded()) {
                 vtx.update_configured_frequency();
             } else {
                 vtx.update_configured_channel_and_band();
