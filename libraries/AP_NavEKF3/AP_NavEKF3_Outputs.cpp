@@ -384,7 +384,7 @@ bool NavEKF3_core::getOriginLLH(Location &loc) const
     if (validOrigin) {
         loc = public_origin;
         // report internally corrected reference height if enabled
-        if ((frontend->_originHgtMode & (1<<2)) == 0) {
+        if (!frontend->origin_hgt_option_is_set(NavEKF3::OriginHgtOption::ApplyToLocalPosition)) {
             loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
         }
     }

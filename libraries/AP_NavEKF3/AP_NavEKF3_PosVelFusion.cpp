@@ -1359,8 +1359,8 @@ void NavEKF3_core::selectHeightForFusion()
     // combined local NED position height and origin height remains consistent with the GPS altitude
     // This also enables the GPS height to be used as a backup height source
     if (gpsDataToFuse &&
-            (((frontend->_originHgtMode & (1 << 0)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) ||
-            ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)))
+            ((frontend->origin_hgt_option_is_set(NavEKF3::OriginHgtOption::CorrectWhenUsingBaro) && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) ||
+            (frontend->origin_hgt_option_is_set(NavEKF3::OriginHgtOption::CorrectWhenUsingRangefinder) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)))
             ) {
             correctEkfOriginHeight();
     }
@@ -1383,7 +1383,7 @@ void NavEKF3_core::selectHeightForFusion()
             // correct for terrain position relative to datum
             hgtMea -= terrainState;
             // correct sensor so that local position height adjusts to match GPS
-            if (frontend->_originHgtMode & (1 << 1) && frontend->_originHgtMode & (1 << 2)) {
+            if (frontend->origin_hgt_option_is_set(NavEKF3::OriginHgtOption::CorrectWhenUsingRangefinder) && frontend->origin_hgt_option_is_set(NavEKF3::OriginHgtOption::ApplyToLocalPosition)) {
                 // offset has to be applied to the measurement, not the NED origin
                 hgtMea += (float)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
             }
@@ -1414,7 +1414,7 @@ void NavEKF3_core::selectHeightForFusion()
         // using Baro data
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
         // correct sensor so that local position height adjusts to match GPS
-        if (frontend->_originHgtMode & (1 << 0) && frontend->_originHgtMode & (1 << 2)) {
+        if (frontend->origin_hgt_option_is_set(NavEKF3::OriginHgtOption::CorrectWhenUsingBaro) && frontend->origin_hgt_option_is_set(NavEKF3::OriginHgtOption::ApplyToLocalPosition)) {
             hgtMea += (float)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
         }
         // enable fusion
