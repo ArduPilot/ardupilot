@@ -1002,6 +1002,9 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
             // setup pin9 function to CLKIN
             const uint8_t intf_config5 = register_read_bank(1, INV3REG_42XXX_INTF_CONFIG5);
             register_write_bank(1, INV3REG_42XXX_INTF_CONFIG5, (intf_config5 & ~0x06) | 0x04);
+            // in RTC mode the ODR is derived from the 32.768kHz CLKIN rather
+            // than the internal 32kHz clock, so 2000Hz becomes 2048Hz
+            sampling_rate_hz = sampling_rate_hz * 32768U / 32000U;
         }
 
         register_write(INV3REG_42XXX_INTF_CONFIG1, intf_config1, true);
