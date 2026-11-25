@@ -37,7 +37,7 @@
   variant for new(std::nothrow), which is all that should be used in
   ArduPilot
  */
-void * operator new(size_t size, std::nothrow_t const &nothrow)
+void * operator new(size_t size, std::nothrow_t const &nothrow) noexcept
 {
     if (size < 1) {
         size = 1;
@@ -45,7 +45,7 @@ void * operator new(size_t size, std::nothrow_t const &nothrow)
     return(calloc(size, 1));
 }
 
-void * operator new[](size_t size, std::nothrow_t const &nothrow)
+void * operator new[](size_t size, std::nothrow_t const &nothrow) noexcept
 {
     if (size < 1) {
         size = 1;
@@ -80,6 +80,25 @@ void operator delete(void *p)
 }
 
 void operator delete[](void * ptr)
+{
+    if (ptr) free(ptr);
+}
+
+/*
+  C++14 and later call the sized variants of delete for complete
+  types, unless built with -fno-sized-deallocation. Provide them for
+  code built without it, so that libstdc++'s versions are never
+  linked in (libstdc++.a is a forbidden archive on ChibiOS)
+ */
+void operator delete(void *p, size_t size) noexcept;
+void operator delete[](void *ptr, size_t size) noexcept;
+
+void operator delete(void *p, size_t size) noexcept
+{
+    if (p) free(p);
+}
+
+void operator delete[](void *ptr, size_t size) noexcept
 {
     if (ptr) free(ptr);
 }
