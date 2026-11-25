@@ -1397,9 +1397,13 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_vtx_config(sbuf_t *src, s
     // channel pushed instead
     uint8_t band = vtx.get_configured_band();
     uint8_t channel = vtx.get_configured_channel();
+    uint16_t freq_mhz = AP_VideoTX::get_frequency_mhz(band, channel);
     if (!vtx.configured_selectable() && _vtx_pushed.valid) {
         band = _vtx_pushed.band;
         channel = _vtx_pushed.channel;
+        // the frequency that was pushed, as a band edit may since have
+        // disabled that slot too
+        freq_mhz = _vtx_pushed.freq_mhz;
     }
 
     // band/channel are one based on the wire (band == 0 means raw frequency),
@@ -1432,7 +1436,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_vtx_config(sbuf_t *src, s
         .channel = uint8_t(channel + 1),
         .power = msp_vtx_get_power_index(),
         .pitmode = vtx.get_configured_pitmode(),
-        .freq = AP_VideoTX::get_frequency_mhz(band, channel),
+        .freq = freq_mhz,
         // report not-ready until the VTX has uploaded its own config: the HDZero
         // air unit is the MSP master and only runs that handshake against a
         // betaflight FC (FC_VARIANT) that is not yet configured. Once it has
