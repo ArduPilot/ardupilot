@@ -387,6 +387,27 @@ def test_existing_cxx_blacklist(checker, monkeypatch):
     task.run()
 
 
+@pytest.mark.parametrize("sim", [False, True])
+def test_aligned_new_rejected_without_optional_checks(checker, monkeypatch, sim):
+    waf, task = checker
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.SIM_ENABLED = sim
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw:
+                        "00001000 T operator new(unsigned long, std::align_val_t)\n")
+    with pytest.raises(waf.Errors.WafError, match="Disallowed symbol.*std::align_val_t"):
+        task.run()
+
+
+def test_vehicle_without_nm_skips_symbol_check(checker, monkeypatch):
+    # QURT's toolchain does not set NM
+    waf, task = checker
+    task.env.CHECK_MALLOC_WRAPPING = False
+    del task.env.NM
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw:
+                        pytest.fail("nm should not run"))
+    task.run()
+
+
 def compile_fixture(tmp_path, source, flags):
     if sys.platform == "darwin":
         pytest.skip("these link fixtures require GNU --wrap support")
