@@ -865,6 +865,16 @@ arducopter and upload it to my board".
         action='append',
         help='Add C++ define to build.')
 
+    g.add_option('--rp2350-relocate',
+        action='store_true',
+        help='''On an RP2350 board, run Tools/scripts/rp2350_ramfunc2_update.py --apply
+for each program being linked before placing code in SRAM: it replaces SRAM
+placement registry entries that match no function, as after a rebase renames one,
+with what replaced them. It edits the registries in the source tree: review and
+commit what it changes. A Scratch bank overflow still needs
+rp2350_ramfunc2_update.py --build.
+''')
+
     g = opt.ap_groups['check']
 
     g.add_option('--check-verbose',

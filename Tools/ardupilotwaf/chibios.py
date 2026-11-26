@@ -158,10 +158,24 @@ class rp2350_ramfunc2_gen(Task.Task):
             cmd.append('--strict')
         for program in sorted(set(self.programs)):
             cmd += ['--program', '%s:%s' % program]
+        if self.generator.bld.options.rp2350_relocate:
+            self.relocate()
         ret = subprocess.call(cmd)
         if ret:
             self.err_msg = 'rp2350_ramfunc2_sections.sh failed, see above'
         return ret
+
+    def relocate(self):
+        """Run rp2350_ramfunc2_update.py --apply for each program linked, as
+        --rp2350-relocate asks, so the section lists are generated from the
+        registries it repairs."""
+        script = os.path.join(self.env.SRCROOT, 'Tools/scripts/rp2350_ramfunc2_update.py')
+        for program in sorted(set(self.programs)):
+            Logs.info('rp2350_ramfunc2_update.py --apply for %s' % program[0])
+            subprocess.call([sys.executable, script, '--board', self.env.BOARD,
+                             '--build-dir', self.env.BUILDROOT,
+                             '--toolchain', self.env.get_flat('TOOLCHAIN'),
+                             '--program', '%s:%s' % program, '--apply'])
 
     def __str__(self):
         return 'rp2350_ramfunc2_sections.ld'
