@@ -34,6 +34,7 @@
 // Indices in data array where each value starts being recorded
 // See comment below about data payload for more info about formatting
 #define START_DATA_LENGTH           1
+#define START_SPEED                 2
 #define START_BEGIN_ANGLE           4
 #define START_PAYLOAD               6
 #define START_END_ANGLE             42
@@ -43,6 +44,15 @@
 
 // confidence for each measurement must be this value or higher
 #define CONFIDENCE_THRESHOLD 20
+
+// LDROBOT's LD06 filter settings (ldlidar_stl_ros2, tofbf.cpp)
+#define LD06_FILTER_MAX_DIST_MM         12000   // only points closer than this are filtered (LDROBOT use 5000)
+#define LD06_FILTER_POINTS_PER_SEC      4500.0f // measurement rate
+#define LD06_FILTER_DIST_RATIO          0.03f   // neighbours in a group agree within 3%
+#define LD06_FILTER_GROUP_SMALL         3       // groups smaller than this need high intensity
+#define LD06_FILTER_GROUP_LARGE         15      // groups larger than this are always kept
+#define LD06_FILTER_INTENSITY_SINGLE    220     // minimum average intensity of a small group
+#define LD06_FILTER_INTENSITY_LOW       15      // groups at or below this average intensity are dropped
 
  /* ------------------------------------------
     Data Packet Structure:
@@ -165,15 +175,154 @@ void AP_Proximity_LD06::parse_response_data()
     } else {
         angle_step = (end_angle + 360 - start_angle) / (PAYLOAD_COUNT - 1);
     }
+
+    // the previous rotation is complete when the start angle wraps around
+    if (_scan_count > 0 && start_angle < _last_start_angle_deg - 180.0f) {
+        process_rotation();
+    }
+    if (uint32_t(_scan_count) + PAYLOAD_COUNT > ARRAY_SIZE(_scan)) {
+        // only happens if the sensor turns slower than 6.25Hz; filter what we have
+        process_rotation();
+    }
+    _last_start_angle_deg = start_angle;
+    const uint16_t speed_dps = UINT16_VALUE(_response[START_SPEED + 1], _response[START_SPEED]);
+    if (speed_dps > 0) {
+        _scan_speed_dps = speed_dps;
+    }
+
     // Each recording point is three bytes long, goes through all of that and updates database
     for (uint16_t i = START_PAYLOAD; i < START_PAYLOAD + MEASUREMENT_PAYLOAD_LENGTH * PAYLOAD_COUNT; i += MEASUREMENT_PAYLOAD_LENGTH) {
 
-        // Gets the distance recorded and converts to meters
-        const float angle_deg = correct_angle_for_orientation(start_angle + angle_step * (i / MEASUREMENT_PAYLOAD_LENGTH));
-        const float distance_m = _dist_filt_mm.apply(UINT16_VALUE(_response[i + 1], _response[i])) * 0.001;
+        const float angle_deg = start_angle + angle_step * (i / MEASUREMENT_PAYLOAD_LENGTH);
+        const uint16_t distance_mm = UINT16_VALUE(_response[i + 1], _response[i]);
         const uint8_t confidence = _response[i + 2];
 
-        process_reading(angle_deg, distance_m, confidence);
+        // buffer the point until the rotation is complete
+        ScanPoint &p = _scan[_scan_count++];
+        p.angle_deg = angle_deg;
+        p.distance_mm = distance_mm;
+        p.intensity = confidence;
+        p.keep = true;
+    }
+}
+
+// filter the buffered rotation and pass the points that survive to the sectors and faces
+void AP_Proximity_LD06::process_rotation()
+{
+    group_filter(_scan, _scan_count, _scan_speed_dps);
+    for (uint16_t i = 0; i < _scan_count; i++) {
+        const ScanPoint &p = _scan[i];
+        if (p.keep) {
+            process_reading(correct_angle_for_orientation(p.angle_deg), p.distance_mm * 0.001, p.intensity);
+        }
+    }
+    _scan_count = 0;
+}
+
+// keep or drop the filtered points (those closer than LD06_FILTER_MAX_DIST_MM) between first and last
+void AP_Proximity_LD06::set_group_keep(ScanPoint *points, uint16_t first, uint16_t last, uint16_t size, bool keep)
+{
+    for (uint16_t i = first; i <= last; i++) {
+        if (points[i].distance_mm < LD06_FILTER_MAX_DIST_MM) {
+            points[i].keep = keep;
+        }
+    }
+}
+
+// true if a group of points is a real object rather than noise
+static bool group_is_valid(uint16_t size, uint32_t intensity_sum)
+{
+    if (size > LD06_FILTER_GROUP_LARGE) {
+        return true;
+    }
+    if (size < LD06_FILTER_GROUP_SMALL) {
+        // isolated points must have a strong return
+        return (intensity_sum / size) >= LD06_FILTER_INTENSITY_SINGLE;
+    }
+    // average intensity above LD06_FILTER_INTENSITY_LOW
+    return intensity_sum > uint32_t(LD06_FILTER_INTENSITY_LOW) * size;
+}
+
+/*
+  LDROBOT's LD06 near-point filter. Points closer than
+  LD06_FILTER_MAX_DIST_MM are grouped (LDROBOT use 5m, here it is the
+  whole range of the sensor): a new group starts when the angle to the
+  previous point is more than two measurement steps or the distance
+  differs by more than 3%. The first and last groups are joined if they
+  meet across 0/360 degrees.
+  Groups of fewer than 3 points are dropped unless their returns are
+  strong, larger groups are dropped only if their returns are very weak.
+  Random false returns rarely agree with their neighbours, so they mostly
+  end up in groups of 1 or 2 points.
+ */
+void AP_Proximity_LD06::group_filter(ScanPoint *points, uint16_t count, uint16_t speed_dps)
+{
+    // angle between groups: twice the angle between two measurements
+    const float limit_deg = speed_dps / LD06_FILTER_POINTS_PER_SEC * 2.0f;
+
+    // the first group is classified last as it may join the last group
+    bool first_done = false;
+    uint16_t first_start = 0, first_end = 0, first_size = 0;
+    uint32_t first_sum = 0;
+
+    // group being built
+    uint16_t grp_start = 0, grp_end = 0, grp_size = 0;
+    uint32_t grp_sum = 0;
+
+    for (uint16_t i = 0; i < count; i++) {
+        ScanPoint &p = points[i];
+        p.keep = true;
+        if (p.distance_mm >= LD06_FILTER_MAX_DIST_MM) {
+            // far points are not filtered and do not split groups
+            continue;
+        }
+        if (grp_size > 0) {
+            const ScanPoint &prev = points[grp_end];
+            if (fabsf(p.angle_deg - prev.angle_deg) > limit_deg ||
+                abs(int32_t(p.distance_mm) - int32_t(prev.distance_mm)) > prev.distance_mm * LD06_FILTER_DIST_RATIO) {
+                // this point starts a new group, close the current one
+                if (!first_done) {
+                    first_done = true;
+                    first_start = grp_start;
+                    first_end = grp_end;
+                    first_size = grp_size;
+                    first_sum = grp_sum;
+                } else {
+                    set_group_keep(points, grp_start, grp_end, grp_size, group_is_valid(grp_size, grp_sum));
+                }
+                grp_size = 0;
+                grp_sum = 0;
+            }
+        }
+        if (grp_size == 0) {
+            grp_start = i;
+        }
+        grp_end = i;
+        grp_size++;
+        grp_sum += p.intensity;
+    }
+
+    if (grp_size == 0) {
+        // no points closer than LD06_FILTER_MAX_DIST_MM
+        return;
+    }
+    if (!first_done) {
+        // a single group
+        set_group_keep(points, grp_start, grp_end, grp_size, group_is_valid(grp_size, grp_sum));
+        return;
+    }
+
+    // join the first and last groups if they meet across 0/360 degrees
+    const ScanPoint &first = points[first_start];
+    const ScanPoint &last = points[grp_end];
+    if (fabsf((first.angle_deg + 360.0f) - last.angle_deg) < limit_deg &&
+        abs(int32_t(first.distance_mm) - int32_t(last.distance_mm)) < last.distance_mm * LD06_FILTER_DIST_RATIO) {
+        const bool keep = group_is_valid(first_size + grp_size, first_sum + grp_sum);
+        set_group_keep(points, first_start, first_end, first_size + grp_size, keep);
+        set_group_keep(points, grp_start, grp_end, first_size + grp_size, keep);
+    } else {
+        set_group_keep(points, first_start, first_end, first_size, group_is_valid(first_size, first_sum));
+        set_group_keep(points, grp_start, grp_end, grp_size, group_is_valid(grp_size, grp_sum));
     }
 }
 
