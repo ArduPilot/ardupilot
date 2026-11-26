@@ -328,7 +328,8 @@ AP_GPS_SBP2::_attempt_state_update()
         //
         state.location.lat      = (int32_t) (last_pos_llh.lat * (double)1e7);
         state.location.lng      = (int32_t) (last_pos_llh.lon * (double)1e7);
-        set_heights(state, last_pos_llh.height, NaNf);
+        // MSG_POS_LLH height is above the WGS84 ellipsoid
+        set_heights(state, NaNf, last_pos_llh.height);
         state.num_sats          = last_pos_llh.n_sats;
 
         switch (last_pos_llh.flags.fix_mode) {
