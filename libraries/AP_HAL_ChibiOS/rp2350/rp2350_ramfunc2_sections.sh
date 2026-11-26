@@ -57,6 +57,10 @@ raw_txt="$tmpdir/raw_symbols.txt"
 map_txt="$tmpdir/mangled_map.txt"
 misses_txt="$tmpdir/misses.txt"
 : > "$misses_txt"
+# the programs whose entries missed, for the repair command printed at the end;
+# a file, as the misses are found in a pipeline's subshell
+repair_txt="$tmpdir/repair.txt"
+: > "$repair_txt"
 
 # Collect all defined global symbols from build artifacts (done once, shared).
 # nm cannot read GIMPLE-only LTO objects (empty/guarded-out translation units)
@@ -337,6 +341,16 @@ generate_ld_from_registry() {
                 if [[ $strict -eq 1 || -n "$only" ]]; then
                     echo "rp2350_ramfunc2_sections: $(basename "$registry"): no symbol match for '$wanted'" >&2
                     echo "$wanted" >> "$misses_txt"
+                    # an unmarked entry is checked only for Copter (--strict)
+                    if [[ -n "$only" ]]; then
+                        for p in "${listed[@]}"; do
+                            if program_built "$p"; then
+                                echo "$p" >> "$repair_txt"
+                            fi
+                        done
+                    else
+                        echo arducopter >> "$repair_txt"
+                    fi
                 fi
                 continue
             fi
@@ -349,6 +363,7 @@ generate_ld_from_registry() {
                 if [[ $strict -eq 1 ]]; then
                     echo "rp2350_ramfunc2_sections: $(basename "$registry"): no archive member '$member'" >&2
                     echo "$member" >> "$misses_txt"
+                    echo arducopter >> "$repair_txt"
                 fi
                 continue
             fi
@@ -373,8 +388,14 @@ generate_ld_from_registry \
     "rp2350_scratchy_registry.txt"
 
 if [[ -s "$misses_txt" ]]; then
-    echo "rp2350_ramfunc2_sections: $(wc -l < "$misses_txt") registry entries matched no symbol" >&2
-    echo "rp2350_ramfunc2_sections: after a rebase, Tools/scripts/rp2350_ramfunc2_update.py --board $(basename "$buildroot") --build repairs them" >&2
+    echo "rp2350_ramfunc2_sections: $(wc -l < "$misses_txt") registry entries matched no symbol: rebuild with --rp2350-relocate to repair them" >&2
+    for p in $(sort -u "$repair_txt"); do
+        arg="$p"
+        if [[ -n "${program_dir[$p]:-}" ]]; then
+            arg="$p:${program_dir[$p]}"
+        fi
+        echo "rp2350_ramfunc2_sections: preview: Tools/scripts/rp2350_ramfunc2_update.py --board $(basename "$buildroot") --program $arg" >&2
+    done
     exit 1
 fi
 

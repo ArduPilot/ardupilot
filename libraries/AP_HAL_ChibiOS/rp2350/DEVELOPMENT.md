@@ -763,7 +763,16 @@ in `.ramtext`, really is in SRAM. It needs only git, waf and the cross
 binutils; without `--build` it prints the plan and `--apply` writes it.
 The choices are made by size, not measured, and each is marked
 `ramfunc2-update:` in the registry: profile them (see Acting on a profile)
-and remove the marker once they have been.
+and remove the marker once they have been. `--vehicle` (default `copter`)
+names the waf target whose build failed: the script checks entries
+marked for that program, strictly only for Copter as waf does, and what
+replaces a marked entry carries the same programs. A build that stops
+on a miss says to build again with `--rp2350-relocate`, which runs the
+script with `--apply` for each program being linked before placing
+code, and prints the command, with the `--program` waf gives the
+generator, that shows the plan without editing anything. The build
+edits the registries only when asked; review and commit what it
+changes. A bank overflow fails at the link, so it still needs `--build`.
 
 Scratch X and Y sit outside the striped SRAM on their own bus ports. By
 convention X is core0's and Y core1's, so code there never queues behind the
