@@ -1189,12 +1189,19 @@ The buzzer is an `ALARM` pin with no `GPIO(n)` or `HAL_BUZZER_PIN`, either
 of which lets `AP_Notify::Buzzer::init()` switch it to SIO. The transducers
 need a driven square wave, so `HAL_BUZZER_NOMINAL_FREQ_HZ` 4000 replaces
 every note's frequency. On RPI_UAVFC the buzzer (slice 1 B) shares slice 1
-with LED output 5 (1 A), and whichever of RCOutput and the tone alarm last
-calls `pwmStart()` on `PWMD1` sets the divider. `set_default_rate()` skips
-LED-mode groups so it cannot overwrite the alarm's period, and
-`set_group_mode()` leaves the slice running for an LED mode, so a NeoPixel
-strip on output 5 keeps the alarm's divider (unchecked on hardware); do not
-use output 5 for PWM there.
+with LED output 8 (1 A). As an LED strip the output's waveform comes from
+the PIO: `set_default_rate()` skips LED-mode groups so it cannot overwrite
+the alarm's period, and `set_group_mode()` leaves the slice running for an
+LED mode, so the strip keeps the alarm's divider: tones measured 4 kHz on
+the bench with a strip there.
+Any function that makes output 8 a PWM output, 0 included, needs the slice's
+period, so RCOutput's init calls `Util::toneAlarm_release_pwm_slice()` and
+the tone alarm leaves the slice alone: the buzzer is off, and the RCOut
+banner ends ", buzzer off". A scripting function there may drive a strip
+instead; when it sets one up, `set_serial_led_num_LEDs()` hands the slice
+back with `Util::toneAlarm_reclaim_pwm_slice()`, which restarts it on the
+alarm's clock, as the output left it on its own 1 MHz. DShot beeps still
+work.
 
 ### Alternative configs
 
@@ -1470,7 +1477,7 @@ allocation, RAMFUNC2/XIP and SWD are covered in their own sections.
   `RP2350_pio1.cpp` reads the two parameters once `AP_Param::initialised()`
   (not `is_system_initialized()`, which is too late for RCOutput) and says
   "PIO1: OSD" or "PIO1: NeoPixel". With the OSD selected the J2 LED output
-  (`SERVO5_FUNCTION` 120) is dead. More than two PIO UARTs on a board give
+  (`SERVO8_FUNCTION` 120) is dead. More than two PIO UARTs on a board give
   PIO1 to them at build time.
 - `OSD_FONT` is read once in `init()`; unlike MAX7456 a change needs a reboot.
 
@@ -1698,7 +1705,7 @@ nose up, right side down and clockwise yaw from above all read positive.
   scheduler tick, so at 200 Hz it gates whole ticks: 100 passes every
   second tick, about 507 Hz for the rate-loop streams, 67 every third, and
   200 or more does nothing. Drop to 67 if `DSF.Dp` climbs in flight.
-- `SERVO5_FUNCTION` 120, as GPIO2 only reaches the J2 LED connector;
+- `SERVO8_FUNCTION` 120, as GPIO2 reaches the J2 LED connector;
   `RELAY2_FUNCTION`/`RELAY3_FUNCTION` 1, as there is no hwdef define.
 - `BRD_OPTIONS` 5 (watchdog; internal parameters writable for the GCS baro
   calibration), `BRD_IDLE_STATS` 1 (per-core load in `threads.txt`),
