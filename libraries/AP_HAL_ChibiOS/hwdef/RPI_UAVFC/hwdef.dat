@@ -142,6 +142,14 @@ PA14 PWM7_A TIM7 PWM(7) GPIO(56)
 # turns the buzzer off; the RCOut banner then says so.
 PA2 PWM1_A TIM1 PWM(8) GPIO(57)
 
+# BRD_ALT_CONFIG 1 adds servo outputs 9 and 10 on the ESC connector's TEL pin
+# (GPIO5, R53) and the DVTX connector's SBUS pin (GPIO41, R21), both through
+# 27 ohms and otherwise unused by this port. They are not outputs by default
+# because a 4-in-1 ESC's harness drives TEL and a DJI Air Unit's cable drives
+# SBUS, and a PWM output would fight them: take those wires out first.
+PA5 PWM2_B TIM2 PWM(9) GPIO(58) ALT(1)
+PA41 PWM8_B TIM8 PWM(10) GPIO(59) ALT(1)
+
 # Status indicators
 # GPIO0 = blue LED, GPIO1 = green LED.  The sheet's "n" suffix marks these
 # active-LOW (writing 0 illuminates the LED), matching the HAL_GPIO_LED_ON=0
@@ -298,11 +306,13 @@ MCU_CLOCKRATE_MHZ 200
 # Board-specific notes:
 # - GPIO27 is the IMU CLKIN net; not driven or configured by this port.
 # - GPIO5 (ESC_TELEMETRY) can only reach UART1 RX, which the GPS already owns,
-#   so it needs a third PIO UART and is left unbound for now.
+#   so it needs a third PIO UART and is unbound by default; BRD_ALT_CONFIG 1
+#   makes it servo output 9.
 # - GPIO41 (DVTX_SBUS_RX) is left unbound for the same reason, twice over: its
 #   only hardware-UART function is UART1_RX, and a third PIO UART would land on
 #   PIO1, which the analog OSD claims.  SBUS itself is supported - wire the
 #   receiver to the RADIO pad and invert it with SERIAL3_OPTIONS 1.
+#   BRD_ALT_CONFIG 1 makes GPIO41 servo output 10.
 # - GPIO21/22/23 (OSD_W, OSD_EN, OSD_SYNC) are discrete OSD control lines with
 #   no accompanying SPI bus.  They drive the PIO analog OSD (OSD_TYPE 6),
 #   whose pins are set in AP_OSD_pico.h, so they are not declared here.

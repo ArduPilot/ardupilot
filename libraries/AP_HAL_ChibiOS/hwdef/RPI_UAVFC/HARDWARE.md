@@ -28,7 +28,7 @@ so do not take pin numbers from it.
 | 1 | Green LED | Active low |
 | 2 | LED strip data | J2, output 8, through a 27 ohm resistor; shares slice 1 with the buzzer |
 | 3 | Buzzer | PWM1_B; transducer needs a ~4 kHz drive |
-| 5 | ESC telemetry | Unbound: only reaches UART1 RX, which the GPS uses |
+| 5 | ESC telemetry | Unbound: only reaches UART1 RX, which the GPS uses. Output 9, PWM2_B, with `BRD_ALT_CONFIG` 1 |
 | 6 | Motor 4 | PWM3_A |
 | 7 | Motor 3 | PWM3_B |
 | 8 | Motor 2 | PWM4_A |
@@ -60,7 +60,7 @@ so do not take pin numbers from it.
 | 38 | I2C1 SDA | External, GPS connector |
 | 39 | I2C1 SCL | External, GPS connector |
 | 40 | Analog spare | ADC0, AN1 pad, used as RSSI |
-| 41 | DVTX SBUS RX | Unbound, see below |
+| 41 | DVTX SBUS RX | Unbound, see below. Output 10, PWM8_B, with `BRD_ALT_CONFIG` 1 |
 | 42 | PIO UART0 TX | SERIAL3, RADIO connector |
 | 43 | PIO UART0 RX | SERIAL3, RADIO connector |
 | 44 | UART0 TX | SERIAL1, DVTX connector |
@@ -84,6 +84,11 @@ runs on both.
 GPIO41 cannot be a hardware UART receive without taking UART1 from the GPS,
 and a third PIO UART would need PIO1, which the analog OSD uses. SBUS works
 on the RADIO connector instead.
+
+With `BRD_ALT_CONFIG` 1, GPIO5 (TEL, through R53) and GPIO41 (DJI_SBUS,
+through R21), both 27 ohms, become servo outputs 9 and 10, driven from boot.
+They are left undriven by default because an ESC harness drives TEL and a
+DJI Air Unit drives SBUS.
 
 ## LED strip connector J2
 

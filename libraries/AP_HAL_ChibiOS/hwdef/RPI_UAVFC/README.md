@@ -50,7 +50,8 @@ RC input is on SERIAL3, the RADIO connector, which defaults to
   It also needs ArduPilot/ardupilot#33057, without which frames are
   dropped.
 
-The board's separate SBUS pad on the DVTX connector is not used.
+The board's separate SBUS pad on the DVTX connector is not used for RC input;
+with `BRD_ALT_CONFIG` 1 it is servo output 10 (see PWM Output).
 
 ## PWM Output
 
@@ -63,8 +64,19 @@ pads and the LED strip output, in five groups:
 - PWM 7 in group4, pad GP3
 - PWM 8 in group5, the LED strip connector
 
-Outputs 5-8 are PWM only, for servos: DShot is available on outputs 1-4,
-and a DShot protocol on outputs 5-8 falls back to PWM with a message at
+With `BRD_ALT_CONFIG` = 1 there are two more servo outputs, each in a group
+of its own:
+
+- PWM 9, the TEL pin on the ESC connector
+- PWM 10, the SBUS pin on the DVTX connector
+
+Both pins are inputs from the ESC and from a DJI Air Unit, which ArduPilot
+does not use on this board, so they are left undriven by default. Take an
+ESC harness's TEL wire and an Air Unit's SBUS wire out before setting
+`BRD_ALT_CONFIG` 1, which drives both from boot.
+
+Outputs 5-10 are PWM only, for servos: DShot is available on outputs 1-4,
+and a DShot protocol on outputs 5-10 falls back to PWM with a message at
 boot. The Spare IO pads also carry +5V and ground. That 5 V comes from the
 board's 2.5 A regulator, shared with everything else on it, so power
 larger servos from their own BEC.
