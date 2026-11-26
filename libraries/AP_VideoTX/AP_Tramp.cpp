@@ -123,7 +123,12 @@ char AP_Tramp::handle_response(void)
 
             AP_VideoTX::VideoBand band;
             uint8_t channel;
-            if (vtx.get_band_and_channel(freq, band, channel)) {
+            if (AP_VideoTX::get_frequency_mhz(vtx.get_configured_band(), vtx.get_configured_channel()) == freq) {
+                // two channels can share a frequency, 5880MHz is both F8 and
+                // R7. The VTX is on the configured one if it has its frequency
+                vtx.set_band(vtx.get_configured_band());
+                vtx.set_channel(vtx.get_configured_channel());
+            } else if (vtx.get_band_and_channel(freq, band, channel)) {
                 vtx.set_band(band);
                 vtx.set_channel(channel);
             }
