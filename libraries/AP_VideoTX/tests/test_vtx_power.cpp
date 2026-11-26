@@ -19,11 +19,11 @@
 
 #include <AP_VideoTX/AP_VideoTX_config.h>
 
+const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+
 #if AP_VIDEOTX_ENABLED
 
 #include <AP_VideoTX/AP_VideoTX.h>
-
-const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 static bool switch_power(int8_t position, const int16_t table[VTX_USER_POWER_LEVELS], bool table_enabled, uint16_t max_power, uint16_t &power)
 {
@@ -164,6 +164,6 @@ TEST(VTXPowerSwitch, BuiltInZeroMaxPowerMeansNoCap)
     EXPECT_EQ(power, 1000);
 }
 
-AP_GTEST_MAIN()
-
 #endif  // AP_VIDEOTX_ENABLED
+
+AP_GTEST_MAIN()
