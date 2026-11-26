@@ -171,57 +171,63 @@ void AP_Proximity_LD06::parse_response_data()
         // Gets the distance recorded and converts to meters
         const float angle_deg = correct_angle_for_orientation(start_angle + angle_step * (i / MEASUREMENT_PAYLOAD_LENGTH));
         const float distance_m = _dist_filt_mm.apply(UINT16_VALUE(_response[i + 1], _response[i])) * 0.001;
-        const float confidence = _response[i + 2];
+        const uint8_t confidence = _response[i + 2];
 
-        // ignore distance that are out-of-range or have low confidence
-        if (distance_m < distance_min_m() || distance_m > distance_max_m() || confidence < CONFIDENCE_THRESHOLD) {
-            continue;
-        }
+        process_reading(angle_deg, distance_m, confidence);
+    }
+}
 
-        // ignore distances that are out-of-range (based on user parameters) or within ignore areas
-        if (ignore_reading(angle_deg, distance_m)) {
-            continue;
-        }
+// check a single reading and update the 2 degree sectors and faces with it
+void AP_Proximity_LD06::process_reading(float angle_deg, float distance_m, uint8_t confidence)
+{
+    // ignore distance that are out-of-range or have low confidence (a distance of 0 means no return)
+    if (distance_m < distance_min_m() || distance_m > distance_max_m() || confidence < CONFIDENCE_THRESHOLD) {
+        return;
+    }
 
-        // use the shortest distance within 2 degree sectors
-        const uint16_t a2d = (int)(angle_deg / 2.0) * 2;
-        if (_angle_2deg == a2d) {
-            if (distance_m < _dist_2deg_m) {
-                _dist_2deg_m = distance_m;
-            }
-        } else {
-            // new 2 degree sector, process the old one
+    // ignore distances that are out-of-range (based on user parameters) or within ignore areas
+    if (ignore_reading(angle_deg, distance_m)) {
+        return;
+    }
 
-            // check if new sector is also a new face
-            const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face((float)_angle_2deg);
-            if (face != _last_face) {
-                // distance is for a new face, the previous one can be updated now
-                if (_last_distance_valid) {
-                    frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
-                } else {
-                    // reset distance from last face
-                    frontend.boundary.reset_face(face, state.instance);
-                }
-
-                // initialize the new face
-                _last_face = face;
-                _last_distance_valid = false;
-            }
-
-            // update face's shortest distance
-            if (!_last_distance_valid || (_dist_2deg_m < _last_distance_m)) {
-                _last_distance_m = _dist_2deg_m;
-                _last_distance_valid = true;
-                _last_angle_deg = (float)_angle_2deg;
-            }
-
-            // update OA database with the 2 degree sectors distance
-            database_push(_angle_2deg, _dist_2deg_m);
-
-            // advance to the next 2 degree sector
-            _angle_2deg = a2d;
+    // use the shortest distance within 2 degree sectors
+    const uint16_t a2d = (int)(angle_deg / 2.0) * 2;
+    if (_angle_2deg == a2d) {
+        if (distance_m < _dist_2deg_m) {
             _dist_2deg_m = distance_m;
         }
+    } else {
+        // new 2 degree sector, process the old one
+
+        // check if new sector is also a new face
+        const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face((float)_angle_2deg);
+        if (face != _last_face) {
+            // distance is for a new face, the previous one can be updated now
+            if (_last_distance_valid) {
+                frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
+            } else {
+                // reset distance from last face
+                frontend.boundary.reset_face(face, state.instance);
+            }
+
+            // initialize the new face
+            _last_face = face;
+            _last_distance_valid = false;
+        }
+
+        // update face's shortest distance
+        if (!_last_distance_valid || (_dist_2deg_m < _last_distance_m)) {
+            _last_distance_m = _dist_2deg_m;
+            _last_distance_valid = true;
+            _last_angle_deg = (float)_angle_2deg;
+        }
+
+        // update OA database with the 2 degree sectors distance
+        database_push(_angle_2deg, _dist_2deg_m);
+
+        // advance to the next 2 degree sector
+        _angle_2deg = a2d;
+        _dist_2deg_m = distance_m;
     }
 }
 #endif // AP_PROXIMITY_LD06_ENABLED

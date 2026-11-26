@@ -56,6 +56,9 @@ private:
     void parse_response_data();
     void get_readings();
 
+    // apply range, confidence and ignore-area checks, then update the 2 degree sectors and faces
+    void process_reading(float angle_deg, float distance_m, uint8_t confidence);
+
     // Store and keep track of the bytes being read from the sensor
     uint8_t _response[MESSAGE_LENGTH_LD06];
     uint16_t _byte_count;
