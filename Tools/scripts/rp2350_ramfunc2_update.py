@@ -232,15 +232,17 @@ def load_registries():
     return lines, entries
 
 
-def strict_misses(buildroot, prefix, vehicle):
+def strict_misses(buildroot, prefix, program):
     """The entries the build's own check rejects, found by running that check as
-    waf runs it for vehicle: with its program, so entries marked for it are
-    checked, and strict only for Copter. The check writes its section lists into
-    the build directory, so the build's own are put back: lists made for another
-    set of programs would drop those programs' picks at the next link."""
-    program, vehicle_dir = PROGRAMS[vehicle]
-    cmd = ["bash", str(SECTIONS_SH), str(buildroot), "--toolchain", prefix, "--program", f"{program}:{vehicle_dir}"]
-    if program == "arducopter":
+    waf runs it for program, a (name, vehicle directory or None) pair: with that
+    program, so entries marked for it are checked, and strict only for Copter.
+    The check writes its section lists into the build directory, so the build's
+    own are put back: lists made for another set of programs would drop those
+    programs' picks at the next link."""
+    name, vehicle_dir = program
+    cmd = ["bash", str(SECTIONS_SH), str(buildroot), "--toolchain", prefix,
+           "--program", f"{name}:{vehicle_dir}" if vehicle_dir else name]
+    if name == "arducopter":
         cmd.append("--strict")
     saved = {p: p.read_bytes() for p in buildroot.glob("rp2350_*_sections.ld")}
     try:
@@ -597,12 +599,12 @@ def apply(plans, lines):
         print(f"updated {reg}")
 
 
-def fix_names(buildroot, prefix, slack, write, vehicle):
+def fix_names(buildroot, prefix, slack, write, program):
     """Plan, and if asked write, the replacements for entries that match nothing."""
-    misses = strict_misses(buildroot, prefix, vehicle)
+    misses = strict_misses(buildroot, prefix, program)
     lines, entries = load_registries()
     syms = load_symbols(buildroot, prefix)
-    plans, manual = plan_removals(misses, entries, syms, slack, PROGRAMS[vehicle][0])
+    plans, manual = plan_removals(misses, entries, syms, slack, program[0])
     plans += plan_archives(entries, syms, prefix, slack)
     show(plans, manual)
     if write and plans:
@@ -667,7 +669,7 @@ def build_loop(args, buildroot):
         if r.returncode == 0:
             return verify(buildroot / "bin" / PROGRAMS[args.vehicle][0], buildroot, args.toolchain)
         if "matched no symbol" in log or "no archive member" in log:
-            plans, manual = fix_names(buildroot, args.toolchain, args.slack, True, args.vehicle)
+            plans, manual = fix_names(buildroot, args.toolchain, args.slack, True, PROGRAMS[args.vehicle])
             if manual or not plans:
                 return 1
             continue
@@ -701,14 +703,21 @@ def main():
     ap.add_argument("--vehicle", default="copter", choices=sorted(PROGRAMS),
                     help="waf target whose build failed (default copter): its program's marked entries are"
                     " checked, strictly for copter as waf does; --build and --verify use it too")
+    ap.add_argument("--program", metavar="NAME[:DIR]",
+                    help="the program to check, as waf passes it to the generator (arduplane:ArduPlane), in place"
+                    " of --vehicle; any program, so waf can pass every one it links; not with --build")
     ap.add_argument("--verify", action="store_true", help="only check the placement in the built ELF")
     args = ap.parse_args()
+    if args.program and args.build:
+        ap.error("--build runs ./waf, so it needs --vehicle, not --program")
+    name, _, vehicle_dir = (args.program or "").partition(":")
+    program = (name, vehicle_dir or None) if args.program else PROGRAMS[args.vehicle]
 
     buildroot = Path(args.build_dir) if args.build_dir else ROOT / "build" / args.board
     if not (buildroot / "hwdef.h").is_file():
         sys.exit(f"{buildroot} has no hwdef.h: configure and build {args.board} first")
     if args.verify:
-        return 1 if verify(buildroot / "bin" / PROGRAMS[args.vehicle][0], buildroot, args.toolchain) else 0
+        return 1 if verify(buildroot / "bin" / program[0], buildroot, args.toolchain) else 0
     if args.build:
         return build_loop(args, buildroot)
     version = buildroot / "ap_version.h"
@@ -717,7 +726,7 @@ def main():
         m = re.search(r'GIT_VERSION "([0-9a-f]+)"', version.read_text())
         if m and not head.startswith(m.group(1)):
             print(f"warning: {buildroot} was built at {m.group(1)}, HEAD is {head}; rebuild before trusting this")
-    plans, manual = fix_names(buildroot, args.toolchain, args.slack, args.apply, args.vehicle)
+    plans, manual = fix_names(buildroot, args.toolchain, args.slack, args.apply, program)
     if not plans and not manual:
         print("the registries match this build")
     elif not args.apply:
