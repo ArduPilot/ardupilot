@@ -73,6 +73,9 @@ public:
         OA_PATHPLAN_DJIKSTRA_BENDYRULER = 3,
     };
 
+    // returns the path planner selected with OA_TYPE
+    OAPathPlanTypes get_type() const { return (OAPathPlanTypes)_type.get(); }
+
     // enumeration for _OPTION parameter
     enum OARecoveryOptions {
         OA_OPTION_DISABLED = 0,
