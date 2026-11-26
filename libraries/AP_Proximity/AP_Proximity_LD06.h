@@ -39,6 +39,9 @@
 // points buffered for one rotation (about 450 at the default 10Hz)
 #define LD06_ROTATION_POINTS_MAX        720
 
+// one bin per degree for confirm_small_groups()
+#define LD06_SWEEP_BINS                 360
+
 class AP_Proximity_LD06 : public AP_Proximity_Backend_Serial
 {
 public:
@@ -57,13 +60,20 @@ public:
         float angle_deg;        // sensor frame, not wrapped (may exceed 360 at the end of a rotation)
         uint16_t distance_mm;   // 0 means no return
         uint8_t intensity;
-        bool keep;              // set by group_filter()
+        bool keep : 1;          // set by group_filter() and confirm_small_groups()
+        bool small_group : 1;   // set by group_filter(): kept only if the previous sweep confirms it
     };
 
     // LDROBOT LD06 near-point filter (ldlidar_stl_ros2 tofbf.cpp). Points
     // must be in scan order and cover at most one rotation. Sets keep on
     // every point. Has no state, so it can be tested on its own.
     static void group_filter(ScanPoint *points, uint16_t count, uint16_t speed_dps);
+
+    // drop points of small groups that the previous sweep over the same
+    // angles did not also see. last_sweep_mm holds, per degree, the nearest
+    // kept point of the previous sweep (0 = none) and is updated; scratch_mm
+    // is working space. Both have LD06_SWEEP_BINS entries.
+    static void confirm_small_groups(ScanPoint *points, uint16_t count, uint16_t *last_sweep_mm, uint16_t *scratch_mm);
 
 private:
 
@@ -89,6 +99,8 @@ private:
     uint16_t _scan_count;                       // number of points in _scan
     uint16_t _scan_speed_dps;                   // latest non-zero rotation speed
     float _last_start_angle_deg;                // start angle of the previous packet
+    uint16_t _last_sweep_mm[LD06_SWEEP_BINS];   // nearest kept point per degree, previous sweep
+    uint16_t _sweep_scratch_mm[LD06_SWEEP_BINS];
 
     // face related variables
     AP_Proximity_Boundary_3D::Face _last_face;///< last face requested

@@ -53,6 +53,11 @@
 #define LD06_FILTER_GROUP_LARGE         15      // groups larger than this are always kept
 #define LD06_FILTER_INTENSITY_SINGLE    220     // minimum average intensity of a small group
 #define LD06_FILTER_INTENSITY_LOW       15      // groups at or below this average intensity are dropped
+// groups smaller than this must be seen again on the next sweep (not part of LDROBOT's filter)
+#define LD06_FILTER_CONFIRM_GROUP       5
+#define LD06_FILTER_CONFIRM_DEG         4       // within this many degrees
+#define LD06_FILTER_CONFIRM_MIN_MM      300     // and within 10% or this distance, whichever is larger
+#define LD06_SWEEP_UNSEEN               UINT16_MAX
 
  /* ------------------------------------------
     Data Packet Structure:
@@ -203,6 +208,7 @@ void AP_Proximity_LD06::parse_response_data()
         p.distance_mm = distance_mm;
         p.intensity = confidence;
         p.keep = true;
+        p.small_group = false;
     }
 }
 
@@ -210,6 +216,7 @@ void AP_Proximity_LD06::parse_response_data()
 void AP_Proximity_LD06::process_rotation()
 {
     group_filter(_scan, _scan_count, _scan_speed_dps);
+    confirm_small_groups(_scan, _scan_count, _last_sweep_mm, _sweep_scratch_mm);
     for (uint16_t i = 0; i < _scan_count; i++) {
         const ScanPoint &p = _scan[i];
         if (p.keep) {
@@ -225,6 +232,7 @@ void AP_Proximity_LD06::set_group_keep(ScanPoint *points, uint16_t first, uint16
     for (uint16_t i = first; i <= last; i++) {
         if (points[i].distance_mm < LD06_FILTER_MAX_DIST_MM) {
             points[i].keep = keep;
+            points[i].small_group = size < LD06_FILTER_CONFIRM_GROUP;
         }
     }
 }
@@ -272,6 +280,7 @@ void AP_Proximity_LD06::group_filter(ScanPoint *points, uint16_t count, uint16_t
     for (uint16_t i = 0; i < count; i++) {
         ScanPoint &p = points[i];
         p.keep = true;
+        p.small_group = false;
         if (p.distance_mm >= LD06_FILTER_MAX_DIST_MM) {
             // far points are not filtered and do not split groups
             continue;
@@ -323,6 +332,56 @@ void AP_Proximity_LD06::group_filter(ScanPoint *points, uint16_t count, uint16_t
     } else {
         set_group_keep(points, first_start, first_end, first_size, group_is_valid(first_size, first_sum));
         set_group_keep(points, grp_start, grp_end, grp_size, group_is_valid(grp_size, grp_sum));
+    }
+}
+
+/*
+  Outdoors the LD06 returns random short distances where there is
+  nothing to see (open sky). Now and then three or four of them agree
+  well enough to pass group_filter(), giving an obstacle that is there for
+  one rotation only. A real object is still there on the next sweep, so
+  points of small groups are kept only if the previous sweep had a kept
+  point within LD06_FILTER_CONFIRM_DEG degrees and 10% (at least
+  LD06_FILTER_CONFIRM_MIN_MM) of their distance. Points of larger groups
+  are used at once.
+ */
+void AP_Proximity_LD06::confirm_small_groups(ScanPoint *points, uint16_t count, uint16_t *last_sweep_mm, uint16_t *scratch_mm)
+{
+    // nearest kept point per degree of this sweep, before confirmation
+    for (uint16_t b = 0; b < LD06_SWEEP_BINS; b++) {
+        scratch_mm[b] = LD06_SWEEP_UNSEEN;
+    }
+    for (uint16_t i = 0; i < count; i++) {
+        const ScanPoint &p = points[i];
+        const uint16_t b = uint16_t(p.angle_deg) % LD06_SWEEP_BINS;
+        if (scratch_mm[b] == LD06_SWEEP_UNSEEN) {
+            scratch_mm[b] = 0;
+        }
+        if (p.keep && p.distance_mm > 0 && (scratch_mm[b] == 0 || p.distance_mm < scratch_mm[b])) {
+            scratch_mm[b] = p.distance_mm;
+        }
+    }
+
+    for (uint16_t i = 0; i < count; i++) {
+        ScanPoint &p = points[i];
+        if (!p.keep || !p.small_group) {
+            continue;
+        }
+        const uint16_t b = uint16_t(p.angle_deg) % LD06_SWEEP_BINS;
+        const int32_t tolerance_mm = MAX(LD06_FILTER_CONFIRM_MIN_MM, p.distance_mm / 10);
+        bool confirmed = false;
+        for (int16_t k = -LD06_FILTER_CONFIRM_DEG; k <= LD06_FILTER_CONFIRM_DEG && !confirmed; k++) {
+            const uint16_t prev_mm = last_sweep_mm[(b + LD06_SWEEP_BINS + k) % LD06_SWEEP_BINS];
+            confirmed = prev_mm > 0 && abs(int32_t(p.distance_mm) - int32_t(prev_mm)) <= tolerance_mm;
+        }
+        p.keep = confirmed;
+    }
+
+    // this sweep is the previous one for the next rotation (only the degrees it covered)
+    for (uint16_t b = 0; b < LD06_SWEEP_BINS; b++) {
+        if (scratch_mm[b] != LD06_SWEEP_UNSEEN) {
+            last_sweep_mm[b] = scratch_mm[b];
+        }
     }
 }
 
