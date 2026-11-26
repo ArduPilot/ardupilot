@@ -580,6 +580,12 @@ void AP_Tramp::update()
                 // the old frequency, which the VTX may be refusing or may
                 // already have refused, is taken as the request again
                 vtx.update_configured_frequency();
+                if (vtx.get_configured_frequency_mhz() == _last_conf_freq) {
+                    // the new band and channel have the same frequency,
+                    // 5880MHz is both F8 and R7: it is a new request, not
+                    // more of the one made for the old band and channel
+                    _last_conf_freq = 0;
+                }
             }
             if (vtx.update_frequency() && vtx.get_configured_frequency_mhz() == _last_conf_freq &&
                 vtx.get_frequency_mhz() != 0 && _freq_answered < VTX_MAX_FREQUENCY_ATTEMPTS) {
