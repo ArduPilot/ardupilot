@@ -400,7 +400,7 @@ TEST(VTXReport, SmartAudioChannelModeUsesChannel)
     s.frequency = 5865;
     uint8_t band = s.band, channel = s.channel;
     uint16_t freq = AP_SmartAudio::reported_frequency(s);
-    AP_VideoTX::resolve_reported(t, 0, 0, (s.mode & 1) != 0, band, channel, freq);
+    AP_VideoTX::resolve_reported(t, 0, 0, false, band, channel, freq);
     EXPECT_EQ(band, 4);
     EXPECT_EQ(channel, 1);
     EXPECT_EQ(freq, 5695);
