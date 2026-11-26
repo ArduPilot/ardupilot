@@ -25218,6 +25218,35 @@ return update, 1000
             with vtx.lock:
                 vtx.unlocked = True
             self.wait_vtx_frequency(vtx, 5769, timeout=30)
+
+            self.start_subtest("A VTX that does not unlock gives one warning and other changes still go out")
+            vtx.set_behaviour("refuse_unlock")
+            with vtx.lock:
+                vtx.unlocked = False
+            self.set_parameter("VTX_OPTIONS", 8)
+            # the VTX is seen to be locked when its settings are next read
+            self.set_parameter("VTX_POWER", 25)
+            self.wait_statustext("VTX: did not unlock", check_context=True, timeout=60)
+            tstart = time.time()
+            self.set_parameter("VTX_CHANNEL", 4)
+            self.wait_vtx_frequency(vtx, 5806)
+            self.delay_sim_time(8, reason="no more attempts")
+            if vtx.count("SET_MODE", tstart) != 0:
+                raise NotAchievedException("Asked to unlock %u more times" % vtx.count("SET_MODE", tstart))
+            if self.vtx_statustext_count("did not unlock") != 1:
+                raise NotAchievedException("Expected one unlock warning")
+
+            self.start_subtest("The unlock option unlocks the VTX, and a channel it refused is then sent")
+            vtx.set_behaviour("locked")
+            self.set_parameter("VTX_OPTIONS", 0)
+            self.set_parameter("VTX_CHANNEL", 1)
+            self.wait_statustext("VTX: rejected frequency 5695MHz", check_context=True, timeout=40)
+            self.set_parameter("VTX_OPTIONS", 8)
+            self.wait_vtx_frequency(vtx, 5695, timeout=30)
+            with vtx.lock:
+                modes = [c[2] for c in vtx.commands if c[1] == "SET_MODE"]
+            if not vtx.unlocked or modes[-1] != 0x08:
+                raise NotAchievedException("VTX not unlocked by mode 0x08 (sent %s)" % modes[-5:])
         finally:
             vtx.close()
         self.reboot_sitl()

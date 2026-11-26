@@ -548,8 +548,10 @@ class SmartAudioVTX(SimulatedVTX):
     """A SmartAudio 2.0 VTX. Behaviours: silent (answers nothing),
     refuse_freq and refuse_channel (answers, but stays where it is),
     corrupt (answers with a bad checksum), no_settings (answers
-    everything but a request for its settings) and locked (stays where it
-    is until unlocked is set, as the button on a VTX does)."""
+    everything but a request for its settings), locked (stays where it
+    is until it is unlocked, by a mode command or by setting unlocked as
+    the button on a VTX does) and refuse_unlock (ignores the unlock in a
+    mode command)."""
 
     # the settings reply's command for SmartAudio 2.0
     SETTINGS_REPLY = 0x09
@@ -651,6 +653,9 @@ class SmartAudioVTX(SimulatedVTX):
                 self.mode |= 0x01
             self.reply(0x04, [self.frequency >> 8, self.frequency & 0xFF, 0x01])
         elif command == self.CMD_SET_MODE:
+            # bit 3 unlocks the VTX and without it the VTX is locked
+            if "refuse_unlock" not in self.behaviour:
+                self.unlocked = bool(payload[0] & 0x08)
             self.reply(0x05, [payload[0], 0x01])
 
 
