@@ -104,6 +104,28 @@ static const eventmask_t EVT_LED_SEND  = EVENT_MASK(15);
 /*
   initialise RC output driver
  */
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+/*
+  true if a servo channel's function makes it a PWM output. Function 0 does:
+  it sends no pulse until DO_SET_SERVO or a script sets one. A GPIO and the
+  alarm do not, nor does a serial LED, whose waveform comes from the PIO
+  rather than the PWM slice.
+ */
+static bool channel_runs_as_pwm(uint8_t chan)
+{
+    const SRV_Channel::Function function = SRV_Channels::channel_function(chan);
+    if (function == SRV_Channel::k_GPIO ||
+        function == SRV_Channel::k_alarm || function == SRV_Channel::k_alarm_inverted) {
+        return false;
+    }
+    if ((function >= SRV_Channel::k_LED_neopixel1 && function <= SRV_Channel::k_LED_neopixel4) ||
+        (function >= SRV_Channel::k_ProfiLED_1 && function <= SRV_Channel::k_ProfiLED_Clock)) {
+        return false;
+    }
+    return true;
+}
+#endif  // defined(RP2350) && defined(HAL_PWM_ALARM)
+
 void RCOutput::init()
 {
     if (_initialised) {
@@ -161,6 +183,16 @@ void RCOutput::init()
             group.bdshot.telem_tim_ch[j] = CHAN_DISABLED;
 #endif
         }
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+        // the buzzer shares this slice: a servo output on it needs the slice's period, so the buzzer goes quiet
+        if (group.pwm_drv == ChibiOS::Util::toneAlarm_pwm_driver()) {
+            for (uint8_t j = 0; j < HAL_PWM_GROUP_CHANNELS; j++) {
+                if (group.chan[j] != CHAN_DISABLED && channel_runs_as_pwm(group.chan[j] + chan_offset)) {
+                    ChibiOS::Util::toneAlarm_release_pwm_slice();
+                }
+            }
+        }
+#endif
         if (group.ch_mask != 0) {
 #if defined(RP2350)
             // put the PWM function back on each pin in case an earlier user left it muxed elsewhere
@@ -1519,6 +1551,14 @@ bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len)
         append_to_banner(banner_msg, banner_msg_len, ch_mode[final_index], curr_mode_lowest_ch + 1, final_index + 1);
     }
 
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+    if (ChibiOS::Util::toneAlarm_pwm_slice_released()) {
+        char banner_msg_temp[banner_msg_len];
+        memcpy(banner_msg_temp, banner_msg, banner_msg_len);
+        hal.util->snprintf(banner_msg, banner_msg_len, "%s, buzzer off", banner_msg_temp);
+    }
+#endif
+
     return true;
 }
 
@@ -2860,6 +2900,12 @@ bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, ou
         case MODE_NEOPIXELRGB: {
             grp->serial_nleds = MAX(num_leds, grp->serial_nleds);
             grp->led_mode = mode;
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+            // a scripting output on the buzzer's slice that drives a strip is not running as PWM after all
+            if (grp->pwm_drv == ChibiOS::Util::toneAlarm_pwm_driver()) {
+                ChibiOS::Util::toneAlarm_reclaim_pwm_slice();
+            }
+#endif
             return true;
         }
         case MODE_PROFILED: {

@@ -130,12 +130,35 @@ struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = {};
 #endif
 
 uint8_t  Util::_toneAlarm_types = 0;
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+bool Util::_toneAlarm_pwm_slice_released;
+
+/*
+  give the buzzer back the PWM slice an output took at init, once that output
+  has become an LED strip, as happens when a script sets up a strip on a
+  scripting output. The slice is still on the output's clock, so it restarts
+  on the tone alarm's, as toneAlarm_init() does when the strip is there at
+  boot; otherwise every tone plays at the wrong pitch.
+ */
+void Util::toneAlarm_reclaim_pwm_slice()
+{
+    if (!_toneAlarm_pwm_slice_released) {
+        return;
+    }
+    _toneAlarm_pwm_slice_released = false;
+    _toneAlarm_pwm_group.pwm_cfg.period = 1000;
+    pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
+}
+#endif
 
 bool Util::toneAlarm_init(uint8_t types)
 {
 #ifdef HAL_PWM_ALARM
-    _toneAlarm_pwm_group.pwm_cfg.period = 1000;
-    pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
+    // once an output has the slice, restarting it would change the output's period
+    if (!toneAlarm_pwm_slice_released()) {
+        _toneAlarm_pwm_group.pwm_cfg.period = 1000;
+        pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
+    }
 #endif
     _toneAlarm_types = types;
 
@@ -166,7 +189,12 @@ bool Util::toneAlarm_init(const PWMConfig& pwm_cfg, PWMDriver* pwm_drv, pwmchann
 void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
 {
 #if HAL_USE_PWM == TRUE
-    if (_toneAlarm_pwm_group.pwm_drv != nullptr) {
+    if (_toneAlarm_pwm_group.pwm_drv != nullptr
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+        // a tone sets the slice's period, which an output sharing the slice needs for itself
+        && !toneAlarm_pwm_slice_released()
+#endif
+        ) {
         if (is_zero(frequency) || is_zero(volume)) {
             pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
         } else {
