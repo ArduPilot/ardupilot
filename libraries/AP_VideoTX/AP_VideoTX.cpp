@@ -976,6 +976,7 @@ void AP_VideoTX::frequency_rejected(uint8_t band, uint8_t channel, uint16_t freq
     _rejected_band = band;
     _rejected_channel = channel;
     _rejected_frequency = freq;
+    _rejected_unlocked = (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0;
     _rejected = true;
 }
 

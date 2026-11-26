@@ -166,9 +166,14 @@ public:
         return _rejected && _frequency_mhz == _rejected_frequency && (_band != _rejected_band || _channel != _rejected_channel);
     }
     // once the configuration has moved off what the VTX refused, forget the
-    // refusal, so that selecting it again is tried and warned about again
+    // refusal, so that selecting it again is tried and warned about again.
+    // A VTX unlocked since it refused may take what it would not when locked
     void update_rejected() {
-        if (_rejected && !configured_rejected() && !rejected_frequency_superseded()) {
+        if (!_rejected) {
+            return;
+        }
+        const bool unlocked = (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0;
+        if ((unlocked && !_rejected_unlocked) || (!configured_rejected() && !rejected_frequency_superseded())) {
             _rejected = false;
         }
     }
@@ -412,6 +417,8 @@ private:
     uint8_t _rejected_band;
     uint8_t _rejected_channel;
     uint16_t _rejected_frequency;
+    // the VTX was unlocked when it refused
+    bool _rejected_unlocked;
     // true when configuration have been applied successfully to the VTX
     bool _configuration_finished;
 
