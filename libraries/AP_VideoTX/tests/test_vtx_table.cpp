@@ -61,7 +61,10 @@ TEST(VTXTable, DefaultsMatchLegacyGrid)
     EXPECT_EQ(t.band_letter(4), 'R');
     // the user bands are empty until set
     for (uint8_t b = 11; b < 13; b++) {
+#if AP_VIDEOTX_TABLE_ENABLED
+        // without user bands every band counts as a factory band
         EXPECT_FALSE(t.band_is_factory(b));
+#endif
         for (uint8_t c = 0; c < 8; c++) {
             EXPECT_EQ(t.frequency(b, c), 0);
         }
@@ -94,6 +97,9 @@ TEST(VTXTable, ReverseLookupFirstMatch)
 }
 
 // ---- user bands from the VTX_BNDn_* parameters ----
+
+#if AP_VIDEOTX_TABLE_ENABLED
+// the tests from here on set up user bands
 
 // user bands as their parameters would give them: band 1 placed by replace
 // (-1 adds it as band 11), band 2 unset
@@ -637,6 +643,8 @@ TEST(VTXRejected, ForgottenOnceConfigurationMovesOn)
     EXPECT_FALSE(vtx.configured_rejected());
     EXPECT_TRUE(vtx.update_frequency());
 }
+
+#endif  // AP_VIDEOTX_TABLE_ENABLED
 
 #endif  // AP_VIDEOTX_ENABLED
 
