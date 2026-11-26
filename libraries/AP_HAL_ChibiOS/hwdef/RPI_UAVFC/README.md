@@ -54,12 +54,25 @@ The board's separate SBUS pad on the DVTX connector is not used.
 
 ## PWM Output
 
-The RPI_UAVFC supports 4 PWM or DShot outputs plus the LED strip output, in
-three groups:
+The RPI_UAVFC supports 4 PWM or DShot outputs, 3 PWM outputs on the Spare IO
+pads and the LED strip output, in five groups:
 
 - PWM 1-2 in group1
 - PWM 3-4 in group2
-- PWM 5 in group3, the LED strip connector
+- PWM 5-6 in group3, pads GP1 and GP2
+- PWM 7 in group4, pad GP3
+- PWM 8 in group5, the LED strip connector
+
+Outputs 5-8 are PWM only, for servos: DShot is available on outputs 1-4,
+and a DShot protocol on outputs 5-8 falls back to PWM with a message at
+boot. The Spare IO pads also carry +5V and ground. That 5 V comes from the
+board's 2.5 A regulator, shared with everything else on it, so power
+larger servos from their own BEC.
+
+Output 8 shares its PWM slice with the buzzer. As an LED strip, its default,
+the two work together, and so do they when a script drives a strip there.
+Given any other function, 0 included, output 8 runs as PWM and the buzzer is
+off; the RCOut banner then ends ", buzzer off".
 
 Channels within the same group need to use the same output rate. If any
 channel in a group uses DShot then all channels in the group need to use
@@ -96,7 +109,7 @@ Analog RSSI uses `RSSI_PIN` 0, the AN1 pad.
 
 ## Serial LED output
 
-The LED strip connector is output 5, and `SERVO5_FUNCTION` defaults to 120
+The LED strip connector is output 8, and `SERVO8_FUNCTION` defaults to 120
 (NeoPixel). To drive a strip, add the NeoPixel bit (256) to
 `NTF_LED_TYPES`, which is not set by default, and set `NTF_LED_LEN` to the
 number of LEDs; both need a reboot. The connector's 5 V comes from the
@@ -179,7 +192,6 @@ ArduPilot ground station.
 - The battery current input does not track load on the vehicles tested.
 - ESC calibration works with the throttle-high procedure only;
   `ESC_CALIBRATION` 2 or 3 makes the board reboot repeatedly.
-- The buzzer and output 5 share a PWM slice, and whichever starts it last
-  sets its clock, so output 5 should not be used as a PWM output. A
-  NeoPixel strip there comes from the PIO and leaves the slice to the
-  buzzer; that has not been checked on hardware.
+- The buzzer and output 8 share a PWM slice, so output 8 as anything but an
+  LED strip turns the buzzer off. A NeoPixel strip there comes from the PIO
+  and leaves the slice to the buzzer; that has not been checked on hardware.

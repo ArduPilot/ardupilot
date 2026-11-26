@@ -125,12 +125,22 @@ PA8 PWM4_A TIM4 PWM(2) GPIO(51)
 PA7 PWM3_B TIM3 PWM(3) GPIO(52)
 PA6 PWM3_A TIM3 PWM(4) GPIO(53)
 
-# GPIO2 drives the WS2812 LED connector J2 (net RGB_LED, through R82).  No LED
-# is fitted on the board; J2 is a 3-pin JST-SH header, pin 3 data, pin 1 +5V,
-# pin 2 ground.  Declared as a PWM channel only so it gets a channel index and
-# a rate group - the waveform comes out of the PIO, not slice 1, exactly as
-# DShot does on the motor pins above.  SERVO5_FUNCTION 120 drives it.
-PA2 PWM1_A TIM1 PWM(5) GPIO(54)
+# The Spare IO pads GP1-GP3 (P1-P3, beside +5V on P4 and ground on P5) are
+# GPIO12-14 through 27 ohm resistors R22-R24 on the R2 Rev C, R3 and R4
+# schematics: servo outputs 5-7. GP1 and GP2 share slice 6, and so their
+# rate; GP3 has slice 7. PWM only: the PIO's four DShot state machines serve
+# outputs 1-4. As relays, set SERVOn_FUNCTION -1 and RELAYn_PIN 54-56.
+PA12 PWM6_A TIM6 PWM(5) GPIO(54)
+PA13 PWM6_B TIM6 PWM(6) GPIO(55)
+PA14 PWM7_A TIM7 PWM(7) GPIO(56)
+
+# GPIO2 drives the WS2812 LED connector J2 (net RGB_LED, through R82), output
+# 8. No LED is fitted on the board; J2 is a 3-pin JST-SH header, pin 3 data,
+# pin 1 +5V, pin 2 ground. SERVO8_FUNCTION 120 drives a strip from the PIO, as
+# DShot is driven on the motor pins above. It shares slice 1 with the buzzer,
+# so any function that makes it a PWM output, 0 included, takes the slice and
+# turns the buzzer off; the RCOut banner then says so.
+PA2 PWM1_A TIM1 PWM(8) GPIO(57)
 
 # Status indicators
 # GPIO0 = blue LED, GPIO1 = green LED.  The sheet's "n" suffix marks these
@@ -296,8 +306,6 @@ MCU_CLOCKRATE_MHZ 200
 # - GPIO21/22/23 (OSD_W, OSD_EN, OSD_SYNC) are discrete OSD control lines with
 #   no accompanying SPI bus.  They drive the PIO analog OSD (OSD_TYPE 6),
 #   whose pins are set in AP_OSD_pico.h, so they are not declared here.
-# - GPIO12/13/14 are the GP1-GP3 spare pads, available for relays; left
-#   undeclared so bring-up does not depend on them.
 # - There is no secondary blackbox flash on this board; parameter storage uses
 #   the boot XIP flash and logs go to the microSD card.
 

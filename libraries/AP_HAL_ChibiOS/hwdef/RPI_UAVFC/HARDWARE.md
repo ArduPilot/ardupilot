@@ -26,14 +26,16 @@ so do not take pin numbers from it.
 |------|----------|-------|
 | 0 | Blue LED | Active low |
 | 1 | Green LED | Active low |
-| 2 | LED strip data | J2, output 5, through a 27 ohm resistor |
+| 2 | LED strip data | J2, output 8, through a 27 ohm resistor; shares slice 1 with the buzzer |
 | 3 | Buzzer | PWM1_B; transducer needs a ~4 kHz drive |
 | 5 | ESC telemetry | Unbound: only reaches UART1 RX, which the GPS uses |
 | 6 | Motor 4 | PWM3_A |
 | 7 | Motor 3 | PWM3_B |
 | 8 | Motor 2 | PWM4_A |
 | 9 | Motor 1 | PWM4_B |
-| 12-14 | GP1-GP3 spare pads | Unbound |
+| 12 | GP1 spare pad | Output 5, PWM6_A, through a 27 ohm resistor |
+| 13 | GP2 spare pad | Output 6, PWM6_B, through a 27 ohm resistor |
+| 14 | GP3 spare pad | Output 7, PWM7_A, through a 27 ohm resistor |
 | 16 | PIO UART1 TX | SERIAL4, VID connector |
 | 17 | PIO UART1 RX | SERIAL4, VID connector |
 | 18 | 5 V rail enable | RELAY2, on at boot |
