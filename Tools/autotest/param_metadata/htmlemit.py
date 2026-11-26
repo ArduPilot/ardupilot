@@ -5,7 +5,7 @@ Emit docs in a form acceptable to the old Ardupilot wordpress docs site
 """
 
 from param import known_param_fields, known_units
-from emit import Emit
+from emit import Emit, html_comment_safe
 try:
     from cgi import escape as cescape
 except Exception:
@@ -14,12 +14,14 @@ except Exception:
 
 class HtmlEmit(Emit):
 
+    def output_fname(self):
+        return 'Parameters.html'
+
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
-        html_fname = 'Parameters.html'
-        self.f = open(html_fname, mode='w')
+        self.f = open(self.output_fname(), mode='w')
         self.preamble = """<!-- Dynamically generated list of documented parameters
-This page was generated using Tools/autotest/param_metadata/param_parse.py
+This page was generated using Tools/autotest/param_metadata/param_parse.py{firmware_metadata}
 
 DO NOT EDIT
 -->
@@ -44,7 +46,14 @@ DO NOT EDIT
         return s
 
     def close(self):
-        self.f.write(self.preamble)
+        firmware_metadata = ''
+        if self.git_sha is not None:
+            firmware_metadata += f'git_sha: {html_comment_safe(self.git_sha)}\n'
+        if self.git_tag is not None:
+            firmware_metadata += f'git_tag: {html_comment_safe(self.git_tag)}\n'
+        if firmware_metadata:
+            firmware_metadata = f'\n\n{firmware_metadata}'
+        self.f.write(self.preamble.format(firmware_metadata=firmware_metadata.rstrip()))
         self.f.write(self.t)
         self.f.close()
 
