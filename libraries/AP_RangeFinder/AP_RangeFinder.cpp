@@ -659,7 +659,7 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
     case Type::iPin_DRC611:
         serial_create_fn = AP_RangeFinder_iPin_DRC611::create;
         break;
-#endif
+#endif // AP_RANGEFINDER_IPIN_DRC611_ENABLED
 
     case Type::NONE:
         break;

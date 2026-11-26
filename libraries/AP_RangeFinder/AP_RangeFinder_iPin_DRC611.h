@@ -32,11 +32,11 @@ private:
     void resync_frame();
 
     uint8_t frame[6] {};
-    uint8_t frame_len = 0;
+    uint8_t frame_len;
 
-    uint32_t last_start_ms = 0;
-    uint32_t last_valid_ms = 0;
-    bool start_cmd_attempted = false;
+    uint32_t last_start_ms;
+    uint32_t last_valid_ms;
+    bool start_cmd_attempted;
 };
 
 #endif // AP_RANGEFINDER_IPIN_DRC611_ENABLED

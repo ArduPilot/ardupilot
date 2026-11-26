@@ -61,71 +61,90 @@ bool AP_RangeFinder_iPin_DRC611::get_reading(float &reading_m)
 
     uint32_t sum_cm = 0;
     uint16_t valid_count = 0;
+	uint16_t distance_cm = 0;
+	uint16_t out_of_range_cm = 0;
+    bool have_out_of_range = false;
 
-    for (uint16_t byte_index = 0;
-         byte_index < 8192;
-         byte_index++) {
-
-        uint8_t c;
-
+    for (uint16_t byte_index = 0; byte_index < 8192; byte_index++) {
+         uint8_t c;
         if (!uart->read(c)) {
             break;
         }
-
         if (frame_len == 0) {
-            if (c == DRC611_HEADER) {
+            if (c == DRC611_HEADER || c == 0x0E) {
                 frame[frame_len++] = c;
-            }
+            } 
             continue;
         }
 
         frame[frame_len++] = c;
+		
+		if (frame[0] == 0x0E){
+	       if  ( frame_len < 2) {
+               continue;
+	    	}
+		    if ( frame[1] == 0x83 ){
+			   out_of_range_cm = 2000;
+			   have_out_of_range = true;
+               continue;
+		    }
+		    if (frame[1] == 0x89){
+			   out_of_range_cm = 2000;
+			   have_out_of_range = true;
+               continue;
+		    }
+		    if ( frame[1] == 0x8E){
+			   out_of_range_cm = 0;
+			   have_out_of_range = true;
+               continue;
+		    }
+        } else if (frame[0] == DRC611_HEADER){
+		           if (frame_len < DRC611_FRAME_LENGTH) {
+                      continue;
+                    }
+                    // Validate fixed header fields.
+                    if (frame[1] != 0x00 || frame[2] != 0x03) {
+                       resync_frame();
+                       continue;
+                    }
+		
+                    uint8_t checksum = 0;
 
-        if (frame_len < DRC611_FRAME_LENGTH) {
-            continue;
+                    for (uint8_t i = 1;
+                    i < DRC611_FRAME_LENGTH - 1;
+                    i++) {
+                    checksum += frame[i];
+                    }
+ 
+                    if (checksum != frame[5]) {
+                       resync_frame();
+                    continue;
+                    }
+                // ZZ is the low byte; YY is the high byte.
+                distance_cm = (uint16_t(frame[4]) << 8) | frame[3];
+                }
+				
+		if (distance_cm == 0) {
+           continue;
         }
-
-        // Validate fixed header fields.
-        if (frame[1] != 0x00 ||
-            frame[2] != 0x03) {
-            resync_frame();
-            continue;
-        }
-
-        uint8_t checksum = 0;
-
-        for (uint8_t i = 1;
-             i < DRC611_FRAME_LENGTH - 1;
-             i++) {
-            checksum += frame[i];
-        }
-
-        if (checksum != frame[5]) {
-            resync_frame();
-            continue;
-        }
-
-        // ZZ is the low byte; YY is the high byte.
-        const uint16_t distance_cm =
-            (uint16_t(frame[4]) << 8) | frame[3];
 
         frame_len = 0;
-
-        if (distance_cm < DRC611_MIN_CM ||
-            distance_cm > DRC611_MAX_CM) {
-            continue;
-        }
-
         sum_cm += distance_cm;
         valid_count++;
     }
+	
+	
 
     if (valid_count > 0) {
         reading_m = (sum_cm * 0.01f) / valid_count;
         last_valid_ms = AP_HAL::millis();
         return true;
     }
-
+	if (have_out_of_range) {
+        reading_m = out_of_range_cm * 0.01f;
+        last_valid_ms = AP_HAL::millis();
+        return true;
+    }
     return false;
 }
 
