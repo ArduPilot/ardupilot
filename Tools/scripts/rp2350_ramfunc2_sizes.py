@@ -72,7 +72,7 @@ def load_symbols(elf: Path):
     return result
 
 
-def annotate(registry: Path, symbols: dict, update: bool):
+def annotate(registry: Path, symbols: dict, update: bool, program: str):
     lines = registry.read_text(encoding='utf-8').splitlines(keepends=True)
     out = []
     total_sram = 0
@@ -86,8 +86,14 @@ def annotate(registry: Path, symbols: dict, update: bool):
 
         parts = stripped.split('|')
         sym_name = parts[1].strip().replace(' ', '')
-        # the generator reads these after the size comment, so a rewrite keeps them
-        markers = re.findall(r'\[(?:needs|unless|without) [A-Za-z0-9_]+\]|\[inlinable\]', parts[1])
+        # the generator reads these after the size comment, so a rewrite keeps
+        # them: [needs X] and the like, [inlinable], and lists of programs
+        markers = re.findall(r'\[(?:needs|unless|without) [A-Za-z0-9_]+\]|\[[A-Za-z_][\w,-]*\]', parts[1])
+        programs = {p for m in markers if m != '[inlinable]' and ' ' not in m for p in m[1:-1].split(',')}
+        # another program's entry: this ELF does not place it, so says nothing about it
+        if programs and program not in programs:
+            out.append(line)
+            continue
 
         # strip old size comment if present
         sym_name_clean = re.sub(r'\s*#.*$', '', sym_name)
@@ -147,7 +153,8 @@ def main():
         sys.exit(f"ELF not found: {elf}")
 
     symbols = load_symbols(elf)
-    annotate(REGISTRY, symbols, args.update)
+    # the ELF is named for its program, as entries marked [arduplane] name it
+    annotate(REGISTRY, symbols, args.update, elf.name)
 
 
 if __name__ == '__main__':

@@ -25,10 +25,14 @@ It needs only git, waf and the cross binutils. Placement is by size, not by
 measurement: every change carries a "ramfunc2-update:" comment, and should be
 profiled before it is relied on (rp2350/DEVELOPMENT.md, "Acting on a profile").
 
+An entry marked for programs, as [arduplane], is checked only when --vehicle
+builds one of them, as waf checks it, and what replaces it keeps the marker.
+
 Usage, after `./waf copter` has failed on "no symbol match" or a scratch bank:
     Tools/scripts/rp2350_ramfunc2_update.py --board RPI_UAVFC           # print the plan
     Tools/scripts/rp2350_ramfunc2_update.py --board RPI_UAVFC --apply   # edit the registries
     Tools/scripts/rp2350_ramfunc2_update.py --board RPI_UAVFC --build   # edit, build, repeat
+and with --vehicle plane, rover and so on after that vehicle's build failed.
 """
 
 import argparse
@@ -53,6 +57,16 @@ NOT_FUNCTIONS = {"if", "for", "while", "switch", "return", "sizeof", "defined",
                  "static_assert", "else", "do", "case"}
 KIND_ORDER = {"new": 0, "absorbed": 1, "replaces": 2, "moved": 3}
 MAX_BUILDS = 8
+# waf target -> (program, vehicle directory), as waf passes them to the generator
+PROGRAMS = {
+    "copter": ("arducopter", "ArduCopter"),
+    "heli": ("arducopter-heli", "ArduCopter"),
+    "plane": ("arduplane", "ArduPlane"),
+    "rover": ("ardurover", "Rover"),
+    "sub": ("ardusub", "ArduSub"),
+    "antennatracker": ("antennatracker", "AntennaTracker"),
+    "blimp": ("blimp", "Blimp"),
+}
 
 
 def run(cmd, check=True):
@@ -218,9 +232,25 @@ def load_registries():
     return lines, entries
 
 
-def strict_misses(buildroot, prefix):
-    """The entries the build's own check rejects, found by running that check."""
-    r = run(["bash", str(SECTIONS_SH), str(buildroot), "--strict", "--toolchain", prefix], check=False)
+def strict_misses(buildroot, prefix, vehicle):
+    """The entries the build's own check rejects, found by running that check as
+    waf runs it for vehicle: with its program, so entries marked for it are
+    checked, and strict only for Copter. The check writes its section lists into
+    the build directory, so the build's own are put back: lists made for another
+    set of programs would drop those programs' picks at the next link."""
+    program, vehicle_dir = PROGRAMS[vehicle]
+    cmd = ["bash", str(SECTIONS_SH), str(buildroot), "--toolchain", prefix, "--program", f"{program}:{vehicle_dir}"]
+    if program == "arducopter":
+        cmd.append("--strict")
+    saved = {p: p.read_bytes() for p in buildroot.glob("rp2350_*_sections.ld")}
+    try:
+        r = run(cmd, check=False)
+    finally:
+        for p in buildroot.glob("rp2350_*_sections.ld"):
+            if p in saved:
+                p.write_bytes(saved[p])
+            else:
+                p.unlink()
     misses = []
     for line in r.stderr.splitlines():
         m = re.search(r": (rp2350_\w+\.txt): no (symbol match for|archive member) '(.*)'$", line)
@@ -385,6 +415,17 @@ class Plan:
         self.add = []               # (name, path, size, kind)
         self.left = []              # (name, size, reason)
         self.budget = sum(e.size or 0 for e in stale)
+        # the programs what goes in is placed for, or None for all
+        self.programs = None
+
+    def take_programs(self):
+        """Place what goes in for the programs of what it replaces: all of them if
+        any replaced entry was unmarked, else every program they were marked for."""
+        sets = [e.programs for e in self.stale]
+        self.programs = None if not sets or any(s is None for s in sets) else set().union(*sets)
+
+    def marker(self):
+        return f" [{','.join(sorted(self.programs))}]" if self.programs else ""
 
     def fill(self, cands, slack):
         used = 0
@@ -412,17 +453,24 @@ def similarity(name, stale):
     return max((difflib.SequenceMatcher(None, last(name), last(e.name)).ratio() for e in stale), default=0)
 
 
-def plan_removals(misses, entries, syms, slack):
+def placed_for(entries, name, programs):
+    """Is name already an active entry for every program in programs (None: all)?"""
+    return any(e.active and e.name == name and
+               (e.programs is None or (programs is not None and programs <= e.programs))
+               for e in entries)
+
+
+def plan_removals(misses, entries, syms, slack, program):
     plans = {}
     manual = []
     cache = {}
-    placed = {e.name for e in entries if e.active}
     evicted = {e.name for e in entries if not e.active}
     for reg, name, archive in misses:
         if archive:
             manual.append(f"{reg}: no archive member '{name}' in this toolchain")
             continue
-        entry = next((e for e in entries if e.active and e.reg == reg and e.name == name), None)
+        entry = next((e for e in entries if e.active and e.reg == reg and e.name == name
+                      and (e.programs is None or program in e.programs)), None)
         if entry is None:
             manual.append(f"{reg}: '{name}' reported missing but not found in the registry")
             continue
@@ -434,7 +482,9 @@ def plan_removals(misses, entries, syms, slack):
         if removal is None:
             manual.append(f"{reg}: {name}: no commit found that removed it from {entry.path}")
             continue
-        key = (reg, removal.commit)
+        # one plan per set of programs too: a replacement serves the programs of
+        # what it replaces, and a commit can remove entries marked differently
+        key = (reg, removal.commit, frozenset(entry.programs) if entry.programs else None)
         if key not in plans:
             why = f"removed upstream in {removal.commit[:10]} (\"{removal.subject}\")"
             plans[key] = (Plan(reg, [], why), removal)
@@ -442,6 +492,7 @@ def plan_removals(misses, entries, syms, slack):
         plans[key][0].budget += entry.size or 0
     out = []
     for plan, removal in plans.values():
+        plan.take_programs()
         cands = []
         for cname, src, kind in removal.candidates([e.name for e in plan.stale]):
             found = lookup(syms, cname, src)
@@ -449,7 +500,7 @@ def plan_removals(misses, entries, syms, slack):
                 plan.left.append((cname, 0, "not in this build (inlined or compiled out)"))
                 continue
             sym = max(found, key=lambda s: s.size)
-            if sym.name in placed:
+            if placed_for(entries, sym.name, plan.programs):
                 plan.left.append((sym.name, sym.size, "already placed"))
             elif sym.name in evicted:
                 plan.left.append((sym.name, sym.size, "commented out in a registry; left out on purpose"))
@@ -498,6 +549,7 @@ def plan_bank_overflow(reg, over, entries, syms):
     entry.size = size
     out_plan = Plan(reg, [entry], f"moved to {RAMFUNC2}, as this bank overflowed by {over} B")
     in_plan = Plan(RAMFUNC2, [], f"moved here from {reg}, which overflowed by {over} B")
+    in_plan.programs = entry.programs
     in_plan.add.append((name, entry.path, size, "moved"))
     return [out_plan, in_plan]
 
@@ -534,7 +586,7 @@ def apply(plans, lines):
         insert = {}
         for p in mine:
             at = min(e.idx for e in p.stale) if p.stale else len(lines[reg])
-            new = wrap(p.note()) + [f"{path}|{name}  # {size} B\n" for name, path, size, _ in p.add]
+            new = wrap(p.note()) + [f"{path}|{name}  # {size} B{p.marker()}\n" for name, path, size, _ in p.add]
             insert.setdefault(at, []).extend(new)
         out = []
         for idx, line in enumerate(lines[reg] + [""]):
@@ -545,12 +597,12 @@ def apply(plans, lines):
         print(f"updated {reg}")
 
 
-def fix_names(buildroot, prefix, slack, write):
+def fix_names(buildroot, prefix, slack, write, vehicle):
     """Plan, and if asked write, the replacements for entries that match nothing."""
-    misses = strict_misses(buildroot, prefix)
+    misses = strict_misses(buildroot, prefix, vehicle)
     lines, entries = load_registries()
     syms = load_symbols(buildroot, prefix)
-    plans, manual = plan_removals(misses, entries, syms, slack)
+    plans, manual = plan_removals(misses, entries, syms, slack, PROGRAMS[vehicle][0])
     plans += plan_archives(entries, syms, prefix, slack)
     show(plans, manual)
     if write and plans:
@@ -613,9 +665,9 @@ def build_loop(args, buildroot):
         r = run([str(ROOT / "waf"), args.vehicle], check=False)
         log = r.stdout + r.stderr
         if r.returncode == 0:
-            return verify(buildroot / "bin" / f"ardu{args.vehicle}", buildroot, args.toolchain)
+            return verify(buildroot / "bin" / PROGRAMS[args.vehicle][0], buildroot, args.toolchain)
         if "matched no symbol" in log or "no archive member" in log:
-            plans, manual = fix_names(buildroot, args.toolchain, args.slack, True)
+            plans, manual = fix_names(buildroot, args.toolchain, args.slack, True, args.vehicle)
             if manual or not plans:
                 return 1
             continue
@@ -646,7 +698,9 @@ def main():
     ap.add_argument("--apply", action="store_true", help="edit the registries; otherwise print the plan")
     ap.add_argument("--build", action="store_true",
                     help="edit, run ./waf VEHICLE, and repeat until it links; then check placement")
-    ap.add_argument("--vehicle", default="copter", help="waf target for --build (default copter)")
+    ap.add_argument("--vehicle", default="copter", choices=sorted(PROGRAMS),
+                    help="waf target whose build failed (default copter): its program's marked entries are"
+                    " checked, strictly for copter as waf does; --build and --verify use it too")
     ap.add_argument("--verify", action="store_true", help="only check the placement in the built ELF")
     args = ap.parse_args()
 
@@ -654,7 +708,7 @@ def main():
     if not (buildroot / "hwdef.h").is_file():
         sys.exit(f"{buildroot} has no hwdef.h: configure and build {args.board} first")
     if args.verify:
-        return 1 if verify(buildroot / "bin" / f"ardu{args.vehicle}", buildroot, args.toolchain) else 0
+        return 1 if verify(buildroot / "bin" / PROGRAMS[args.vehicle][0], buildroot, args.toolchain) else 0
     if args.build:
         return build_loop(args, buildroot)
     version = buildroot / "ap_version.h"
@@ -663,7 +717,7 @@ def main():
         m = re.search(r'GIT_VERSION "([0-9a-f]+)"', version.read_text())
         if m and not head.startswith(m.group(1)):
             print(f"warning: {buildroot} was built at {m.group(1)}, HEAD is {head}; rebuild before trusting this")
-    plans, manual = fix_names(buildroot, args.toolchain, args.slack, args.apply)
+    plans, manual = fix_names(buildroot, args.toolchain, args.slack, args.apply, args.vehicle)
     if not plans and not manual:
         print("the registries match this build")
     elif not args.apply:
