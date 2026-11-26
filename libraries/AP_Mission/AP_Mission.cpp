@@ -782,17 +782,6 @@ bool AP_Mission::restart_current_nav_cmd()
         return false;
     }
 
-    // return immediately if nav command index is invalid
-    const uint16_t nav_cmd_index = get_current_nav_index();
-    if (nav_cmd_index == 0) {
-        return false;
-    }
-    if (nav_cmd_index >= num_commands()) {
-        _flags.in_landing_sequence = false;
-        _flags.in_return_path = false;
-        return false;
-    }
-
     // the rejoin point may no longer be on the edited leg so continue to the end of the leg
     if (_flags.rejoining_return_path) {
         // the leg end may have been removed by the mission change, the rejoin is kept
@@ -803,6 +792,17 @@ bool AP_Mission::restart_current_nav_cmd()
             return false;
         }
         return set_current_cmd(_rejoin_leg_end_index);
+    }
+
+    // return immediately if nav command index is invalid
+    const uint16_t nav_cmd_index = get_current_nav_index();
+    if (nav_cmd_index == 0) {
+        return false;
+    }
+    if (nav_cmd_index >= num_commands()) {
+        _flags.in_landing_sequence = false;
+        _flags.in_return_path = false;
+        return false;
     }
 
     return set_current_cmd(_nav_cmd.index);
