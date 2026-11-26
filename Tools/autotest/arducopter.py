@@ -25623,6 +25623,7 @@ return update, 1000
             "VTX_ENABLE": 1,
             "VTX_BND1_CH1": 5870,
             "VTX_BND1_CH2": -1,
+            "VTX_BND1_CH3": 5900,
         })
         port = self.spare_network_port()
         self.customise_SITL_commandline([
@@ -25677,6 +25678,22 @@ return update, 1000
         if not any(p[3] == 1 and p[4] == 5870 for p in pushes):
             raise NotAchievedException("pit mode not pushed on a disabled channel: %s" % pushes)
         self.set_parameter("VTX_OPTIONS", 0)
+
+        # after a move to another added channel, a disabled channel keeps
+        # that channel and its frequency, not the frequency before it
+        self.set_parameter("VTX_CHANNEL", 2)
+        pushes = pushes_in(3)
+        if not any(p[0] == 0 and p[4] == 5900 for p in pushes):
+            raise NotAchievedException("second added channel not pushed: %s" % pushes)
+        self.set_parameter("VTX_CHANNEL", 1)
+        pushes = pushes_in(3)
+        if pushes:
+            raise NotAchievedException("disabled channel pushed: %s" % pushes)
+        self.wait_msp_vtx_config_reply(msp, 0, 3, 5900)
+        self.set_parameter("VTX_POWER", 800)
+        pushes = pushes_in(3)
+        if not pushes or any(p[4] != 5900 for p in pushes):
+            raise NotAchievedException("power change pushed on another frequency: %s" % pushes)
 
         # a VTX reporting an empty user band (Z, band 13 one based) is ignored
         self.set_parameter("VTX_CHANNEL", 0)
