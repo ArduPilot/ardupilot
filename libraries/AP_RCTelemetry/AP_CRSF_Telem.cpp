@@ -1182,10 +1182,12 @@ void AP_CRSF_Telem::calc_device_info() {
     put_be32_ptr(&_telem.ext.info.payload[n], fwver.os_sw_version);   // software id
     n += 4;
 #if OSD_PARAM_ENABLED
-    _telem.ext.info.payload[n] = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; // param count
+    // param count, the Parameters folder and the OSD parameters in it
+    _telem.ext.info.payload[n] = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS + 1;
 #if AP_CRSF_SCRIPTING_ENABLED
-    for (ScriptedMenu* m = &scripted_menus; m != nullptr; m = m->next_menu) {
-        _telem.ext.info.payload[n] += m->num_params;
+    {
+        WITH_SEMAPHORE(scr_sem);
+        _telem.ext.info.payload[n] += next_scripted_id - SCRIPTED_MENU_START_ID;
     }
 #endif // AP_CRSF_SCRIPTING_ENABLED
     n++;
@@ -1265,6 +1267,22 @@ void AP_CRSF_Telem::calc_bind() {
     _telem_pending = true;
 }
 
+/*
+  the folder the OSD parameters are listed from. With a scripted menu they
+  go in the Parameters folder beside it; with none they are listed from the
+  root, so the menu opens straight onto them, and the Parameters folder is
+  still answered, hidden, as a transmitter reads every field in turn
+ */
+uint8_t AP_CRSF_Telem::osd_param_folder() const
+{
+#if AP_CRSF_SCRIPTING_ENABLED
+    if (scripted_menus.next_menu != nullptr) {
+        return PARAMETER_MENU_ID;
+    }
+#endif
+    return 0;
+}
+
 // return parameter information
 void AP_CRSF_Telem::calc_parameter() {
 #if OSD_PARAM_ENABLED
@@ -1288,22 +1306,20 @@ void AP_CRSF_Telem::calc_parameter() {
         _telem.ext.param_entry.payload[idx++] = 't';
         _telem.ext.param_entry.payload[idx++] = 0; // null terminator
 
-#if AP_CRSF_SCRIPTING_ENABLED
-        if (scripted_menus.next_menu != nullptr) {
-            _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // root parameter screen ardupilot menu
-            for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; m = m->next_menu) {
-                if (m->parent_id == 0) {
-                    _telem.ext.param_entry.payload[idx++] = m->id;   // scripted menus
-                }
-            }
-        } else
-#endif // AP_CRSF_SCRIPTING_ENABLED
-        {
-            // write out all of the ids we are going to send
+        _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // root parameter screen ardupilot menu
+        if (osd_param_folder() == 0) {
+            // no scripted menu, so the menu opens straight onto the OSD parameters
             for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
                 _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID + i + 1;
             }
         }
+#if AP_CRSF_SCRIPTING_ENABLED
+        for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; m = m->next_menu) {
+            if (m->parent_id == 0) {
+                _telem.ext.param_entry.payload[idx++] = m->id;   // scripted menus
+            }
+        }
+#endif // AP_CRSF_SCRIPTING_ENABLED
         _telem.ext.param_entry.payload[idx] = 0xFF; // terminator
 
         _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
@@ -1313,19 +1329,19 @@ void AP_CRSF_Telem::calc_parameter() {
         return;
     }
 
-#if AP_CRSF_SCRIPTING_ENABLED
-    // root folder request
-    if (scripted_menus.next_menu != nullptr && _param_request.param_num == PARAMETER_MENU_ID) {
+    // Parameters folder request, answered hidden and empty when the OSD parameters are in the root
+    if (_param_request.param_num == PARAMETER_MENU_ID) {
+        const bool shown = osd_param_folder() == PARAMETER_MENU_ID;
         _telem.ext.param_entry.header.param_num = PARAMETER_MENU_ID;
         _telem.ext.param_entry.header.chunks_left = 0;
         _telem.ext.param_entry.payload[idx++] = 0; // parent folder
-        _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER; // type
+        _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER | (shown ? 0 : PARAMETER_HIDDEN); // type
         // name
         strncpy((char*)&_telem.ext.param_entry.payload[idx], "Parameters", ARRAY_SIZE(_telem.ext.param_entry.payload) - idx - 1);
         idx += strlen("Parameters");
         _telem.ext.param_entry.payload[idx++] = 0; // null terminator
         // write out all of the ids we are going to send
-        for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
+        for (uint8_t i = 0; shown && i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
             _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID + i + 1;
         }
         _telem.ext.param_entry.payload[idx] = 0xFF; // terminator
@@ -1337,6 +1353,7 @@ void AP_CRSF_Telem::calc_parameter() {
         return;
     }
 
+#if AP_CRSF_SCRIPTING_ENABLED
     // scripted menu folder request indexed as the set of parameter ids from SCRIPTED_MENU_START_ID
     AP_CRSF_Telem::ScriptedMenu* menu = scripted_menus.find_menu(_param_request.param_num);
 
@@ -1368,20 +1385,35 @@ void AP_CRSF_Telem::calc_parameter() {
     }
 #endif // AP_CRSF_SCRIPTING_ENABLED
 
+    // the fields after the Parameters folder are the OSD parameter slots
+    const uint8_t slot = _param_request.param_num - (PARAMETER_MENU_ID + 1);
+    if (slot >= AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS) {
+        return;
+    }
+
     AP_OSD* osd = AP::osd();
-
-    if (osd == nullptr) {
-        return;
-    }
-
-    AP_OSD_ParamSetting* setting = osd->get_setting((_param_request.param_num - (PARAMETER_MENU_ID + 1)) / AP_OSD_ParamScreen::NUM_PARAMS,
-        (_param_request.param_num - (PARAMETER_MENU_ID + 1)) % AP_OSD_ParamScreen::NUM_PARAMS);
-
-    if (setting == nullptr) {
-        return;
-    }
+    AP_OSD_ParamSetting* setting = osd == nullptr ? nullptr :
+        osd->get_setting(slot / AP_OSD_ParamScreen::NUM_PARAMS, slot % AP_OSD_ParamScreen::NUM_PARAMS);
 
     _telem.ext.param_entry.header.param_num = _param_request.param_num;
+
+    // a slot is still answered when the vehicle has no OSD or its parameter can't be found, as a
+    // transmitter waits for every field in turn, but as a hidden INFO field since there is nothing to show
+    if (setting == nullptr || setting->_param == nullptr) {
+        _telem.ext.param_entry.header.chunks_left = 0;
+        _telem.ext.param_entry.payload[idx++] = osd_param_folder(); // parent folder
+        _telem.ext.param_entry.payload[idx++] = ParameterType::INFO | PARAMETER_HIDDEN;
+        strncpy((char*)&_telem.ext.param_entry.payload[idx], "Unused", ARRAY_SIZE(_telem.ext.param_entry.payload) - idx - 1);
+        idx += strlen("Unused") + 1;
+        _telem.ext.param_entry.payload[idx] = 0; // empty info
+
+        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
+        _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+        _pending_request.frame_type = 0;
+        _telem_pending = true;
+        return;
+    }
+
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
     if (setting->get_custom_metadata() != nullptr) {
         calc_text_selection(setting, _param_request.param_chunk);
@@ -1389,7 +1421,7 @@ void AP_CRSF_Telem::calc_parameter() {
     }
 #endif
     _telem.ext.param_entry.header.chunks_left = 0;
-    _telem.ext.param_entry.payload[idx++] = 0; // parent folder
+    _telem.ext.param_entry.payload[idx++] = osd_param_folder(); // parent folder
     idx++;  // leave a gap for the type
     setting->copy_name_camel_case((char*)&_telem.ext.param_entry.payload[idx], 17);
     idx += strnlen((char*)&_telem.ext.param_entry.payload[idx], 16) + 1;
@@ -1486,8 +1518,7 @@ bool AP_CRSF_Telem::calc_scripted_parameter()
     _telem.ext.param_entry.header.param_num = spw.param_num;
 
     // For a WRITE to a non-COMMAND parameter, the response type is PARAMETER_WRITE (0x2D).
-    if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE &&
-        !(spw.param->length > 0 && spw.param->data[0] == ParameterType::COMMAND)) {
+    if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE && !spw.param->is_command()) {
 
         memcpy((uint8_t*)_telem.ext.param_write.payload, spw.payload.payload, MIN(spw.payload.payload_length, 57));
         idx += spw.payload.payload_length;
@@ -1501,20 +1532,26 @@ bool AP_CRSF_Telem::calc_scripted_parameter()
         if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE) { // COMMAND type
             _telem.ext.param_entry.header.chunks_left = 0;
             _telem.ext.param_entry.payload[idx++] = spw.param->parent_id;
-            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], spw.payload.payload, MIN(spw.payload.payload_length, 57-idx));
-            idx += spw.payload.payload_length;
+            // as much of the reply from lua as fits after the parent folder
+            const uint8_t len = MIN(spw.payload.payload_length, ARRAY_SIZE(_telem.ext.param_entry.payload) - idx);
+            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], spw.payload.payload, len);
+            idx += len;
         } else { // READ type
+            // each chunk carries up to CHUNK_SIZE bytes of the data, the first after the parent folder id
             const uint8_t CHUNK_SIZE = 55;  // This wastes a byte on chunks > 0 but makes the maths easier
-            const uint8_t chunks = ((spw.param->length) / CHUNK_SIZE) + 1;  // includes the extra byte for the parent folder id
+            const uint16_t chunks = MAX(1, (spw.param->length + CHUNK_SIZE - 1) / CHUNK_SIZE);
+            if (spw.param_chunk >= chunks) {
+                return true; // the chunk asked for is past the end, so there is nothing to send
+            }
             _telem.ext.param_entry.header.chunks_left = (chunks - 1) - spw.param_chunk;
 
             if (spw.param_chunk == 0) {
                 _telem.ext.param_entry.payload[idx++] = spw.param->parent_id; // parent folder only in first chunk
             }
 
-            const uint8_t chunk_len = _telem.ext.param_entry.header.chunks_left > 0 ? CHUNK_SIZE : (spw.param->length + 1) % CHUNK_SIZE;
-            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx],
-                    &spw.param->data[spw.param_chunk * CHUNK_SIZE], chunk_len);
+            const uint16_t offset = spw.param_chunk * CHUNK_SIZE;
+            const uint8_t chunk_len = MIN(CHUNK_SIZE, spw.param->length - offset);
+            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], &spw.param->data[offset], chunk_len);
             idx += chunk_len;
         }
         _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + idx;
@@ -1626,7 +1663,7 @@ void AP_CRSF_Telem::calc_text_selection(AP_OSD_ParamSetting* param, uint8_t chun
     // chunk the output
     BufferChunker chunker(_telem.ext.param_entry.payload, CHUNK_SIZE, chunk);
 
-    chunker.put_byte(0);  // parent folder
+    chunker.put_byte(osd_param_folder());  // parent folder
     chunker.put_byte(ParameterType::TEXT_SELECTION);  // parameter type
 
     char name[17];
@@ -1704,7 +1741,8 @@ void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write
     AP_OSD_ParamSetting* param = osd->get_setting((write_frame->param_num - (PARAMETER_MENU_ID + 1)) / AP_OSD_ParamScreen::NUM_PARAMS,
         (write_frame->param_num - (PARAMETER_MENU_ID + 1)) % AP_OSD_ParamScreen::NUM_PARAMS);
 
-    if (param == nullptr) {
+    // a slot whose parameter can't be found has nothing to write
+    if (param == nullptr || param->_param == nullptr) {
         return;
     }
 
@@ -1870,12 +1908,18 @@ bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
         memcpy((char*)spw.param->data, data, length);
         spw.param->length = length;
         break;
-    case ScriptedParameterEvents::PARAMETER_WRITE:
+    case ScriptedParameterEvents::PARAMETER_WRITE: {
+        // a COMMAND is answered with a settings entry, which has room for the reply after its parent folder
+        static constexpr uint8_t MAX_COMMAND_REPLY_LEN = sizeof(ParameterSettingsEntry::payload) - 1;
+        if (spw.param->is_command() && length > MAX_COMMAND_REPLY_LEN) {
+            return false;
+        }
         // For a WRITE response, Lua provides the data for the response packet.
         // This is stored in the payload field of the queued request.
         memcpy(spw.payload.payload, data, MIN(length, sizeof(spw.payload.payload)));
         spw.payload.payload_length = MIN(length, sizeof(spw.payload.payload));
         break;
+    }
     }
 
     // Update the object in the queue with the new data
@@ -1919,7 +1963,12 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::find_parameter(ui
 // called from lua
 AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uint8_t length, const char* data)
 {
-    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
+    AP_CRSF_Telem* telem = AP::crsf_telem();
+    WITH_SEMAPHORE(telem->get_semaphore());
+
+    if (telem->scripted_ids_exhausted() || folder_full()) {
+        return nullptr;
+    }
 
     ScriptedParameter* new_params = (ScriptedParameter*)mem_realloc(params,
         sizeof(ScriptedParameter) * num_params,
@@ -1930,7 +1979,6 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uin
     num_params++;
     params = new_params;
     ScriptedParameter& param = params[num_params-1];
-    param.id = id + num_params;
     param.parent_id = id;
     param.length = length;
     if (length > 0) {
@@ -1943,9 +1991,18 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uin
 
         memcpy((char*)param.data, data, length);
     }
+    // taken only once nothing can fail, as a gap in the ids would stall a transmitter
+    param.id = telem->next_scripted_id++;
     debug("adding menu item %d", param.id);
 
     return &param;
+}
+
+// a menu's folder entry is its parent, type, name and NUL, a byte for each child and the 0xFF after
+// them, and has to fit in the payload of one settings entry
+bool AP_CRSF_Telem::ScriptedMenu::folder_full() const
+{
+    return num_params + strnlen(name, MAX_SCRIPTED_MENU_NAME_LEN) + 4U >= sizeof(ParameterSettingsEntry::payload);
 }
 
 AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::find_menu(uint8_t param_num)
@@ -1992,11 +2049,16 @@ AP_CRSF_Telem::ScriptedMenu::~ScriptedMenu()
 // called from lua
 AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu)
 {
-    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
+    AP_CRSF_Telem* telem = AP::crsf_telem();
+    WITH_SEMAPHORE(telem->get_semaphore());
 
     // find the menu to create
     ScriptedMenu* tail = this;
     for (; tail->next_menu != nullptr; tail = tail->next_menu) {
+    }
+
+    if (telem->scripted_ids_exhausted()) {
+        return nullptr;
     }
 
     ScriptedMenu* menu = NEW_NOTHROW ScriptedMenu(menu_name, size, parent_menu);
@@ -2004,14 +2066,18 @@ AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::add_menu(const char* m
         return nullptr;
     }
 
-    menu->id = tail->id == 0 ? SCRIPTED_MENU_START_ID : tail->id + MAX_SCRIPTED_MENU_SIZE + 1;
-    tail->next_menu = menu;
-
-    // dummy parameter for a submenu
     if (parent_menu != 0) {
+        // a submenu takes the id of the dummy parameter linking it into its parent
         ScriptedParameter* param = add_parameter(0, nullptr);
-        param->id = menu->id;
+        if (param == nullptr) {
+            delete menu;
+            return nullptr;
+        }
+        menu->id = param->id;
+    } else {
+        menu->id = telem->next_scripted_id++;
     }
+    tail->next_menu = menu;
     return menu;
 }
 
@@ -2116,6 +2182,19 @@ AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::add_menu(const char* name)
 {
     WITH_SEMAPHORE(scr_sem);
 
+    // the root folder entry is its parent, type, "root" and NUL, the Parameters folder, a byte for
+    // each top level menu and the 0xFF after them, and has to fit in the payload of one settings entry
+    static constexpr uint8_t MAX_TOP_LEVEL_MENUS = sizeof(ParameterSettingsEntry::payload) - 9;
+    uint8_t top_level_menus = 0;
+    for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; m = m->next_menu) {
+        if (m->parent_id == 0) {
+            top_level_menus++;
+        }
+    }
+    if (top_level_menus >= MAX_TOP_LEVEL_MENUS) {
+        return nullptr;
+    }
+
     // create a new menu
     ScriptedMenu* new_menu = scripted_menus.add_menu(name, 2, 0);
     debug("adding menu %d", new_menu->id);
@@ -2136,6 +2215,11 @@ void AP_CRSF_Telem::clear_menus()
         m = next;
     }
     scripted_menus.next_menu = nullptr;
+    next_scripted_id = SCRIPTED_MENU_START_ID;
+    // requests still queued point at the parameters just freed
+    inbound_params.clear();
+    outbound_params.clear();
+    ready_params.clear();
 }
 
 #ifdef CRSF_DEBUG
