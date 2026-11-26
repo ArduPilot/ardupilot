@@ -20571,6 +20571,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # we are not at the home location - reboot so the next test starts there
         self.reboot_sitl()
 
+    def ThrowDropYawAlign(self):
+        '''EKF3 completes its in-flight yaw alignment after a Throw-mode drop'''
+        # a dropped vehicle never climbs above its release point, so
+        # the alignment must not depend on climbing after takeoff
+        self.set_parameter("THROW_TYPE", 1)  # drop
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+
+        self.progress("Lifting the disarmed vehicle to the drop height")
+        self.set_parameter("SIM_SHOVE_Z", -11)
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 120000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_altitude(50, 1000, timeout=60, relative=True)
+        self.set_parameter("SIM_SHOVE_Z", -8.6)
+        self.wait_climbrate(-0.5, 0.5, timeout=60)
+        self.set_parameter("SIM_SHOVE_Z", -9.80665)  # hold the vehicle up
+
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.progress("Dropping the vehicle")
+        self.set_parameter("SIM_SHOVE_Z", 0)
+        self.wait_statustext("throw detected - spooling motors", check_context=True, timeout=10)
+        self.wait_statustext("height achieved - controlling position", check_context=True, timeout=30)
+        alignment_text = "EKF3 IMU%u MAG0 in-flight yaw alignment complete"
+        self.wait_statustext(alignment_text % 0, check_context=True, timeout=30)
+        self.delay_sim_time(10, reason="check the final reset is not repeated")
+        texts = [m.text for m in self.context_collection('STATUSTEXT')]
+        num_cores = bin(int(self.get_parameter("EK3_IMU_MASK"))).count('1')
+        for core in range(num_cores):
+            count = texts.count(alignment_text % core)
+            if count != 1:
+                raise NotAchievedException("Expected one in-flight yaw alignment on IMU%u, got %u" % (core, count))
+
+        self.reboot_sitl(force=True)
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -22565,6 +22603,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EK3_OptflowTerrainScaleHeight,
             self.EK3_AccelBiasZeroVelOptFlow,
             self.ThrowDoubleDrop,
+            self.ThrowDropYawAlign,
             self.HorizontalFence,
             self.FenceTypeChangeTakesEffect,
             self.MaxAltFence,
