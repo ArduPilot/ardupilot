@@ -128,7 +128,7 @@ void AP_Mission::stop()
     // so resume at the end of the leg instead
     if (_flags.rejoining_return_path) {
         _flags.rejoining_return_path = false;
-        if (!read_cmd_from_storage(_rejoin_leg_end_index, _nav_cmd)) {
+        if (!read_cmd_from_storage(_rejoin.leg_end_index, _nav_cmd)) {
             // the leg end has been removed so the mission restarts when resumed
             _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
         }
@@ -168,18 +168,18 @@ void AP_Mission::resume()
     // a return path rejoin point is part way along a leg so it is not in storage,
     // if the mission has changed since it was calculated continue to the end of the leg
     if (_flags.rejoining_return_path) {
-        if ((_last_change_time_ms == _rejoin_change_time_ms) && start_command(_rejoin_cmd)) {
-            _nav_cmd = _rejoin_cmd;
+        if ((_last_change_time_ms == _rejoin.change_time_ms) && start_command(_rejoin.cmd)) {
+            _nav_cmd = _rejoin.cmd;
             _flags.nav_cmd_loaded = true;
             return;
         }
         // the leg end may have been removed by the mission change
         Mission_Command leg_end_cmd;
-        if (!read_cmd_from_storage(_rejoin_leg_end_index, leg_end_cmd)) {
+        if (!read_cmd_from_storage(_rejoin.leg_end_index, leg_end_cmd)) {
             start();
             return;
         }
-        set_current_cmd(_rejoin_leg_end_index);
+        set_current_cmd(_rejoin.leg_end_index);
         return;
     }
 
@@ -786,12 +786,12 @@ bool AP_Mission::restart_current_nav_cmd()
     if (_flags.rejoining_return_path) {
         // the leg end may have been removed by the mission change, the rejoin is kept
         // so stop() restarts the new mission instead of resuming at the old leg start
-        if (_rejoin_leg_end_index >= num_commands()) {
+        if (_rejoin.leg_end_index >= num_commands()) {
             _flags.in_landing_sequence = false;
             _flags.in_return_path = false;
             return false;
         }
-        return set_current_cmd(_rejoin_leg_end_index);
+        return set_current_cmd(_rejoin.leg_end_index);
     }
 
     // return immediately if nav command index is invalid
@@ -2771,16 +2771,16 @@ bool AP_Mission::start_return_path_rejoin(uint16_t leg_start_index, uint16_t leg
     if (!set_current_cmd(leg_start_index)) {
         return false;
     }
-    _rejoin_leg_end_index = leg_end_index;
-    _rejoin_change_time_ms = _last_change_time_ms;
+    _rejoin.leg_end_index = leg_end_index;
+    _rejoin.change_time_ms = _last_change_time_ms;
 
     // replace the leg start with a plain wp at the rejoin point, the
     // index is kept so the mission continues with the rest of the leg
-    _rejoin_cmd = {};
-    _rejoin_cmd.index = leg_start_index;
-    _rejoin_cmd.id = MAV_CMD_NAV_WAYPOINT;
-    _rejoin_cmd.content.location = rejoin_loc;
-    _nav_cmd = _rejoin_cmd;
+    _rejoin.cmd = {};
+    _rejoin.cmd.index = leg_start_index;
+    _rejoin.cmd.id = MAV_CMD_NAV_WAYPOINT;
+    _rejoin.cmd.content.location = rejoin_loc;
+    _nav_cmd = _rejoin.cmd;
     _flags.rejoining_return_path = true;
 
     resume();
