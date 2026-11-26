@@ -155,6 +155,11 @@ void AP_SmartAudio::loop()
                 AP::vtx().announce_vtx_settings();
                 set_configuration_pending(false);
                 vtx.set_configuration_finished(true);
+            } else if (vtx.configured_rejected() && now - _last_request_sent_ms > SMARTAUDIO_REFUSED_POLL_MS) {
+                // nothing is sent while the configuration is one the VTX
+                // refused, so ask for its settings now and then: a VTX
+                // unlocked with its button is then seen and asked again
+                request_settings();
             }
         }
     }

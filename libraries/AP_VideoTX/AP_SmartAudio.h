@@ -61,6 +61,9 @@
 
 #define SMARTAUDIO_BANDCHAN_TO_INDEX(band, channel) (band * VTX_MAX_CHANNELS + (channel))
 
+// how often the settings are read while the configuration is one the VTX refused
+#define SMARTAUDIO_REFUSED_POLL_MS 5000
+
 //#define SA_DEBUG
 
 class AP_SmartAudio
