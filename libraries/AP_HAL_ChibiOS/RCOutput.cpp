@@ -131,6 +131,12 @@ void RCOutput::init()
         for (uint8_t j = 0; j < 4; j++ ) {
 #if !defined(IOMCU_FW)
             uint8_t chan = group.chan[j];
+#if defined(RP2350) && defined(HAL_PIN_ALT_CONFIG)
+            // init below puts the PWM function back on the pin, which would take it from what BRD_ALT_CONFIG gave it to
+            if (chan != CHAN_DISABLED && !GPIO::alt_config_allows_pwm(group.pal_lines[j])) {
+                group.chan[j] = CHAN_DISABLED;
+            } else
+#endif
             if (SRV_Channels::is_GPIO(chan+chan_offset)) {
                 group.chan[j] = CHAN_DISABLED;
             } else if (SRV_Channels::is_alarm(chan+chan_offset)
