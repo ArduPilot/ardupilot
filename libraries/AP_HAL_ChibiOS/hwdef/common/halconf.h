@@ -47,6 +47,10 @@
 
 #include "mcuconf.h"
 
+#if defined(RP2350)
+#include "rp2350_halconf.h"
+#endif
+
 /**
  * @brief   Enables the PAL subsystem.
  */

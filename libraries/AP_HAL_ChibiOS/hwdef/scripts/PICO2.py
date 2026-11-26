@@ -66,6 +66,32 @@ mcu = {
         'SCRIPTING_HEAP_SIZE' : '(50*1024)',
         'SCRIPTING_STACK_SIZE' : '(10*1024)',
         'HAL_LOGGING_FILE_BUFSIZE_SCRIPTING' : '64',
+        # AP_AHRS runs every backend it is built with on every loop, configured or
+        # not: an external AHRS no one has fitted cost core0 about 1% of its time
+        'AP_EXTERNAL_AHRS_ENABLED' : '0',
+        'HAL_GYROFFT_ENABLED' : '0',
+        # the main loop shares core0 with the estimators, so the GCS tasks are
+        # polled at a lower rate than the 400 Hz default
+        'AP_GCS_UPDATE_RATE_HZ' : '25',
+        # one EKF lane
+        'HAL_EKF_IMU_MASK_DEFAULT' : '1',
+        # the rate thread runs on core1, so a deeper gyro queue rides out core0 stalls
+        'AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE' : '32',
+        # The rate controller thread runs on core1 with a deeper call chain than
+        # the 1536 byte default allows. Static analysis (ArduPilot/ardupilot#34623)
+        # puts its worst case at 1.6 KB plus 320 bytes of saved context; it peaked
+        # at 760 bytes armed on the RPI_UAVFC bench.
+        'AP_RATE_THREAD_STACK_SIZE' : '3072',
+        # 32-bit timestamps in the rcout cycle. The 64-bit default puts micros64()
+        # and the wrap arithmetic around it on core1's dshot path, where PC
+        # sampling found the micros64 veneer alone at 1.2% of samples.
+        # AP_HAL::timeout_remaining() is unsigned delta subtraction, so the 71
+        # minute micros() wrap is safe here.
+        'AP_RCOUT_USE_32BIT_TIME' : '1',
+        # A boot-flash write turns XIP off for both cores and parks core1 for the
+        # whole operation, stalling the rate loop, so every storage write waits
+        # until disarmed. Dirty lines persist in the RAM buffer and flush on disarm.
+        'AP_STORAGE_NO_WRITE_WHILE_ARMED' : '1',
     },
     'CORTEX'    : 'cortex-m33',
 # Use fpv5-sp-d16 with hard ABI: - hard: float args go in FPU registers directly (eliminates the int-register round-trip that softfp incurs per float call).
