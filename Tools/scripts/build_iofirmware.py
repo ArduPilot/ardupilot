@@ -77,3 +77,8 @@ run_program(["./waf", "configure", "--board", 'CubeRedSecondary-IO'])
 run_program(["./waf", "clean"])
 run_program(["./waf", "iofirmware"])
 shutil.copy('build/CubeRedSecondary-IO/bin/iofirmware.bin', 'Tools/IO_Firmware/iofirmware_cubered.bin')
+
+run_program(["./waf", "configure", "--board", 'AD-TALON-V6-BASE-IO'])
+run_program(["./waf", "clean"])
+run_program(["./waf", "iofirmware"])
+shutil.copy('build/AD-TALON-V6-BASE-IO/bin/iofirmware_lowpolh.bin', 'Tools/IO_Firmware/iofirmware_adtalon_12mhz.bin')
