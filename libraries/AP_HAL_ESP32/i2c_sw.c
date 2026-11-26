@@ -26,6 +26,7 @@
    described in [wikipedia](https://en.wikipedia.org/wiki/I%C2%B2C#Example_of_bit-banging_the_I%C2%B2C_master_protocol).
 */
 
+#if defined(__XTENSA__) // software I2C is only supported for XTENSA
 #include "esp_err.h"
 #define DEBUG printf
 
@@ -725,3 +726,5 @@ int i2c_write_reg(_i2c_bus_t* bus, uint16_t addr, uint16_t reg,
 {
     return i2c_write_regs(bus, addr, reg, &data, 1, flags);
 }
+
+#endif // defined(__XTENSA__)
