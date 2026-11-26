@@ -139,6 +139,12 @@ void AP_Proximity_LD06::get_readings()
 
                 const uint32_t current_ms = AP_HAL::millis();
 
+                if (current_ms - _last_distance_received_ms > PROXIMITY_LD06_TIMEOUT_MS) {
+                    // data stopped for a while: the buffered points and
+                    // the previous sweep are stale, start again with this packet
+                    _scan_count = 0;
+                    memset(_last_sweep_mm, 0, sizeof(_last_sweep_mm));
+                }
                 _last_distance_received_ms =  current_ms;
 
                 // Updates the temporary boundary and passes off the completed data
