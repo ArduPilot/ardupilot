@@ -143,6 +143,17 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
     // check OA_BEARING_INC definition allows checking in all directions
     static_assert(360 % OA_BENDYRULER_BEARING_INC_XY == 0, "check 360 is a multiple of OA_BEARING_INC");
 
+    // from inside an exclusion zone every bearing has a margin of at least the vehicle's depth
+    // into it, which shortens the step below to nothing.  Leave by the shortest route instead
+    if (!proximity_only) {
+        Location exit_loc;
+        if (calc_exclusion_zone_exit(current_loc, exit_loc)) {
+            destination_new = exit_loc;
+            Write_OABendyRuler((uint8_t)OABendyType::OA_BENDY_HORIZONTAL, true, current_loc.get_bearing_to(exit_loc) * 0.01f, 0.0f, false, calc_avoidance_margin(current_loc, current_loc, proximity_only), destination, destination_new);
+            return true;
+        }
+    }
+
     // search in OA_BENDYRULER_BEARING_INC degree increments around the vehicle alternating left
     // and right. For each direction check if vehicle would avoid all obstacles
     float best_bearing = bearing_to_dest;
@@ -673,6 +684,107 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Loc
 #else
     return false;
 #endif // AP_FENCE_ENABLED
+}
+
+// if current_loc is inside an exclusion polygon or circle, find the closest point outside it,
+// placed the fence margin plus OA_MARGIN_MAX beyond its edge, that clears every fence
+// returns true and updates exit_loc if such a point was found
+bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Location &exit_loc) const
+{
+#if AP_FENCE_ENABLED
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return false;
+    }
+    // exclusion zones are enabled along with polygon fences
+    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
+        return false;
+    }
+    Vector2f current_NE;
+    if (!current_loc.get_vector_xy_from_origin_NE_cm(current_NE)) {
+        return false;
+    }
+
+    // distance in cm beyond the edge at which to place the exit
+    const float clearance_cm = (fence->get_margin_ne_m() + _margin_max) * 100.0f;
+
+    bool found = false;
+    float best_dist_sq = FLT_MAX;
+
+    // exclusion polygons: exit through the closest point on each edge
+    for (uint8_t i = 0; i < fence->polyfence().get_exclusion_polygon_count(); i++) {
+        uint16_t num_points;
+        const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
+        if ((boundary == nullptr) || (num_points < 3) || Polygon_outside(current_NE, boundary, num_points)) {
+            continue;
+        }
+        for (uint16_t j = 0; j < num_points; j++) {
+            const Vector2f &start = boundary[j];
+            const Vector2f &end = boundary[(j + 1) % num_points];
+            const Vector2f edge_NE = Vector2f::closest_point(current_NE, start, end);
+            const Vector2f to_edge = edge_NE - current_NE;
+            Vector2f outward[2];
+            uint8_t num_outward = 0;
+            if (!to_edge.is_zero()) {
+                outward[num_outward++] = to_edge.normalized();
+            } else {
+                // the vehicle is on this edge, so try both sides of it; the inside one never clears the fence
+                const Vector2f perpendicular {end.y - start.y, start.x - end.x};
+                if (perpendicular.is_zero()) {
+                    continue;
+                }
+                outward[num_outward++] = perpendicular.normalized();
+                outward[num_outward++] = -perpendicular.normalized();
+            }
+            for (uint8_t k = 0; k < num_outward; k++) {
+                const Vector2f candidate_NE = edge_NE + outward[k] * clearance_cm;
+                const float dist_sq = (candidate_NE - current_NE).length_squared();
+                Location candidate_loc;
+                if ((dist_sq < best_dist_sq) && exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, candidate_loc)) {
+                    best_dist_sq = dist_sq;
+                    exit_loc = candidate_loc;
+                    found = true;
+                }
+            }
+        }
+    }
+
+    // exclusion circles: exit straight out from the centre
+    for (uint8_t i = 0; i < fence->polyfence().get_exclusion_circle_count(); i++) {
+        Vector2f center_NE;
+        float radius_m;
+        if (!fence->polyfence().get_exclusion_circle(i, center_NE, radius_m)) {
+            continue;
+        }
+        const Vector2f center_to_vehicle = current_NE - center_NE;
+        if (center_to_vehicle.length() >= radius_m * 100.0f) {
+            continue;
+        }
+        // at the centre there is no closest direction, so north is used
+        const Vector2f outward = center_to_vehicle.is_zero() ? Vector2f{1.0f, 0.0f} : center_to_vehicle.normalized();
+        const Vector2f candidate_NE = center_NE + outward * (radius_m * 100.0f + clearance_cm);
+        const float dist_sq = (candidate_NE - current_NE).length_squared();
+        Location candidate_loc;
+        if ((dist_sq < best_dist_sq) && exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, candidate_loc)) {
+            best_dist_sq = dist_sq;
+            exit_loc = candidate_loc;
+            found = true;
+        }
+    }
+
+    return found;
+#else
+    return false;
+#endif // AP_FENCE_ENABLED
+}
+
+// returns true if the exit at candidate_NE, an offset in cm from the EKF origin, clears every fence
+// candidate_loc is set to the exit's location
+bool AP_OABendyRuler::exclusion_zone_exit_clear(const Location &current_loc, const Vector2f &current_NE, const Vector2f &candidate_NE, Location &candidate_loc) const
+{
+    candidate_loc = current_loc;
+    candidate_loc.offset((candidate_NE.x - current_NE.x) * 0.01f, (candidate_NE.y - current_NE.y) * 0.01f);
+    return !is_negative(calc_avoidance_margin(candidate_loc, candidate_loc, false));
 }
 
 // calculate minimum distance between a path and proximity sensor obstacles

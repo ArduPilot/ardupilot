@@ -67,6 +67,15 @@ private:
     // on success returns true and updates margin
     bool calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin) const;
 
+    // if current_loc is inside an exclusion polygon or circle, find the closest point outside it,
+    // placed the fence margin plus OA_MARGIN_MAX beyond its edge, that clears every fence
+    // returns true and updates exit_loc if such a point was found
+    bool calc_exclusion_zone_exit(const Location &current_loc, Location &exit_loc) const;
+
+    // returns true if the exit at candidate_NE, an offset in cm from the EKF origin, clears every fence
+    // candidate_loc is set to the exit's location
+    bool exclusion_zone_exit_clear(const Location &current_loc, const Vector2f &current_NE, const Vector2f &candidate_NE, Location &candidate_loc) const;
+
     // calculate minimum distance between a path and proximity sensor obstacles
     // on success returns true and updates margin
     bool calc_margin_from_object_database(const Location &start, const Location &end, float &margin) const;
