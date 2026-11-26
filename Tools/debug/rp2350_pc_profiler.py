@@ -204,18 +204,39 @@ def strip_signature(demangled):
     return re.sub(r'\(.*', '', demangled).strip()
 
 
+def registry_key(name):
+    """A function name as the registry matches it: no argument list, no spaces."""
+    return re.sub(r'\s+', '', strip_signature(name))
+
+
 def load_registry(path):
-    """Return the set of demangled symbols already in the RAMFUNC2 registry."""
-    symbols = set()
+    """Return {name: programs} for the active RAMFUNC2 registry entries, names as
+    registry_key() makes them. programs is the set an entry's "[arduplane]" or
+    "[arducopter,arduplane]" marker limits it to, or None for every program."""
+    entries = {}
     if not os.path.exists(path):
-        return symbols
+        return entries
     with open(path) as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith('#') or '|' not in line:
                 continue
-            symbols.add(line.split('|', 1)[1].strip())
-    return symbols
+            sym, _, comment = line.split('|', 1)[1].partition('#')
+            name = re.sub(r'\s+', '', sym)
+            tags = [t for t in re.findall(r'\[([A-Za-z_][\w,-]*)\]', comment) if t != 'inlinable']
+            programs = {p for t in tags for p in t.split(',')} or None
+            if name in entries:
+                old = entries[name]
+                programs = None if old is None or programs is None else old | programs
+            entries[name] = programs
+    return entries
+
+
+def registered(registry, name, program):
+    """Is name a registry entry the program's build places? The program is the
+    ELF's name, as a marker names it."""
+    key = registry_key(name)
+    return key in registry and (registry[key] is None or program in registry[key])
 
 
 def sample(ocd, n_samples, duration, progress=True):
@@ -263,7 +284,7 @@ def tally(samples, syms):
     return region_counts, func_counts, func_pc_hist, unknown, valid, total
 
 
-def build_report(t, elapsed, syms, registry, top, threshold):
+def build_report(t, elapsed, syms, registry, program, top, threshold):
     region_counts, func_counts, func_pc_hist, unknown, valid, total = t
 
     lines = []
@@ -310,7 +331,7 @@ def build_report(t, elapsed, syms, registry, top, threshold):
         if pct < threshold:
             break
         name = strip_signature(syms.demangled[idx])
-        if name in registry:
+        if registered(registry, name, program):
             continue
         suggestions.append((pct, fil, name))
 
@@ -377,7 +398,7 @@ def parse_profc1_text(text, flash_base=None):
     return hist, total
 
 
-def build_histogram_report(hist, total_n, syms, registry, top, core=1):
+def build_histogram_report(hist, total_n, syms, registry, program, top, core=1):
     """Aggregate the emitted top-PC histogram by function and rank it."""
     emitted = sum(hist.values()) or 1
     func_count = {}
@@ -402,7 +423,7 @@ def build_histogram_report(hist, total_n, syms, registry, top, core=1):
     for idx, c in ranked[:top]:
         start, end, _, _ = syms.entries[idx]
         name = strip_signature(syms.demangled[idx])
-        note = "  [RAMFUNC2]" if name in registry else ""
+        note = "  [RAMFUNC2]" if registered(registry, name, program) else ""
         L.append("  %5.1f%% %5.1f%% %7d  %-5s 0x%08x %5d  %s%s"
                  % (100.0 * c / denom, 100.0 * c / emitted, c,
                     region_of(start), start, end - start, name, note))
@@ -418,7 +439,7 @@ def build_histogram_report(hist, total_n, syms, registry, top, core=1):
         if region_of(start) != 'xip':
             continue
         name = strip_signature(syms.demangled[idx])
-        if name in registry:
+        if registered(registry, name, program):
             continue
         sugg.append((c, fil, name, end - start))
     if not sugg:
@@ -574,6 +595,8 @@ def main():
     sys.stderr.write("loading symbols from %s ...\n" % args.elf)
     syms = SymbolTable(args.elf, nm=args.nm, cppfilt=args.cppfilt, repo_root=args.repo_root)
     registry = load_registry(args.registry)
+    # the ELF is named for its program, as a marker such as [arduplane] names it
+    program = os.path.basename(args.elf)
     sys.stderr.write("  %d functions, %d already in registry\n" %
                      (len(syms.entries), len(registry)))
 
@@ -584,7 +607,7 @@ def main():
             sys.exit("no PROFc1 tokens found in input")
         m = PROFC1_CORE.search(text)
         core = int(m.group(1)) if m else 1
-        report = build_histogram_report(hist, total_n, syms, registry, args.top, core)
+        report = build_histogram_report(hist, total_n, syms, registry, program, args.top, core)
         print(report)
         if args.out:
             with open(args.out, 'w') as f:
@@ -619,7 +642,7 @@ def main():
             f.write('\n'.join("0x%08x" % pc for pc in samples))
 
     t = tally(samples, syms)
-    report = build_report(t, elapsed, syms, registry, args.top, args.threshold)
+    report = build_report(t, elapsed, syms, registry, program, args.top, args.threshold)
     if args.by_line:
         report += "\n" + hot_kernel_section(t, syms, args.addr2line, args.elf,
                                             args.repo_root, args.by_line, args.kernel_pct)
