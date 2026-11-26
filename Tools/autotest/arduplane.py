@@ -34,6 +34,9 @@ from vehicle_test_suite import WaitModeTimeout
 testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = Location(-35.362938, 149.165085, 585, AltFrame.ABSOLUTE)
 SITL_START_HEADING = 354
+
+# pymavlink's Plane mode mapping does not know about Auto RTL yet
+PLANE_MODE_AUTO_RTL = 28
 WIND = "0,180,0.2"  # speed,direction,variance
 
 
@@ -780,7 +783,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LAND_TYPE": 1,
             "LAND_DS_ELEV_PWM": deepstall_elevator_pwm,
-            "RTL_AUTOLAND": 1,
         })
         self.start_flying_mission("plane-deepstall-mission.txt")
         self.progress("Waiting for deepstall messages")
@@ -811,7 +813,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LAND_TYPE": 1,
             "LAND_DS_ELEV_PWM": deepstall_elevator_pwm,
-            "RTL_AUTOLAND": 1,
         })
         self.start_flying_mission("plane-deepstall-relative-mission.txt")
         self.wait_current_waypoint(4)
@@ -875,10 +876,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def DO_CHANGE_SPEED(self):
         '''Test DO_CHANGE_SPEED command/item'''
-        self.set_parameters({
-            "RTL_AUTOLAND": 1,
-        })
-
         self.context_push_do_change_speed()
         self.DO_CHANGE_SPEED_mavlink_long()
         self.context_pop()
@@ -1117,7 +1114,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "RC%u_OPTION" % flaps_ch: 208, # Flaps RCx_OPTION
             "LAND_FLAP_PERCNT": 50,
             "LOG_DISARMED": 1,
-            "RTL_AUTOLAND": 1,
 
             "RC%u_MIN" % flaps_ch: flaps_ch_min,
             "RC%u_MAX" % flaps_ch: flaps_ch_max,
@@ -1526,7 +1522,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FS_GCS_ENABL": 1, # GCS failsafe : heartbeat
             "FS_SHORT_ACTN": 0, # Short failsafe action: ignore if in auto|guided|loiter, otherwise circle
             "FS_LONG_ACTN": 0, # Long failsafe action: continue
-            "RTL_AUTOLAND": 1,
             "MAV_GCS_SYSID": self.mav.source_system,
         })
         self.start_flying_simple_relhome_mission([
@@ -1549,7 +1544,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "FS_GCS_ENABL": 1,
             "FS_LONG_ACTN": 1,
-            "RTL_AUTOLAND": 1,
             "MAV_GCS_SYSID": self.mav.source_system,
         })
         self.takeoff()
@@ -1683,7 +1677,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def TestGripperMission(self):
         '''Test Gripper mission items'''
-        self.set_parameter("RTL_AUTOLAND", 1)
         self.load_mission("plane-gripper-mission.txt")
         self.set_current_waypoint(1)
         self.change_mode('AUTO')
@@ -2277,7 +2270,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "ARSPD2_AUTOCAL": 1,
             "SIM_ARSPD2_OFS": 1900,  # default is 2013
 
-            "RTL_AUTOLAND": 1,
         })
         self.context_collect('STATUSTEXT')
         self.reboot_sitl()
@@ -2400,7 +2392,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "FLIGHT_OPTIONS": 0,
             "RTL_ALTITUDE": 80,
-            "RTL_AUTOLAND": 1,
         })
         takeoff_alt = 10
         self.takeoff(alt=takeoff_alt)
@@ -2570,7 +2561,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         '''ensure rangefinder gives height-above-ground'''
         self.load_mission("plane-gripper-mission.txt") # borrow this
-        self.set_parameter("RTL_AUTOLAND", 1)
         self.set_current_waypoint(1)
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
@@ -5305,7 +5295,6 @@ return update()
             "FENCE_ALT_MAX": 100,
             "FENCE_AUTOENABLE": 3,
             "FENCE_ENABLE" : 0,
-            "RTL_AUTOLAND" : 2,
         })
 
         # check we can takeoff again
@@ -5345,7 +5334,6 @@ return update()
             "FENCE_ALT_MIN": 20,
             "FENCE_AUTOENABLE": 0,
             "FENCE_ENABLE" : 1,
-            "RTL_AUTOLAND" : 2,
         })
 
         # Grab Home Position
@@ -5383,7 +5371,6 @@ return update()
             "FENCE_ALT_MAX": 100,
             "FENCE_AUTOENABLE": 3,
             "FENCE_ENABLE" : 0,
-            "RTL_AUTOLAND" : 2,
         })
 
         self.wait_ready_to_arm()
@@ -5558,7 +5545,6 @@ return update()
             "FENCE_ACTION": 1,   # Set action to RTL
             "FENCE_AUTOENABLE": 2,
             "FENCE_ENABLE" : 0,
-            "RTL_AUTOLAND" : 2,
         })
 
         fence_loc = self.home_position_as_location()
@@ -6519,7 +6505,6 @@ return update()
             "TKOFF_THR_MINACC": 3.0,
             "TECS_PITCH_MAX": 35.0,
             "PTCH_LIM_MAX_DEG": 35.0,
-            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
         })
 
         # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
@@ -6566,7 +6551,6 @@ return update()
             "TKOFF_THR_MINACC": 3.0,
             "TECS_PITCH_MAX": 35.0,
             "PTCH_LIM_MAX_DEG": 35.0,
-            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
         })
 
         # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
@@ -6615,7 +6599,6 @@ return update()
             "TECS_PITCH_MAX": 35.0,
             "TKOFF_THR_MAX_T": 3.0,
             "PTCH_LIM_MAX_DEG": 35.0,
-            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
         })
 
         # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
@@ -6673,7 +6656,6 @@ return update()
             "TECS_PITCH_MAX": 35.0,
             "TKOFF_THR_MAX_T": 3.0,
             "PTCH_LIM_MAX_DEG": 35.0,
-            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
         })
 
         self.wait_ready_to_arm()
@@ -7060,7 +7042,6 @@ return update()
         self.set_parameters({
             "ARSPD_USE": 0.0,
             "PTCH_TRIM_DEG": -10.0,
-            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
             "TKOFF_ALT": 50.0,
             "TKOFF_DIST": 1000.0,
             "TKOFF_THR_MAX": 75.0,
@@ -7591,7 +7572,6 @@ return update()
         self.set_parameters({
             "SCR_ENABLE" : 1,
             "SCR_VM_I_COUNT" : 1000000,
-            "RTL_AUTOLAND" : 2
             })
         self.reboot_sitl()
         self.wait_text("Loaded UniversalAutoLand.lua", check_context=True)
@@ -7860,7 +7840,6 @@ return update()
         alt = 60
         self.set_parameters({
             "MIS_OPTIONS": 2,       # FAILSAFE_TO_BEST_LANDING
-            "RTL_AUTOLAND": 1,      # required when the mission has a DO_LAND_START
             "BATT_LOW_VOLT": 11,
             "BATT_LOW_TIMER": 1,
             "BATT_FS_LOW_ACT": 2,   # land
@@ -8350,7 +8329,6 @@ return update()
 
     def _MAV_CMD_DO_GO_AROUND(self, command):
         self.load_mission("mission.txt")
-        self.set_parameter("RTL_AUTOLAND", 3)
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -8418,9 +8396,6 @@ return update()
 
     def MAV_CMD_DO_LAND_START(self):
         '''test MAV_CMD_DO_LAND_START as mavlink command'''
-        self.set_parameters({
-            "RTL_AUTOLAND": 3,
-        })
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
             (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 30),
@@ -8650,7 +8625,6 @@ return update()
 
     def MAV_CMD_NAV_RETURN_TO_LAUNCH(self):
         '''test receiving MAV_CMD_NAV_RETURN_TO_LAUNCH from GCS'''
-        self.set_parameter('RTL_AUTOLAND', 1)
         self.start_flying_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
             (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 30),
@@ -8663,7 +8637,8 @@ return update()
         for run_cmd in self.run_cmd, self.run_cmd_int:
             self.wait_current_waypoint(2)
             run_cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
-            self.wait_current_waypoint(4)
+            self.wait_mode('RTL')
+            self.change_mode('AUTO')
             self.set_current_waypoint(2)
         self.fly_home_land_and_disarm()
 
@@ -9019,9 +8994,9 @@ return update()
         fence_centre = self.get_location()
         fence_centre = self.offset_location_ne(fence_centre, fence_centre_ne[0], fence_centre_ne[1])
 
-        self.set_parameters({
-            "RTL_AUTOLAND": 2,
-        })
+        # each breach must jump to the landing sequence, also the second one
+        # made while already in Auto RTL after the waypoint was moved back:
+        self.set_parameter("FENCE_ACTION", 9)  # Auto RTL if possible else RTL
 
         alt = 50
         self.upload_simple_relhome_mission([
@@ -14307,7 +14282,6 @@ return update, 200
         self.set_parameters({
             'SERIAL5_PROTOCOL': 14,
             'SERVO_VOLZ_MASK': volz_motor_mask,
-            'RTL_AUTOLAND': 2,
 
             'SIM_VOLZ_ENA': 1,
             'SIM_VOLZ_MASK': volz_motor_mask,
@@ -14718,7 +14692,6 @@ return update, 200
         self.set_parameters({
             'SERIAL5_PROTOCOL': 14,
             'SERVO_VOLZ_MASK': volz_motor_mask,
-            'RTL_AUTOLAND': 2,
 
             'SIM_VOLZ_ENA': 1,
             'SIM_VOLZ_MASK': volz_motor_mask,
@@ -15308,6 +15281,7 @@ return update, 200
             24: "Thermal",
             26: "Autoland",
             27: "Glide",
+            28: "Auto RTL",
         }
         initialising = self.get_mode_from_mode_mapping("INITIALISING")
         modes = self.assert_available_modes(expected_modes, not_user_selectable=[initialising])
@@ -15738,9 +15712,6 @@ return update, 200
         ])
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
 
-        # a mission with DO_RETURN_PATH_START fails prearms with RTL_AUTOLAND disabled:
-        self.set_parameter("RTL_AUTOLAND", 4)
-
         self.start_subtest("does not switch away from a return path being flown")
         # the leg from item 5 to item 6 passes 100m from item 2:
         self.start_flying_simple_relhome_mission([
@@ -15762,25 +15733,195 @@ return update, 200
             if m.seq == 6:
                 raise NotAchievedException("Switched away from the return path being flown")
 
-        self.start_subtest("refused if AUTO may not be entered from the GCS")
+        self.start_subtest("joins the closest leg of the return path")
         self.change_mode('GUIDED')
         # beside the leg from item 4 to item 5:
         loc = self.offset_location_ne(self.home_position_as_location(), 400, 900)
         loc.set_alt_m(50, AltFrame.ABOVE_HOME)
         self.send_do_reposition(loc)
         self.wait_location(loc, accuracy=200, height_accuracy=None, timeout=120)
+        # like RTL, Auto RTL is always available from the GCS, even when AUTO is blocked:
         self.set_parameter("FLTMODE_GCSBLOCK", 1 << 9)  # AUTO
-        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
-        self.assert_mode_is('GUIDED')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START)
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(5, timeout=10)
         self.set_parameter("FLTMODE_GCSBLOCK", 0)
 
-        self.start_subtest("joins the closest leg of the return path")
-        # the refused request has already moved the current item to the
-        # joining point; move it away so this request has to do it:
-        self.set_current_waypoint(2)
+        self.fly_home_land_and_disarm()
+
+    def AutoRTL(self):
+        '''Test Auto RTL mode via mode change, DO_LAND_START, DO_RETURN_PATH_START and RC option'''
+        alt = 50
+        home = self.home_position_as_location()
+        guided_loc = self.offset_location_ne(home, 1000, 0)
+        guided_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+
+        def fly_guided_to(loc):
+            self.change_mode('GUIDED')
+            self.send_do_reposition(loc)
+            self.wait_location(loc, accuracy=200, height_accuracy=None, timeout=240)
+
+        # takeoff on a mission with neither a landing sequence nor a return path
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 1000, alt),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        fly_guided_to(guided_loc)
+
+        self.start_subtest("refused with no landing sequence or return path in the mission")
+        try:
+            self.change_mode(PLANE_MODE_AUTO_RTL, timeout=10)
+            raise NotAchievedException("Should not change mode with no landing sequence")
+        except WaitModeTimeout:
+            pass
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_mode_is('GUIDED')
+
+        self.start_subtest("DO_LAND_START enters Auto RTL at the landing sequence")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),                     # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt),                # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, alt),                 # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 250, 0, alt),                 # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),                         # 6
+        ])
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START)
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(4, timeout=10)
+
+        self.start_subtest("mission carries on when switching to AUTO")
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(4, timeout=10)
+
+        self.start_subtest("mode change to Auto RTL jumps to the landing sequence")
+        fly_guided_to(guided_loc)
+        self.change_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(4, timeout=10)
+
+        self.start_subtest("available from the GCS even when AUTO is blocked, like RTL")
+        self.change_mode('GUIDED')
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 9)  # AUTO
+        self.run_cmd_do_set_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(4, timeout=10)
+        self.set_parameter("FLTMODE_GCSBLOCK", 0)
+
+        self.start_subtest("RC option enters Auto RTL")
+        self.set_parameter("RC9_OPTION", 99)  # AUTO RTL
+        self.set_rc(9, 2000)
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(4, timeout=10)
+        self.change_mode('GUIDED')
+        self.set_rc(9, 1000)
+
+        self.start_subtest("DO_RETURN_PATH_START enters Auto RTL at the closest return path leg")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),                            # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, alt),                       # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, alt),                       # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt),                       # 5
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, alt),                        # 6
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),         # 7
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 150, 0, alt),                        # 8
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),                                # 9
+        ])
+        # beside the leg from item 5 to item 6; anywhere within the 200m
+        # wait_location accuracy of this point is still closest to that leg:
+        return_path_loc = self.offset_location_ne(home, 600, 100)
+        return_path_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        fly_guided_to(return_path_loc)
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START)
-        self.wait_mode('AUTO')
-        self.wait_current_waypoint(5, timeout=10)
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(6, timeout=10)
+
+        self.start_subtest("mode change to Auto RTL prefers the return path to the landing sequence")
+        fly_guided_to(return_path_loc)
+        self.change_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(6, timeout=10)
+
+        self.start_subtest("DO_LAND_START jumps to the landing sequence while in Auto RTL")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START)
+        self.wait_current_waypoint(8, timeout=10)
+        self.assert_mode_is(PLANE_MODE_AUTO_RTL)
+
+        self.fly_home_land_and_disarm()
+
+    def AutoRTLFailsafes(self):
+        '''Test the Auto RTL actions of the RC, GCS, battery and fence failsafes'''
+        alt = 50
+        home = self.home_position_as_location()
+        # beside the leg from item 5 to item 6 of the mission below; anywhere
+        # within the 200m wait_location accuracy of this point is still
+        # closest to that leg:
+        return_path_loc = self.offset_location_ne(home, 600, 100)
+        return_path_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+
+        def fly_guided_to(loc):
+            self.change_mode('GUIDED')
+            self.send_do_reposition(loc)
+            self.wait_location(loc, accuracy=200, height_accuracy=None, timeout=240)
+
+        def wait_joined_return_path():
+            self.wait_mode(PLANE_MODE_AUTO_RTL, timeout=30)
+            self.wait_current_waypoint(6, timeout=10)
+
+        self.set_parameters({
+            "FS_LONG_ACTN": 6,  # Auto RTL
+            "FS_GCS_ENABL": 1,
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "BATT_LOW_VOLT": 11,
+            "BATT_LOW_TIMER": 1,
+            "BATT_FS_LOW_ACT": 8,  # Auto RTL or RTL
+            "FENCE_TYPE": 2,  # circle centred on home
+            "FENCE_RADIUS": 300,
+            "FENCE_ACTION": 9,  # Auto RTL if possible else RTL
+        })
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),                            # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, alt),                       # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, alt),                       # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt),                       # 5
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, alt),                        # 6
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),         # 7
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 150, 0, alt),                        # 8
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),                                # 9
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+
+        self.start_subtest("RC long failsafe enters Auto RTL")
+        fly_guided_to(return_path_loc)
+        self.set_parameter("SIM_RC_FAIL", 1)  # no pulses
+        wait_joined_return_path()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_statustext("RC Long Failsafe Cleared", timeout=30, check_context=True)
+
+        self.start_subtest("GCS failsafe enters Auto RTL")
+        fly_guided_to(return_path_loc)
+        self.set_heartbeat_rate(0)
+        wait_joined_return_path()
+        self.context_collect('STATUSTEXT')
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=30, check_context=True)
+
+        self.start_subtest("battery failsafe enters Auto RTL")
+        fly_guided_to(return_path_loc)
+        self.set_parameter("SIM_BATT_VOLTAGE", 9.5)
+        wait_joined_return_path()
+
+        self.start_subtest("fence breach enters Auto RTL")
+        fly_guided_to(return_path_loc)
+        # the plane is already outside the circle; a guided target outside
+        # the fence would be refused, so enable the fence around it instead
+        self.set_parameter("FENCE_ENABLE", 1)
+        wait_joined_return_path()
+        self.set_parameter("FENCE_ENABLE", 0)
 
         self.fly_home_land_and_disarm()
 
@@ -16046,8 +16187,6 @@ return update, 200
         if len(axes) != 0:
             raise NotAchievedException(f"Received PID_TUNING when not landing: {sorted(axes)}")
         land_loc = self.offset_location_ne(self.home_position_as_location(), -30, -210)
-        # a mission with DO_LAND_START fails prearms with RTL_AUTOLAND disabled:
-        self.set_parameter("RTL_AUTOLAND", 1)
         self.start_flying_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 110, -65, 100),
@@ -16455,6 +16594,8 @@ return update, 200
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.GuidedOnlyOffboardControl,
             self.MAV_CMD_DO_RETURN_PATH_START,
+            self.AutoRTL,
+            self.AutoRTLFailsafes,
             self.MAV_CMD_SET_HAGL,
             self.MAV_CMD_DO_PARACHUTE_actions,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,

@@ -53,6 +53,7 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
         _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
     case Mode::Number::AUTO:
+    case Mode::Number::AUTO_RTL:
     case Mode::Number::RTL:
     case Mode::Number::LOITER:
     case Mode::Number::THERMAL:
@@ -88,7 +89,7 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
     }
 
     if (plane.g.stick_mixing != StickMixing::NONE && !init_mode && (plane.control_mode != &plane.mode_glide)) {
-        if ((plane.g.stick_mixing != StickMixing::VTOL_YAW) || (plane.control_mode == &plane.mode_auto)) {
+        if ((plane.g.stick_mixing != StickMixing::VTOL_YAW) || plane.control_mode->is_auto_mode()) {
             // all modes except INITIALISING have some form of manual
             // override if stick mixing is enabled
             _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
@@ -776,26 +777,16 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         return plane.trigger_land_abort(packet.param1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 
     case MAV_CMD_DO_RETURN_PATH_START:
-        // attempt to rejoin after the next DO_RETURN_PATH_START command in the mission
-        if (plane.have_position && plane.mission.jump_to_closest_mission_leg(plane.current_loc)) {
-            plane.mission.set_force_resume(true);
-            if (plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-            // mode change failed, revert force resume flag
-            plane.mission.set_force_resume(false);
+        // attempt to rejoin after the next DO_RETURN_PATH_START command in the mission, in Auto RTL
+        if (plane.mode_auto_rtl.enter_return_path(ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_DO_LAND_START:
-        // attempt to switch to next DO_LAND_START command in the mission
-        if (plane.have_position && plane.mission.jump_to_landing_sequence(plane.current_loc)) {
-            plane.mission.set_force_resume(true);
-            if (plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-            // mode change failed, revert force resume flag
-            plane.mission.set_force_resume(false);
+        // attempt to switch to next DO_LAND_START command in the mission, in Auto RTL
+        if (plane.mode_auto_rtl.enter_landing_sequence(ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
 
@@ -839,7 +830,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_comma
         // this command should be ignored since it comes in from GCS
         // or a companion computer:
         if ((!plane.control_mode->is_guided_mode()) &&
-            (plane.control_mode != &plane.mode_auto)) {
+            (!plane.control_mode->is_auto_mode())) {
             // failed
             return MAV_RESULT_FAILED;
         }
@@ -1138,7 +1129,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlin
 
     // if you change this you must change handle_mission_set_current
     plane.auto_state.next_wp_crosstrack = false;
-    if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
+    if (plane.control_mode->is_auto_mode() && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
 
@@ -1151,7 +1142,7 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const ma
     // if you change this you must change handle_command_do_set_mission_current
     plane.auto_state.next_wp_crosstrack = false;
     GCS_MAVLINK::handle_mission_set_current(mission, msg);
-    if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
+    if (plane.control_mode->is_auto_mode() && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
 }
@@ -1294,6 +1285,7 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
         &plane.mode_cruise,
         &plane.mode_autotune,
         &plane.mode_auto,
+        &plane.mode_auto_rtl,
         &plane.mode_rtl,
         &plane.mode_loiter,
 #if HAL_ADSB_ENABLED

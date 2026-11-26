@@ -445,8 +445,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_LONG_ACTN
     // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to Glide mode (zero throttle, wings level) if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to Glide mode if FS_LONG_ACTN is set to 2. If FS_LONG_ACTN is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). If FS_LONG_ACTN is set to 4 the aircraft will switch to mode AUTO with the current waypoint if it is not already in mode AUTO, unless it is in the middle of a landing sequence. If FS_LONG_ACTN is set to 5, will switch to AUTOLAND mode if possible, otherwise RTL mode. This parameter only applies to failsafes during fixed wing modes. Quadplane modes will switch to QLAND unless Q_OPTIONS bit 5 (QRTL) or 20(RTL) are set.
-    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide,3:Deploy Parachute,4:Auto,5:AUTOLAND
+    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to Glide mode (zero throttle, wings level) if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to Glide mode if FS_LONG_ACTN is set to 2. If FS_LONG_ACTN is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). If FS_LONG_ACTN is set to 4 the aircraft will switch to mode AUTO with the current waypoint if it is not already in mode AUTO, unless it is in the middle of a landing sequence. If FS_LONG_ACTN is set to 5, will switch to AUTOLAND mode if possible, otherwise RTL mode. If FS_LONG_ACTN is set to 6, will switch to Auto RTL mode if the mission has a return path or landing sequence, otherwise RTL mode. This parameter only applies to failsafes during fixed wing modes. Quadplane modes will switch to QLAND unless Q_OPTIONS bit 5 (QRTL) or 20(RTL) are set.
+    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide,3:Deploy Parachute,4:Auto,5:AUTOLAND,6:Auto RTL
     // @User: Standard
     GSCALAR(fs_action_long,         "FS_LONG_ACTN",   FS_ACTION_LONG_CONTINUE),
 
@@ -502,6 +502,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Values: 25:Loiter to QLand
     // @Values: 26:AUTOLAND
     // @Values: 27:Glide
+    // @Values: 28:Auto RTL
     // @User: Standard
     GARRAY(flight_modes, 0,         "FLTMODE1",       FLIGHT_MODE_1),
 
@@ -741,13 +742,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(override_channel,      "OVERRIDE_CHAN",  0),
 #endif
-
-    // @Param: RTL_AUTOLAND
-    // @DisplayName: RTL auto land
-    // @Description: Automatically begin landing sequence after arriving at RTL location. This requires the addition of a DO_LAND_START mission item, which acts as a marker for the start of a landing sequence. The closest landing sequence will be chosen to the current location For a value of 1 a rally point will be used instead of HOME if in range (see rally point documentation).If this is set to 0 and there is a DO_LAND_START or DO_RETURN_PATH_START mission item then you will get an arming check failure. You can set to a value of 3 to avoid the arming check failure and use the DO_LAND_START for go-around (see wiki for aborting autolandings) without it changing RTL behaviour.
-    // @Values: 0:Disable,1:Fly HOME then land via DO_LAND_START mission item, 2:Go directly to landing sequence via DO_LAND_START mission item, 3:OnlyForGoAround, 4:Go directly to landing sequence via DO_RETURN_PATH_START mission item
-    // @User: Standard
-    GSCALAR(rtl_autoland,         "RTL_AUTOLAND",   float(RtlAutoland::RTL_DISABLE)),
 
     // @Param: CRASH_ACC_THRESH
     // @DisplayName: Crash Deceleration Threshold

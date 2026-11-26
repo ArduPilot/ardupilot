@@ -31,7 +31,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
     // take no action in some flight modes
     bool flightmode_prohibits_action = false;
     if (plane.control_mode == &plane.mode_manual ||
-        (plane.control_mode == &plane.mode_auto && !plane.auto_state.takeoff_complete) ||
+        (plane.control_mode->is_auto_mode() && !plane.auto_state.takeoff_complete) ||
         (plane.flight_stage == AP_FixedWing::FlightStage::LAND) || // TODO: consider allowing action during approach
         plane.control_mode == &plane.mode_autotune) {
         flightmode_prohibits_action = true;
@@ -140,8 +140,8 @@ void AP_Avoidance_Plane::handle_recovery(RecoveryAction recovery_action)
                 break;
 
             case RecoveryAction::RESUME_IF_AUTO_ELSE_LOITER:
-                if (prev_control_mode_number == Mode::Number::AUTO) {
-                    IGNORE_RETURN(plane.set_mode(plane.mode_auto, ModeReason::AVOIDANCE_RECOVERY));
+                if (prev_control_mode_number == Mode::Number::AUTO || prev_control_mode_number == Mode::Number::AUTO_RTL) {
+                    IGNORE_RETURN(plane.set_mode_by_number(prev_control_mode_number, ModeReason::AVOIDANCE_RECOVERY));
                 } else {
                     // let ModeAvoidADSB continue in its guided
                     // behaviour, but reset the loiter location,

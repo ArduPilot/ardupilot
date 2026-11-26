@@ -2,7 +2,6 @@
 Usage for SITL PLANE testing:
 
 - default params already enable rangefinder
-- set param RTL_AUTOLAND 2
 - set param SCR_ENABLE 1
 - set param RNGFND1_TYPE 100
 - restart, if needed

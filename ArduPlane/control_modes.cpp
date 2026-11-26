@@ -101,6 +101,9 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::GLIDE:
         ret = &mode_glide;
         break;
+    case Mode::Number::AUTO_RTL:
+        ret = &mode_auto_rtl;
+        break;
     }
     return ret;
 }
@@ -188,7 +191,7 @@ bool Plane::fly_inverted(void)
         // controlled with aux switch
         return true;
     }
-    if (control_mode == &mode_auto && auto_state.inverted_flight) {
+    if (control_mode->is_auto_mode() && auto_state.inverted_flight) {
         return true;
     }
     return false;

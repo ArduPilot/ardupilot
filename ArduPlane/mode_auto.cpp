@@ -50,6 +50,11 @@ bool ModeAuto::_enter()
 
 void ModeAuto::_exit()
 {
+    if (plane.control_mode->is_auto_mode()) {
+        // switching between AUTO and AUTO RTL, the mission carries on in the new mode
+        return;
+    }
+
     if (plane.mission.state() == AP_Mission::MISSION_RUNNING) {
         plane.mission.stop();
 
@@ -86,7 +91,8 @@ void ModeAuto::update()
 #endif
 
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
-    if (pullup.in_pullup()) {
+    // the pullup state is held by mode_auto, also when flying as AUTO RTL
+    if (plane.mode_auto.in_pullup()) {
         return;
     }
 #endif
@@ -179,8 +185,9 @@ bool ModeAuto::is_landing() const
 void ModeAuto::run()
 {
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
-    if (pullup.in_pullup()) {
-        pullup.stabilize_pullup();
+    // the pullup state is held by mode_auto, also when flying as AUTO RTL
+    if (plane.mode_auto.in_pullup()) {
+        plane.mode_auto.pullup.stabilize_pullup();
         return;
     }
 #endif

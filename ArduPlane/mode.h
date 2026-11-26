@@ -71,7 +71,7 @@ public:
         AUTOLAND      = 26,
 #endif
         GLIDE = 27,
-
+        AUTO_RTL = 28,
     // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
@@ -111,6 +111,9 @@ public:
 
     // true for all q modes
     virtual bool is_vtol_mode() const { return false; }
+
+    // true for AUTO and the modes derived from it which fly the mission
+    virtual bool is_auto_mode() const { return false; }
     virtual bool is_vtol_man_throttle() const;
     virtual bool is_vtol_man_mode() const { return false; }
 
@@ -262,6 +265,8 @@ public:
     const char *name() const override { return "Auto"; }
     const char *name4() const override { return "AUTO"; }
 
+    bool is_auto_mode() const override { return true; }
+
     bool does_automatic_thermal_switch() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
@@ -327,6 +332,46 @@ private:
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     GliderPullup pullup;
 #endif // AP_PLANE_GLIDER_PULLUP_ENABLED
+};
+
+/*
+  Auto RTL is AUTO joined at the closest DO_RETURN_PATH_START return
+  path, else the closest DO_LAND_START landing sequence, so a return
+  flown from the mission can be told apart from the mission itself
+ */
+class ModeAutoRTL : public ModeAuto
+{
+public:
+
+    Number mode_number() const override { return Number::AUTO_RTL; }
+    const char *name() const override { return "Auto RTL"; }
+    const char *name4() const override { return "ARTL"; }
+
+    // enter via the closest DO_LAND_START landing sequence, false if there is none
+    bool enter_landing_sequence(ModeReason reason);
+
+    // enter by joining the mission after the closest DO_RETURN_PATH_START, false if there is none
+    bool enter_return_path(ModeReason reason);
+
+    // enter via the return path if there is one, else the landing sequence, false if there is neither.
+    // Unlike a plain mode request this also re-joins the mission when already in Auto RTL
+    bool enter_return_path_or_landing_sequence(ModeReason reason);
+
+protected:
+
+    bool _enter() override;
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override;
+
+private:
+
+    // join the mission at the closest return path leg, else at the closest landing sequence
+    bool join_mission();
+
+    // enter once an entry helper has moved the mission
+    bool enter_joined(ModeReason reason);
+
+    // true while an entry helper has already moved the mission, so _enter() must not
+    bool mission_joined;
 };
 
 

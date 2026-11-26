@@ -200,7 +200,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 96:Trigger re-reading of mode switch
     // @Values{Rover}: 97:Windvane home heading direction offset
     // @Values{Plane}: 98:TRAINING Mode
-    // @Values{Copter}: 99:AUTO RTL
+    // @Values{Copter, Plane}: 99:AUTO RTL
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 100:KillIMU1, 101:KillIMU2
     // @Values{Copter, Rover, Plane, Sub}: 102:Camera Mode Toggle
     // @Values{Copter, Rover, Plane, Blimp, Sub, Tracker}: 103: EKF lane switch attempt

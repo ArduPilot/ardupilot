@@ -31,6 +31,9 @@ from vehicle_test_suite import Test
 testdir = os.path.dirname(os.path.realpath(__file__))
 WIND = "0,180,0.2"  # speed,direction,variance
 SITL_START_LOCATION = Location(-27.274439, 151.290064, 343, AltFrame.ABSOLUTE)
+
+# pymavlink's Plane mode mapping does not know about Auto RTL yet
+PLANE_MODE_AUTO_RTL = 28
 SITL_START_HEADING = 8.7
 
 
@@ -830,12 +833,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def fly_home_land_and_disarm(self, timeout=30):
         self.context_push()
         self.change_mode('LOITER')
-        self.set_parameter('RTL_AUTOLAND', 2)
         filename = "QuadPlaneDalbyRTL.txt"
         self.progress("Using %s to fly home" % filename)
         self.load_generic_mission(filename)
-        self.send_cmd_do_set_mode("RTL")
-        self.wait_mode('AUTO')
+        self.change_mode(PLANE_MODE_AUTO_RTL)
         self.wait_current_waypoint(4)
         self.wait_statustext('Land descend started')
         self.wait_statustext('Land final started', timeout=60)
@@ -1130,15 +1131,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def ParameterChecks(self):
         '''basic parameter checks'''
         self.test_parameter_checks_poscontrol("Q_P")
-
-        self.context_push()
-        self.set_parameters({
-            "Q_RTL_MODE": 1,
-            "RTL_AUTOLAND": 2,
-        })
-        self.assert_prearm_failure("unset one of RTL_AUTOLAND or Q_RTL_MODE")
-        self.context_pop()
-        self.wait_ready_to_arm()
 
     def rc_defaults(self):
         ret = super(AutoTestQuadPlane, self).rc_defaults()
@@ -2537,47 +2529,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # reboot SITL
         self.reboot_sitl(force=True)
 
-    def RTL_AUTOLAND_1(self):
-        '''test behaviour when RTL_AUTOLAND==1'''
-
-        self.set_parameters({
-            "RTL_AUTOLAND": 1,
-        })
-
-        # when RTL is entered and RTL_AUTOLAND is 1 we should fly home
-        # then to the landing sequence.  This mission puts the landing
-        # sequence well to the West of home so if we go directly there
-        # we won't come within 200m of home
-        wps = self.create_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
-            # fly North
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 30),
-            # add a waypoint 1km North (which we will look for and trigger RTL
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 30),
-
-            # *exciting* landing sequence is ~1km West and points away from Home.
-            self.create_MISSION_ITEM_INT(
-                mavutil.mavlink.MAV_CMD_DO_LAND_START,
-            ),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1000, 30),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1300, 15),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1600, 5),
-            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, -1750, 0),
-        ])
-        self.check_mission_upload_download(wps)
-
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-
-        self.arm_vehicle()
-        self.wait_current_waypoint(3)  # will be 2km North here
-        self.change_mode('RTL')
-
-        self.wait_distance_to_home(100, 200, timeout=120)
-        self.wait_current_waypoint(7)
-
-        self.fly_home_land_and_disarm()
-
     def send_reposition_to_loc(self, loc):
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
@@ -2735,52 +2686,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 continue
 
             raise NotAchievedException("Bad stage")
-
-    def RTL_AUTOLAND_1_FROM_GUIDED(self):
-        '''test behaviour when RTL_AUTOLAND==1 and entering from guided'''
-
-        self.set_parameters({
-            "RTL_AUTOLAND": 1,
-        })
-
-        # when RTL is entered and RTL_AUTOLAND is 1 we should fly home
-        # then to the landing sequence.  This mission puts the landing
-        # sequence well to the West of home so if we go directly there
-        # we won't come within 200m of home
-        wps = self.create_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
-            # fly North
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 30),
-            # add a waypoint 1km North (which we will look for and trigger RTL
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 30),
-
-            # *exciting* landing sequence is ~1km West and points away from Home.
-            self.create_MISSION_ITEM_INT(
-                mavutil.mavlink.MAV_CMD_DO_LAND_START,
-            ),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1000, 30),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1300, 15),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1600, 5),
-            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, -1750, 0),
-        ])
-        self.check_mission_upload_download(wps)
-        self.set_current_waypoint(0, check_afterwards=False)
-
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-
-        here = self.get_location()
-        guided_loc = self.offset_location_ne(here, 500, -500)
-
-        self.arm_vehicle()
-        self.wait_current_waypoint(3)  # will be 2km North here
-        self.reposition_to_loc(guided_loc)
-        self.send_cmd_do_set_mode('RTL')
-
-        self.wait_distance_to_home(100, 200, timeout=120)
-        self.wait_current_waypoint(7)
-
-        self.fly_home_land_and_disarm()
 
     def WindEstimateConsistency(self):
         '''test that DCM and EKF3 roughly agree on wind speed and direction'''
@@ -3453,7 +3358,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "SIM_SPEEDUP": 20, # need to give some cycles to lua
             "RC7_OPTION": 305,
-            "RTL_AUTOLAND": 2,
             "RNGFND1_TYPE": 100,
         })
 
@@ -4165,6 +4069,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             25: "Loiter to QLand",
             26: "Autoland",
             27: "Glide",
+            28: "Auto RTL",
         }
         initialising = self.get_mode_from_mode_mapping("INITIALISING")
         self.assert_available_modes(expected_modes, not_user_selectable=[initialising])
@@ -4550,22 +4455,19 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),
             (mavutil.mavlink.MAV_CMD_NAV_LAND, 10, 0, 0),
         ])
-        for rtl_autoland in 1, 2:
-            self.start_subtest(f"RTL_AUTOLAND={rtl_autoland}")
-            self.set_parameter("RTL_AUTOLAND", rtl_autoland)
-            self.change_mode('GUIDED')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.context_push()
-            self.context_collect('STATUSTEXT')
-            self.set_parameter("BATT_LOW_VOLT", 50)
-            self.wait_statustext("Takeoff waypoint required", check_context=True)
-            # RTL, entered while waiting for a takeoff, lands in place:
-            self.wait_mode('QLAND')
-            self.context_pop()
-            self.wait_disarmed()
-            # the battery failsafe latches until reboot
-            self.reboot_sitl()
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("BATT_LOW_VOLT", 50)
+        self.wait_statustext("Takeoff waypoint required", check_context=True)
+        # RTL, entered while waiting for a takeoff, lands in place:
+        self.wait_mode('QLAND')
+        self.context_pop()
+        self.wait_disarmed()
+        # the battery failsafe latches until reboot
+        self.reboot_sitl()
 
     def TiltrotorVectoringRoll(self):
         '''check tilt-vectoring drives the tilt servos the correct way for roll'''
@@ -4792,8 +4694,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.PrecisionLanding,
             self.TransitionMinThrottle,
             self.BackTransitionMinThrottle,
-            self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
-            self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.VTOLLandGoAround,
             self.AHRSFlyForwardFlag,
             self.QLoiterRecovery,
