@@ -653,7 +653,10 @@ int lua_get_CAN_device(lua_State *L) {
         return 0;
     }
 
-    *new_ScriptingCANBuffer(L) = scripting->_CAN_dev->add_buffer(buffer_len);
+    // allocate the userdata first, so a Lua memory error can not leave
+    // a buffer added that no script can reach
+    ScriptingCANBuffer **buffer = new_ScriptingCANBuffer(L);
+    *buffer = scripting->_CAN_dev->add_buffer(buffer_len);
 
     return 1;
 }
@@ -681,7 +684,10 @@ int lua_get_CAN_device2(lua_State *L) {
         return 0;
     }
 
-    *new_ScriptingCANBuffer(L) = scripting->_CAN_dev2->add_buffer(buffer_len);
+    // allocate the userdata first, so a Lua memory error can not leave
+    // a buffer added that no script can reach
+    ScriptingCANBuffer **buffer = new_ScriptingCANBuffer(L);
+    *buffer = scripting->_CAN_dev2->add_buffer(buffer_len);
 
     return 1;
 }
