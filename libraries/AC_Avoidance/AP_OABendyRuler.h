@@ -59,22 +59,27 @@ private:
     // on success returns true and updates margin
     bool calc_margin_from_alt_fence(const Location &start, const Location &end, float &margin) const;
 
-    // calculate minimum distance between a path and all inclusion and exclusion polygons
+    // calculate minimum distance between a path and all inclusion and exclusion polygons,
+    // except the exclusion polygon with index skip_exclusion_index (if any)
     // on success returns true and updates margin
-    bool calc_margin_from_inclusion_and_exclusion_polygons(const Location &start, const Location &end, float &margin) const;
+    bool calc_margin_from_inclusion_and_exclusion_polygons(const Location &start, const Location &end, float &margin, int16_t skip_exclusion_index = -1) const;
 
-    // calculate minimum distance between a path and all inclusion and exclusion circles
+    // calculate minimum distance between a path and all inclusion and exclusion circles,
+    // except the exclusion circle with index skip_exclusion_index (if any)
     // on success returns true and updates margin
-    bool calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin) const;
+    bool calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin, int16_t skip_exclusion_index = -1) const;
 
     // if current_loc is inside an exclusion polygon or circle, find the closest point outside it,
-    // placed the fence margin plus OA_MARGIN_MAX beyond its edge, that clears every fence
+    // placed the fence margin plus OA_MARGIN_MAX beyond its edge, that clears every fence and whose
+    // route from current_loc crosses no fence or obstacle other than the zone being left
     // returns true and updates exit_loc if such a point was found
     bool calc_exclusion_zone_exit(const Location &current_loc, Location &exit_loc) const;
 
-    // returns true if the exit at candidate_NE, an offset in cm from the EKF origin, clears every fence
+    // returns true if the exit at candidate_NE, an offset in cm from the EKF origin, clears every fence,
+    // and the route to it from current_loc crosses no fence or obstacle other than the exclusion polygon
+    // or circle being left, given by its index (-1 for neither)
     // candidate_loc is set to the exit's location
-    bool exclusion_zone_exit_clear(const Location &current_loc, const Vector2f &current_NE, const Vector2f &candidate_NE, Location &candidate_loc) const;
+    bool exclusion_zone_exit_clear(const Location &current_loc, const Vector2f &current_NE, const Vector2f &candidate_NE, int16_t polygon_index, int16_t circle_index, Location &candidate_loc) const;
 
     // calculate minimum distance between a path and proximity sensor obstacles
     // on success returns true and updates margin

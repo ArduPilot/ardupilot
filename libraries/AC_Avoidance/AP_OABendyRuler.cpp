@@ -534,9 +534,10 @@ bool AP_OABendyRuler::calc_margin_from_alt_fence(const Location &start, const Lo
 #endif // AP_FENCE_ENABLED
 }
 
-// calculate minimum distance between a path and all inclusion and exclusion polygons
+// calculate minimum distance between a path and all inclusion and exclusion polygons,
+// except the exclusion polygon with index skip_exclusion_index (if any)
 // on success returns true and updates margin
-bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Location &start, const Location &end, float &margin) const
+bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Location &start, const Location &end, float &margin, int16_t skip_exclusion_index) const
 {
 #if AP_FENCE_ENABLED
     const AC_Fence *fence = AC_Fence::get_singleton();
@@ -585,6 +586,9 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Lo
 
     // iterate through exclusion polygons and calculate minimum margin
     for (uint8_t i = 0; i < num_exclusion_polygons; i++) {
+        if (i == skip_exclusion_index) {
+            continue;
+        }
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
    
@@ -605,9 +609,10 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Lo
 #endif // AP_FENCE_ENABLED
 }
 
-// calculate minimum distance between a path and all inclusion and exclusion circles
+// calculate minimum distance between a path and all inclusion and exclusion circles,
+// except the exclusion circle with index skip_exclusion_index (if any)
 // on success returns true and updates margin
-bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin) const
+bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin, int16_t skip_exclusion_index) const
 {
 #if AP_FENCE_ENABLED
     // exit immediately if fence is not enabled
@@ -662,6 +667,9 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Loc
 
     // iterate through exclusion circles and calculate minimum margin
     for (uint8_t i = 0; i < num_exclusion_circles; i++) {
+        if (i == skip_exclusion_index) {
+            continue;
+        }
         Vector2f center_pos_cm;
         float radius;
         if (fence->polyfence().get_exclusion_circle(i, center_pos_cm, radius)) {
@@ -687,7 +695,8 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Loc
 }
 
 // if current_loc is inside an exclusion polygon or circle, find the closest point outside it,
-// placed the fence margin plus OA_MARGIN_MAX beyond its edge, that clears every fence
+// placed the fence margin plus OA_MARGIN_MAX beyond its edge, that clears every fence and whose
+// route from current_loc crosses no fence or obstacle other than the zone being left
 // returns true and updates exit_loc if such a point was found
 bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Location &exit_loc) const
 {
@@ -740,7 +749,7 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
                 const Vector2f candidate_NE = edge_NE + outward[k] * clearance_cm;
                 const float dist_sq = (candidate_NE - current_NE).length_squared();
                 Location candidate_loc;
-                if ((dist_sq < best_dist_sq) && exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, candidate_loc)) {
+                if ((dist_sq < best_dist_sq) && exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, i, -1, candidate_loc)) {
                     best_dist_sq = dist_sq;
                     exit_loc = candidate_loc;
                     found = true;
@@ -749,8 +758,8 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
         }
     }
 
-    // exclusion circles: exit straight out from the centre or, if that exit does not clear every
-    // fence, at the smallest angle either side of it that does.  From inside a circle the distance
+    // exclusion circles: exit straight out from the centre or, if that exit or the route to it is
+    // not clear, at the smallest angle either side of it that is.  From inside a circle the distance
     // to a point on it grows with that angle, so the first exit found is the closest
     for (uint8_t i = 0; i < fence->polyfence().get_exclusion_circle_count(); i++) {
         Vector2f center_NE;
@@ -782,7 +791,7 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
                     continue;
                 }
                 Location candidate_loc;
-                if (exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, candidate_loc)) {
+                if (exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, -1, i, candidate_loc)) {
                     best_dist_sq = dist_sq;
                     exit_loc = candidate_loc;
                     found = true;
@@ -798,13 +807,32 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
 #endif // AP_FENCE_ENABLED
 }
 
-// returns true if the exit at candidate_NE, an offset in cm from the EKF origin, clears every fence
+// returns true if the exit at candidate_NE, an offset in cm from the EKF origin, clears every fence,
+// and the route to it from current_loc crosses no fence or obstacle other than the exclusion polygon
+// or circle being left, given by its index (-1 for neither)
 // candidate_loc is set to the exit's location
-bool AP_OABendyRuler::exclusion_zone_exit_clear(const Location &current_loc, const Vector2f &current_NE, const Vector2f &candidate_NE, Location &candidate_loc) const
+bool AP_OABendyRuler::exclusion_zone_exit_clear(const Location &current_loc, const Vector2f &current_NE, const Vector2f &candidate_NE, int16_t polygon_index, int16_t circle_index, Location &candidate_loc) const
 {
     candidate_loc = current_loc;
     candidate_loc.offset((candidate_NE.x - current_NE.x) * 0.01f, (candidate_NE.y - current_NE.y) * 0.01f);
-    return !is_negative(calc_avoidance_margin(candidate_loc, candidate_loc, false));
+    if (is_negative(calc_avoidance_margin(candidate_loc, candidate_loc, false))) {
+        return false;
+    }
+
+    // the route to the exit may only cross the zone being left.  The object database check also
+    // covers the exit itself, which it skips as a zero length path above.  The circular fence is
+    // convex, so with the exit inside it the route cannot leave it
+    float margin;
+    if (calc_margin_from_object_database(current_loc, candidate_loc, margin) && is_negative(margin)) {
+        return false;
+    }
+    if (calc_margin_from_inclusion_and_exclusion_polygons(current_loc, candidate_loc, margin, polygon_index) && is_negative(margin)) {
+        return false;
+    }
+    if (calc_margin_from_inclusion_and_exclusion_circles(current_loc, candidate_loc, margin, circle_index) && is_negative(margin)) {
+        return false;
+    }
+    return true;
 }
 
 // calculate minimum distance between a path and proximity sensor obstacles
