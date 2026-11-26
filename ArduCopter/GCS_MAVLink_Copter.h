@@ -46,7 +46,7 @@ protected:
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
 
     // rejects a reboot while ESC calibration on the next boot is set to auto
-    MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
+    MAV_RESULT check_preflight_reboot() override;
 
 #if HAL_MOUNT_ENABLED
     // yaws the vehicle for DO_MOUNT_CONTROL when the mount has no pan control

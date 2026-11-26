@@ -748,6 +748,8 @@ void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, ui
  *  MAVLink to process packets while waiting for the initialisation to
  *  complete
  */
+// @StackCallLimit: 1
+// Scheduler::call_delay_cb() refuses re-entry while this callback runs.
 void AP_Vehicle::scheduler_delay_callback()
 {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -1054,11 +1056,16 @@ void AP_Vehicle::reboot(bool hold_in_bootloader)
     // force safety on
     hal.rcout->force_safety_on();
 
+    // do not process incoming mavlink messages while flushing or delaying
+    hal.scheduler->register_delay_callback(nullptr, 5);
+
     // flush pending parameter writes
     AP_Param::flush();
 
-    // do not process incoming mavlink messages while we delay:
-    hal.scheduler->register_delay_callback(nullptr, 5);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // need to ensure the ack goes out:
+    hal.serial(0)->flush();
+#endif
 
     // delay to give the ACK a chance to get out, the LEDs to flash,
     // the IO board safety to be forced on, the parameters to flush, ...
