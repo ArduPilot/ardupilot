@@ -475,6 +475,10 @@ private:
     // custom band frequency last commanded and how many times in a row
     uint16_t _vtx_freq_attempt_mhz;
     uint8_t _vtx_freq_attempts;
+    // VTX frames received, and how many there were when the custom band
+    // frequency was last commanded
+    uint16_t _vtx_frames_rcvd;
+    uint16_t _vtx_freq_attempt_rcvd;
     bool _vtx_power_change_pending;
     bool _vtx_options_change_pending;
 

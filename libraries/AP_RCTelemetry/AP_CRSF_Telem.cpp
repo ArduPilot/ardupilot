@@ -656,6 +656,7 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
 #if AP_VIDEOTX_ENABLED
 void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
     vtx->user_frequency = be16toh(vtx->user_frequency);
+    _vtx_frames_rcvd++;
 
     debug("VTX: SmartAudio: %d, Avail: %d, FreqMode: %d, Band: %d, Channel: %d, Freq: %d, PitMode: %d, Pwr: %d, Pit: %d",
         vtx->smart_audio_ver, vtx->is_vtx_available, vtx->is_in_user_frequency_mode,
@@ -702,11 +703,19 @@ void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
     }
 
     _vtx_power_change_pending = _vtx_freq_change_pending = _vtx_options_change_pending = false;
+
+    if (!apvtx.update_tuning() && !apvtx.configured_rejected()) {
+        // the VTX is where it was asked to be, so asking for this again
+        // later starts from scratch
+        _vtx_freq_attempt_mhz = 0;
+        _vtx_freq_attempts = 0;
+    }
 }
 
 void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
 {
     vtx->frequency = be16toh(vtx->frequency);
+    _vtx_frames_rcvd++;
     debug("VTXTelemetry: Freq: %d, PitMode: %d, Power: %d", vtx->frequency, vtx->pitmode, vtx->power);
 
     AP_VideoTX& apvtx = AP::vtx();
@@ -732,6 +741,13 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
     }
 
     _vtx_power_change_pending = _vtx_freq_change_pending = _vtx_options_change_pending = false;
+
+    if (!apvtx.update_tuning() && !apvtx.configured_rejected()) {
+        // the VTX is where it was asked to be, so asking for this again
+        // later starts from scratch
+        _vtx_freq_attempt_mhz = 0;
+        _vtx_freq_attempts = 0;
+    }
 }
 #endif  // AP_VIDEOTX_ENABLED
 
@@ -908,7 +924,10 @@ void AP_CRSF_Telem::update_vtx_params()
     if (_vtx_freq_change_pending || _vtx_power_change_pending || _vtx_options_change_pending) {
         // make the desired frequency match the desired band and channel
         if (_vtx_freq_change_pending) {
-            if (vtx.update_band() || vtx.update_channel()) {
+            // VTX_FREQ may still be a frequency the VTX refused: a band or
+            // channel change since then is what is wanted, even one back to
+            // the slot the VTX is on
+            if (vtx.update_band() || vtx.update_channel() || vtx.rejected_frequency_superseded()) {
                 vtx.update_configured_frequency();
             } else {
                 vtx.update_configured_channel_and_band();
@@ -922,7 +941,10 @@ void AP_CRSF_Telem::update_vtx_params()
                 }
             }
         }
-        if (!_vtx_freq_change_pending) {
+        if (!_vtx_freq_change_pending || !vtx.configured_band_is_custom()) {
+            // only a custom band's frequency is counted, and asking for
+            // anything else ends the count
+            _vtx_freq_attempt_mhz = 0;
             _vtx_freq_attempts = 0;
         }
 
@@ -954,16 +976,21 @@ void AP_CRSF_Telem::update_vtx_params()
             if (vtx.get_configured_frequency_mhz() != _vtx_freq_attempt_mhz) {
                 _vtx_freq_attempt_mhz = vtx.get_configured_frequency_mhz();
                 _vtx_freq_attempts = 0;
+            } else if (_vtx_frames_rcvd != _vtx_freq_attempt_rcvd) {
+                // the VTX has reported since it was last asked and is still
+                // not on the frequency. One that is not reporting has not
+                // refused anything: keep asking until it does
+                _vtx_freq_attempts++;
             }
+            _vtx_freq_attempt_rcvd = _vtx_frames_rcvd;
             if (_vtx_freq_attempts >= VTX_MAX_FREQUENCY_ATTEMPTS) {
                 // the VTX does not take this frequency (it may be out of its
                 // range, or locked): stop asking so that other changes can go out
-                vtx.frequency_rejected();
+                vtx.frequency_rejected(vtx.get_configured_band(), vtx.get_configured_channel(), _vtx_freq_attempt_mhz);
                 _vtx_freq_change_pending = false;
                 _vtx_freq_attempts = 0;
                 return;
             }
-            _vtx_freq_attempts++;
             _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_VTX_FREQ;
             _telem.ext.command.payload[1] = (vtx.get_configured_frequency_mhz() & 0xFF00) >> 8;
             _telem.ext.command.payload[2] = (vtx.get_configured_frequency_mhz() & 0xFF);
