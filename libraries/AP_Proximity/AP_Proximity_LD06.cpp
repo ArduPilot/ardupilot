@@ -27,6 +27,7 @@
 
 #if AP_PROXIMITY_LD06_ENABLED
 #include "AP_Proximity_LD06.h"
+#include <GCS_MAVLink/GCS.h>
 
 #define LD_START_CHAR       0x54
 #define PROXIMITY_LD06_TIMEOUT_MS 50
@@ -58,6 +59,10 @@
 #define LD06_FILTER_CONFIRM_DEG         4       // within this many degrees
 #define LD06_FILTER_CONFIRM_MIN_MM      300     // and within 10% or this distance, whichever is larger
 #define LD06_SWEEP_UNSEEN               UINT16_MAX
+// below this rotation speed a rotation does not fit in _scan (6.25Hz)
+#define LD06_MIN_SPEED_DPS              (LD06_FILTER_POINTS_PER_SEC * 360.0f / LD06_ROTATION_POINTS_MAX)
+#define LD06_SLOW_WARN_AFTER_MS         3000    // warn when it has turned too slowly for this long (not at spin-up)
+#define LD06_SLOW_WARN_EVERY_MS         30000   // and repeat while it lasts
 
  /* ------------------------------------------
     Data Packet Structure:
@@ -200,6 +205,7 @@ void AP_Proximity_LD06::parse_response_data()
     if (speed_dps > 0) {
         _scan_speed_dps = speed_dps;
     }
+    check_rotation_speed(speed_dps);
 
     // Each recording point is three bytes long, goes through all of that and updates database
     for (uint16_t i = START_PAYLOAD; i < START_PAYLOAD + MEASUREMENT_PAYLOAD_LENGTH * PAYLOAD_COUNT; i += MEASUREMENT_PAYLOAD_LENGTH) {
@@ -215,6 +221,26 @@ void AP_Proximity_LD06::parse_response_data()
         p.intensity = confidence;
         p.keep = true;
         p.small_group = false;
+    }
+}
+
+// warn if the sensor keeps turning too slowly for a rotation to fit in _scan
+void AP_Proximity_LD06::check_rotation_speed(uint16_t speed_dps)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (speed_dps >= LD06_MIN_SPEED_DPS) {
+        _slow_since_ms = 0;
+        return;
+    }
+    if (_slow_since_ms == 0) {
+        _slow_since_ms = now_ms;
+        return;
+    }
+    if (now_ms - _slow_since_ms > LD06_SLOW_WARN_AFTER_MS &&
+        (_slow_warn_ms == 0 || now_ms - _slow_warn_ms > LD06_SLOW_WARN_EVERY_MS)) {
+        _slow_warn_ms = now_ms;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PRX%u: LD06 turning too slowly (%u deg/s)",
+                      unsigned(state.instance + 1), unsigned(speed_dps));
     }
 }
 

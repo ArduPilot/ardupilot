@@ -93,12 +93,15 @@ private:
 
     // filter the buffered rotation and pass the surviving points on
     void process_rotation();
+    void check_rotation_speed(uint16_t speed_dps);
     static void set_group_keep(ScanPoint *points, uint16_t first, uint16_t last, uint16_t size, bool keep);
 
     ScanPoint _scan[LD06_ROTATION_POINTS_MAX];  // current rotation
     uint16_t _scan_count;                       // number of points in _scan
     uint16_t _scan_speed_dps;                   // latest non-zero rotation speed
     float _last_start_angle_deg;                // start angle of the previous packet
+    uint32_t _slow_since_ms;                    // sensor turning too slowly since (0 = it is not)
+    uint32_t _slow_warn_ms;                     // last "turning too slowly" warning
     uint16_t _last_sweep_mm[LD06_SWEEP_BINS];   // nearest kept point per degree, previous sweep
     uint16_t _sweep_scratch_mm[LD06_SWEEP_BINS];
 
