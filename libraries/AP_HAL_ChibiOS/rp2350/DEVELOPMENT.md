@@ -1196,6 +1196,26 @@ LED-mode groups so it cannot overwrite the alarm's period, and
 strip on output 5 keeps the alarm's divider (unchecked on hardware); do not
 use output 5 for PWM there.
 
+### Alternative configs
+
+`ALT(n)` lines, selected by `BRD_ALT_CONFIG`, work as on STM32:
+`setup_alt_config()` applies them at boot with the RP2350 PAL mode the
+generator writes (`PAL_MODE_ALTERNATE(funcsel)` for a peripheral,
+`PAL_MODE_INPUT*` or `PAL_MODE_OUTPUT_PUSHPULL` otherwise), and the hardware
+UART muxes the pins `resolve_alt_config()` gives it. The drive-high flag in
+the table is bit 22, which IO_BANK0 CTRL leaves unused; STM32's 0x8000 is
+OEOVER here.
+
+RP2350 adds one thing: a `PWM(n)` on an `ALT()` line is an output that
+exists only in that config. It gets a channel and its slice like any other,
+but its pin is left out of `HAL_PWM_GPIO_LINES`, so board init does not mux
+it. RCOutput's init puts the PWM function back on every enabled channel's
+pin, so it disables a channel whose pin the active config does not give to
+PWM: one that exists only in another config, or a default output whose pin
+an alternative config takes. STM32 keeps neither rule, as its RCOutput
+never re-muxes; the generated output of all 44 STM32 boards that use
+`ALT()` is unchanged.
+
 ### DShot
 
 `RCOutput_pico.cpp` drives DShot from PIO2; `set_group_mode()` and
@@ -1633,10 +1653,14 @@ wired descending, DSHOT1 on GPIO9 to DSHOT4 on GPIO6, so PWM1-2 sit on slice
 4 and PWM3-4 on slice 3. It also names an ICM42688P and DPS310 where the
 schematic has an ICM-56686 and DPS368. Its regulator enables are right for
 the final revision, GPIO18 for 5 V and GPIO19 for 9 V; an earlier revision
-had them swapped and is not supported. SWD is on dedicated pins. Left
-unbound: GPIO27 (IMU CLKIN), GPIO12-14 (spare pads), and GPIO5 (ESC
-telemetry) and GPIO41 (SBUS), which can only reach UART1 RX, owned by the
-GPS; a third PIO UART would land on PIO1, which the OSD and NeoPixel use.
+had them swapped and is not supported. SWD is on dedicated pins. The
+Spare IO pads GP1-GP3, GPIO12-14, are PWM outputs 5-7 on slices 6 and 7,
+and the LED connector is output 8.
+Left unbound: GPIO27 (IMU CLKIN), and by default GPIO5 (ESC telemetry) and
+GPIO41 (SBUS), which can only reach UART1 RX, owned by the GPS; a third PIO
+UART would land on PIO1, which the OSD and NeoPixel use. With
+`BRD_ALT_CONFIG` 1 those two are PWM outputs 9 and 10 (see Alternative
+configs).
 
 The IMU is either part. The schematic shows a TDK ICM-56686, early samples
 carry an ICM42688P, and both have flown. The device is named `imu1` and
