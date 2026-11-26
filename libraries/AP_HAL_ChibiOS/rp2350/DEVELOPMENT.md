@@ -335,8 +335,9 @@ Debug and profiling switches and the `@SYS` files are in Performance.
 
 ## Dual-core architecture
 
-All three boards run ChibiOS RT in SMP mode (`CH_CFG_SMP_MODE TRUE`,
-`RP_CORE1_START TRUE` in the hwdef). Core0 runs the vehicle main loop and
+All three boards run ChibiOS RT in SMP mode (`CH_CFG_SMP_MODE TRUE` in the
+hwdef, where ArduPilot code outside the HAL can see it, and `RP_CORE1_START
+TRUE` in `rp2350_mcuconf.h`). Core0 runs the vehicle main loop and
 nearly everything else. Core1 runs the latency-critical chain from the IMU bus
 through the rate controller to the motor outputs.
 
@@ -633,9 +634,11 @@ hot path is a soft-float library call. Full PGO is not implemented.
 
 ### Clock and flash timing
 
-All three boards set a 1200 MHz VCO with post-dividers 6 and 1,
-`MCU_CLOCKRATE_MHZ 200`, `RP_QMI_CLKDIV 2` / `RP_QMI_RXDELAY 2` (a 100 MHz
-flash clock) and `RP_VREG_VSEL 12` (1.15 V). 200 MHz is 1.33x the
+All three boards run the defaults in `rp2350_mcuconf.h`, a 1200 MHz VCO with
+post-dividers 6 and 1, `RP_QMI_CLKDIV 2` / `RP_QMI_RXDELAY 2` (a 100 MHz
+flash clock) and `RP_VREG_VSEL 12` (1.15 V), and declare
+`MCU_CLOCKRATE_MHZ 200` in their hwdef. The bootloader keeps the stock
+150 MHz. 200 MHz is 1.33x the
 datasheet's 150 MHz clk_sys/clk_peri limit, validated by testing on the
 bring-up boards only, not across process, voltage and temperature, and the
 flash read window was measured on RPI_UAVFC alone. Armed on the RPI_UAVFC bench,
@@ -805,7 +808,7 @@ because an assembler source never sees `hwdef.h`. `rp_clock_init()` copies
 a `memcpy` call into SRAM not yet filled, and boot double-faults. Keep them,
 and add no registry entries for `memcpy` or `memset`. The same hazard keeps
 `__udivmoddi4` and `__aeabi_uldivmod` in flash, so take 64-bit division off
-hot paths instead: all three hwdefs set `AP_RCOUT_USE_32BIT_TIME 1`, and with
+hot paths instead: `PICO2.py` sets `AP_RCOUT_USE_32BIT_TIME 1`, and with
 `CH_CFG_ST_FREQUENCY` at 1000000 ChibiOS's microsecond conversions are casts.
 
 ### RAM budget
@@ -991,7 +994,7 @@ each scheduler task's MIN/MAX/AVG time, overruns and share of the loop.
 | `INS_GYRO_RATE`, `INS_FAST_SAMPLE` | 2, 1 | Laurel, RPI_UAVFC | 4 kHz IMU backend |
 | `FSTRATE_ENABLE` | 2 | Laurel, RPI_UAVFC | divisor fixed once armed |
 | `FSTRATE_DIV` | 2 | Laurel, RPI_UAVFC | 2 kHz rate thread on core1 |
-| `AP_GCS_UPDATE_RATE_HZ` | 25 | `hwdef.dat`, all three | GCS receive and send tasks |
+| `AP_GCS_UPDATE_RATE_HZ` | 25 | `PICO2.py`, every board | GCS receive and send tasks |
 
 Core0 runs everything but the rate path, mostly from XIP, so its loop rate is
 the main cost lever. Attitude runs in the SRAM-resident rate thread on core1,
@@ -1242,7 +1245,7 @@ At 1 no timer is armed and each rate-thread `push()` sends. A boot-flash
 write parks core1 and so stops DShot to every motor; see Dual-core
 architecture.
 
-`AP_RCOUT_USE_32BIT_TIME`, set only on these three boards, makes
+`AP_RCOUT_USE_32BIT_TIME`, set only for the RP2350 in `PICO2.py`, makes
 `rcout_timer_t` 32-bit and `rcout_micros()` `micros()`, taking the
 `micros64()` veneer off core1's DShot path. `micros()` wraps at 71.6
 minutes: subtract `rcout_timer_t` values from `rcout_micros()`, never from
@@ -1680,10 +1683,10 @@ nose up, right side down and clockwise yaw from above all read positive.
   `FS_THR_VALUE`, which belong to the airframe. There is no DCM decimation
   setting any more.
 
-In the hwdef, `AP_STORAGE_NO_WRITE_WHILE_ARMED` matters most: a boot-flash
-write parks core1 and every motor output with it, and gaps of up to
-17.6 ms were measured during boot-time writes. `HAL_HNF_MAX_FILTERS` 64 is
-for the per-motor triple notch.
+Of the RP2350 defaults in `PICO2.py`, `AP_STORAGE_NO_WRITE_WHILE_ARMED`
+matters most: a boot-flash write parks core1 and every motor output with it,
+and gaps of up to 17.6 ms were measured during boot-time writes. In the
+hwdef, `HAL_HNF_MAX_FILTERS` 64 is for the per-motor triple notch.
 
 Flight state: flown on two 5 inch quads, one per IMU part, the second an
 iFlight Nazgul Evoque F5 on 6S, in Stabilize, Loiter and Acro at 800 deg/s
