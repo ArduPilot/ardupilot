@@ -652,6 +652,110 @@ class SmartAudioVTX(SimulatedVTX):
             self.reply(0x05, [payload[0], 0x01])
 
 
+class CRSFVTX(SimulatedVTX):
+    """A CRSF receiver with a VTX behind it. It sends RC frames, which the
+    autopilot's telemetry is paced by, and the VTX's state. Behaviours:
+    silent (the VTX reports nothing; RC frames still come) and refuse_freq
+    (the VTX stays where it is)."""
+
+    FRAMETYPE_VTX = 0x0F
+    FRAMETYPE_RC_CHANNELS = 0x16
+    FRAMETYPE_COMMAND = 0x32
+    ADDRESS_FLIGHT_CONTROLLER = 0xC8
+    ADDRESS_VTX = 0xCE
+    COMMAND_VTX = 0x08
+    VTX_COMMANDS = {0x01: "CHANNEL", 0x02: "FREQ", 0x03: "POWER", 0x04: "PITMODE", 0x08: "POWER_DBM"}
+
+    def __init__(self, destination_address, progress_function=None):
+        # on R3, in channel mode
+        self.band = 4
+        self.channel = 2
+        self.frequency = 5732
+        self.user_frequency_mode = False
+        self.last_rc = 0
+        self.last_state = 0
+        super().__init__(destination_address, progress_function=progress_function)
+
+    @staticmethod
+    def crc8(data):
+        crc = 0
+        for b in data:
+            crc ^= b
+            for _ in range(8):
+                crc = ((crc << 1) ^ 0xD5) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+        return crc
+
+    def frame(self, body):
+        return bytes([self.ADDRESS_FLIGHT_CONTROLLER, len(body) + 1]) + bytes(body) + bytes([self.crc8(body)])
+
+    def rc_frame(self):
+        # 16 channels of 11 bits, all at mid stick
+        bits = 0
+        nbits = 0
+        payload = bytearray()
+        for _ in range(16):
+            bits |= 992 << nbits
+            nbits += 11
+            while nbits >= 8:
+                payload.append(bits & 0xFF)
+                bits >>= 8
+                nbits -= 8
+        return self.frame(bytes([self.FRAMETYPE_RC_CHANNELS]) + payload)
+
+    def state_frame(self):
+        # VTX available, SmartAudio 2, and whether it is on a user frequency
+        status = 0x30 | (0x02 if self.user_frequency_mode else 0)
+        user_frequency = self.frequency if self.user_frequency_mode else 0
+        return self.frame([self.FRAMETYPE_VTX, self.ADDRESS_VTX, status, (self.band << 3) | self.channel,
+                           user_frequency >> 8, user_frequency & 0xFF, 0])
+
+    def update_read(self):
+        super().update_read()
+        now = time.time()
+        with self.lock:
+            if now - self.last_rc > 0.02:
+                self.last_rc = now
+                self.do_write(self.rc_frame())
+            if now - self.last_state > 0.3 and "silent" not in self.behaviour:
+                self.last_state = now
+                self.do_write(self.state_frame())
+
+    def parse_buffer(self):
+        while len(self.buffer) >= 4:
+            length = self.buffer[1]
+            if self.buffer[0] not in (0xC8, 0xEA, 0xEC, 0xEE) or length < 2 or length > 62:
+                self.buffer = self.buffer[1:]
+                continue
+            if len(self.buffer) < 2 + length:
+                return
+            body = self.buffer[2:2 + length]
+            if self.crc8(body[:-1]) != body[-1]:
+                self.buffer = self.buffer[1:]
+                continue
+            self.buffer = self.buffer[2 + length:]
+            if (body[0] == self.FRAMETYPE_COMMAND and len(body) >= 7 and
+                    body[1] == self.ADDRESS_VTX and body[3] == self.COMMAND_VTX):
+                self.handle(body[4], body[5:-2])
+
+    def handle(self, command, data):
+        name = self.VTX_COMMANDS.get(command, hex(command))
+        if name == "FREQ" and len(data) >= 2:
+            value = (data[0] << 8) | data[1]
+        else:
+            value = data[0] if len(data) else None
+        self.record(name, value)
+        if "silent" in self.behaviour or "refuse_freq" in self.behaviour:
+            return
+        if name == "FREQ":
+            self.frequency = value
+            self.user_frequency_mode = True
+        elif name == "CHANNEL" and value < 40:
+            self.band = value // 8
+            self.channel = value % 8
+            self.frequency = SmartAudioVTX.BANDS[self.band][self.channel]
+            self.user_frequency_mode = False
+
+
 class SmartAudio21VTX(SmartAudioVTX):
     """A SmartAudio 2.1 VTX, as TBS's newer VTXs are: it is given its power
     in dBm and lists the levels it has in its settings reply."""
