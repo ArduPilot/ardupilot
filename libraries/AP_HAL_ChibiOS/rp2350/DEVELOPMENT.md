@@ -731,8 +731,10 @@ Unpicked function sections fall through to `.text_rest` in flash.
   code from shared archives (ChibiOS, libc, libm) cannot be limited this
   way. A name that is not a vehicle program fails the build, so a
   misspelt `[inlinable]` is not taken for one. Plane's per-loop path,
-  navigation path, EKF3 and AHRS are listed this way as `[arduplane]`, so
-  a Copter build places exactly what it would without them.
+  navigation path, EKF3 and AHRS are listed this way as `[arduplane]`, and
+  Rover's hot code as `[ardurover]`, the EKF3 and AHRS functions both run
+  as `[arduplane,ardurover]`, so a Copter build places exactly what it
+  would without them.
 - `(archive)|lib_a-<name>.o` moves a whole library object; that is how
   newlib's single-precision trig and `powf`/`logf` cores are placed. Newer
   newlib spells libm's members `libm_a-<name>.o`; the script takes either,
@@ -975,7 +977,7 @@ each scheduler task's MIN/MAX/AVG time, overruns and share of the loop.
 
 | Setting | Value | Set in | Effect |
 |---------|-------|--------|--------|
-| `SCHED_LOOP_RATE` | 200 for Copter | `AP_SCHEDULER_COPTER_DEFAULT_LOOP_RATE_HZ` in `hwdef.dat`, Laurel and RPI_UAVFC | core0 main loop; other vehicles keep their own default (Plane 50 Hz) |
+| `SCHED_LOOP_RATE` | 200 for Copter | `AP_SCHEDULER_COPTER_DEFAULT_LOOP_RATE_HZ` in `hwdef.dat`, Laurel and RPI_UAVFC | core0 main loop; other vehicles keep their own default (Plane and Rover 50 Hz) |
 | `SCHED_LOOP_RATE` | 200 | `defaults.parm`, Pico2 | matches `SIM_RATE_HZ`, any vehicle |
 | `INS_GYRO_RATE`, `INS_FAST_SAMPLE` | 2, 1 | Laurel, RPI_UAVFC | 4 kHz IMU backend |
 | `FSTRATE_ENABLE` | 2 | Laurel, RPI_UAVFC | divisor fixed once armed |
