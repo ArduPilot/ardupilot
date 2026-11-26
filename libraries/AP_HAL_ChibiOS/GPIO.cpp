@@ -118,6 +118,15 @@ void GPIO::init()
 #endif // HAL_BOOTLOADER_BUILD
 #ifdef HAL_PIN_ALT_CONFIG
     setup_alt_config();
+#if defined(RP2350) && HAVE_GPIO_PINS && !defined(HAL_BOOTLOADER_BUILD)
+    // an output whose pin this config does not give to PWM cannot be a GPIO either
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+        struct gpio_entry *g = &_gpio_tab[i];
+        if (g->pwm_num != 0 && !alt_config_allows_pwm(g->pal_line)) {
+            g->enabled = false;
+        }
+    }
+#endif
 #endif
 }
 
@@ -130,7 +139,12 @@ uint8_t GPIO::alt_config;
  */
 static const struct alt_config {
     uint8_t alternate;
+#if defined(RP2350)
+    iomode_t mode;  // a full RP2350 PAL mode word, as in gpio_entry
+#else
     uint16_t mode;
+#endif
+
     ioline_t line;
     PERIPH_TYPE periph_type;
     uint8_t periph_instance;
@@ -209,6 +223,33 @@ ioline_t GPIO::resolve_alt_config(ioline_t base, PERIPH_TYPE ptype, uint8_t inst
     }
 #endif
     return base;
+}
+
+/*
+  true unless the active alternative config (BRD_ALT_CONFIG) takes a PWM
+  output's pin for something else, or the output is one that only exists
+  in another config, from a PWM() on an ALT() line
+*/
+bool GPIO::alt_config_allows_pwm(ioline_t line)
+{
+#ifdef HAL_PIN_ALT_CONFIG
+    bool pwm_in_other_config = false;
+    for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
+        const struct alt_config &alt = alternate_config[i];
+        if (alt.line != line) {
+            continue;
+        }
+        if (alt.alternate == alt_config) {
+            return alt.periph_type == PERIPH_TYPE::PWM_OUTPUT;
+        }
+        if (alt.periph_type == PERIPH_TYPE::PWM_OUTPUT) {
+            pwm_in_other_config = true;
+        }
+    }
+    return !pwm_in_other_config;
+#else
+    return true;
+#endif
 }
 
 

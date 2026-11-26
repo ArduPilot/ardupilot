@@ -28,6 +28,7 @@ enum class PERIPH_TYPE : uint8_t {
     I2C_SCL,
     OTHER,
     GPIO,
+    PWM_OUTPUT,
 };
 
 class ChibiOS::GPIO : public AP_HAL::GPIO {
@@ -88,6 +89,9 @@ public:
       resolve an ioline to take account of alternative configurations
      */
     static ioline_t resolve_alt_config(ioline_t base, PERIPH_TYPE ptype, uint8_t instance);
+
+    // true unless the active alternative config gives this PWM output's pin to something else
+    static bool alt_config_allows_pwm(ioline_t line);
 
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS) || defined(RP2350)
     // allow for save and restore of pin settings
