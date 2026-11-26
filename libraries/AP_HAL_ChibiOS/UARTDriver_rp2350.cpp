@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <hal.h>
 #include "UARTDriver.h"
+#include "GPIO.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_HAL_UARTDRIVER_ENABLED && HAL_USE_SIO == TRUE
 
@@ -120,15 +121,22 @@ void UARTDriver::sio_begin(bool clear_buffers)
           would starve USB
          */
         const uint32_t uart_funcsel = sdef.uart_pin_funcsel ? sdef.uart_pin_funcsel : 2U;
-        if (sdef.tx_line != 0) {
+        // a pin BRD_ALT_CONFIG moved was muxed by setup_alt_config(), at its own FUNCSEL
+        const ioline_t tx_line = GPIO::resolve_alt_config(sdef.tx_line, PERIPH_TYPE::UART_TX, sdef.instance);
+        const ioline_t rx_line = GPIO::resolve_alt_config(sdef.rx_line, PERIPH_TYPE::UART_RX, sdef.instance);
+        if (tx_line != 0 && tx_line == sdef.tx_line) {
             /* TX pin: board-specific FUNCSEL (UART alternate function), IE+SCHMITT */
-            palSetLineMode(sdef.tx_line, PAL_MODE_ALTERNATE(uart_funcsel));
+            palSetLineMode(tx_line, PAL_MODE_ALTERNATE(uart_funcsel));
         }
-        if (sdef.rx_line != 0) {
+        if (rx_line != 0) {
             /* RX pin: board-specific FUNCSEL, IE+SCHMITT, then add PUE pull-up */
-            palSetLineMode(sdef.rx_line, PAL_MODE_ALTERNATE(uart_funcsel));
-            palLineSetPushPull(sdef.rx_line, PAL_PUSHPULL_PULLUP);
+            if (rx_line == sdef.rx_line) {
+                palSetLineMode(rx_line, PAL_MODE_ALTERNATE(uart_funcsel));
+            }
+            palLineSetPushPull(rx_line, PAL_PUSHPULL_PULLUP);
         }
+        arx_line = rx_line;
+        atx_line = tx_line;
         // set_options() normally runs before begin(), and the pad setup above wiped what it wrote
         sio_apply_inversion();
         sioStart((SIODriver*)sdef.serial, &siocfg);
