@@ -192,6 +192,10 @@ private:
     // last asked for
     uint16_t _replies_parsed;
     uint16_t _freq_attempt_replies;
+    // times the VTX has been asked to unlock, and the replies parsed when
+    // it was last asked
+    uint8_t _unlock_attempts;
+    uint16_t _unlock_attempt_replies;
     bool _vtx_power_change_pending;
     bool _vtx_options_change_pending;
     bool _vtx_changes_pending;

@@ -199,20 +199,22 @@ void AP_SmartAudio::update_vtx_params()
 
         uint8_t opts = vtx.get_configured_options();
         uint8_t pitMode = vtx.get_configured_pitmode();
+        // unlock is bit 3 of the mode that is sent, as it is of the options
+        const uint8_t unlock = opts & uint8_t(AP_VideoTX::VideoOptions::VTX_UNLOCKED);
         uint8_t mode;
         // check if we are turning pitmode on or off, but only on SA 2.0+
         if (pitMode != vtx.get_pitmode() && _protocol_version >= SMARTAUDIO_SPEC_PROTOCOL_v2) {
             if (vtx.get_pitmode()) {
                 debug("Turning OFF pitmode");
                 // turn it off
-                mode = 0x04 | ((opts & uint8_t(AP_VideoTX::VideoOptions::VTX_UNLOCKED)) << 2);
+                mode = 0x04 | unlock;
             } else {
                 debug("Turning ON pitmode");
                 // turn it on (in range pitmode flag)
-                mode = 0x01 | ((opts & uint8_t(AP_VideoTX::VideoOptions::VTX_UNLOCKED)) << 2);
+                mode = 0x01 | unlock;
             }
         } else {
-            mode = ((opts & uint8_t(AP_VideoTX::VideoOptions::VTX_UNLOCKED)) << 2);
+            mode = unlock;
             if (pitMode) {
                 mode |= 0x01;
             }
@@ -220,6 +222,23 @@ void AP_SmartAudio::update_vtx_params()
 
         if (pitMode) {// prevent power changes in pitmode as this takes the VTX out of pitmode
             _vtx_power_change_pending = false;
+        }
+
+        if (!vtx.update_unlock()) {
+            _unlock_attempts = 0;
+        } else if (_unlock_attempts < VTX_MAX_FREQUENCY_ATTEMPTS) {
+            // as with a frequency, only a VTX that has answered since it
+            // was last asked and is still locked has not taken the unlock
+            if (_unlock_attempts == 0 || _replies_parsed != _unlock_attempt_replies) {
+                _unlock_attempts++;
+            }
+            _unlock_attempt_replies = _replies_parsed;
+        } else if (_replies_parsed != _unlock_attempt_replies) {
+            // the VTX does not unlock: stop asking, as a mode change goes
+            // before a frequency or power change
+            vtx.unlock_rejected();
+            _unlock_attempts = 0;
+            _vtx_options_change_pending = vtx.update_options();
         }
 
         // prioritize pitmode changes

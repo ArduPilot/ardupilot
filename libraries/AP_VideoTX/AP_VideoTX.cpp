@@ -451,6 +451,11 @@ void AP_VideoTX::update(void)
 
     update_rejected();
 
+    // setting the unlock option again asks a VTX that did not unlock again
+    if (_unlock_rejected && !has_option(VideoOptions::VTX_UNLOCKED)) {
+        _unlock_rejected = false;
+    }
+
     // manipulate pitmode if pitmode-on-disarm or power-on-arm is set
     if (has_option(VideoOptions::VTX_PITMODE_ON_DISARM) || has_option(VideoOptions::VTX_PITMODE_UNTIL_ARM)) {
         if (hal.util->get_soft_armed() && has_option(VideoOptions::VTX_PITMODE)) {
@@ -473,6 +478,26 @@ void AP_VideoTX::update(void)
     }
 }
 
+bool AP_VideoTX::update_unlock() const
+{
+    // unlock is a SmartAudio command. Asking AP::crsf_telem() whether CRSF
+    // is in use would allocate it, so ask which protocols have a VTX
+    if (!_defaults_set || !is_provider_enabled(VTXType::SmartAudio) || is_provider_enabled(VTXType::CRSF)) {
+        return false;
+    }
+    return has_option(VideoOptions::VTX_UNLOCKED)
+        && (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) == 0
+        && !_unlock_rejected;
+}
+
+void AP_VideoTX::unlock_rejected()
+{
+    if (!_unlock_rejected) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: did not unlock");
+    }
+    _unlock_rejected = true;
+}
+
 bool AP_VideoTX::update_options() const
 {
     if (!_defaults_set) {
@@ -484,20 +509,8 @@ bool AP_VideoTX::update_options() const
         return true;
     }
 
-#if HAL_CRSF_TELEM_ENABLED
-    // using CRSF so unlock is not an option
-    if (AP::crsf_telem() != nullptr) {
-        return false;
-    }
-#endif
-    // check unlock only
-    if ((_options & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0
-        && (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) == 0) {
-        return true;
-    }
-
-    // ignore everything else
-    return false;
+    // check unlock only, ignore everything else
+    return update_unlock();
 }
 
 bool AP_VideoTX::update_power() const {

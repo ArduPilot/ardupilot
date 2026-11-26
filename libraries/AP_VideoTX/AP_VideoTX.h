@@ -202,6 +202,12 @@ public:
     bool get_configured_pitmode() const { return _options.get() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE); }
     bool get_pitmode() const { return _current_options & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE); }
     bool update_options() const;
+    // the unlock option is set and the VTX reports that it is locked
+    bool update_unlock() const;
+    // the VTX has stayed locked after repeated attempts: warn once and stop
+    // asking until the unlock option is set again, so that other changes
+    // can go out
+    void unlock_rejected();
     // get / set whether the vtx is enabled
     void set_enabled(bool enabled);
     bool get_enabled() const { return _enabled; }
@@ -270,6 +276,8 @@ private:
     uint16_t _rejected_frequency;
     // the VTX was unlocked when it refused
     bool _rejected_unlocked;
+    // the VTX did not unlock, see unlock_rejected()
+    bool _unlock_rejected;
     // true when configuration have been applied successfully to the VTX
     bool _configuration_finished;
 
