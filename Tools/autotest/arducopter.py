@@ -9680,6 +9680,68 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             quiet=True,
         )
 
+    def measure_mount_pitch_rate(self, start_pitch, end_pitch, timeout=20):
+        '''return the mean pitch rate (deg/s) of the mount as it moves from start_pitch to end_pitch'''
+        tstart = self.get_sim_time()
+        first = None
+        last = None
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Mount did not move from %f to %f" % (start_pitch, end_pitch))
+            m = self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=5)
+            _, mount_pitch, _, _ = self.eulers_in_degrees_from_GIMBAL_DEVICE_ATTITUDE_STATUS(m)
+            # only use the middle of the movement
+            fraction = (mount_pitch - start_pitch) / (end_pitch - start_pitch)
+            if fraction < 0.1:
+                continue
+            if fraction > 0.9:
+                break
+            sample = (m.time_boot_ms * 0.001, mount_pitch)
+            if first is None:
+                first = sample
+            last = sample
+        if first is None or last[0] <= first[0]:
+            raise NotAchievedException("Mount moved from %f to %f too fast to measure" % (start_pitch, end_pitch))
+        return abs(last[1] - first[1]) / (last[0] - first[0])
+
+    def mount_test_angle_at_rate(self, low_pitch=-30, high_pitch=10, no_limit_timeout=2):
+        '''test that the mount moves to an angle at the rate given with the angle'''
+        self.progress("Point gimbal using GIMBAL_MANAGER_PITCHYAW (ANGLE at RATE)")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+            p1=low_pitch,       # pitch angle in degrees
+            p2=0,               # yaw angle in degrees
+            p3=float('nan'),    # pitch rate in degrees/s (NaN for no limit)
+            p4=float('nan'),    # yaw rate in degrees/s (NaN for no limit)
+        )
+        self.test_mount_pitch(low_pitch, 1, mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
+
+        # the sign of the rate must not matter
+        for (start_angle, angle, rate) in (low_pitch, high_pitch, 10), (high_pitch, low_pitch, -20):
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                p1=angle,   # pitch angle in degrees
+                p2=0,       # yaw angle in degrees
+                p3=rate,    # pitch rate in degrees/s at which to move to the pitch angle
+                p4=0,       # yaw rate in degrees/s (zero for no limit)
+            )
+            measured_rate = self.measure_mount_pitch_rate(start_angle, angle)
+            self.progress("Mount pitch rate: got=%f want=%f" % (measured_rate, abs(rate)))
+            if abs(measured_rate - abs(rate)) > 0.15 * abs(rate):
+                raise NotAchievedException("Mount pitch rate incorrect: got=%f want=%f" %
+                                           (measured_rate, abs(rate)))
+            self.test_mount_pitch(angle, 1, mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
+
+        # a zero rate must remove the limit from the previous command
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+            p1=high_pitch,  # pitch angle in degrees
+            p2=0,           # yaw angle in degrees
+            p3=0,           # pitch rate in degrees/s (zero for no limit)
+            p4=0,           # yaw rate in degrees/s (zero for no limit)
+        )
+        self.test_mount_pitch(high_pitch, 1, mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING, timeout=no_limit_timeout)
+
     # FIXME: change this to use wait_and_maintain
     def wait_mount_roll_pitch_yaw_deg(self, r=None, p=None, y=None, timeout=20, tolerance=5, minimum_duration=0):
         tstart = self.get_sim_time()
@@ -9832,7 +9894,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
 
     def mount_test_body(self, pitch_rc_neutral=1500, do_rate_tests=True, constrain_sysid_target=True, neutral_tol_deg=0,
-                        rc_targetting_pitch_tolerance=0.1):
+                        rc_targetting_pitch_tolerance=0.1, do_angle_rate_tests=False):
         '''Test Camera/Antenna Mount - assumes a camera is set up and ready to go'''
         if True:
             # make sure we're getting gimbal device attitude status
@@ -9900,6 +9962,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     p7=0,     # gimbal id
                 )
                 self.test_mount_pitch(angle, 1, mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
+
+            if do_angle_rate_tests:
+                self.mount_test_angle_at_rate()
 
             # this is a one-off; ArduCopter *will* time out this directive!
             self.progress("Levelling aircraft")
@@ -10172,7 +10237,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.setup_servo_mount()
         self.reboot_sitl() # to handle MNT_TYPE changing
         self.test_mount_configure_invalid_modes()
-        self.mount_test_body()
+        self.mount_test_body(do_angle_rate_tests=True)
 
     def MountRCFailAngle(self):
         '''check mount behaviour when RC input becomes bad'''
@@ -10476,6 +10541,74 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if settings.camera_device_id != 2:
             raise NotAchievedException("Mount-backed settings use the mount ID: %s" % settings)
 
+        # The gimbal must move directly to a lower pitch angle and to a yaw angle to
+        # the left, while the vehicle holds a roll, a pitch and a yaw angle.
+        self.takeoff(10, mode="ALT_HOLD")
+        self.set_rc(4, 1600)
+        self.wait_heading(45, accuracy=10)
+        self.set_rc(4, 1500)
+        self.set_rc(1, 1800)    # roll to the right
+        self.set_rc(2, 1200)    # pitch forward
+        self.wait_attitude(desroll=18, despitch=-18, tolerance=5, timeout=10)
+        for (axis, pitch, yaw) in ("pitch", -30, 0), ("yaw", 0, -30):
+            self.progress("Checking that the gimbal moves directly to %s -30" % axis)
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                p1=0,               # pitch angle in degrees
+                p2=0,               # yaw angle in degrees
+                p3=float('nan'),    # pitch rate in degrees/s (NaN for no limit)
+                p4=float('nan'),    # yaw rate in degrees/s (NaN for no limit)
+            )
+            self.wait_mount_roll_pitch_yaw_deg(r=0, p=0, y=0, tolerance=2, minimum_duration=1)
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                p1=pitch,
+                p2=yaw,
+                p3=float('nan'),
+                p4=float('nan'),
+            )
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("Mount did not get to %s -30" % axis)
+                mount_roll, mount_pitch, mount_yaw, _ = self.get_mount_roll_pitch_yaw_deg()
+                angle = mount_pitch if axis == "pitch" else mount_yaw
+                if angle > 5:
+                    raise NotAchievedException("Mount %s moved away from the target (%f)" % (axis, angle))
+                # the gimbal stabilizes the roll relative to the earth
+                if abs(mount_roll) > 5:
+                    raise NotAchievedException("Mount roll is not level (%f)" % mount_roll)
+                if abs(angle - -30) < 1:
+                    break
+        # A movement in pitch and yaw together must not add roll. The roll error
+        # of one movement is small, so repeat the movement to let the error add up.
+        self.progress("Checking that movements in pitch and yaw together do not add roll")
+        for i in range(10):
+            # A roll error changes the pitch and yaw that the test reads at a
+            # large pitch angle, so use a large tolerance there.
+            for (pitch, yaw, tolerance) in (-60, -60, 10), (0, 0, 2):
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                    p1=pitch,
+                    p2=yaw,
+                    p3=float('nan'),
+                    p4=float('nan'),
+                )
+                self.wait_mount_roll_pitch_yaw_deg(p=pitch, y=yaw, tolerance=tolerance, minimum_duration=1)
+            mount_roll, _, _, _ = self.get_mount_roll_pitch_yaw_deg()
+            self.progress("Mount roll after %u movements: %f" % (2 * (i + 1), mount_roll))
+            if abs(mount_roll) > 2:
+                raise NotAchievedException("Mount roll is not level after %u movements (%f)" % (2 * (i + 1), mount_roll))
+        # the vehicle must still hold its roll and pitch angles
+        self.wait_attitude(desroll=18, despitch=-18, tolerance=5)
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+        self.land_and_disarm()
+
+        # The driver moves to an angle with a P controller, so the gimbal lags the
+        # angle setpoint.  Use a long movement so that most of it is at the commanded rate.
+        self.mount_test_angle_at_rate(low_pitch=-80, high_pitch=20, no_limit_timeout=4.5)
+
     def MountTopotek(self):
         '''test Topotek gimbal using SIM_Topotek simulator'''
         self.set_parameters({
@@ -10500,7 +10633,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # MNT1_PITCH_MAX before sending, so the 68-deg sysid test is skipped
         # until AP_Mount_Topotek::send_target_angles enforces the limit.
         self.mount_test_body(pitch_rc_neutral=1818, do_rate_tests=False,
-                             constrain_sysid_target=False)
+                             constrain_sysid_target=False, do_angle_rate_tests=True)
 
     def MountTopotekNetwork(self):
         '''test Topotek gimbal connected via a network port rather than a serial port'''
@@ -10565,7 +10698,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # MNT1_PITCH_MAX before sending, so the 68-deg sysid test is skipped
         # until AP_Mount_Viewpro::send_target_angles enforces the limit.
         self.mount_test_body(pitch_rc_neutral=1818, neutral_tol_deg=0.05,
-                             do_rate_tests=False, constrain_sysid_target=False)
+                             do_rate_tests=False, constrain_sysid_target=False, do_angle_rate_tests=True)
 
     def MountAVTCM62(self):
         '''test MAVLink (Gimbal Protocol v2) gimbal using SIM_AVT_CM62 simulator'''
@@ -10574,6 +10707,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "CAM1_TYPE": 4,         # Mount
             "SERIAL5_PROTOCOL": 2,  # MAVLink2
             "RC6_OPTION": 213,      # MOUNT1_PITCH
+            "MNT1_PITCH_MAX": 45,   # the pitch range of the simulated gimbal is -45 to 45
         })
         self.customise_SITL_commandline(["--serial5=sim:avt_cm62_gimbal:"])
 
@@ -10585,6 +10719,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             p3=1,  # total images
             want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
+
+        # The simulated gimbal moves to an angle with a P controller, so it lags the
+        # angle setpoint.  Use a long movement so that most of it is at the commanded rate.
+        self.mount_test_angle_at_rate(low_pitch=-40, high_pitch=40, no_limit_timeout=4)
 
     def MountMAVLinkROI(self):
         '''route ROI and angle commands independently through two MAVLink mounts'''
@@ -22877,6 +23015,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "Rate mode pitch incorrect: got=%f want=-60 (+/-20)" % mount_pitch)
         self.progress("Rate mode pitch correct: %f degrees (~-60)" % mount_pitch)
+
+        self.start_subtest("MAVLINK_TARGETING angle at rate")
+        self.mount_test_angle_at_rate()
 
         # test GPS_POINT (ROI)
         self.start_subtest("GPS_POINT (ROI)")
