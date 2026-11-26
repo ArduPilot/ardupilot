@@ -19925,6 +19925,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if len(failures):
             raise NotAchievedException("; ".join(failures))
 
+    def GPSHeightsEllipsoidOnlyDrivers(self):
+        '''check drivers whose receivers report only an ellipsoid height report it as one'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameter("SIM_GPS1_GEOID", geoid)
+        sim_gps = [
+            # (name, SIM_GPS1_TYPE, GPS1_TYPE); these protocols carry
+            # the height above the WGS84 ellipsoid
+            ("SBP", 6, 1),
+            ("SBP2", 9, 1),
+            ("GSOF", 11, 11),
+        ]
+        failures = []
+        for (name, sim_gps_type, gps_type) in sim_gps:
+            self.start_subtest(f"heights from {name}")
+            self.set_parameters({
+                "SIM_GPS1_TYPE": sim_gps_type,
+                "GPS1_TYPE": gps_type,
+            })
+            self.reboot_sitl()
+            self.set_message_rate_hz('SIM_STATE', 5)
+            self.assert_receive_message('GPS_RAW_INT', condition='GPS_RAW_INT.fix_type>=3', timeout=120)
+            self.delay_sim_time(5, reason="GPS to settle")
+            truth = self.assert_receive_message('SIM_STATE', timeout=10).alt
+            ellipsoid = self.assert_receive_message('GPS_RAW_INT', timeout=10).alt_ellipsoid * 0.001
+            self.progress(f"{name}: simulated AMSL {truth:.2f}, GPS_RAW_INT alt_ellipsoid {ellipsoid:.2f}")
+            if abs(ellipsoid - (truth + geoid)) > 1:
+                failures.append(f"{name}: ellipsoid height {ellipsoid:.2f} should be {truth + geoid:.2f}")
+        if len(failures):
+            raise NotAchievedException("; ".join(failures))
+
     def GPSHeightsSBFNoUndulation(self):
         '''check an SBF receiver without an undulation reports its height as an ellipsoid height'''
         geoid = 20  # metres of geoid above the ellipsoid
@@ -22809,6 +22839,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSBlendingAffinity,
             self.GPSHeightsEllipsoidOption,
             self.GPSHeightsPerDriver,
+            self.GPSHeightsEllipsoidOnlyDrivers,
             self.GPSHeightsSBFNoUndulation,
             self.GPSHeightsNMEABadChecksum,
             self.GPSHeightsBlendMixedFrames,
