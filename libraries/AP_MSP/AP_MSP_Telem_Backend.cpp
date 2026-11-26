@@ -1323,11 +1323,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_in_vtx_config(sbuf_t *src, sb
         vtx.announce_vtx_settings();
     }
     // seed the push snapshot with the VTX's own values so we only push once the
-    // user actually changes something, not immediately after the handshake
+    // user actually changes something, not immediately after the handshake.
+    // A disabled channel has no frequency in the band table: keep the one
+    // the VTX gave, which is what is reported and pushed while it is selected
     _vtx_pushed = {
         vtx.get_configured_band(),
         vtx.get_configured_channel(),
-        vtx.get_configured_frequency_mhz(),
+        vtx.configured_selectable()
+            ? AP_VideoTX::get_frequency_mhz(vtx.get_configured_band(), vtx.get_configured_channel())
+            : vtx.get_configured_frequency_mhz(),
         vtx.get_configured_power_mw(),
         vtx.get_configured_pitmode(),
         true
@@ -1349,7 +1353,9 @@ bool AP_MSP_Telem_Backend::vtx_should_push_config()
     }
     uint8_t band = vtx.get_configured_band();
     uint8_t channel = vtx.get_configured_channel();
-    uint16_t freq_mhz = vtx.get_configured_frequency_mhz();
+    // the frequency msp_process_out_vtx_config() sends: VTX_FREQ is not
+    // moved by a VTX_BAND or VTX_CHANNEL change here
+    uint16_t freq_mhz = AP_VideoTX::get_frequency_mhz(band, channel);
     // a disabled (0 MHz) channel is never commanded: keep the last band,
     // channel and frequency, so only power and pit mode changes are pushed
     if (!vtx.configured_selectable()) {
