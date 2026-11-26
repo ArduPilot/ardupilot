@@ -313,4 +313,97 @@ TEST(AP_GPS_NMEA, term_number_does_not_wrap)
     EXPECT_TRUE(AP_GPS_NMEA_Test::is_rmc(nmea));
 }
 
+static const char *GGA_OK = "GPGGA,083433.00,3957.4902,N,11618.7777,E,1,10,1.2,0049.49,M,0.0,M,,";
+static const char *RMC_OK = "GPRMC,083433.00,A,3957.4902,N,11618.7777,E,0.11,133.18,161021,,";
+static const int32_t LAT_OK = 399581700;   // 39 deg 57.4902 min
+static const int32_t LNG_OK = 1163129616;  // 116 deg 18.7777 min
+
+TEST(AP_GPS_NMEA, parse_decimal_100_overlong_fields_saturate)
+{
+    AP_GPS_NMEA_Test test;
+
+    /* strtol() saturates on these; the *100 must not wrap */
+    ASSERT_EQ(INT32_MAX, test.parse_decimal_100("99999999999999999999"));
+    ASSERT_EQ(INT32_MIN, test.parse_decimal_100("-99999999999999999999"));
+    /* fractional digits must not push a just-in-range value over the edge */
+    ASSERT_EQ(INT32_MAX, test.parse_decimal_100("21474836.9"));
+    ASSERT_EQ(INT32_MIN, test.parse_decimal_100("-21474836.9"));
+    /* normal values unchanged */
+    ASSERT_EQ(2147483500, test.parse_decimal_100("21474835"));
+}
+
+TEST(AP_GPS_NMEA, valid_position_is_published)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    AP_GPS_NMEA_Test::feed(nmea, GGA_OK);
+    EXPECT_EQ(LAT_OK, state.location.lat);
+    EXPECT_EQ(LNG_OK, state.location.lng);
+    EXPECT_EQ(AP_GPS_FixType::FIX_3D, state.status);
+}
+
+TEST(AP_GPS_NMEA, impossible_latitude_discards_sentence)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    /* five integer degree digits: wrapped the uint8_t accumulator and
+       overflowed degrees*1e7, publishing -196.8 degrees */
+    AP_GPS_NMEA_Test::feed(nmea, "GPGGA,083433.00,99999.0000,N,11618.7777,E,1,10,1.2,0049.49,M,0.0,M,,");
+    EXPECT_EQ(0, state.location.lat);
+    EXPECT_EQ(0, state.location.lng);
+    EXPECT_EQ(AP_GPS_FixType::NO_GPS, state.status);  // nothing published
+
+    /* minutes >= 60 */
+    AP_GPS_NMEA_Test::feed(nmea, "GPGGA,083433.00,3960.0000,N,11618.7777,E,1,10,1.2,0049.49,M,0.0,M,,");
+    EXPECT_EQ(0, state.location.lat);
+
+    /* more than 180 degrees of longitude */
+    AP_GPS_NMEA_Test::feed(nmea, "GPGGA,083433.00,3957.4902,N,18118.7777,E,1,10,1.2,0049.49,M,0.0,M,,");
+    EXPECT_EQ(0, state.location.lng);
+
+    /* a good sentence afterwards is still accepted */
+    AP_GPS_NMEA_Test::feed(nmea, GGA_OK);
+    EXPECT_EQ(LAT_OK, state.location.lat);
+}
+
+TEST(AP_GPS_NMEA, impossible_time_discards_sentence)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    AP_GPS_NMEA_Test::feed(nmea, GGA_OK);           // 3D fix so RMC's make_gps_time() runs
+    /* 9999999.00 is not a UTC time; *10 overflowed int32 and set a GPS week */
+    AP_GPS_NMEA_Test::feed(nmea, "GPRMC,9999999.00,A,3957.4902,N,11618.7777,E,0.11,133.18,161021,,");
+    EXPECT_EQ(0, state.time_week);
+    EXPECT_EQ(0U, state.time_week_ms);
+
+    /* the rejected time must not linger: an RMC with an empty time field
+       afterwards used to multiply the stale 9999999.00 and overflow */
+    AP_GPS_NMEA_Test::feed(nmea, "GPRMC,,A,3957.4902,N,11618.7777,E,0.11,133.18,161021,,");
+    EXPECT_EQ(2179, state.time_week);
+    EXPECT_EQ(549291000U, state.time_week_ms);   // the last valid time (GGA_OK), not 9999999.00
+
+    /* month 99 in the date field */
+    AP_GPS_NMEA_Test::feed(nmea, "GPRMC,083433.00,A,3957.4902,N,11618.7777,E,0.11,133.18,169921,,");
+    EXPECT_EQ(2179, state.time_week);
+
+    /* a good RMC still sets the time */
+    AP_GPS_NMEA_Test::feed(nmea, RMC_OK);
+    EXPECT_EQ(2179, state.time_week);
+}
+
+TEST(AP_GPS_NMEA, overlong_speed_saturates_instead_of_wrapping)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    /* _parse_decimal_100() clamps to INT32_MAX; *514 then wrapped to -514
+       and published 0 m/s. Saturation is the documented clamp behaviour. */
+    AP_GPS_NMEA_Test::feed(nmea, "GPVTG,133.18,T,120.79,M,99999999,N,0.20,K,A");
+    EXPECT_NEAR(float(int32_t((int64_t(INT32_MAX) * 514) / 1000)) * 0.01f,
+                state.ground_speed, 1.0f);
+}
+
 AP_GTEST_MAIN()
