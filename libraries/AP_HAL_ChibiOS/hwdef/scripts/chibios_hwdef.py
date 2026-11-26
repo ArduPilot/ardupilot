@@ -652,6 +652,8 @@ class ChibiOSHWDef(hwdef.HWDef):
             for key, value in patterns.items():
                 if fnmatch.fnmatch(self.label, key):
                     return value
+            if self.type.startswith('TIM') and self.extra_value('PWM', type=int) is not None:
+                return 'PERIPH_TYPE::PWM_OUTPUT'
             return 'PERIPH_TYPE::OTHER'
 
         def periph_instance(self):
@@ -2339,6 +2341,28 @@ INCLUDE common.ld
                     if p.type not in pwm_timers:
                         pwm_timers.append(p.type)
 
+        # a PWM() on an ALT() line is an output that only exists in that
+        # config: it gets its channel here, setup_alt_config() muxes its pin
+        # instead of board init, and RCOutput disables it in other configs.
+        # RP2350 only, as the STM32 DMA resolver knows only the default timers
+        alt_pwm_out = []
+        default_pwm_pins = set(p.portpin for p in pwm_out)
+        for alt in sorted(self.altmap.keys()):
+            for pp in sorted(self.altmap[alt].keys()):
+                p = self.altmap[alt][pp]
+                if not p.type.startswith('TIM') or p.extra_value('PWM', type=int) is None:
+                    continue
+                if not self.is_rp_mcu():
+                    self.error("PWM() on an ALT() line is only supported on RP2350: %s" % p)
+                if p.portpin in default_pwm_pins:
+                    self.error("%s is already a PWM output in the default config" % p)
+                if p.extra_value('PWM', type=int) in [q.extra_value('PWM', type=int) for q in pwm_out]:
+                    self.error("PWM(%u) defined twice: %s" % (p.extra_value('PWM', type=int), p))
+                pwm_out.append(p)
+                alt_pwm_out.append(p)
+                if p.type not in pwm_timers:
+                    pwm_timers.append(p.type)
+
         f.write('#define HAL_PWM_COUNT %u\n' % len(pwm_out))
         if not pwm_out and not alarm:
             self.progress("No PWM output defined")
@@ -2510,9 +2534,9 @@ INCLUDE common.ld
                 if self.is_rp_mcu():
                     # RP2350 PWM alternate function is always 4
                     alt_functions[chan - 1] = 4
-                    # Collect GPIO line for pico2_gpio_init()
+                    # Collect GPIO line for pico2_gpio_init(), unless an ALT() config sets it up
                     line = self.make_pal_line(p.port, p.pin)
-                    if line not in rp_gpio_pwm_lines:
+                    if p not in alt_pwm_out and line not in rp_gpio_pwm_lines:
                         rp_gpio_pwm_lines.append(line)
                 else:
                     alt_functions[chan - 1] = p.af
@@ -2770,7 +2794,7 @@ INCLUDE common.ld
                         continue
                     self.error("Duplicate GPIO value %u, %s != %s" % (gpio, p, existing_gpio[0][4]))
                 pwm = p.extra_value('PWM', type=int, default=0)
-                if pwm != 0:
+                if pwm != 0 and not self.is_rp_mcu():
                     self.error("PWM not supported for alt config: %s" % p)
                 gpioset.add(gpio)
                 port = p.port
@@ -2920,23 +2944,48 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     dma_exclude.add(periph)
         return list(dma_exclude)
 
+    def rp_alt_modeline(self, p):
+        '''return the RP2350 PAL mode that setup_alt_config() gives an ALT() line'''
+        if p.type.startswith('TIM'):
+            if p.extra_value('PWM', type=int) is None:
+                self.error("RP2350 ALT() timer pin must be a PWM(n) output: %s" % p)
+            return 'PAL_MODE_ALTERNATE_PWM'
+        if p.af is not None:
+            return 'PAL_MODE_ALTERNATE(%uU)' % p.af
+        if p.type == 'INPUT':
+            if p.has_extra('PULLUP'):
+                return 'PAL_MODE_INPUT_PULLUP'
+            if p.has_extra('PULLDOWN'):
+                return 'PAL_MODE_INPUT_PULLDOWN'
+            return 'PAL_MODE_INPUT'
+        if p.type == 'OUTPUT':
+            if p.has_extra('HIGH'):
+                return 'PAL_MODE_OUTPUT_PUSHPULL|PAL_STM32_HIGH'
+            return 'PAL_MODE_OUTPUT_PUSHPULL'
+        self.error("RP2350 ALT() line not supported: %s" % p)
+
     def write_alt_config(self, f):
         '''write out alternate config settings'''
         if len(self.altmap.keys()) == 0:
             # no alt configs
             return
+        # setup_alt_config() strips this flag from the mode and drives the pin
+        # high. An RP2350 mode keeps IO_BANK0 CTRL in bits 0-22, where 0x8000
+        # is OEOVER, so it takes bit 22, which CTRL leaves unused
+        high_flag = '(1U<<22U)' if self.is_rp_mcu() else '0x8000U'
         f.write('''
 /* alternative configurations */
 #define PAL_STM32_SPEED(n) ((n&3U)<<3U)
-#define PAL_STM32_HIGH     0x8000U
+#define PAL_STM32_HIGH     %s
 
 #define HAL_PIN_ALT_CONFIG { \\
-''')
+''' % high_flag)
         for alt in sorted(self.altmap.keys()):
             for pp in sorted(self.altmap[alt].keys()):
                 p = self.altmap[alt][pp]
+                mode = self.rp_alt_modeline(p) if self.is_rp_mcu() else p.pal_modeline()
                 f.write("    { %u, %s, %s, %s, %u}, /* %s */ \\\n" %
-                        (alt, p.pal_modeline(), self.make_pal_line(p.port, p.pin),
+                        (alt, mode, self.make_pal_line(p.port, p.pin),
                          p.periph_type(), p.periph_instance(), str(p)))
         f.write('}\n\n')
 
