@@ -177,7 +177,10 @@ void AP_SmartAudio::update_vtx_params()
             // the channel the VTX is on
             if (vtx.update_band() || vtx.update_channel() || vtx.rejected_frequency_superseded()) {
                 vtx.update_configured_frequency();
-            } else {
+            } else if (vtx.configured_slot_selectable()) {
+                // a disabled slot is left as the user selected it. VTX_FREQ
+                // may still be a frequency being asked for, and following it
+                // would put the selection back on that frequency's slot
                 vtx.update_configured_channel_and_band();
             }
             // a band parameter change may have disabled the selected channel since

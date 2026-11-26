@@ -131,10 +131,14 @@ public:
     static bool selectable(const AP_VideoTX_Table &table, uint8_t band, uint8_t channel) {
         return table.frequency(band, channel) != 0;
     }
+    // false when the configured band and channel are a disabled slot
+    bool configured_slot_selectable() const {
+        return selectable(_table, _band.get(), _channel.get());
+    }
     // false when the configured channel is disabled or no frequency is
     // configured, so there is nothing to command
     bool configured_selectable() const {
-        return _frequency_mhz != 0 && selectable(_table, _band.get(), _channel.get());
+        return _frequency_mhz != 0 && configured_slot_selectable();
     }
 
     void set_frequency_mhz(uint16_t freq) { _current_frequency = freq; }
