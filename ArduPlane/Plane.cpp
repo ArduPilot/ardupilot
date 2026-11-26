@@ -544,8 +544,8 @@ void Plane::update_fly_forward(void)
             return;
         }
 
-        if (quadplane.option_is_set(QuadPlane::OPTION::ASSUME_FLYING_FORWARD_IN_TRANSITION) &&
-            quadplane.in_transition()) {
+        if (quadplane.option_is_set(QuadPlane::Option::ASSUME_FLYING_FORWARD_IN_TRANSITION) &&
+            quadplane.in_frwd_transition()) {
             ahrs.set_fly_forward(true);
             return;
         }
