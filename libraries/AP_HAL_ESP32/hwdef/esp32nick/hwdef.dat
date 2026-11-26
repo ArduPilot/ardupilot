@@ -4,7 +4,7 @@ define HAL_ESP32_BOARD_NAME "esp32-nick"
 
 # SPI Buses; https://docs.espressif.com/projects/esp-idf/en/v5.3.4/esp32/api-reference/peripherals/spi_master.html
 #            Host      DMA Channel     MOSI        MISO        SCLK
-ESP32_SPIBUS VSPI_HOST 1               GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
+ESP32_SPIBUS SPI3_HOST 1               GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
 
 # i2c Buses
 #             Port       SDA         SCL          SPEED    INTERNAL SOFT

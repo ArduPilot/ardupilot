@@ -66,7 +66,7 @@ TIPS:
 - we use toolchain and esp-idf from espressif , as a 'git submodule', so no need to preinstall etc.
 
 [Espressif documentation](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/) -
- (note we currently use [esp-idf v5.3](https://github.com/espressif/esp-idf/tree/release/v5.3) )
+ (note we currently use [esp-idf v6.1](https://github.com/espressif/esp-idf/tree/release/v6.1) )
 
 - if you get compile error/s to do with CONFIG... such as
 

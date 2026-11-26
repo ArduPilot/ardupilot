@@ -20,7 +20,7 @@ ESP32_RCOUT GPIO_NUM_21
 
 # SPI Buses
 #            Host      DMA Channel     MOSI        MISO        SCLK
-ESP32_SPIBUS VSPI_HOST 1               GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
+ESP32_SPIBUS SPI3_HOST 1               GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
 
 # SPI Devices
 #            Name                Bus   Device  ChipSel      Mode LoSpeed HiSpeed
