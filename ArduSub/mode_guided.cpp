@@ -875,3 +875,16 @@ bool ModeGuided::guided_limit_check()
     // if we got this far we must be within limits
     return false;
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// progress towards a guided waypoint
+bool ModeGuided::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target)
+{
+    if (sub.guided_mode != Guided_WP) {
+        return false;
+    }
+    sub.get_wp_progress(progress);
+    UNUSED_RESULT(sub.wp_nav.get_wp_leg_destination_loc(target));
+    return true;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED

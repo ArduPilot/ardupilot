@@ -148,6 +148,13 @@ public:
     // handle a guided target request from GCS
     virtual bool handle_guided_request(Location target_loc) { return false; }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // progress towards this mode's navigation target, for
+    // NAV_CONTROLLER_PROGRESS.  Returns false if the mode has no
+    // progress to report
+    virtual bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) { return false; }
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // true if is landing 
     virtual bool is_landing() const { return false; }
 
@@ -379,6 +386,10 @@ public:
     // handle a guided target request from GCS
     bool handle_guided_request(Location target_loc) override;
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // handle a guided airspeed command, typically from companion computer
     bool handle_change_airspeed(const float airspeed, const float acceleration);
@@ -537,6 +548,10 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
 protected:
 
@@ -968,6 +983,10 @@ public:
     // true if mode allows landing direction to be set on first takeoff after arm in this mode 
     bool allows_autoland_direction_capture() const override { return true; }
 #endif
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];

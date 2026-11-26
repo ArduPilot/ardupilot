@@ -99,6 +99,12 @@ void Plane::set_guided_WP(const Location &loc)
     // reset loiter start time.
     loiter.start_time_ms = 0;
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // a new target starts a new approach, even if it is a target
+    // reported before
+    loiter_progress.approached = false;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // start in non-VTOL mode
     auto_state.vtol_loiter = false;
     

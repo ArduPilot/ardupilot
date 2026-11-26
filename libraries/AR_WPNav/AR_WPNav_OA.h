@@ -27,6 +27,10 @@ public:
     // return the heading (in centi-degrees) to the next waypoint accounting for OA, (used by sailboats)
     float oa_wp_bearing_cd() const override;
 
+    // get the origin and destination of the current leg, ignoring any object avoidance. Note: these are not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
+    const Location &get_leg_origin() const override { return _oa_active ? _origin_oabak : _origin; }
+    const Location &get_leg_destination() const override { return _oa_active ? _destination_oabak : _destination; }
+
 private:
 
     // update distance and bearing from vehicle's current position to destination

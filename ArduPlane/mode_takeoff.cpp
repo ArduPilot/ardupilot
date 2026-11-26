@@ -204,3 +204,20 @@ void ModeTakeoff::navigate()
     plane.update_loiter(0);
 }
 
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// progress of the climb, then towards the loiter point
+bool ModeTakeoff::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target)
+{
+    if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
+        // update() ends the climb on the height above start_loc
+        const float target_m = target_alt;
+        const float climbed_m = (plane.current_loc.alt - start_loc.alt) * 0.01f;
+        progress.set_distance_remaining(MAX(target_m - climbed_m, 0.0f), target_m);
+        target = plane.next_WP_loc;
+        return true;
+    }
+    plane.get_loiter_point_progress(progress, target);
+    return true;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
