@@ -147,12 +147,15 @@ public:
     // the VTX has not taken the configured frequency after repeated attempts:
     // stop asking for it, so that other changes can go out, until the
     // configuration changes. The parameters are left as the user set them
-    void frequency_rejected(bool warn=true);
+    void frequency_rejected(uint8_t band, uint8_t channel, uint16_t freq, bool warn=true);
+    // as above for the configuration as it is now, for a caller that has
+    // no record of what it asked for
+    void frequency_rejected(bool warn=true) { frequency_rejected(_band, _channel, _frequency_mhz, warn); }
     // true if the configured band, channel and frequency are the ones the
     // VTX did not take
-    bool configured_rejected() const {
-        return _rejected && _band == _rejected_band && _channel == _rejected_channel && _frequency_mhz == _rejected_frequency;
-    }
+    bool configured_rejected() const;
+    // the VTX is not on the configured band, channel or frequency
+    bool update_tuning() const;
     // true if VTX_FREQ still holds the frequency the VTX did not take but the
     // band or channel has been changed since, so they are what is wanted now
     bool rejected_frequency_superseded() const {

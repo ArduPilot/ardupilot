@@ -183,15 +183,20 @@ private:
     uint16_t _packets_rcvd;
 
     bool _vtx_freq_change_pending; // a vtx command has been issued but not confirmed by a vtx broadcast frame
-    // frequency last sent by SET_FREQUENCY and how many times in a row
+    // the band, channel and frequency last asked for, and how many times
+    // in a row the VTX has answered without being on them
     uint16_t _freq_attempt_mhz;
     // configured band and channel when the last frequency or channel
     // command was sent
     uint8_t _sent_band;
     uint8_t _sent_channel;
+    uint8_t _freq_attempt_band;
+    uint8_t _freq_attempt_channel;
     uint8_t _freq_attempts;
-    // replies received when the frequency was last asked for
-    uint16_t _freq_attempt_rcvd;
+    // replies that parsed, and how many there were when the frequency was
+    // last asked for
+    uint16_t _replies_parsed;
+    uint16_t _freq_attempt_replies;
     bool _vtx_power_change_pending;
     bool _vtx_options_change_pending;
     bool _vtx_changes_pending;

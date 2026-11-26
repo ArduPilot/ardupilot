@@ -109,6 +109,7 @@ char AP_Tramp::handle_response(void)
         const uint16_t freq = response_buffer[2]|(response_buffer[3] << 8);
         // Check we're not reading the request (indicated by freq zero)
         if (freq != 0) {
+            _status_rcvd++;
             // Got response, update device status
             const uint16_t power = response_buffer[4]|(response_buffer[5] << 8);
             cur_control_mode = response_buffer[6]; // Currently only used for race lock
@@ -378,6 +379,13 @@ void AP_Tramp::process_requests()
         } else if (retry_count > 0 && ((now - last_time_us) >= TRAMP_MIN_REQUEST_PERIOD_US)) {
             if (!is_race_lock_enabled() && vtx.update_frequency() && vtx.configured_selectable()) {
                 debug("Updating frequency to %uMhz", vtx.get_configured_frequency_mhz());
+                if (_freq_sent && _status_rcvd != _freq_sent_rcvd && _freq_answered < UINT8_MAX) {
+                    // the VTX has answered since the frequency was last
+                    // sent and is still not on it
+                    _freq_answered++;
+                }
+                _freq_sent = true;
+                _freq_sent_rcvd = _status_rcvd;
                 // Freq can be and needs to be updated, issue request
                 send_command('F', vtx.get_configured_frequency_mhz());
 
@@ -499,7 +507,8 @@ void AP_Tramp::set_frequency(uint16_t freq)
         debug("requested frequency %u is invalid", freq);
         // out of the VTX's range: don't ask for it again until the
         // configuration changes, leaving the user's setting alone
-        AP::vtx().frequency_rejected();
+        AP_VideoTX& vtx = AP::vtx();
+        vtx.frequency_rejected(vtx.get_configured_band(), vtx.get_configured_channel(), freq);
     }
 }
 
@@ -536,10 +545,24 @@ void AP_Tramp::update()
         _pitmode_warned = false;
     }
 
+    if (vtx.get_frequency_mhz() != 0 && vtx.get_frequency_mhz() == vtx.get_configured_frequency_mhz()) {
+        // the VTX is on the configured frequency, so nothing is being asked
+        // for any more. If it leaves it, moved with its buttons say, that is
+        // a new request and not a refusal of the old one
+        _last_conf_freq = 0;
+        _freq_sent = false;
+        _freq_answered = 0;
+    }
+    if (vtx.get_power_mw() == vtx.get_configured_power_mw()) {
+        // likewise for the power: the VTX took it, so if it is moved off it
+        // later it has not refused it
+        _power_warn_pending = false;
+    }
+
     if (vtx.have_params_changed() && retry_count == 0) {
         // check changes in the order they will be processed; re-arm retries
         // only on real changes so a VTX rejecting a value can't loop forever
-        if (vtx.update_frequency() || vtx.update_band() || vtx.update_channel()) {
+        if (vtx.update_tuning()) {
             // the retries ran out without the VTX taking the frequency last
             // requested (many VTXs only accept their own channel
             // frequencies, and one still starting up can miss them all):
@@ -558,18 +581,28 @@ void AP_Tramp::update()
             if (!vtx.configured_selectable() && vtx.get_frequency_mhz() != 0) {
                 // a band parameter change has disabled the selected
                 // channel: there is nothing to command, without a warning
-                vtx.frequency_rejected(false);
+                vtx.frequency_rejected(vtx.get_configured_band(), vtx.get_configured_channel(),
+                                       vtx.get_configured_frequency_mhz(), false);
                 returned = true;
             } else if (vtx.update_frequency() && vtx.get_configured_frequency_mhz() == _last_conf_freq &&
-                vtx.get_frequency_mhz() != 0 && _packets_rcvd == _last_conf_rcvd) {
-                // the VTX has not answered since this frequency was asked
-                // for (unpowered, or the replies are being lost), so it has
-                // not refused anything: keep asking until it does answer
+                vtx.get_frequency_mhz() != 0 && _freq_answered < VTX_MAX_FREQUENCY_ATTEMPTS) {
+                // the VTX has not answered enough sends of this frequency
+                // to have refused it (it is unpowered, came back part way
+                // through, or the replies are being lost): keep asking
                 retry_count = VTX_TRAMP_MAX_RETRIES;
                 returned = true;
             } else if (vtx.update_frequency() && vtx.get_configured_frequency_mhz() == _last_conf_freq &&
+                vtx.get_frequency_mhz() != 0 && _status_rcvd == _freq_sent_rcvd) {
+                // the VTX has not reported since the last send, which it
+                // may have taken: wait for its status before deciding
+            } else if (vtx.update_frequency() && vtx.get_configured_frequency_mhz() == _last_conf_freq &&
                 vtx.get_frequency_mhz() != 0) {
-                vtx.frequency_rejected();
+                vtx.frequency_rejected(_last_conf_band, _last_conf_channel, _last_conf_freq);
+                // the count has done its job. If the refusal is forgotten,
+                // by a change to the bands say, the frequency is asked for
+                // afresh rather than refused again without a send
+                _freq_sent = false;
+                _freq_answered = 0;
                 returned = true;
             }
             if (!returned) {
@@ -585,7 +618,8 @@ void AP_Tramp::update()
                     _last_conf_freq = conf_freq;
                     _last_conf_band = vtx.get_configured_band();
                     _last_conf_channel = vtx.get_configured_channel();
-                    _last_conf_rcvd = _packets_rcvd;
+                    _freq_sent = false;
+                    _freq_answered = 0;
                     set_frequency(conf_freq);
                 }
             }
