@@ -12097,6 +12097,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (cam2_compid, 50, 60),
         ])
 
+    def CameraNoFeedbackMsgOption(self):
+        '''test CAMn_OPTIONS bit to stop sending CAMERA_FEEDBACK, for
+        MAVLink cameras that report their own captures'''
+        self._setup_avt_cm62_dual()
+
+        def trigger(cam):
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_SET_CAM_TRIGG_DIST,
+                p1=10,  # trigger distance
+                p3=1,   # trigger instantly
+                p4=cam,
+            )
+
+        self.progress("Both cameras send CAMERA_FEEDBACK by default")
+        trigger(0)
+        self.wait_camera_img_idx([(0, 1), (1, 1)])
+
+        self.progress("Disable CAMERA_FEEDBACK for camera 1 only")
+        self.set_parameter("CAM1_OPTIONS", 2)
+        self.context_clear_collection('CAMERA_FEEDBACK')
+        trigger(0)
+        # camera 2 still reports, and its count moves on
+        self.wait_camera_img_idx([(1, 2)])
+        self.delay_sim_time(2, reason="let any CAMERA_FEEDBACK arrive")
+        if self.camera_feedback_img_idx(0) is not None:
+            raise NotAchievedException("Got CAMERA_FEEDBACK for camera 1")
+
+        self.progress("Clearing the option brings camera 1 back")
+        self.set_parameter("CAM1_OPTIONS", 0)
+        trigger(0)
+        # camera 1 kept counting while it wasn't reporting
+        self.wait_camera_img_idx([(0, 3), (1, 3)])
+
     def MountAVTCM62DualMission(self):
         '''test dual AVT CM62 cameras with photo capture, zoom and focus
         controlled via mission items'''
@@ -25968,6 +26001,7 @@ return update, 1000
             self.TerrainDBPreArm,
             self.MountTopotekNetwork,
             self.MountAVTCM62Dual,
+            self.CameraNoFeedbackMsgOption,
             self.MountAVTCM62DualMission,
             self.MountAVTCM62DualImageStartCapture,
             self.CameraServoZoomFocusSpeed,
