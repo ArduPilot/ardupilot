@@ -22248,6 +22248,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LAND')
         self.wait_disarmed()
 
+    def ArmInRCFailsafe(self):
+        '''test we can arm in the face of an RC failsafe'''
+        self.progress("If no FS_THR_ENABLE action set then can arm")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.set_parameter("FS_THR_ENABLE", 0)
+        self.delay_sim_time(2, reason="RC failsafe to take effect")
+        self.wait_ready_to_arm()
+
+        self.progress("Can't arm with any other failsafe action set")
+        for i in 1, 3, 4, 5, 6, 7:
+            self.set_parameter("FS_THR_ENABLE", i)
+            self.delay_sim_time(2, reason="RC failsafe to take effect")
+            self.assert_prearm_failure("Radio failsafe on", other_prearm_failures_fatal=False)
+
     def IMUConsistency(self):
         '''test IMUs must be consistent with one another'''
         self.wait_ready_to_arm()
@@ -27595,6 +27609,7 @@ return update, 1000
             self.CompassLearnAffinityFailRecover,
             self.AHRSAutoTrim,
             self.AHRSTrim,
+            self.ArmInRCFailsafe,
             self.PeriphMultiUARTTunnel,
             self.NavControllerOutputAltError,
         ])
