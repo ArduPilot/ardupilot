@@ -61,9 +61,11 @@ void NavEKF3_core::SelectFlowFusion()
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // the set at aiding start waits for a sample and a range it can use. 5 s is as long as relative
-    // aiding lasts with no flow fused on either axis, and as long as the AGL KF waits for a range
-    // before it restarts from one; a velocity still out on one axis by then is the lockout recovery's
-    // to put right. Ended ahead of the AGL KF update, so a restart the set asked for ends with it
+    // aiding lasts with no flow fused on either axis, apart from time the tilt check withholds flow
+    // for in flight, and as long as the AGL KF waits for a range before it restarts from one. Withheld
+    // time counts here, so a set still pending after a long banked turn lapses, and a velocity still
+    // out on one axis by then is the lockout recovery's to put right. Ended ahead of the AGL KF
+    // update, so a restart the set asked for ends with it
     const uint32_t FLOW_VEL_INIT_WAIT_MAX_MS = 5000;
     if (flowVelInitPending && (imuSampleTime_ms - flowVelInitStart_ms > FLOW_VEL_INIT_WAIT_MAX_MS)) {
         flowVelInitPending = false;
