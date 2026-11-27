@@ -18008,7 +18008,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def CRSFParameterMenuHelper(self):
         '''Test crsf_helper menus answer as fast armed, survive bad writes and errors, and report calibrations'''
         CRSF = vehicle_test_suite.CRSF
-        START = 1
+        (START, CONFIRM, POLL) = (1, 4, 6)
         self.install_script_module_context(self.script_modules_source_path("crsf_helper.lua"), "crsf_helper.lua")
         self.install_applet_script_context("crsf-calibrate.lua")
         self.install_script_content_context("crsf-helper-menu.lua", """
@@ -18049,6 +18049,21 @@ return crsf_helper.register_menu({name = "Helper", items = {
             entry = write(menu, name, payload, reply_type=CRSF.FRAMETYPE_PARAMETER_ENTRY)[5:]
             status_at = entry.index(0, 1) + 1
             return (entry[status_at], entry[status_at+2:entry.index(0, status_at+2)])
+
+        def calibrate(name):
+            '''press a calibration, poll until it shows its result, and
+            acknowledge it, returning the result'''
+            result = press("Calibrate", name)
+            if result != (2, b"Calibrating"):
+                raise NotAchievedException("%s showed %s" % (name, str(result)))
+            tstart = self.get_sim_time_cached()
+            while result[0] == 2:
+                if self.get_sim_time_cached() - tstart > 30:
+                    raise NotAchievedException("%s did not finish" % name)
+                result = press("Calibrate", name, payload=(POLL,))
+            if press("Calibrate", name, payload=(CONFIRM,)) != (0, b"Execute"):
+                raise NotAchievedException("%s not acknowledged" % name)
+            return result
 
         def selection(entry):
             options_end = entry.index(0, entry.index(0, 1) + 1)
@@ -18099,7 +18114,7 @@ return crsf_helper.register_menu({name = "Helper", items = {
         # an empty write is answered with the item's state
         if press("Calibrate", "Forcecal Compass", payload=[]) != (0, b"Execute"):
             raise NotAchievedException("Empty write not answered with the command's state")
-        if press("Calibrate", "Forcecal Accels") != (0, b"Execute"):
+        if calibrate("Forcecal Accels") != (3, b"Accels force calibrated"):
             raise NotAchievedException("Forcecal Accels did not succeed")
         self.wait_statustext("Accels force calibrated", check_context=True)
 
@@ -18134,7 +18149,7 @@ return crsf_helper.register_menu({name = "Helper", items = {
             raise NotAchievedException("Menu slower armed (%.3fs) than disarmed (%.3fs)" % (armed_s, disarmed_s))
 
         # the calibration is refused armed, and the menu says so
-        if press("Calibrate", "Calibrate Gyros") != (0, b"Failed"):
+        if calibrate("Calibrate Gyros") != (3, b"Gyro cal failed"):
             raise NotAchievedException("Armed gyro cal not shown as failed")
         self.wait_statustext("Gyro cal failed", check_context=True)
         if press("Calibrate", "Calibrate Compass") != (0, b"Failed"):
