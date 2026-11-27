@@ -138,6 +138,17 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
     return ret;
 }
 
+// returns how far from the edge of every polygon or circle fence a destination must be
+// for BendyRuler to fly straight to it, given OA_MARGIN_MAX of margin_max.  The path it
+// checks runs OA_BENDYRULER_LOOKAHEAD_PAST_DEST past the destination, and must keep the
+// fence margin plus margin_max from every fence
+float AP_OABendyRuler::get_destination_fence_clearance_m(float margin_max)
+{
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    const float fence_margin = (fence != nullptr) ? fence->get_margin_ne_m() : 0.0f;
+    return fence_margin + MAX(margin_max, 0.0f) + OA_BENDYRULER_LOOKAHEAD_PAST_DEST;
+}
+
 // Search for path in the horizontal directions
 bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, float ground_course_deg, Location &destination_new, float lookahead_step1_dist, float lookahead_step2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only) 
 {

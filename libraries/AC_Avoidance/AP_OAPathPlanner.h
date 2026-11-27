@@ -76,6 +76,12 @@ public:
     // returns the path planner selected with OA_TYPE
     OAPathPlanTypes get_type() const { return (OAPathPlanTypes)_type.get(); }
 
+#if AP_OAPATHPLANNER_BENDYRULER_ENABLED
+    // returns how far from the edge of every polygon or circle fence a destination must be
+    // for BendyRuler to fly straight to it rather than avoid it
+    float get_bendyruler_fence_clearance_m() const { return AP_OABendyRuler::get_destination_fence_clearance_m(_margin_max); }
+#endif  // AP_OAPATHPLANNER_BENDYRULER_ENABLED
+
     // enumeration for _OPTION parameter
     enum OARecoveryOptions {
         OA_OPTION_DISABLED = 0,

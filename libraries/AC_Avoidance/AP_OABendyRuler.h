@@ -32,6 +32,10 @@ public:
     // bendy_type is set to the type of BendyRuler used
     bool update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, OABendyType &bendy_type, bool proximity_only);
 
+    // returns how far from the edge of every polygon or circle fence a destination must be
+    // for BendyRuler to fly straight to it, given OA_MARGIN_MAX of margin_max
+    static float get_destination_fence_clearance_m(float margin_max);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
