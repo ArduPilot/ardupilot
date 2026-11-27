@@ -36,6 +36,7 @@ const float OA_BENDYRULER_LOOKAHEAD_STEP2_RATIO = 1.0f; // step2's lookahead len
 const float OA_BENDYRULER_LOOKAHEAD_STEP2_MIN = 2.0f;   // step2 checks at least this many meters past step1's location
 const float OA_BENDYRULER_LOOKAHEAD_PAST_DEST = 2.0f;   // lookahead length will be at least this many meters past the destination
 const float OA_BENDYRULER_LOW_SPEED_SQUARED = (0.2f * 0.2f);    // when ground course is below this speed squared, vehicle's heading will be used
+const float OA_BENDYRULER_EXIT_PREDICT_TIME = 1.0f;     // exclusion zone exits are chosen from where the vehicle will be this many seconds ahead
 
 #define VERTICAL_ENABLED APM_BUILD_COPTER_OR_HELI
 
@@ -130,7 +131,7 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
 
         case OABendyType::OA_BENDY_HORIZONTAL:
         default:
-            ret = search_xy_path(current_loc, destination, ground_course_deg, destination_new, lookahead_step1_dist, lookahead_step2_dist, bearing_to_dest, distance_to_dest, proximity_only);
+            ret = search_xy_path(current_loc, destination, ground_speed_vec, ground_course_deg, destination_new, lookahead_step1_dist, lookahead_step2_dist, bearing_to_dest, distance_to_dest, proximity_only);
             bendy_type = OABendyType::OA_BENDY_HORIZONTAL;
     }
 
@@ -138,7 +139,7 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
 }
 
 // Search for path in the horizontal directions
-bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location& destination, float ground_course_deg, Location &destination_new, float lookahead_step1_dist, float lookahead_step2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only) 
+bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, float ground_course_deg, Location &destination_new, float lookahead_step1_dist, float lookahead_step2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only) 
 {
     // check OA_BEARING_INC definition allows checking in all directions
     static_assert(360 % OA_BENDYRULER_BEARING_INC_XY == 0, "check 360 is a multiple of OA_BEARING_INC");
@@ -147,7 +148,7 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
     // into it, which shortens the step below to nothing.  Leave by the shortest route instead
     if (!proximity_only) {
         Location exit_loc;
-        if (calc_exclusion_zone_exit(current_loc, exit_loc)) {
+        if (calc_exclusion_zone_exit(current_loc, ground_speed_vec, exit_loc)) {
             destination_new = exit_loc;
             Write_OABendyRuler((uint8_t)OABendyType::OA_BENDY_HORIZONTAL, true, current_loc.get_bearing_to(exit_loc) * 0.01f, 0.0f, false, calc_avoidance_margin(current_loc, current_loc, proximity_only), destination, destination_new);
             return true;
@@ -694,11 +695,12 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Loc
 #endif // AP_FENCE_ENABLED
 }
 
-// if current_loc is inside an exclusion polygon or circle, find the closest point outside it,
-// placed the fence margin plus OA_MARGIN_MAX beyond its edge, that clears every fence and whose
-// route from current_loc crosses no fence or obstacle other than the zone being left
+// if current_loc is inside an exclusion polygon or circle, find the point outside it closest to
+// where the vehicle will be OA_BENDYRULER_EXIT_PREDICT_TIME ahead at ground_speed_vec, placed the
+// fence margin plus OA_MARGIN_MAX beyond its edge, that clears every fence and whose route from
+// there crosses no fence or obstacle other than the zone being left
 // returns true and updates exit_loc if such a point was found
-bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Location &exit_loc) const
+bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, const Vector2f &ground_speed_vec, Location &exit_loc) const
 {
 #if AP_FENCE_ENABLED
     const AC_Fence *fence = AC_Fence::get_singleton();
@@ -713,6 +715,14 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
     if (!current_loc.get_vector_xy_from_origin_NE_cm(current_NE)) {
         return false;
     }
+
+    // a moving vehicle cannot turn at once, so exits and the routes to them are judged from where
+    // it is heading rather than where it is.  Judged from where it is, the closest exit can move
+    // to the other side of an obstacle as the vehicle's momentum carries it along, and the vehicle
+    // then flies between the two exits towards the obstacle
+    const Vector2f predicted_NE = current_NE + ground_speed_vec * (OA_BENDYRULER_EXIT_PREDICT_TIME * 100.0f);
+    Location predicted_loc = current_loc;
+    predicted_loc.offset(ground_speed_vec.x * OA_BENDYRULER_EXIT_PREDICT_TIME, ground_speed_vec.y * OA_BENDYRULER_EXIT_PREDICT_TIME);
 
     // distance in cm beyond the edge at which to place the exit
     const float clearance_cm = (fence->get_margin_ne_m() + _margin_max) * 100.0f;
@@ -730,14 +740,14 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
         for (uint16_t j = 0; j < num_points; j++) {
             const Vector2f &start = boundary[j];
             const Vector2f &end = boundary[(j + 1) % num_points];
-            const Vector2f edge_NE = Vector2f::closest_point(current_NE, start, end);
-            const Vector2f to_edge = edge_NE - current_NE;
+            const Vector2f edge_NE = Vector2f::closest_point(predicted_NE, start, end);
+            const Vector2f to_edge = edge_NE - predicted_NE;
             Vector2f outward[2];
             uint8_t num_outward = 0;
             if (!to_edge.is_zero()) {
                 outward[num_outward++] = to_edge.normalized();
             } else {
-                // the vehicle is on this edge, so try both sides of it; the inside one never clears the fence
+                // the vehicle is heading onto this edge, so try both sides of it; the inside one never clears the fence
                 const Vector2f perpendicular {end.y - start.y, start.x - end.x};
                 if (perpendicular.is_zero()) {
                     continue;
@@ -747,9 +757,9 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
             }
             for (uint8_t k = 0; k < num_outward; k++) {
                 const Vector2f candidate_NE = edge_NE + outward[k] * clearance_cm;
-                const float dist_sq = (candidate_NE - current_NE).length_squared();
+                const float dist_sq = (candidate_NE - predicted_NE).length_squared();
                 Location candidate_loc;
-                if ((dist_sq < best_dist_sq) && exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, i, -1, candidate_loc)) {
+                if ((dist_sq < best_dist_sq) && exclusion_zone_exit_clear(predicted_loc, predicted_NE, candidate_NE, i, -1, candidate_loc)) {
                     best_dist_sq = dist_sq;
                     exit_loc = candidate_loc;
                     found = true;
@@ -759,20 +769,20 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
     }
 
     // exclusion circles: exit straight out from the centre or, if that exit or the route to it is
-    // not clear, at the smallest angle either side of it that is.  From inside a circle the distance
-    // to a point on it grows with that angle, so the first exit found is the closest
+    // not clear, at the smallest angle either side of it that is.  The distance to a point on a
+    // circle grows with that angle, so the first exit found is the closest
     for (uint8_t i = 0; i < fence->polyfence().get_exclusion_circle_count(); i++) {
         Vector2f center_NE;
         float radius_m;
         if (!fence->polyfence().get_exclusion_circle(i, center_NE, radius_m)) {
             continue;
         }
-        const Vector2f center_to_vehicle = current_NE - center_NE;
-        if (center_to_vehicle.length() >= radius_m * 100.0f) {
+        if ((current_NE - center_NE).length() >= radius_m * 100.0f) {
             continue;
         }
         // at the centre there is no closest direction, so north is used
-        const Vector2f radial = center_to_vehicle.is_zero() ? Vector2f{1.0f, 0.0f} : center_to_vehicle.normalized();
+        const Vector2f center_to_predicted = predicted_NE - center_NE;
+        const Vector2f radial = center_to_predicted.is_zero() ? Vector2f{1.0f, 0.0f} : center_to_predicted.normalized();
         const float exit_radius_cm = radius_m * 100.0f + clearance_cm;
         bool done = false;
         for (uint16_t step = 0; !done && (step <= 180 / OA_BENDYRULER_BEARING_INC_XY); step++) {
@@ -784,14 +794,14 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
                 Vector2f outward = radial;
                 outward.rotate(radians(step * OA_BENDYRULER_BEARING_INC_XY * (side == 0 ? 1.0f : -1.0f)));
                 const Vector2f candidate_NE = center_NE + outward * exit_radius_cm;
-                const float dist_sq = (candidate_NE - current_NE).length_squared();
+                const float dist_sq = (candidate_NE - predicted_NE).length_squared();
                 if (dist_sq >= best_dist_sq) {
                     // every remaining exit from this circle is further away than the best so far
                     done = true;
                     continue;
                 }
                 Location candidate_loc;
-                if (exclusion_zone_exit_clear(current_loc, current_NE, candidate_NE, -1, i, candidate_loc)) {
+                if (exclusion_zone_exit_clear(predicted_loc, predicted_NE, candidate_NE, -1, i, candidate_loc)) {
                     best_dist_sq = dist_sq;
                     exit_loc = candidate_loc;
                     found = true;
@@ -808,13 +818,13 @@ bool AP_OABendyRuler::calc_exclusion_zone_exit(const Location &current_loc, Loca
 }
 
 // returns true if the exit at candidate_NE, an offset in cm from the EKF origin, clears every fence,
-// and the route to it from current_loc crosses no fence or obstacle other than the exclusion polygon
-// or circle being left, given by its index (-1 for neither)
+// and the route to it from start_loc (at start_NE) crosses no fence or obstacle other than the
+// exclusion polygon or circle being left, given by its index (-1 for neither)
 // candidate_loc is set to the exit's location
-bool AP_OABendyRuler::exclusion_zone_exit_clear(const Location &current_loc, const Vector2f &current_NE, const Vector2f &candidate_NE, int16_t polygon_index, int16_t circle_index, Location &candidate_loc) const
+bool AP_OABendyRuler::exclusion_zone_exit_clear(const Location &start_loc, const Vector2f &start_NE, const Vector2f &candidate_NE, int16_t polygon_index, int16_t circle_index, Location &candidate_loc) const
 {
-    candidate_loc = current_loc;
-    candidate_loc.offset((candidate_NE.x - current_NE.x) * 0.01f, (candidate_NE.y - current_NE.y) * 0.01f);
+    candidate_loc = start_loc;
+    candidate_loc.offset((candidate_NE.x - start_NE.x) * 0.01f, (candidate_NE.y - start_NE.y) * 0.01f);
     if (is_negative(calc_avoidance_margin(candidate_loc, candidate_loc, false))) {
         return false;
     }
@@ -823,13 +833,13 @@ bool AP_OABendyRuler::exclusion_zone_exit_clear(const Location &current_loc, con
     // covers the exit itself, which it skips as a zero length path above.  The circular fence is
     // convex, so with the exit inside it the route cannot leave it
     float margin;
-    if (calc_margin_from_object_database(current_loc, candidate_loc, margin) && is_negative(margin)) {
+    if (calc_margin_from_object_database(start_loc, candidate_loc, margin) && is_negative(margin)) {
         return false;
     }
-    if (calc_margin_from_inclusion_and_exclusion_polygons(current_loc, candidate_loc, margin, polygon_index) && is_negative(margin)) {
+    if (calc_margin_from_inclusion_and_exclusion_polygons(start_loc, candidate_loc, margin, polygon_index) && is_negative(margin)) {
         return false;
     }
-    if (calc_margin_from_inclusion_and_exclusion_circles(current_loc, candidate_loc, margin, circle_index) && is_negative(margin)) {
+    if (calc_margin_from_inclusion_and_exclusion_circles(start_loc, candidate_loc, margin, circle_index) && is_negative(margin)) {
         return false;
     }
     return true;
