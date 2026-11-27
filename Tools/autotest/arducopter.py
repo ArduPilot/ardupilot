@@ -27093,6 +27093,85 @@ return update, 5000
             if cal == "gyro" and polls == 0:
                 raise NotAchievedException("No polls while the gyros calibrated")
 
+    def ScriptingCompassCalState(self):
+        '''Test compass:get_cal_state() reports a compass calibration's progress'''
+        self.install_script_content_context("magcal-state.lua", """
+local MAV_CMD_DO_START_MAG_CAL = 42424
+local MAV_RESULT_ACCEPTED = 0
+local MAG_CAL_SUCCESS = 4
+local started = false
+
+local function update()
+    if not started then
+        -- there is no calibrator until a calibration starts
+        local status = compass:get_cal_state(0)
+        gcs:send_text(6, string.format("magcal before %s", tostring(status)))
+        -- every compass, no autosave
+        if gcs:run_command_int(MAV_CMD_DO_START_MAG_CAL, {}) ~= MAV_RESULT_ACCEPTED then
+            gcs:send_text(6, "magcal start failed")
+            return
+        end
+        started = true
+        return update, 500
+    end
+    local status, pct = compass:get_cal_state(0)
+    gcs:send_text(6, string.format("magcal %d %.0f", status, pct))
+    if status >= MAG_CAL_SUCCESS then
+        return
+    end
+    return update, 500
+end
+return update, 5000
+""")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+        })
+        self.context_collect('STATUSTEXT')
+        # SITL's calibration model turns the vehicle through a series of
+        # poses while servo 5 is between 1200 and 1300
+        self.customise_SITL_commandline(["-M", "calibration"])
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=5, p2=1250)
+
+        self.wait_statustext("magcal before nil", check_context=True)
+        # the calibration finishes in about 50s; allow two runs through
+        # the calibration model's 18 poses of 6s each
+        timeout = 2 * 18 * 6
+        running_pct = {
+            mavutil.mavlink.MAG_CAL_RUNNING_STEP_ONE: [],
+            mavutil.mavlink.MAG_CAL_RUNNING_STEP_TWO: [],
+        }
+        last_pct = 0
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Calibration did not finish, last %u%%" % last_pct)
+            m = self.assert_receive_message('STATUSTEXT', timeout=10)
+            if m.text == "magcal start failed":
+                raise NotAchievedException("Calibration did not start")
+            match = re.match(r"magcal (\d+) (\d+)$", m.text)
+            if match is None:
+                continue
+            (status, pct) = (int(match.group(1)), int(match.group(2)))
+            if pct < last_pct:
+                raise NotAchievedException("Progress went back from %u%% to %u%%" % (last_pct, pct))
+            last_pct = pct
+            if status == mavutil.mavlink.MAG_CAL_SUCCESS:
+                break
+            if status in running_pct:
+                running_pct[status].append(pct)
+            elif status != mavutil.mavlink.MAG_CAL_WAITING_TO_START:
+                raise NotAchievedException("Calibration status %u at %u%%" % (status, pct))
+        if last_pct != 100:
+            raise NotAchievedException("Calibration succeeded at %u%%" % last_pct)
+        # step one runs to 33%, step two from there to 99%
+        for (status, low, high) in ((mavutil.mavlink.MAG_CAL_RUNNING_STEP_ONE, 0, 34),
+                                    (mavutil.mavlink.MAG_CAL_RUNNING_STEP_TWO, 33, 99)):
+            seen = running_pct[status]
+            if not any(low < pct < high for pct in seen):
+                raise NotAchievedException("No progress between %u%% and %u%% in status %u: %s" % (low, high, status, seen))
+        self.progress("Calibration succeeded after %.0fs, step two from %u%%" %
+                      (self.get_sim_time_cached() - tstart, running_pct[mavutil.mavlink.MAG_CAL_RUNNING_STEP_TWO][0]))
+
     def LuaParamLockdown(self):
         '''test param-lockdown.lua applet'''
         self.set_parameters({
@@ -27762,6 +27841,7 @@ return update, 1000
             self.LuaMAVLinkTarget,
             self.LuaParamLockdown,
             self.ScriptingCommandIntCalibration,
+            self.ScriptingCompassCalState,
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             self.CRSF,
