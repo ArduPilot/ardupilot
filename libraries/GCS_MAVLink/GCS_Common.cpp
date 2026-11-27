@@ -3571,14 +3571,8 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 
 #if HAL_ENABLE_DFU_BOOT
         if (is_equal(packet.param4, 99.0f)) {
-#if AP_SIGNED_FIRMWARE
-            send_text(MAV_SEVERITY_ERROR, "Refusing DFU for secure firmware");
-            return MAV_RESULT_FAILED;
-#else
-            send_text(MAV_SEVERITY_WARNING, "Entering DFU mode");
-            hal.util->boot_to_dfu();
-            return MAV_RESULT_ACCEPTED;
-#endif
+            // legacy form of REBOOT_SHUTDOWN_ACTION_REBOOT_TO_ROM_BOOTLOADER
+            return handle_reboot_to_rom_bootloader(packet, msg);
         }
 #endif
     }
