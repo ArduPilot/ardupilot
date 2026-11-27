@@ -346,6 +346,8 @@ singleton GCS method get_high_latency_status depends HAL_HIGH_LATENCY2_ENABLED =
 singleton GCS method enable_high_latency_connections void boolean
 singleton GCS method enable_high_latency_connections depends HAL_HIGH_LATENCY2_ENABLED == 1
 singleton GCS manual run_command_int lua_GCS_command_int 2 1
+singleton GCS method take_command_int_result_for_script boolean uint16_t'skip_check uint8_t'Null
+singleton GCS method take_command_int_result_for_script rename command_int_result
 
 -- GCS methods to enable/disable setting of parameters via the GCS
 --   PARAM_SET handling and the MAVFTP param-file-upload method:
