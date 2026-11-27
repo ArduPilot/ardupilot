@@ -41,6 +41,16 @@ def build_option_defines(options):
     values = {opt.define: build_option_value(options, opt) for opt in build_options.BUILD_OPTIONS}
     return {d: v for d, v in values.items() if v is not None}
 
+def command_line_defines(options):
+    '''{define: value string} for the --define options given to waf
+    configure, for the hwdef scripts to see what the compiler will see'''
+    defines = {}
+    for d in options.get('define') or []:
+        (n, sep, v) = d.partition("=")
+        # -DFOO defines FOO as 1, -DFOO= defines it as empty
+        defines[n] = v if sep else '1'
+    return defines
+
 def add_optimisation(env, level):
     '''use the same optimisation level for C and C++'''
     env.CFLAGS += [level]

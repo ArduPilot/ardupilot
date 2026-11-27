@@ -816,6 +816,7 @@ def generate_hwdef_h(env):
         mass_storage_option=get_build_option_value(env, 'MASS_STORAGE'),
         hwdef=hwdef,
         build_option_defines=boards.build_option_defines(env.OPTIONS),
+        command_line_defines=boards.command_line_defines(env.OPTIONS),
         # stringify like old subprocess based invocation. note that no error is
         # generated if this path is missing!
         default_params_filepath=str(env.DEFAULT_PARAMETERS),

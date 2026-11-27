@@ -915,15 +915,15 @@ class ChibiOSHWDef(hwdef.HWDef):
 
     def validate_flash_storage_size(self):
         '''check there is room for storage with HAL_STORAGE_SIZE'''
-        if self.intdefines.get('HAL_WITH_RAMTRON', 0) == 1:
+        if self.get_intdefine('HAL_WITH_RAMTRON', 0) == 1:
             # no check for RAMTRON storage
             return
         storage_flash_page = self.get_storage_flash_page()
         pages = self.get_flash_pages_sizes()
         page_size = pages[storage_flash_page] * 1024
-        if self.intdefines.get('AP_FLASH_STORAGE_DOUBLE_PAGE', 0) == 1:
+        if self.get_intdefine('AP_FLASH_STORAGE_DOUBLE_PAGE', 0) == 1:
             page_size *= 2
-        storage_size = self.intdefines.get('HAL_STORAGE_SIZE', None)
+        storage_size = self.get_intdefine('HAL_STORAGE_SIZE', None)
         if storage_size is None:
             self.error('Need HAL_STORAGE_SIZE define')
         if storage_size >= page_size:
@@ -942,7 +942,7 @@ class ChibiOSHWDef(hwdef.HWDef):
     def write_crashdump_config(self, f, flash_size):
         '''write crashdump config defines'''
         is_periph = self.is_periph_fw()
-        legacy_enabled = self.intdefines.get('AP_CRASHDUMP_ENABLED')
+        legacy_enabled = self.get_intdefine('AP_CRASHDUMP_ENABLED')
         if legacy_enabled is None:
             crashdump_default = (flash_size >= 2048 and
                                  not self.is_bootloader_fw() and
@@ -963,17 +963,17 @@ class ChibiOSHWDef(hwdef.HWDef):
             self.mcu_series.startswith(('STM32H7', 'STM32F7', 'STM32F4', 'STM32L4')) and
             has_sdcard_spi)
         crashdump_fatfs_supported = has_fatfs_sdcard and (supported_sdc or supported_spi)
-        crashdump_flash_requested = bool(self.intdefines.get('AP_CRASHDUMP_FLASH_ENABLED', False))
+        crashdump_flash_requested = bool(self.get_intdefine('AP_CRASHDUMP_FLASH_ENABLED', False))
         crashdump_fatfs_default = (crashdump_default and crashdump_fatfs_supported and
                                    not crashdump_flash_requested)
-        crashdump_fatfs = (bool(self.intdefines.get('AP_CRASHDUMP_FATFS_ENABLED',
-                                                    crashdump_fatfs_default)) and
+        crashdump_fatfs = (bool(self.get_intdefine('AP_CRASHDUMP_FATFS_ENABLED',
+                                                   crashdump_fatfs_default)) and
                            crashdump_fatfs_supported and
                            crashdump_allowed)
         crashdump_flash_default = crashdump_default and not crashdump_fatfs_supported
         crashdump_flash = (
-            bool(self.intdefines.get('AP_CRASHDUMP_FLASH_ENABLED',
-                                     crashdump_flash_default)) and
+            bool(self.get_intdefine('AP_CRASHDUMP_FLASH_ENABLED',
+                                    crashdump_flash_default)) and
             crashdump_allowed)
         if is_periph:
             crashdump_fatfs = False
@@ -1155,7 +1155,7 @@ class ChibiOSHWDef(hwdef.HWDef):
                     continue
                 f.write(self.define_line(d))
 
-        if self.intdefines.get('AP_NETWORKING_ENABLED', 0) == 1:
+        if self.get_intdefine('AP_NETWORKING_ENABLED', 0) == 1:
             self.enable_networking(f)
 
         if self.have_type_prefix('CAN') and not using_chibios_can:
@@ -1729,7 +1729,7 @@ INCLUDE common.ld
 
     def write_check_firmware(self, f):
         '''add AP_CHECK_FIRMWARE_ENABLED if needed'''
-        if self.is_periph_fw() or self.intdefines.get('AP_OPENDRONEID_ENABLED', 0) == 1:
+        if self.is_periph_fw() or self.get_intdefine('AP_OPENDRONEID_ENABLED', 0) == 1:
             f.write('''
 #ifndef AP_CHECK_FIRMWARE_ENABLED
 #define AP_CHECK_FIRMWARE_ENABLED 1
@@ -2527,7 +2527,7 @@ INCLUDE common.ld
 
     def embed_bootloader(self, f):
         '''added bootloader to ROMFS'''
-        if not self.intdefines.get('AP_BOOTLOADER_FLASHING_ENABLED', 1):
+        if not self.get_intdefine('AP_BOOTLOADER_FLASHING_ENABLED', 1):
             # or, you know, not...
             return
 
@@ -2569,9 +2569,10 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 f.write('#define STM32_SPI_USE_%s                  TRUE\n' % type)
             if type.startswith('I2C'):
                 f.write('#define STM32_I2C_USE_%s                  TRUE\n' % type)
-            if type.startswith('QUADSPI'):
-                f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
-            if type.startswith('OCTOSPI'):
+            if type.startswith('QUADSPI') or type.startswith('OCTOSPI'):
+                # give AP_HAL/board/chibios.h the flag directly rather
+                # than have it derive the flag from the ChibiOS driver setting
+                f.write('#define HAL_USE_%s TRUE\n' % type)
                 f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
 
     def get_dma_exclude(self, periph_list):
@@ -2801,6 +2802,44 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.add_bootloader_defaults(f)
         self.add_iomcu_firmware_defaults(f)
         self.add_normal_firmware_defaults(f)
+
+        self.write_derived_flags(f)
+
+    def write_derived_flags(self, f):
+        '''write flags derived from the board configuration.  These were
+        derived in AP_HAL/board/chibios.h from macros which are only
+        meaningful to the ChibiOS layer, so resolve them here instead.'''
+        # INS_MAX_INSTANCES comes from the hwdef if it sets one, and is
+        # otherwise defaulted from the number of IMUs by write_IMU_config
+        ins_max_instances = self.get_intdefine('INS_MAX_INSTANCES',
+                                               self.ins_max_instances_default)
+        rate_capable = (self.mcu_series.startswith('STM32H7') or
+                        self.mcu_series.startswith('STM32F7') or
+                        (self.mcu_series.startswith('STM32F4') and
+                         ins_max_instances == 1))
+        if rate_capable:
+            f.write('''#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
+#endif
+''')
+
+        # mirror where STORAGE_FLASH_PAGE gets defined: write_mcu_config
+        # only writes it for main firmware, not for bootloaders
+        if ((not self.is_bootloader_fw() and
+             self.get_config('STORAGE_FLASH_PAGE', required=False) is not None) or
+                self.get_intdefine('STORAGE_FLASH_PAGE') is not None):
+            # AP_Param needs to know flash-backed storage is in use
+            # without having to test the page number for definedness
+            f.write('#define HAL_CHIBIOS_MCU_FLASH_STORAGE_ENABLED 1\n')
+
+        # write_peripheral_enable covers the peripherals the hwdef has;
+        # the ChibiOS driver can also be turned on by defining its
+        # STM32_WSPI_USE_* directly
+        for periph in ('QUADSPI1', 'QUADSPI2', 'OCTOSPI1', 'OCTOSPI2'):
+            if periph in self.bytype or periph in self.alttype:
+                continue
+            if self.get_define_value('STM32_WSPI_USE_%s' % periph) in ('1', 'TRUE'):
+                f.write('#define HAL_USE_%s TRUE\n' % periph)
 
     def build_peripheral_list(self):
         '''build a list of peripherals for DMA resolver to work on'''
@@ -3223,16 +3262,16 @@ Please run: Tools/scripts/build_bootloaders.py %s
         '''setup USB mass storage support'''
         flash_size = self.get_config('FLASH_SIZE_KB', type=int)
         ext_flash_size = self.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
-        program_size_limit = self.intdefines.get(
+        program_size_limit = self.get_intdefine(
             'HAL_PROGRAM_SIZE_LIMIT_KB', flash_size + ext_flash_size * 1024)
         mcu_defines = self.get_mcu_config('DEFINES', False) or {}
-        fastboot_enabled = self.intdefines.get(
+        fastboot_enabled = self.get_intdefine(
             'AP_FASTBOOT_ENABLED', int(mcu_defines.get('AP_FASTBOOT_ENABLED', 1))) == 1
         default_mass_storage = (self.is_normal_fw() and
                                 program_size_limit >= 2048 and fastboot_enabled)
         mass_storage_option = self.mass_storage_option
         if mass_storage_option is None:
-            mass_storage_option = self.intdefines.get('AP_REBOOT_MASS_STORAGE_ENABLED')
+            mass_storage_option = self.get_intdefine('AP_REBOOT_MASS_STORAGE_ENABLED')
         mass_storage_requested = (default_mass_storage if mass_storage_option is None else
                                   bool(mass_storage_option))
         supported_mcu = self.mcu_series.startswith(('STM32F4', 'STM32F7', 'STM32H7'))
@@ -3256,6 +3295,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # after validate_periph_defines(), which checks the board's own
         # defines only, as it did before build options were applied
         self.apply_build_option_defines()
+        self.apply_command_line_defines()
 
         if "MCU" not in self.config:
             self.error("Missing MCU type in config")
