@@ -297,10 +297,14 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
     public class AP_ADIS16607 : ISPIPeripheral, IGPIOReceiver
     {
-        public AP_ADIS16607(IMachine machine, byte rotation = 0, uint syncClockHz = 8000)
+        // modelId selects the gyro range: 0x17B8 is the ADIS16607-2 (±480°/s,
+        // 16000 LSB/°/s), 0x17B9 the ADIS16607-3 (±2000°/s, 4000 LSB/°/s)
+        public AP_ADIS16607(IMachine machine, byte rotation = 0, uint syncClockHz = 8000,
+                            ushort modelId = ModelId16607_3)
         {
             this.rotation = rotation;
             this.syncClockHz = syncClockHz;
+            ModelId = modelId;
             physics = AP_PhysicsState.ForMachine(machine);
             thermal = AP_BoardThermalState.ForMachine(machine);
             registers = new ushort[RegisterCount];
@@ -312,10 +316,15 @@ namespace Antmicro.Renode.Peripherals.Sensors
             Reset();
         }
 
+        // MODEL_ID register value, applied at the next (soft) reset
+        public ushort ModelId { get; set; }
+
         public void Reset()
         {
             Array.Clear(registers, 0, registers.Length);
             registers[DeviceId] = DeviceIdValue;
+            registers[ModelIdRegister] = ModelId;
+            gyroScale = ModelId == ModelId16607_2 ? GyroScale16607_2 : GyroScale16607_3;
             registers[WriteLock] = 1;
             fifo.Clear();
             channel = WordsPerSample - 1;
@@ -445,7 +454,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             }
             foreach(var axis in gyro)
             {
-                Push24(axis / GyroScale);
+                Push24(axis / gyroScale);
             }
             fifo.Enqueue((ushort)(short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue,
                 Math.Round((thermal.TemperatureC - 25.0) / 0.005))));
@@ -471,6 +480,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly Queue<ushort> fifo;
         private readonly LimitTimer sampleTimer;
         private readonly uint syncClockHz;
+        private double gyroScale;
         private int transferByte;
         private byte command;
         private byte writeHigh;
@@ -496,10 +506,14 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const int FifoCapacity = 1024;
         private const byte SoftReset = 0x36;
         private const ushort DeviceIdValue = 0x6000;
+        private const byte ModelIdRegister = 0x41;
+        private const ushort ModelId16607_2 = 0x17B8;
+        private const ushort ModelId16607_3 = 0x17B9;
         private const ushort ClearFifo = 0x8000;
         private const int WordsPerSample = 14;
         private const int CounterChannel = 28;
         private const double AccelScale = 9.80665 / 200000.0;
-        private const double GyroScale = Math.PI / 180.0 / 4000.0;
+        private const double GyroScale16607_2 = Math.PI / 180.0 / 16000.0;
+        private const double GyroScale16607_3 = Math.PI / 180.0 / 4000.0;
     }
 }

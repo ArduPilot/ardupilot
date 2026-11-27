@@ -944,6 +944,11 @@ def _imu_children(imu, resolved_devices, defines, name):
             ('16477', 0x405D), ('16507', 0x407B)) if part in device_name), None)
         if product is not None:
             rotation_property = rotation_property + ['    productId: 0x%04X' % product]
+    if driver == 'ADIS16607':
+        # the driver reads MODEL_ID; the model defaults to the -3 range
+        device_name = resolved_devices[0][0].lower()
+        if any(part in device_name for part in ('16607_2', '16607-2')):
+            rotation_property = rotation_property + ['    modelId: 0x17B8']
     if driver == 'ADIS16607' and 'ADIS16607_SYNC_INPUT_CLOCK_HZ' in defines:
         rotation_property = rotation_property + ['    syncClockHz: %u' % _constant_integer(
             defines['ADIS16607_SYNC_INPUT_CLOCK_HZ'])]
