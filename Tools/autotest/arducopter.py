@@ -5991,13 +5991,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if inject:
                 self.set_parameter("SIM_FLOW_OFS_X", 1.0)
 
+        def disarm_and_wait_for_log():
+            '''disarm, then wait for this disarm to reach the log: rows are written in order, so a read
+            after this sees every row the flight logged, the ones held in the logger's buffer included'''
+            disarm_us = int(self.get_sim_time() * 1e6)
+            self.disarm_vehicle(force=True)
+            self.wait_current_onboard_log_contains_message(
+                'ARM', condition='ARM.ArmState==0 and ARM.TimeUS>=%u' % disarm_us)
+
         self.start_subtest("AGL KF gate on: single-axis lockout is recovered")
         self.context_collect('STATUSTEXT')
         fly_with_stuck_flow_axis(8)  # AglKfForOptflow
         self.wait_statustext("flow vel reset", check_context=True, timeout=60)
         self.set_parameter("SIM_FLOW_OFS_X", 0)
         # the reset re-anchors velocity to the faulty axis, so don't expect a graceful landing
-        self.disarm_vehicle(force=True)
+        disarm_and_wait_for_log()
         if self.max_dfreader_field('XKF5', 'NI') < 100:
             raise NotAchievedException("no flow axis lockout was provoked")
         if self.max_dfreader_field('XKF7', 'FVC') == 0:
@@ -6008,7 +6016,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         fly_with_stuck_flow_axis(0)  # clear AglKfForOptflow
         self.delay_sim_time(30, "give the recovery the window it used with the gate on")
         self.set_parameter("SIM_FLOW_OFS_X", 0)
-        self.disarm_vehicle(force=True)
+        disarm_and_wait_for_log()
         if self.max_dfreader_field('XKF5', 'NI') < 100:
             raise NotAchievedException("gate-off half did not reproduce the lockout")
         if self.statustext_in_collections("flow vel reset"):
@@ -6023,7 +6031,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         fly_with_stuck_flow_axis(8, qmin=40, quality=10)
         self.wait_statustext("flow quality", check_context=True, timeout=60)
         self.set_parameter("SIM_FLOW_OFS_X", 0)
-        self.disarm_vehicle(force=True)
+        disarm_and_wait_for_log()
         if self.max_dfreader_field('XKF5', 'NI') < 100:
             raise NotAchievedException("low-quality half did not reproduce the lockout")
         if self.statustext_in_collections("flow vel reset"):
@@ -6047,7 +6055,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_clear_collection('STATUSTEXT')
         self.set_parameter("SIM_FLOW_ENABLE", 1)
         self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
-        self.disarm_vehicle(force=True)
+        disarm_and_wait_for_log()
         fvu = None
         dfreader = self.dfreader_for_current_onboard_log()
         while True:
@@ -6111,7 +6119,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_FLOW_OFS_X", -1.0)
         self.wait_statustext("flow vel reset", check_context=True, timeout=30)
         self.set_parameter("SIM_FLOW_OFS_X", 0)
-        self.disarm_vehicle(force=True)
+        disarm_and_wait_for_log()
         # the speed error a height difference puts into a reset is the flow rate times that
         # difference, and it may be no more than EK3_FLOW_M_NSE times the height
         flow_noise = self.get_parameter("EK3_FLOW_M_NSE")
@@ -6244,7 +6252,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_FLOW_OFS_X", 0)
         stopped = self.statustext_in_collections("stopped aiding")
         paused = [self.statustext_in_collections("EKF3 IMU0 flow vel resets paused %us" % s) for s in (5, 10)]
-        self.disarm_vehicle(force=True)
+        disarm_and_wait_for_log()
         resets = []
         dfreader = self.dfreader_for_current_onboard_log()
         last = 0
@@ -6292,7 +6300,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.delay_sim_time(3, "settle before the next lockout")
         self.set_message_rate_hz('SYSTEM_TIME', 0)
         self.set_parameters({"SIM_FLOW_OFS_X": 0, "SIM_SPEEDUP": self.speedup})
-        self.disarm_vehicle(force=True)
+        disarm_and_wait_for_log()
         fwd = {}
         reset_times = []
         last = {}
@@ -6367,7 +6375,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.send_set_parameter(name, normal_value)
             self.wait_statustext("flow vel reset", check_context=True, timeout=10)
             self.set_parameter("SIM_FLOW_OFS_X", 0)
-            self.disarm_vehicle(force=True)
+            disarm_and_wait_for_log()
             spell_us = None
             offset_us = None
             restore_us = None
