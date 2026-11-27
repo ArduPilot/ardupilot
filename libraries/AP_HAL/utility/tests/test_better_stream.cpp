@@ -150,18 +150,18 @@ TEST(BetterStream, PrintfBases)
  */
 TEST(BetterStream, PrintfLong64)
 {
-    if (sizeof(long) == 8) {
-        EXPECT_STREQ(fmt_result("%ld", 1234567890123L), "1234567890123");
-        EXPECT_STREQ(fmt_result("%ld", -1234567890123L), "-1234567890123");
-        EXPECT_STREQ(fmt_result("%ld", 9223372036854775807L), "9223372036854775807");
-        EXPECT_STREQ(fmt_result("%lu", 18446744073709551615UL), "18446744073709551615");
-        EXPECT_STREQ(fmt_result("%lx", 0x123456789abcdefUL), "123456789ABCDEF");
-        EXPECT_STREQ(fmt_result("%lo", 01234567012345670UL), "1234567012345670");
-        EXPECT_STREQ(fmt_result("[%15lu]", 4294967296UL), "[     4294967296]");
-    }
-    if (sizeof(void *) == 8) {
-        EXPECT_STREQ(fmt_result("%p", (void *)0x123456789abcULL), "0x123456789ABC");
-    }
+#if __SIZEOF_LONG__ == 8
+    EXPECT_STREQ(fmt_result("%ld", 1234567890123L), "1234567890123");
+    EXPECT_STREQ(fmt_result("%ld", -1234567890123L), "-1234567890123");
+    EXPECT_STREQ(fmt_result("%ld", 9223372036854775807L), "9223372036854775807");
+    EXPECT_STREQ(fmt_result("%lu", 18446744073709551615UL), "18446744073709551615");
+    EXPECT_STREQ(fmt_result("%lx", 0x123456789abcdefUL), "123456789ABCDEF");
+    EXPECT_STREQ(fmt_result("%lo", 01234567012345670UL), "1234567012345670");
+    EXPECT_STREQ(fmt_result("[%15lu]", 4294967296UL), "[     4294967296]");
+#endif
+#if __SIZEOF_POINTER__ == 8
+    EXPECT_STREQ(fmt_result("%p", (void *)0x123456789abcULL), "0x123456789ABC");
+#endif
     // values that fit in 32 bits are unchanged
     EXPECT_STREQ(fmt_result("%ld", -2147483647L - 1), "-2147483648");
     EXPECT_STREQ(fmt_result("%lu", 4294967295UL), "4294967295");
