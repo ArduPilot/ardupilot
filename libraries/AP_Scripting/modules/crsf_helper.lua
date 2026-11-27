@@ -140,25 +140,15 @@ local idle_backoff = 0
 -- This function runs as an independent loop for each script.
 -- It uses the peek/pop API to safely coexist with other menu scripts.
 local function event_loop()
-    -- Add dynamic polling delays based on arming state
-    local IDLE_DELAY
-    local ACTIVE_DELAY
-
-    -- Use the correct arming check from the 'arming' object
-    if arming:is_armed() then
-        -- Vehicle is ARMED: prioritize flight code, slow down UI polling
-        IDLE_DELAY = 500  -- 2.0 Hz idle polling
-        ACTIVE_DELAY = 100 -- 10 Hz active polling
-    else
-        -- Vehicle is DISARMED: prioritize UI responsiveness for setup
-        IDLE_DELAY = 200  -- 5.0 Hz idle polling
-        ACTIVE_DELAY = 20   -- 50 Hz active polling
-    end
+    -- every menu item read waits for this loop, so keep it fast when armed too
+    local IDLE_DELAY = 200  -- 5.0 Hz idle polling
+    local ACTIVE_DELAY = 20   -- 50 Hz active polling
 
     -- ## 1. Peek at the event queue to see if there's anything to do ##
     local count, param_id, payload, events = crsf:peek_menu_event()
 
-    -- If the queue is empty, reschedule with the (now dynamic) idle delay.
+    -- If the queue is empty, keep polling fast for a second while the TX may
+    -- still be browsing, then drop to the idle rate.
     if count == 0 then
         idle_backoff = idle_backoff + 1
         if idle_backoff > (1000/ACTIVE_DELAY) then -- no events in a second so switch to idle
@@ -301,7 +291,6 @@ local function event_loop()
 
     ::reschedule::
     -- ## 5. Reschedule the loop ##
-    -- Use the (now dynamic) active delay.
     return event_loop, ACTIVE_DELAY
 end
 
