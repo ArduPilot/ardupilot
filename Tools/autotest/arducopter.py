@@ -15047,6 +15047,75 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def AcroToStabilizeTrimAttitudeTarget(self):
+        '''check disarmed Stabilize attitude target stays level after a trip through Acro'''
+        '''
+        Reproduces https://github.com/ArduPilot/ardupilot/issues/35406 : with
+        small, steady roll and yaw stick inputs, the vehicle sitting
+        slightly rolled and slow roll/pitch input shaping, switching
+        STABILIZE -> ACRO -> STABILIZE while disarmed leaves the attitude
+        target diverging although the vehicle never moves.  Staying in
+        STABILIZE is fine.
+        '''
+        self.set_parameters({
+            "AHRS_TRIM_X": -0.0184891,  # vehicle sits about 1deg rolled
+
+            "ACRO_RP_EXPO": 0,
+            "ACRO_TRAINER": 0,
+
+            "ATC_INPUT_TC": 1,
+            "ATC_ACC_Y_MAX": 0,
+        })
+
+        # roll and yaw sticks held just outside the default 20us deadzone:
+        self.set_rc(1, 1525)
+        self.set_rc(4, 1464)
+        self.set_rc(3, 1000)
+
+        self.set_message_rate_hz('ATTITUDE_TARGET', 50)
+
+        def max_target_tilt(duration, phase):
+            '''return worst attitude-target roll and pitch (deg) seen over duration'''
+            tstart = self.get_sim_time()
+            max_roll = 0
+            max_pitch = 0
+            while self.get_sim_time_cached() - tstart < duration:
+                m = self.assert_receive_message('ATTITUDE_TARGET')
+                q = quaternion.Quaternion([m.q[0], m.q[1], m.q[2], m.q[3]])
+                (roll, pitch, yaw) = [math.degrees(x) for x in q.euler]
+                max_roll = max(max_roll, abs(roll))
+                max_pitch = max(max_pitch, abs(pitch))
+            self.progress("%s: max target |roll|=%.2fdeg |pitch|=%.2fdeg" %
+                          (phase, max_roll, max_pitch))
+            return (max_roll, max_pitch)
+
+        # the vehicle sits on the ground about 1deg off level (AHRS_TRIM);
+        # a well-behaved target stays within a couple of degrees of that
+        max_allowed_tilt_deg = 3
+
+        self.change_mode('STABILIZE')
+        self.wait_ready_to_arm()
+        (roll, pitch) = max_target_tilt(10, "STABILIZE (before ACRO)")
+        if max(roll, pitch) > max_allowed_tilt_deg:
+            raise NotAchievedException("Target tilted before ACRO; test setup is wrong")
+
+        self.change_mode('ACRO')
+        max_target_tilt(15, "ACRO")
+
+        self.change_mode('STABILIZE')
+        (roll, pitch) = max_target_tilt(30, "STABILIZE (after ACRO)")
+
+        self.set_rc_from_map({1: 1500, 4: 1500})
+        self.assert_mode('STABILIZE')
+        if self.armed():
+            raise NotAchievedException("Expected to be disarmed")
+
+        if max(roll, pitch) > max_allowed_tilt_deg:
+            raise NotAchievedException(
+                "Disarmed STABILIZE attitude target wandered to roll=%.1f pitch=%.1f deg "
+                "(>%.1f) after a trip through ACRO (issue #35406)" %
+                (roll, pitch, max_allowed_tilt_deg))
+
     def initial_mode(self):
         return "STABILIZE"
 
@@ -27160,6 +27229,7 @@ return update, 1000
             self.Parachute,
             self.MANUAL_CONTROL,
             self.PosHoldDesiredAttitudeMonotonic,
+            self.AcroToStabilizeTrimAttitudeTarget,
             self.RangeFinderDriversMaxAlt_LightwareSerial,
             self.RangeFinderPowerDown,
             self.PAUSE_CONTINUE,
