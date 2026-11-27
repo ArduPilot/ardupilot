@@ -175,6 +175,9 @@ public:
     bool compass_cal_requires_reboot() const { return _cal_requires_reboot; }
     bool is_calibrating() const;
 
+    // calibration status (a MAG_CAL_STATUS) and percent complete of the compass at priority i; false if it has no calibrator
+    bool get_cal_state(uint8_t i, uint8_t &status, float &completion_pct) const;
+
 #if HAL_MAVLINK_BINDINGS_ENABLED
     /*
       handle an incoming MAG_CAL command

@@ -266,6 +266,28 @@ bool Compass::_accept_calibration_mask(uint8_t mask)
     return success;
 }
 
+/*
+  return the state of the last calibration started on the compass at
+  priority i: status is a CompassCalibrator::Status, which is a MAVLink
+  MAG_CAL_STATUS, and completion_pct runs from 0 to 100. Returns false if
+  i is out of range or no calibration has been requested for that compass
+  since boot, so it has no calibrator
+*/
+bool Compass::get_cal_state(uint8_t i, uint8_t &status, float &completion_pct) const
+{
+    if (i >= COMPASS_MAX_INSTANCES) {
+        return false;
+    }
+    CompassCalibrator *calibrator = _calibrator[Priority(i)];
+    if (calibrator == nullptr) {
+        return false;
+    }
+    const CompassCalibrator::State cal_state = calibrator->get_state();
+    status = uint8_t(cal_state.status);
+    completion_pct = cal_state.completion_pct;
+    return true;
+}
+
 #if HAL_GCS_ENABLED
 bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
 {
