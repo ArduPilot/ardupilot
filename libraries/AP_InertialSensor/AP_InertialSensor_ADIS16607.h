@@ -60,8 +60,10 @@ private:
      */
     bool init();
     bool check_dev_id();
-    void accumulate_samples(const struct adis_fifo_data *fifo, const uint8_t num);
+    bool accumulate_samples(const struct adis_fifo_data *fifo, const uint8_t num);
     void read_sensor_fifo(void);
+    void check_diag_stat(void);
+    void handle_corrupt_data(void);
 #if defined (ADIS16607_SYNC_INPUT_CLOCK_HZ) && defined (ADIS16607_SYNC_INPUT_BITMASK)
     void calc_sample_and_dec_rate();
 #endif
@@ -77,9 +79,19 @@ private:
     enum Rotation rotation;
     uint16_t dec_rate;
 
-    // uint32_t lost_sample_cnt {};
-    // uint16_t last_counter;
-    // bool done_first_read;
+    // DATA_CNTR of the last accepted FIFO sample
+    uint16_t last_counter;
+    bool done_first_read;
+
+    // MODEL_ID of a part with the ADIS16607 DEV_ID but an unknown gyro range
+    uint16_t unsupported_model_id;
+
+    // periodic DIAG_STAT check
+    uint32_t last_diag_check_ms;
+    uint16_t last_diag_faults;
+    // a fault was reported by two consecutive DIAG_STAT reads: samples are dropped
+    bool sensor_fault;
+
     float temp_sum;
     uint8_t temp_count;
     uint16_t expected_sample_rate_hz;

@@ -42,7 +42,12 @@
 #define DEV_ID_16607            0x6000
 
 #define REG_REV_ID              0x01
+
 #define REG_DIAG_STAT           0x05
+// FAULT_GYRO, FAULT_XL, FAULT_PWR, FAULT_DIGITAL, FAULT_BL and FAULT_FW.
+// Bit 0 (FIFO_THRESH_MET) is not a fault, bits 1 and 2 concern the sync input.
+#define DIAG_STAT_FAULT_MASK    0x3F00U
+
 #define REG_FIFO_DATA           0x29
 #define REG_FIFO_CH_INDEX       0x2A
 #define REG_FIFO_WORD_CNT       0x2B
@@ -78,11 +83,19 @@
 #define DEC_RATE_1912HZ         4
 #define DEC_RATE_1195HZ         7
 
+#define REG_MODEL_ID            0x41
+#define MODEL_ID_16607_2        0x17B8  // ±480°/sec gyro
+#define MODEL_ID_16607_3        0x17B9  // ±2000°/sec gyro
+
 #define REG_DIGITAL_STATUS      0x4E
 
 #define ADIS16607_FIFO_BUFFER_LEN   4
 #define ADIS16607_FIFO_THRESHOLD    0x400U
 #define ADIS16607_FIFO_CHANNEL_MAX_INDEX 28 // Data Counter Data
+#define ADIS16607_FIFO_MAX_WORDS    1024U
+// bits [7:0] of the *_LOW data words are always zero
+#define ADIS16607_LOW_WORD_ZERO_MASK 0x00FFU
+#define ADIS16607_DIAG_CHECK_MS     50
 
 extern const AP_HAL::HAL& hal;
 
@@ -271,15 +284,30 @@ bool AP_InertialSensor_ADIS16607::check_dev_id()
     // Lock the SPI mode
     write_reg16(REG_SPI_HALFDUPLEX_KEY, 0xB4B4, false);
 
-    if (read_reg16(REG_DEV_ID) == DEV_ID_16607) {
-        accel_scale = GRAVITY_MSS / 200000.0f;  // Accel: Dynamic Range ±40g. 24-bit data format 200000.0 LSB/g
-        gyro_scale = radians(1.0 / 4000.0);     // Gyro: ADIS16607-3, 24-bit data format 4000.0 LSB/°/sec
-        _clip_limit = 39.5f * GRAVITY_MSS;
-
-        return true;
+    if (read_reg16(REG_DEV_ID) != DEV_ID_16607) {
+        return false;
     }
 
-    return false;
+    // DEV_ID is the same for all models, MODEL_ID gives the gyro range
+    const uint16_t model_id = read_reg16(REG_MODEL_ID);
+    switch (model_id) {
+    case MODEL_ID_16607_2:
+        gyro_scale = radians(1.0 / 16000.0);    // Gyro: ADIS16607-2, ±480°/sec, 24-bit data format 16000.0 LSB/°/sec
+        break;
+    case MODEL_ID_16607_3:
+        gyro_scale = radians(1.0 / 4000.0);     // Gyro: ADIS16607-3, ±2000°/sec, 24-bit data format 4000.0 LSB/°/sec
+        break;
+    default:
+        // an unknown gyro range would give wrongly scaled rates
+        unsupported_model_id = model_id;
+        return false;
+    }
+    unsupported_model_id = 0;
+
+    accel_scale = GRAVITY_MSS / 200000.0f;  // Accel: Dynamic Range ±40g. 24-bit data format 200000.0 LSB/g
+    _clip_limit = 39.5f * GRAVITY_MSS;
+
+    return true;
 }
 
 bool AP_InertialSensor_ADIS16607::init()
@@ -298,6 +326,9 @@ bool AP_InertialSensor_ADIS16607::init()
     } while (!check_dev_id() && --tries);
 
     if (tries == 0) {
+        if (unsupported_model_id != 0) {
+            DEV_PRINTF("ADIS16607: unsupported MODEL_ID 0x%04x\n", unsigned(unsupported_model_id));
+        }
         return false;
     }
 
@@ -410,18 +441,68 @@ bool AP_InertialSensor_ADIS16607::write_reg16(uint8_t regnum, uint16_t value, bo
     return false;
 }
 
-void AP_InertialSensor_ADIS16607::accumulate_samples(const adis_fifo_data *fifo, const uint8_t num)
+/**
+ * @brief Count a corrupt read and resynchronise to the FIFO sample blocks
+ */
+void AP_InertialSensor_ADIS16607::handle_corrupt_data(void)
+{
+    _inc_accel_error_count(accel_instance);
+    _inc_gyro_error_count(gyro_instance);
+    need_sync = true;
+}
+
+/**
+ * @brief Check DIAG_STAT for sensor faults
+ */
+void AP_InertialSensor_ADIS16607::check_diag_stat(void)
+{
+    // DIAG_STAT is cleared on read, so a fault flag on two consecutive
+    // reads means the fault is still present. A single flag is taken as
+    // transient, like the double read at startup.
+    const uint16_t faults = read_reg16(REG_DIAG_STAT) & DIAG_STAT_FAULT_MASK;
+    const bool fault = (faults != 0) && (last_diag_faults != 0);
+    if (fault && !sensor_fault) {
+        // count each fault period once
+        _inc_accel_error_count(accel_instance);
+        _inc_gyro_error_count(gyro_instance);
+    }
+    sensor_fault = fault;
+    last_diag_faults = faults;
+}
+
+/**
+ * @brief Check and publish FIFO samples
+ * @return false if a sample is corrupt; it and the rest of the block are dropped
+ */
+bool AP_InertialSensor_ADIS16607::accumulate_samples(const adis_fifo_data *fifo, const uint8_t num)
 {
     for (uint8_t i = 0; i < num; i++) {
         const adis_fifo_data &data = fifo[i];
 
-        // Check if we have lost a sample
-        // const uint16_t data_counter = be16toh(data.counter);
-        // if (done_first_read && (uint16_t(last_counter + 1) != data_counter)) {
-        //     lost_sample_cnt += (data_counter - last_counter - 1);
-        // }
-        // done_first_read = true;
-        // last_counter = data_counter;
+        // The low 8 bits of each *_LOW word are always zero. Anything else
+        // means a corrupt transfer (no CRC in half-duplex SPI mode) or a
+        // read that is not aligned to the sample block.
+        const uint16_t low_words = be16toh(data.ax_low) | be16toh(data.ay_low) | be16toh(data.az_low) |
+                                   be16toh(data.gx_low) | be16toh(data.gy_low) | be16toh(data.gz_low);
+        if ((low_words & ADIS16607_LOW_WORD_ZERO_MASK) != 0) {
+            return false;
+        }
+
+        // DATA_CNTR increments once per output sample. The FIFO is only
+        // discontinuous after a reset or resync (done_first_read is cleared
+        // then), so a gap here means corrupt or misaligned data.
+        const uint16_t data_counter = be16toh(data.counter);
+        if (done_first_read && (uint16_t(last_counter + 1) != data_counter)) {
+            return false;
+        }
+        done_first_read = true;
+        last_counter = data_counter;
+
+        if (sensor_fault) {
+            // DIAG_STAT reports a fault: keep draining the FIFO but do not
+            // publish, so the frontend sees this sensor as unhealthy
+            continue;
+        }
 
         Vector3f accel{float(accel_scale * (int32_t((be16toh(data.ax_high) << 16) | be16toh(data.ax_low)) >> 8)),
                     float(accel_scale * (int32_t((be16toh(data.ay_high) << 16) | be16toh(data.ay_low)) >> 8)),
@@ -446,6 +527,8 @@ void AP_InertialSensor_ADIS16607::accumulate_samples(const adis_fifo_data *fifo,
             temp_count = 0;
         }
     }
+
+    return true;
 }
 
 /**
@@ -453,7 +536,20 @@ void AP_InertialSensor_ADIS16607::accumulate_samples(const adis_fifo_data *fifo,
  */
 void AP_InertialSensor_ADIS16607::read_sensor_fifo(void)
 {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_diag_check_ms >= ADIS16607_DIAG_CHECK_MS) {
+        last_diag_check_ms = now_ms;
+        check_diag_stat();
+    }
+
     uint16_t fifo_word_num = read_reg16(REG_FIFO_WORD_CNT);
+
+    if (fifo_word_num > ADIS16607_FIFO_MAX_WORDS) {
+        // Bits [15:11] are reserved and the FIFO holds 1024 words, so the
+        // read is corrupt (e.g. DOUT stuck high reads 0xFFFF)
+        handle_corrupt_data();
+        return;
+    }
 
     if (fifo_word_num < WORD_PER_SAMPLE) {
         return;
@@ -475,6 +571,9 @@ void AP_InertialSensor_ADIS16607::read_sensor_fifo(void)
     uint8_t *buffer = (uint8_t *)fifo_buffer;
 
     if (need_sync) {
+        // samples are lost while resyncing, DATA_CNTR starts again
+        done_first_read = false;
+
         uint16_t val = read_reg16(REG_FIFO_DATA);
         uint16_t ch = read_reg16(REG_FIFO_CH_INDEX);
         fifo_word_num--;
@@ -488,8 +587,11 @@ void AP_InertialSensor_ADIS16607::read_sensor_fifo(void)
             }
             buffer[0] = uint8_t(val >> 8);
             buffer[1] = uint8_t(val & 0xFF);
-            accumulate_samples((adis_fifo_data *)&buffer[0], 1);
             need_sync = false;
+            if (!accumulate_samples((adis_fifo_data *)&buffer[0], 1)) {
+                handle_corrupt_data();
+                return;
+            }
             fifo_word_num -= (WORD_PER_SAMPLE - 1);
         } else if (ch == ADIS16607_FIFO_CHANNEL_MAX_INDEX) {
             need_sync = false;
@@ -518,7 +620,10 @@ void AP_InertialSensor_ADIS16607::read_sensor_fifo(void)
             return;
         }
 
-        accumulate_samples((adis_fifo_data *)&buffer[2], read_block);
+        if (!accumulate_samples((adis_fifo_data *)&buffer[2], read_block)) {
+            handle_corrupt_data();
+            return;
+        }
         total_block -= read_block;
     }
 }
