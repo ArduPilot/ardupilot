@@ -24,6 +24,7 @@ def build(bld):
             'AP_LTM_Telem',
             'AP_Devo_Telem',
             'AC_AutoTune',
+            'AP_AngleSensor',
             'AP_Follow',
             'AC_PrecLand',
             'AP_IRLock',

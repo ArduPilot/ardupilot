@@ -73,6 +73,7 @@
 #include <AP_OSD/AP_OSD.h>
 
 #include <AP_Rally/AP_Rally.h>
+#include <AP_AngleSensor/AS5600.h> //Magnetic Encoder library, line added by Cole
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_Parachute/AP_Parachute.h>
@@ -99,6 +100,8 @@
 #if AP_TUNING_ENABLED
 #include "tuning.h"
 #endif
+
+
 
 // Configuration
 #include "config.h"
@@ -245,6 +248,13 @@ private:
 #endif // AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
 
     float get_landing_height(bool &using_rangefinder);
+
+
+#if AP_RPM_ENABLED
+    AP_RPM rpm_sensor;
+#endif  // AP_RPM_ENABLED
+
+    AP_AngleSensor_AS5600 aoa_sensor{2, 0x36};                                             //This is code added by Cole
 
     AP_TECS TECS_controller{ahrs, aparm, landing, MASK_LOG_TECS};
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
