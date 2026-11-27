@@ -8,6 +8,12 @@ On firmware that runs a script's calibrations on the main thread, the gyro,
 accel, trim and force calibrations show "Calibrating" until they finish,
 then their result until you press OK.
 
+Calibrate Compass shows the calibration's progress on the transmitter, then
+whether it saved or which compass failed and why; backing out of the
+progress popup cancels it. After any compass calibration, finished or not,
+the vehicle needs a reboot before it will arm. Calibrate Compass needs
+firmware that provides compass:get_cal_state().
+
 ## Operation
 
 - Install the lua script in the APM/scripts directory on the flight
