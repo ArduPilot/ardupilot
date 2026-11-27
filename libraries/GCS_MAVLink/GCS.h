@@ -668,6 +668,9 @@ protected:
 #endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     void handle_setup_signing(const mavlink_message_t &msg) const;
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+#if HAL_ENABLE_DFU_BOOT
+    MAV_RESULT handle_reboot_to_rom_bootloader(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+#endif  // HAL_ENABLE_DFU_BOOT
 #if AP_MAVLINK_FAILURE_CREATION_ENABLED
     struct {
         HAL_Semaphore sem;
