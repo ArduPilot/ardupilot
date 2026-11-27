@@ -15237,6 +15237,26 @@ return update, 200
             target_compid=mavutil.mavlink.MAV_COMP_ID_GIMBAL
         )
 
+    def PreflightRebootROMBootloader(self):
+        '''Ensure a reboot to the ROM bootloader is refused where it is not supported, even if forced'''
+        REBOOT_SHUTDOWN_ACTION_REBOOT_TO_ROM_BOOTLOADER = 6
+        REBOOT_SHUTDOWN_CONDITIONS_FORCE = 20190226
+        self.wait_ready_to_arm()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+            p1=REBOOT_SHUTDOWN_ACTION_REBOOT_TO_ROM_BOOTLOADER,
+            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED,
+        )
+        self.arm_vehicle()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+            p1=REBOOT_SHUTDOWN_ACTION_REBOOT_TO_ROM_BOOTLOADER,
+            y=REBOOT_SHUTDOWN_CONDITIONS_FORCE,
+            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED,
+        )
+        # still running, not rebooted:
+        self.disarm_vehicle()
+
     def steplessAHRSSwitch(self):
         '''Ensure AHRS source switches have input shaping applied correctly'''
 
@@ -16809,6 +16829,7 @@ return update, 200
             self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
             self.PlaneFollowAppletSanity,
             self.PreflightRebootComponent,
+            self.PreflightRebootROMBootloader,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.PPPPeriph,
