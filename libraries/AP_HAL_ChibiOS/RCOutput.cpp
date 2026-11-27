@@ -779,6 +779,8 @@ void RCOutput::push_local(void)
     uint8_t need_trigger = 0;
 
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
+    // another thread's trigger must not start pulses between two channels' writes
+    chMtxLock(&trigger_mutex);
     for (auto &group : pwm_group_list) {
         if (in_soft_serial()) {
             continue;
@@ -856,14 +858,31 @@ void RCOutput::push_local(void)
     }
 
     trigger_groupmask = need_trigger;
+    pushed_widest_pulse = widest_pulse + 50;
 
+    rcout_timer_t waited_for_trigger_us = 0;
+    uint16_t wait_us = 0;
     if (trigger_groupmask) {
-        trigger_groups();
+        const rcout_timer_t now = rcout_micros();
+        if (pulse_separation_pending(now)) {
+            waited_for_trigger_us = last_pulse_trigger_us;
+            wait_us = AP_HAL::timeout_remaining(last_pulse_trigger_us, now, trigger_widest_pulse);
+        } else {
+            start_group_pulses();
+        }
     }
+    chMtxUnlock(&trigger_mutex);
 
-    // set trigger_widest_pulse trigger_groups() so the wait inside
-    // trigger_groups() gets the previous pulse's width, not this ones
-    trigger_widest_pulse = widest_pulse + 50;
+    if (wait_us > 0) {
+        // guarantee minimum pulse separation, sleeping without trigger_mutex so that a push
+        // from another thread is not held up. Pulses started meanwhile carry this push's widths
+        hal.scheduler->delay_microseconds(wait_us);
+        chMtxLock(&trigger_mutex);
+        if (last_pulse_trigger_us == waited_for_trigger_us) {
+            start_group_pulses();
+        }
+        chMtxUnlock(&trigger_mutex);
+    }
 }
 
 uint16_t RCOutput::read(uint8_t chan)
@@ -1455,21 +1474,26 @@ bool RCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
 }
 
 /*
-  trigger output groups for oneshot or dshot modes
+  trigger output groups for oneshot or dshot modes again, with the widths
+  last pushed. If the pulses last triggered are still going out, a push
+  started them since timer_tick() looked, so start none
  */
 void RCOutput::trigger_groups()
 {
-    if (!chMtxTryLock(&trigger_mutex)) {
-        return;
+    chMtxLock(&trigger_mutex);
+    if (!pulse_separation_pending(rcout_micros())) {
+        start_group_pulses();
     }
+    chMtxUnlock(&trigger_mutex);
+}
 
-    rcout_timer_t now = rcout_micros();
-
-    if (pulse_separation_pending(now)) {
-        // guarantee minimum pulse separation
-        hal.scheduler->delay_microseconds(AP_HAL::timeout_remaining(last_pulse_trigger_us, now, trigger_widest_pulse));
-    }
-
+/*
+  start the pulses of the groups in trigger_groupmask. Called with
+  trigger_mutex held, once the pulses last triggered and the gap after them
+  are over
+ */
+void RCOutput::start_group_pulses()
+{
     osalSysLock();
     for (auto &group : pwm_group_list) {
         if (soft_serial_waiting()) {
@@ -1501,8 +1525,7 @@ void RCOutput::trigger_groups()
       to guarantee at least a 50us gap between pulses
     */
     last_pulse_trigger_us = rcout_micros();
-
-    chMtxUnlock(&trigger_mutex);
+    trigger_widest_pulse = pushed_widest_pulse;
 }
 
 /*

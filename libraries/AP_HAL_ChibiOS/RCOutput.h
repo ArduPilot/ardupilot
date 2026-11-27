@@ -654,6 +654,9 @@ private:
     // widest pulse for oneshot triggering
     uint16_t trigger_widest_pulse;
 
+    // widest pulse of the last push, which becomes trigger_widest_pulse when its pulses start
+    uint16_t pushed_widest_pulse;
+
     bool dshot_timer_setup;
 
     volatile bool _initialised;
@@ -675,8 +678,11 @@ private:
     // push out values to local PWM
     void push_local(void);
 
-    // trigger group pulses
+    // trigger group pulses again, unless the last ones are still going out
     void trigger_groups(void);
+
+    // start the pulses of the groups in trigger_groupmask; trigger_mutex held, the last pulses over
+    void start_group_pulses(void);
 
     // true until the pulses last triggered, and the gap after them, are over
     bool pulse_separation_pending(rcout_timer_t now) const {
