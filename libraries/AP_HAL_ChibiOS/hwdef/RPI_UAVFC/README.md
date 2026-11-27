@@ -129,6 +129,14 @@ number of LEDs; both need a reboot. The connector's 5 V comes from the
 switched peripheral rail, so check a long strip's current against that
 regulator. ProfiLED is not supported.
 
+## Buzzer
+
+The board has pads for a buzzer, not a buzzer. Fit one across the BZ and
+3V3 pads, + to 3V3: GPIO3 switches the BZ pad to ground through a MOSFET,
+so a buzzer across BZ and ground never sees a voltage. It runs from 3.3 V
+and every tone is driven at 4 kHz, so a passive 4 kHz magnetic transducer
+rated for 3.3 V suits it best; a 5 V part will be quiet.
+
 ## Compass
 
 The RPI_UAVFC does not have a builtin compass. Attach one on the I2C1 bus

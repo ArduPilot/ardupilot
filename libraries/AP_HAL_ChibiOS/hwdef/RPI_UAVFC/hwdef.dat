@@ -163,9 +163,11 @@ define HAL_GPIO_B_LED_PIN 91
 # AP_Notify skips the LED backend and both LEDs stay driven LOW.
 define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 
-# Buzzer on GPIO3 via PWM1_B (slice 1, channel B, ALT F4).
-# The fitted transducer requires an external square wave at ~4000 Hz - it is
-# NOT self-oscillating - so the tone frequency is clamped below.
+# Buzzer on GPIO3 via PWM1_B (slice 1, channel B, ALT F4). GPIO3 switches a
+# MOSFET on the low side of the BZ pad. The board has no buzzer, only the BZ
+# and 3V3 pads to fit one across, + to 3V3. A passive transducer is not
+# self-oscillating and needs a square wave near its rated frequency, ~4000 Hz
+# for the magnetic ones that suit 3.3 V, so the tone frequency is clamped below.
 # Deliberately no GPIO(n) or HAL_BUZZER_PIN: declaring one would put the pin in
 # HAL_GPIO_PINS and AP_Notify::Buzzer::init() would call pinMode(), clobbering
 # FUNCSEL to SIO and silencing the alarm.  The ALARM tag alone makes

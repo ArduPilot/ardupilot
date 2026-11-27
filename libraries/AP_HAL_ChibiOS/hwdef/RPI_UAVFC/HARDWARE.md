@@ -27,7 +27,7 @@ so do not take pin numbers from it.
 | 0 | Blue LED | Active low |
 | 1 | Green LED | Active low |
 | 2 | LED strip data | J2, output 8, through a 27 ohm resistor; shares slice 1 with the buzzer |
-| 3 | Buzzer | PWM1_B; transducer needs a ~4 kHz drive |
+| 3 | Buzzer | PWM1_B; switches the BZ pad to ground through a MOSFET. No buzzer is fitted: fit a ~4 kHz transducer across the BZ and 3V3 pads, + to 3V3 |
 | 5 | ESC telemetry | Unbound: only reaches UART1 RX, which the GPS uses. Output 9, PWM2_B, with `BRD_ALT_CONFIG` 1 |
 | 6 | Motor 4 | PWM3_A |
 | 7 | Motor 3 | PWM3_B |
