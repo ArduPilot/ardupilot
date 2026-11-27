@@ -554,18 +554,34 @@ bool AP_ExternalAHRS_Xsens::configure_output_settings()
     // and the slow GNSS solution near the receiver rate. Requesting GNSS at the IMU
     // rate (the previous single-rate behaviour) floods the link and destabilises
     // both the GNSS timing and the vehicle main loop.
-    const uint16_t imu_rate = get_rate();                       // EAHRS_RATE, e.g. 400Hz
-    const uint16_t gnss_rate = 5;                               // GNSS solution update
-    const uint16_t aux_rate = (imu_rate < 50) ? imu_rate : 50;  // baro, mag, status, temp
+    const uint16_t imu_rate = get_rate();                        // EAHRS_RATE
+
+    // The standard Acceleration and RateOfTurn outputs are capped at 100Hz on the
+    // GNSS/INS devices. Above that, use the high-rate inertial outputs, which run up
+    // to 1000Hz, so the IMU can drive a fast vehicle loop; attitude, GNSS and the
+    // auxiliary sensors stay at their own lower rates.
+    const bool use_hr = imu_rate > 100;
+    const uint16_t accel_xdi = use_hr ? XDI::ACCELERATION_HR : XDI::ACCELERATION;
+    const uint16_t gyro_xdi = use_hr ? XDI::RATE_OF_TURN_HR : XDI::RATE_OF_TURN;
+    // The HR outputs only run at fixed divisions of 1000Hz; the device rounds any
+    // other request down (400Hz became 250Hz). Round up instead so the IMU is never
+    // slower than EAHRS_RATE.
+    uint16_t inertial_rate = imu_rate;
+    if (use_hr) {
+        inertial_rate = (imu_rate <= 250) ? 250 : ((imu_rate <= 500) ? 500 : 1000);
+    }
+    const uint16_t att_rate = (imu_rate < 100) ? imu_rate : 100; // filtered attitude/status cap
+    const uint16_t gnss_rate = 5;                                // GNSS solution update
+    const uint16_t aux_rate = (imu_rate < 50) ? imu_rate : 50;   // baro, mag, temp
 
     struct OutputItem { uint16_t xdi; uint16_t rate; };
     const OutputItem data_items[] = {
         { XDI::PACKET_COUNTER,      imu_rate  },
         { XDI::SAMPLE_TIME_FINE,    imu_rate  },
-        { XDI::QUATERNION,          imu_rate  },
-        { XDI::ACCELERATION,        imu_rate  },
-        { XDI::RATE_OF_TURN,        imu_rate  },
-        { XDI::STATUS_WORD,         aux_rate  },
+        { accel_xdi,                inertial_rate },
+        { gyro_xdi,                 inertial_rate },
+        { XDI::QUATERNION,          att_rate  },
+        { XDI::STATUS_WORD,         att_rate  },
         { XDI::MAGNETIC_FIELD,      aux_rate  },
         { XDI::TEMPERATURE,         aux_rate  },
         { XDI::BAROMETRIC_PRESSURE, aux_rate  },
@@ -1010,6 +1026,28 @@ bool AP_ExternalAHRS_Xsens::parse_mtdata2(const uint8_t* xbus_data, SensorData& 
                 }
                 break;
 
+            case XDI::ACCELERATION_HR:
+                if (size == 12) {
+                    sensor_data.acceleration.accX = read_float(payload, index);
+                    sensor_data.acceleration.accY = read_float(payload, index);
+                    sensor_data.acceleration.accZ = read_float(payload, index);
+                    sensor_data.hasAcceleration = true;
+                } else {
+                    index += size;
+                }
+                break;
+
+            case XDI::RATE_OF_TURN_HR:
+                if (size == 12) {
+                    sensor_data.rateOfTurn.gyrX = read_float(payload, index);
+                    sensor_data.rateOfTurn.gyrY = read_float(payload, index);
+                    sensor_data.rateOfTurn.gyrZ = read_float(payload, index);
+                    sensor_data.hasRateOfTurn = true;
+                } else {
+                    index += size;
+                }
+                break;
+
             case XDI::MAGNETIC_FIELD:
                 if (size == 12) {
                     sensor_data.magneticField.magX = read_float(payload, index);
@@ -1125,12 +1163,25 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
         }
     }
 
-    // Publish to external systems
-    if (data.hasAcceleration && data.hasRateOfTurn) {
+    // Publish to external systems. With the high-rate outputs the device sends
+    // acceleration and rate of turn in separate packets, so requiring both in one
+    // packet meant no IMU sample was ever published. Keep the latest acceleration
+    // and publish a sample each time a rate of turn arrives.
+    static Vector3f last_accel;
+    static bool have_accel;
+    static float last_temperature = -300;
+    if (data.hasAcceleration) {
+        last_accel = Vector3f(data.acceleration.accX, data.acceleration.accY, data.acceleration.accZ);
+        have_accel = true;
+    }
+    if (data.hasTemperature) {
+        last_temperature = data.temperature;
+    }
+    if (data.hasRateOfTurn && have_accel) {
         AP_ExternalAHRS::ins_data_message_t ins{};
-        ins.accel = Vector3f(data.acceleration.accX, data.acceleration.accY, data.acceleration.accZ);
+        ins.accel = last_accel;
         ins.gyro = Vector3f(data.rateOfTurn.gyrX, data.rateOfTurn.gyrY, data.rateOfTurn.gyrZ);
-        ins.temperature = data.hasTemperature ? data.temperature : -300;
+        ins.temperature = last_temperature;
         AP::ins().handle_external(ins);
     }
 
