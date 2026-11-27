@@ -83,8 +83,9 @@ larger servos from their own BEC.
 
 Output 8 shares its PWM slice with the buzzer. As an LED strip, its default,
 the two work together, and so do they when a script drives a strip there.
-Given any other function, 0 included, output 8 runs as PWM and the buzzer is
-off; the RCOut banner then ends ", buzzer off".
+With function 0 output 8 is off and the buzzer works. Given a servo
+function, output 8 runs as PWM and the buzzer is off; the RCOut banner then
+ends ", buzzer off".
 
 Channels within the same group need to use the same output rate. If any
 channel in a group uses DShot then all channels in the group need to use
@@ -204,6 +205,5 @@ ArduPilot ground station.
 - The battery current input does not track load on the vehicles tested.
 - ESC calibration works with the throttle-high procedure only;
   `ESC_CALIBRATION` 2 or 3 makes the board reboot repeatedly.
-- The buzzer and output 8 share a PWM slice, so output 8 as anything but an
-  LED strip turns the buzzer off. A NeoPixel strip there comes from the PIO
-  and leaves the slice to the buzzer; that has not been checked on hardware.
+- The buzzer and output 8 share a PWM slice, so output 8 as a servo output
+  turns the buzzer off.

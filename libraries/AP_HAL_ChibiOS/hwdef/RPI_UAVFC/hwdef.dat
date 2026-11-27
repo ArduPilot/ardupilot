@@ -137,9 +137,10 @@ PA14 PWM7_A TIM7 PWM(7) GPIO(56)
 # GPIO2 drives the WS2812 LED connector J2 (net RGB_LED, through R82), output
 # 8. No LED is fitted on the board; J2 is a 3-pin JST-SH header, pin 3 data,
 # pin 1 +5V, pin 2 ground. SERVO8_FUNCTION 120 drives a strip from the PIO, as
-# DShot is driven on the motor pins above. It shares slice 1 with the buzzer,
-# so any function that makes it a PWM output, 0 included, takes the slice and
-# turns the buzzer off; the RCOut banner then says so.
+# DShot is driven on the motor pins above. It shares slice 1 with the buzzer:
+# with function 0 it is off and the buzzer keeps the slice, and a function
+# that makes it a PWM output takes the slice and turns the buzzer off; the
+# RCOut banner then says so.
 PA2 PWM1_A TIM1 PWM(8) GPIO(57)
 
 # BRD_ALT_CONFIG 1 adds servo outputs 9 and 10 on the ESC connector's TEL pin
