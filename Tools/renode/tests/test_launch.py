@@ -824,6 +824,21 @@ def test_adis16607_sync_clock_from_define():
     assert '    syncClockHz: 4000' in children[0][4]
 
 
+@pytest.mark.parametrize('device_name, model_id', [
+    ('adis16607', None),
+    ('adis16607_2', 0x17B8),
+    ('adis16607-2', 0x17B8),
+])
+def test_adis16607_model_from_device_name(device_name, model_id):
+    children = gen_board._imu_children(
+        ['ADIS16607', 'SPI:%s' % device_name, 'ROTATION_NONE'],
+        [(device_name, 'SPI1', None)], {}, 'imu0')
+    expected = ['    rotation: 0']
+    if model_id is not None:
+        expected.append('    modelId: 0x%04X' % model_id)
+    assert children == [('imu0', 'Sensors.AP_ADIS16607', 'SPI1', None, expected)]
+
+
 def test_adis1647x_data_ready_follows_hwdef_gpio(tmp_path):
     # mRoNexus passes HAL_DRDY_ADIS16470_PIN (GPIO 93 on PD8)
     generated = gen_board.generate(
