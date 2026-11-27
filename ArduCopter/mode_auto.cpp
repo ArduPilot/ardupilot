@@ -265,6 +265,10 @@ bool ModeAuto::move_vehicle_on_ekf_reset() const
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
+    if (!auto_rtl_entry_allowed(reason)) {
+        return false;
+    }
+
     if (!mission.jump_to_landing_sequence(get_stopping_point())) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
         // make sad noise
@@ -281,6 +285,10 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 // Join mission after DO_RETURN_PATH_START waypoint, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::return_path_start_auto_RTL(ModeReason reason)
 {
+    if (!auto_rtl_entry_allowed(reason)) {
+        return false;
+    }
+
     if (!mission.jump_to_closest_mission_leg(get_stopping_point())) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
         // make sad noise
@@ -297,6 +305,10 @@ bool ModeAuto::return_path_start_auto_RTL(ModeReason reason)
 // Try join return path else do land start
 bool ModeAuto::return_path_or_jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
+    if (!auto_rtl_entry_allowed(reason)) {
+        return false;
+    }
+
     const Location stopping_point = get_stopping_point();
     if (!mission.jump_to_closest_mission_leg(stopping_point) && !mission.jump_to_landing_sequence(stopping_point)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
@@ -311,6 +323,27 @@ bool ModeAuto::return_path_or_jump_to_landing_sequence_auto_RTL(ModeReason reaso
     return enter_auto_rtl(reason);
 }
 
+// moving a stopped mission starts its nav command, which overwrites the current
+// mode's waypoint destination, so run set_mode's checks for AUTO before moving it.
+// The landing sequence or return path is chosen from the position estimate, and the
+// submode set_mode() would check is only known once the mission has moved, so a
+// position is required here.  ModeAuto::init() can still refuse afterwards
+bool ModeAuto::auto_rtl_entry_allowed(ModeReason reason)
+{
+    if (copter.flightmode == this) {
+        return true;
+    }
+    if (!copter.gcs_mode_change_allowed(Number::AUTO, reason) ||
+        !copter.mode_change_checks_passed(this, !motors->armed(), reason)) {
+        return false;
+    }
+    if (motors->armed() && !copter.position_ok()) {
+        copter.mode_change_failed(this, "requires position");
+        return false;
+    }
+    return true;
+}
+
 // Enter auto rtl pseudo mode
 bool ModeAuto::enter_auto_rtl(ModeReason reason) 
 {
@@ -319,9 +352,10 @@ bool ModeAuto::enter_auto_rtl(ModeReason reason)
     // if not already in auto switch to auto
     if ((copter.flightmode == this) || set_mode(Mode::Number::AUTO, reason)) {
         auto_RTL = true;
+        copter.update_current_mode_reason(reason);
 #if HAL_LOGGING_ENABLED
         // log entry into AUTO RTL
-        copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
+        copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), copter.control_mode_reason);
 #endif
 
         // make happy noise
