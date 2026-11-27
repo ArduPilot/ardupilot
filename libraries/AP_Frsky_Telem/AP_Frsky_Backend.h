@@ -5,11 +5,11 @@
 #if AP_FRSKY_TELEM_ENABLED
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_HAL/Scheduler.h>
 
 class AP_Frsky_Backend
 {
 public:
-
     AP_Frsky_Backend(AP_HAL::UARTDriver *port) :
         _port(port) { }
 
@@ -144,8 +144,26 @@ protected:
 
 private:
 
-    void loop(void);
+    class FrskyTask : public AP_HAL::Scheduler::Task {
+    public:
+        FrskyTask(class AP_Frsky_Backend &_backend, AP_HAL::UARTDriver &_port, uint32_t _initial_baud) :
+            backend{_backend},
+            initial_baud{_initial_baud},
+            port{_port} {}
 
+        uint32_t update() override;
+
+    private:
+        bool init_done;
+
+        class AP_Frsky_Backend &backend;
+        uint32_t initial_baud;
+        AP_HAL::UARTDriver &port;
+    };
+
+    friend class AP_Frsky_Backend::FrskyTask;
+
+    FrskyTask *frsky_task;
 };
 
 #endif  // AP_FRSKY_TELEM_ENABLED
