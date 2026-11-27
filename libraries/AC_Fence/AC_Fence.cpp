@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: ACTION
     // @DisplayName: Fence Action
     // @Description: What action should be taken when fence is breached
-    // @Values{Copter}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land,5:SmartRTL or Land
+    // @Values{Copter}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land,5:SmartRTL or Land,9:Auto DO_RETURN_PATH_START/DO_LAND_START or RTL or Land
     // @Values{Rover}: 0:Report Only,1:RTL or Hold,2:Hold,3:SmartRTL or RTL or Hold,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
     // @Values{Plane}: 0:Report Only,1:RTL,6:Guided,7:GuidedThrottlePass,8:AUTOLAND if possible else RTL
     // @Values: 0:Report Only,1:RTL or Land
@@ -146,7 +146,9 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Fence options
     // @Description: When bit 0 is set disable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
+    // @Description{Copter}: When bit 0 is set disable mode change following fence action until fence breach is cleared. Failsafes and ADSB avoidance can still change mode, and if either changes to a different mode the lock is lifted until the next fence action. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
     // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas, 2:Notify on margin breaches
+    // @Bitmask{Copter}: 0:Disable mode change following fence action until fence breach is cleared (failsafes can still change mode), 1:Allow union of inclusion areas, 2:Notify on margin breaches
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT)),
 

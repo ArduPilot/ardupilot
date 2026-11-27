@@ -170,6 +170,66 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
     return nullptr;
 }
 
+#if AP_FENCE_ENABLED
+// true if FENCE_OPTIONS bit 0 blocks mode changes during fence breach recovery
+bool Copter::fence_recovery_blocks_mode_change() const
+{
+    if (!fence.enabled()) {
+        return false;
+    }
+    if (!fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE)) {
+        return false;
+    }
+    if (!fence.get_breaches()) {
+        return false;
+    }
+    if (!motors->armed()) {
+        return false;
+    }
+    if (get_control_mode_reason() != ModeReason::FENCE_BREACHED) {
+        return false;
+    }
+    if (ap.land_complete) {
+        return false;
+    }
+    return true;
+}
+
+// true if a mode change for this reason may override the fence recovery lock
+static bool reason_overrides_fence_recovery(ModeReason reason)
+{
+    switch (reason) {
+    case ModeReason::RADIO_FAILSAFE:
+    case ModeReason::BATTERY_FAILSAFE:
+    case ModeReason::GCS_FAILSAFE:
+    case ModeReason::EKF_FAILSAFE:
+    case ModeReason::TERRAIN_FAILSAFE:
+    case ModeReason::DEADRECKON_FAILSAFE:
+    case ModeReason::AVOIDANCE:
+    case ModeReason::TERMINATE:
+    case ModeReason::FENCE_BREACHED:
+        return true;
+    default:
+        return false;
+    }
+}
+#endif
+
+// update the reason for the current mode, unless the fence recovery lock holds FENCE_BREACHED
+// returns true if the reason changed
+bool Copter::update_current_mode_reason(ModeReason reason)
+{
+    if (reason == control_mode_reason) {
+        return false;
+    }
+#if AP_FENCE_ENABLED
+    if (fence_recovery_blocks_mode_change()) {
+        return false;
+    }
+#endif
+    control_mode_reason = reason;
+    return true;
+}
 
 // called when an attempt to change into a mode is unsuccessful:
 void Copter::mode_change_failed(const Mode *mode, const char *reason)
@@ -317,20 +377,15 @@ uint32_t Copter::get_available_mode_enabled_mask() const
 // but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
-    // update last reason
-    const ModeReason last_reason = _last_reason;
-    _last_reason = reason;
-
     // return immediately if we are already in the desired mode
     if (mode == flightmode->mode_number()) {
-        control_mode_reason = reason;
+        // update the reason, making a happy noise if it changed
+        if (update_current_mode_reason(reason) && copter.ap.initialised) {
+            AP_Notify::events.user_mode_change = 1;
+        }
         // set yaw rate time constant during autopilot startup
         if (reason == ModeReason::INITIALISED && mode == Mode::Number::STABILIZE) {
             attitude_control->set_yaw_rate_tc(g2.command_model_pilot_y.get_rate_tc());
-        }
-        // make happy noise
-        if (copter.ap.initialised && (reason != last_reason)) {
-            AP_Notify::events.user_mode_change = 1;
         }
         return true;
     }
@@ -412,13 +467,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
 #if AP_FENCE_ENABLED
     // may not be allowed to change mode if recovering from fence breach
-    if (!ignore_checks &&
-        fence.enabled() &&
-        fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE) &&
-        fence.get_breaches() &&
-        motors->armed() &&
-        get_control_mode_reason() == ModeReason::FENCE_BREACHED &&
-        !ap.land_complete) {
+    if (!ignore_checks && !reason_overrides_fence_recovery(reason) && fence_recovery_blocks_mode_change()) {
         mode_change_failed(new_flightmode, "in fence recovery");
         return false;
     }

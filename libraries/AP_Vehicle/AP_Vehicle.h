@@ -124,7 +124,8 @@ public:
     // HAL::Callbacks implementation.
     void loop() override final;
 
-    // set_mode *must* set control_mode_reason
+    // set_mode *must* set control_mode_reason, except that Copter keeps FENCE_BREACHED
+    // when the current mode is re-selected while FENCE_OPTIONS bit 0 blocks mode changes
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) WARN_IF_UNUSED = 0;
     virtual uint8_t get_mode() const = 0;
 

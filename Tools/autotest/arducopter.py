@@ -2844,6 +2844,175 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "Fence test failed to reach home (%fm distance) - "
             "timed out after %u seconds" % (home_distance, timeout,))
 
+    def FenceActionAutoRTL(self):
+        '''Test FENCE_ACTION 9: Auto RTL, else RTL, else Land'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 2,        # circle
+            "FENCE_RADIUS": 100,
+            "FENCE_ACTION": 9,
+            "FENCE_OPTIONS": 1,     # disable mode change until breach cleared
+            "AVOID_ENABLE": 0,
+            "AUTO_OPTIONS": 3,
+        })
+
+        alt = 10
+        mission = [
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),        # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, alt),     # 2
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, alt),      # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, alt),      # 4
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),  # 5
+        ]
+
+        def fly_loiter_into_fence(want_mode):
+            self.takeoff(alt, mode="LOITER")
+            self.progress("Flying north until the fence is breached")
+            self.set_rc(2, 1100)
+            self.wait_mode(want_mode, timeout=60)
+            self.set_rc(2, 1500)
+
+        def assert_mode_change_locked(mode="AUTO_RTL"):
+            self.progress("Mode change must be refused during fence recovery")
+            self.run_cmd_do_set_mode("LOITER", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is(mode)
+            self.progress("Re-selecting the current mode must not release the lock")
+            self.run_cmd_do_set_mode(mode)
+            self.run_cmd_do_set_mode("LOITER", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is(mode)
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.poll_home_position(quiet=False)
+
+        self.start_subtest("No landing sequence: falls back to RTL")
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        fly_loiter_into_fence("RTL")
+        assert_mode_change_locked("RTL")
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.end_subtest("No landing sequence: falls back to RTL")
+
+        self.start_subtest("Breach in LOITER enters AUTO_RTL")
+        self.upload_simple_relhome_mission(mission)
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        fly_loiter_into_fence("AUTO_RTL")
+        self.assert_current_waypoint(4)
+        assert_mode_change_locked()
+        self.progress("DO_LAND_START must not release the lock")
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_LAND_START)
+        assert_mode_change_locked()
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.end_subtest("Breach in LOITER enters AUTO_RTL")
+
+        self.start_subtest("Breach in AUTO enters AUTO_RTL")
+        self.start_flying_simple_relhome_mission(mission)
+        self.wait_current_waypoint(2)
+        self.wait_mode("AUTO_RTL", timeout=60)
+        self.assert_current_waypoint(4)
+        assert_mode_change_locked()
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.end_subtest("Breach in AUTO enters AUTO_RTL")
+
+    def fly_into_fence_mode_change_lockout(self):
+        '''take off in LOITER and fly north through a circle fence with
+        FENCE_ACTION 1 (RTL) and FENCE_OPTIONS bit 0; returns once the
+        vehicle is in RTL with the mode-change lockout active'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 2,        # circle
+            "FENCE_RADIUS": 100,
+            "FENCE_ACTION": 1,      # RTL or Land
+            "FENCE_OPTIONS": 1,     # no mode changes until the breach clears
+            "AVOID_ENABLE": 0,
+            # keep the breach active for a long time: RTL climbs to
+            # 50m at 1m/s, then returns at 1m/s
+            "RTL_ALT_M": 50,
+            "WP_SPD_UP": 1,
+            "RTL_SPEED_MS": 1,
+        })
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode="LOITER")
+        self.progress("Flying north until the fence is breached")
+        self.set_rc(2, 1100)
+        self.wait_mode("RTL", timeout=60)
+        self.set_rc(2, 1500)
+        self.progress("Confirming the mode-change lockout is active")
+        self.run_cmd_do_set_mode("LOITER", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_mode_is("RTL")
+
+    def fence_lockout_battery_failsafe_setup(self, low_action):
+        self.set_parameters({
+            'BATT_LOW_VOLT': 11.5,
+            'BATT_CRT_VOLT': 10.1,
+            'BATT_LOW_TIMER': 1,
+            'BATT_FS_LOW_ACT': low_action,
+            'BATT_FS_CRT_ACT': 1,   # Land
+            'FS_OPTIONS': 0,
+            'SIM_BATT_VOLTAGE': 12.5,
+        })
+
+    def fence_lockout_wait_critical_land(self):
+        '''drop to critical voltage and expect the critical battery
+        failsafe to switch to LAND despite the fence mode-change lockout'''
+        self.context_collect('STATUSTEXT')
+        self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
+        self.wait_statustext("Battery 1 is critical", timeout=30, check_context=True)
+        try:
+            self.wait_mode("LAND", timeout=10)
+        except AutoTestTimeoutException:
+            if self.statustext_in_collections("Mode change to Land failed: in fence recovery"):
+                raise NotAchievedException(
+                    "Critical battery failsafe LAND refused by the fence mode-change lockout")
+            raise
+        self.wait_disarmed(timeout=120)
+        self.reboot_sitl()  # landed outside the fence, away from the start location
+
+    def FenceLockoutAllowsCriticalBatteryLand(self):
+        '''critical battery failsafe LAND must be honoured during the fence mode-change lockout'''
+        self.fence_lockout_battery_failsafe_setup(low_action=0)
+        self.fly_into_fence_mode_change_lockout()
+        self.fence_lockout_wait_critical_land()
+
+    def FenceLockoutSameModeFailsafeThenCriticalLand(self):
+        '''low battery RTL while already in fence RTL, then critical battery LAND'''
+        self.fence_lockout_battery_failsafe_setup(low_action=2)  # RTL
+        self.fly_into_fence_mode_change_lockout()
+        self.progress("Low battery failsafe re-selects RTL while in fence RTL")
+        self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
+        self.wait_statustext("Battery 1 is low", timeout=30)
+        self.delay_sim_time(3, reason="low battery failsafe action")
+        self.assert_mode_is("RTL")
+        self.fence_lockout_wait_critical_land()
+
+    def FenceLockoutAllowsADSBAvoidance(self):
+        '''ADSB avoidance must be able to change mode during the fence mode-change lockout'''
+        self.set_parameters({
+            "AVD_ENABLE": 1,
+            "ADSB_TYPE": 1,         # mavlink
+            "AVD_F_ACTION": 6,      # hover (Loiter)
+        })
+        self.reboot_sitl()
+        self.fly_into_fence_mode_change_lockout()
+        self.context_collect('STATUSTEXT')
+        self.progress("Sending an ADSB threat at the vehicle")
+        tstart = self.get_sim_time()
+        while self.mode_is("RTL"):
+            if self.get_sim_time_cached() - tstart > 20:
+                if self.statustext_in_collections("Mode change to Loiter failed: in fence recovery"):
+                    raise NotAchievedException("ADSB avoidance Loiter refused by the fence mode-change lockout")
+                raise NotAchievedException("ADSB avoidance did not change mode")
+            self.test_adsb_send_threatening_adsb_message(self.get_location())
+            self.delay_sim_time(0.5, reason="ADSB threat")
+        self.wait_mode("LOITER", timeout=1)
+        self.change_mode("LAND")
+        self.wait_disarmed(timeout=180)
+        self.reboot_sitl()  # landed outside the fence, away from the start location
+
     # MaxAltFence - fly up until you hit the fence ceiling
     def max_alt_fence_frame(self, frame, alt, expected_breach_alt, terrain=0):
         self.start_subtest("Test Max Alt Fence in frame %u" % frame)
@@ -22644,6 +22813,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowDoubleDrop,
             self.HorizontalFence,
             self.FenceTypeChangeTakesEffect,
+            self.FenceActionAutoRTL,
+            self.FenceLockoutAllowsCriticalBatteryLand,
+            self.FenceLockoutSameModeFailsafeThenCriticalLand,
+            self.FenceLockoutAllowsADSBAvoidance,
             self.MaxAltFence,
             self.ModeAltHold,
             self.OpticalFlow,
