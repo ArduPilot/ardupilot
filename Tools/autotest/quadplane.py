@@ -4821,6 +4821,35 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "EKF3 position error %.1fm exceeds 50m" % with_ff["max_pos_error"])
 
+    def ASSUME_FLYING_FORWARD_IN_TRANSITION_Tailsitter(self):
+        '''test the QuadPlane option for assumption of fly-forward in transition on a tailsitter'''
+        self.customise_SITL_commandline(
+            [],
+            model="quadplane-copter_tailsitter",
+            wipe=True,
+        )
+        # an 8m/s crosswind from the East while the tailsitter pitches
+        # over from vertical
+        wind_params = {
+            "SIM_WIND_SPD": 8,
+            "SIM_WIND_DIR": 90,
+        }
+
+        self.start_subtest("Without the option fly-forward waits for the transition to complete")
+        without = self.fly_transition_after_gps_loss(False, wind_params)
+        self.assert_fly_forward_through_transition(without, False)
+
+        # a tailsitter's forward transition starts while it is still
+        # vertical, so the option asserts fly-forward from there
+        self.start_subtest("With the option fly-forward covers the whole tailsitter transition")
+        with_ff = self.fly_transition_after_gps_loss(True, wind_params)
+        self.assert_fly_forward_through_transition(with_ff, True)
+        if with_ff["stopped_aiding"]:
+            raise NotAchievedException("EKF3 stopped aiding in the transition")
+        if with_ff["max_pos_error"] > 25:
+            raise NotAchievedException(
+                "EKF3 position error %.1fm exceeds 25m" % with_ff["max_pos_error"])
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -4866,6 +4895,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.DoRepositionTerrain2,
             self.SimBatteryResistance,
             self.ASSUME_FLYING_FORWARD_IN_TRANSITION,
+            self.ASSUME_FLYING_FORWARD_IN_TRANSITION_Tailsitter,
             self.FastInvertedRecovery,
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.TerrainAvoidAppletPitching,
