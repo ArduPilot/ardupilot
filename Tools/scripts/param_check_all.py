@@ -31,9 +31,6 @@ periph_hwdefs_to_skip = set([  # Most of these fail due to NET_ params
 sitl_params_to_skip = set([
     'default_params/blimp.parm',
     'default_params/stratoblimp.parm',
-    'default_params/motorboat.parm',
-    'default_params/sub.parm',
-    'default_params/sub-6dof.parm',
     # PPP-only AP_Periph params (NET_PPP_BAUD) are not in the default
     # AP_Periph metadata, the same reason CubeRedPrimary-PPPGW and
     # Pixhawk6X-PPPGW are in periph_hwdefs_to_skip above.
@@ -54,7 +51,7 @@ PERIPH_BOARDS = BoardList().find_ap_periph_boards(skip=periph_hwdefs_to_skip)
 ALL_VEHICLE_FIRMWARES = ['Sub', 'Plane', 'Blimp', 'Copter', 'Tracker', 'Rover']
 
 
-def check_boards(boards, firmwares, skip: SkippedChecks | None = None):
+def check_boards(boards, firmwares, skip: SkippedChecks | None = None, metadata_cache: dict | None = None):
     '''Check parameter files for ChibiOS hwdef boards.'''
     if skip is None:
         skip = SkippedChecks()
@@ -73,10 +70,10 @@ def check_boards(boards, firmwares, skip: SkippedChecks | None = None):
     # Find all parameter files
     param_files = [f for pattern in param_files for f in glob.glob(pattern, recursive=True)]
 
-    return check_files(param_files, firmwares, skip=skip)
+    return check_files(param_files, firmwares, skip=skip, metadata_cache=metadata_cache)
 
 
-def check_sitl(skip: SkippedChecks | None = None):
+def check_sitl(skip: SkippedChecks | None = None, metadata_cache: dict | None = None):
     '''Check every parameter file that shows up in vehicleinfo.py
 
     Because this also provides us information about the intended firmware, we
@@ -125,12 +122,12 @@ def check_sitl(skip: SkippedChecks | None = None):
         if not files:
             print(f"No SITL default files for {vehicle}")
             continue
-        success &= check_files(files, [vehicle], skip=skip)
+        success &= check_files(files, [vehicle], skip=skip, metadata_cache=metadata_cache)
 
     return success
 
 
-def check_frame_params(skip: SkippedChecks | None = None):
+def check_frame_params(skip: SkippedChecks | None = None, metadata_cache: dict | None = None):
     '''Check all files within Tools/Frame_params
 
     These don't contain any information about firmware (e.g. Copter, Plane,
@@ -154,15 +151,17 @@ def check_frame_params(skip: SkippedChecks | None = None):
             continue
         param_files.append(file)
 
-    return check_files(param_files, ALL_VEHICLE_FIRMWARES, skip=skip)
+    return check_files(param_files, ALL_VEHICLE_FIRMWARES, skip=skip, metadata_cache=metadata_cache)
 
 
-def check_files(files, firmwares, skip: SkippedChecks | None = None):
+def check_files(files, firmwares, skip: SkippedChecks | None = None, metadata_cache: dict | None = None):
     '''Check a list of parameter files against the metadata'''
+    if not files:
+        return True
     if skip is None:
         skip = SkippedChecks()
 
-    metadata = get_metadata(firmwares)
+    metadata = get_metadata(firmwares, cache=metadata_cache)
     success = True
     for file in files:
         msgs = check_file(file, metadata, skip=skip)
@@ -180,15 +179,16 @@ def main():
         no_values=True,
         no_bitmask=True,
     )
+    metadata_cache = {}
     success = True
     print("Checking peripheral boards...")
-    success &= check_boards(PERIPH_BOARDS, ['AP_Periph'], skip=skip)
+    success &= check_boards(PERIPH_BOARDS, ['AP_Periph'], skip=skip, metadata_cache=metadata_cache)
     print("Checking vehicle boards...")
-    success &= check_boards(VEHICLE_BOARDS, ALL_VEHICLE_FIRMWARES, skip=skip)
+    success &= check_boards(VEHICLE_BOARDS, ALL_VEHICLE_FIRMWARES, skip=skip, metadata_cache=metadata_cache)
     print("Checking SITL...")
-    success &= check_sitl(skip=skip)
+    success &= check_sitl(skip=skip, metadata_cache=metadata_cache)
     print("Checking frame parameters...")
-    success &= check_frame_params(skip=skip)
+    success &= check_frame_params(skip=skip, metadata_cache=metadata_cache)
     if not success:
         print("Parameter checks failed!")
         sys.exit(1)
