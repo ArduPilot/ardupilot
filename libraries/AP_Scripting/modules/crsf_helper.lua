@@ -62,7 +62,7 @@ local function create_number_entry(name, value, min, max, default, dpoint, step,
     local packed_max = math.floor(max * scale + 0.5)
     local packed_default = math.floor(default * scale + 0.5)
     local packed_step = math.floor(step * scale + 0.5)
-    return string.pack(">BzllllBlz", CRSF_PARAM_TYPE.FLOAT, name, packed_value, packed_min, packed_max, packed_default, dpoint or 0, packed_step, unit or "")
+    return string.pack(">Bzi4i4i4i4Bi4z", CRSF_PARAM_TYPE.FLOAT, name, packed_value, packed_min, packed_max, packed_default, dpoint or 0, packed_step, unit or "")
 end
 
 -- Creates a CRSF menu info item
@@ -233,7 +233,7 @@ local function event_loop()
             elseif item_def.type == 'NUMBER' then
                  local scale = 10^(item_def.dpoint or 0)
                  local packed_value = math.floor(item_def.current_val * scale + 0.5)
-                 local packed_data = string.pack('>l', packed_value)
+                 local packed_data = string.pack('>i4', packed_value)
                  answer(packed_data)
             end
             goto reschedule -- Skip callback logic
@@ -318,7 +318,7 @@ local function event_loop()
             -- The value is the 4-byte int32_t
             local scale = 10^(item_def.dpoint or 0)
             local packed_value = math.floor(item_def.current_val * scale + 0.5)
-            local packed_data = string.pack('>l', packed_value)
+            local packed_data = string.pack('>i4', packed_value)
             answer(packed_data)
         end
     end
