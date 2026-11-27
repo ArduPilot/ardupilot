@@ -14449,8 +14449,8 @@ switch value'''
         current_onboard_log_contains_message().'''
         self.wait_current_onboard_log_contains_message(messagetype)
 
-    def wait_current_onboard_log_contains_message(self, messagetype, timeout=30):
-        '''wait for messagetype to appear in the current onboard log.
+    def wait_current_onboard_log_contains_message(self, messagetype, timeout=30, condition=None):
+        '''wait for messagetype, meeting condition if one is given, to appear in the current onboard log.
 
         Checking once is at the mercy of whatever the logger has put
         on disk by then.  The vehicle buffers its dataflash writes and
@@ -14470,7 +14470,7 @@ switch value'''
         while True:
             dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
             try:
-                found = dfreader.recv_match(type=messagetype) is not None
+                found = dfreader.recv_match(type=messagetype, condition=condition) is not None
             finally:
                 dfreader.close()
                 if dfreader in self.dfreaders:
@@ -14479,8 +14479,8 @@ switch value'''
                 return
             if time.monotonic() - tstart > timeout:
                 raise NotAchievedException(
-                    "Current onboard log does not contain message %s "
-                    "(waited %us)" % (messagetype, timeout))
+                    "Current onboard log does not contain message %s%s "
+                    "(waited %us)" % (messagetype, "" if condition is None else " with %s" % condition, timeout))
             self.delay_sim_time(0.5, reason="let the logger flush %s" % messagetype)
 
     def run_tests(self, tests) -> List[Result]:
