@@ -18005,6 +18005,88 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def CRSFCalibrateCompassProgress(self):
+        '''Test crsf-calibrate shows a compass calibration's progress and result over CRSF'''
+        (START, CONFIRM, CANCEL, POLL) = (1, 4, 5, 6)
+        (READY, PROGRESS, CONFIRMATION_NEEDED) = (0, 2, 3)
+        self.install_script_module_context(self.script_modules_source_path("crsf_helper.lua"), "crsf_helper.lua")
+        self.install_applet_script_context("crsf-calibrate.lua")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "FS_THR_ENABLE": 0,    # RC frames stop between menu requests
+        })
+        # SITL's calibration model turns the vehicle through a series of
+        # poses while servo 5 is between 1200 and 1300
+        (fields, request, crsf) = self.crsf_parameter_menu_check(model="calibration")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=5, p2=1250)
+        field = self.crsf_field_named(fields, "Calibrate Compass", parent="Calibrate")
+
+        def press(action):
+            '''send action to Calibrate Compass, returning its status and info'''
+            return self.crsf_command_press(request, field, [action])
+
+        def shown_pct(result):
+            '''return the percent a progress reply shows'''
+            match = re.match(rb"Calibrating (\d+)%$", result[1])
+            if result[0] != PROGRESS or match is None:
+                raise NotAchievedException("Expected progress, got %s" % str(result))
+            return int(match.group(1))
+
+        self.start_subtest("Backing out of the progress popup cancels the calibration")
+        if shown_pct(press(START)) != 0:
+            raise NotAchievedException("Execute did not start at 0%")
+        while shown_pct(press(POLL)) < 5:
+            pass
+        result = press(CANCEL)
+        if result != (READY, b"Execute"):
+            raise NotAchievedException("Backing out showed %s" % str(result))
+        self.wait_statustext("Compass calibration cancelled", check_context=True)
+
+        self.start_subtest("The calibration's progress is shown until it saves")
+        if shown_pct(press(START)) != 0:
+            raise NotAchievedException("Execute after cancelling did not start at 0%")
+        # poll while the progress popup is up, as a transmitter does; each
+        # poll's RC frames keep the CRSF link up.  The calibration finishes
+        # in about 50s; allow two runs through the calibration model's 18
+        # poses of 6s each
+        timeout = 2 * 18 * 6
+        shown = [0]
+        pressed_again = False
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Calibration did not finish, shown %s" % shown[-5:])
+            result = press(POLL)
+            if result[0] != PROGRESS:
+                break
+            pct = shown_pct(result)
+            if not pressed_again and pct >= 20:
+                # Execute while it runs carries it on
+                pct = shown_pct(press(START))
+                pressed_again = True
+            if pct < shown[-1]:
+                raise NotAchievedException("Progress went back from %u%% to %u%%" % (shown[-1], pct))
+            if pct != shown[-1]:
+                shown.append(pct)
+        self.progress("Progress shown: %s" % shown)
+        if not any(33 < pct < 99 for pct in shown):
+            raise NotAchievedException("Progress never shown in step two: %s" % shown)
+        if result != (CONFIRMATION_NEEDED, b"Saved, reboot to fly"):
+            raise NotAchievedException("Calibration ended showing %s" % str(result))
+        self.wait_statustext("Compass calibration saved, reboot to fly", check_context=True)
+
+        # the result stays up until acknowledged
+        result = press(POLL)
+        if result != (CONFIRMATION_NEEDED, b"Saved, reboot to fly"):
+            raise NotAchievedException("Result not kept, showed %s" % str(result))
+        result = press(CONFIRM)
+        if result != (READY, b"Execute"):
+            raise NotAchievedException("OK showed %s" % str(result))
+
+        m = self.assert_receive_message('MAG_CAL_REPORT', condition='MAG_CAL_REPORT.compass_id==0', timeout=10)
+        if m.cal_status != mavutil.mavlink.MAG_CAL_SUCCESS or not m.autosaved:
+            raise NotAchievedException("Compass 0 not saved: %s" % str(m))
+
     def CRSFParameterMenuHelper(self):
         '''Test crsf_helper menus answer as fast armed, survive bad writes and errors, and report calibrations'''
         CRSF = vehicle_test_suite.CRSF
@@ -18038,17 +18120,15 @@ return crsf_helper.register_menu({name = "Helper", items = {
                         lambda p: p[2] == field, "read of %s" % name)
             return bytes(p[5:])
 
-        def write(menu, name, payload, reply_type=CRSF.FRAMETYPE_PARAMETER_WRITE):
+        def write(menu, name, payload):
             '''write to a menu item, returning the reply frame'''
             field = self.crsf_field_named(fields, name, parent=menu)
-            return bytes(request(CRSF.FRAMETYPE_PARAMETER_WRITE, [field] + list(payload), reply_type,
+            return bytes(request(CRSF.FRAMETYPE_PARAMETER_WRITE, [field] + list(payload), CRSF.FRAMETYPE_PARAMETER_WRITE,
                                  lambda p: p[2] == field, "write to %s" % name))
 
         def press(menu, name, payload=(START,)):
             '''press a command, returning its status and info'''
-            entry = write(menu, name, payload, reply_type=CRSF.FRAMETYPE_PARAMETER_ENTRY)[5:]
-            status_at = entry.index(0, 1) + 1
-            return (entry[status_at], entry[status_at+2:entry.index(0, status_at+2)])
+            return self.crsf_command_press(request, self.crsf_field_named(fields, name, parent=menu), payload)
 
         def calibrate(name):
             '''press a calibration, poll until it shows its result, and
@@ -18153,7 +18233,7 @@ return crsf_helper.register_menu({name = "Helper", items = {
             raise NotAchievedException("Armed gyro cal not shown as failed")
         self.wait_statustext("Gyro cal failed", check_context=True)
         if press("Calibrate", "Calibrate Compass") != (0, b"Failed"):
-            raise NotAchievedException("Armed compass cal asked to be accepted")
+            raise NotAchievedException("Armed compass cal not shown as failed")
         self.wait_statustext("Disarm to allow compass calibration", check_context=True)
         self.disarm_vehicle(force=True)
 
@@ -27850,6 +27930,7 @@ return update, 1000
             self.CRSFParameterMenu,
             self.CRSFParameterMenuScripted,
             self.CRSFParameterMenuHelper,
+            self.CRSFCalibrateCompassProgress,
             self.CRSFParameterMenuUnusedSlot,
             self.CRSFParameterMenuChunks,
             self.CRSFParameterMenuLongCommandReply,
