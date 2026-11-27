@@ -24188,6 +24188,54 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
         self.wait_disarmed(timeout=60)
 
+    def OARTLNearExclusionZone(self):
+        '''RTL just outside an exclusion circle with BendyRuler must climb on the way home if its climb target is too close'''
+        takeoff_loc = self.takeoff_for_fence_breach_test(oa_type=1)
+
+        # a circle due north of home; the vehicle starts east of it, where
+        # the straight route home crosses the circle
+        circle_centre = self.offset_location_ne(takeoff_loc, 20, 0)
+        circle_radius = 10
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
+                "radius": circle_radius,
+                "loc": circle_centre,
+            }),
+        ])
+
+        # BendyRuler only flies straight to a destination at least
+        # FENCE_MARGIN plus OA_MARGIN_MAX clear of every fence
+        oa_clearance = self.get_parameter("FENCE_MARGIN") + self.get_parameter("OA_MARGIN_MAX")
+        for (dist, climbs_in_place) in [
+                (1, False),                 # within FENCE_MARGIN
+                (oa_clearance - 2, False),  # outside FENCE_MARGIN but within OA_MARGIN_MAX of it
+                (oa_clearance + 7, True),   # clear; RTL climbs where it is, as without object avoidance
+        ]:
+            self.start_subtest(f"RTL {dist}m outside the exclusion circle")
+            if not self.armed():
+                self.takeoff(10, mode='GUIDED')
+            start_loc = self.offset_location_ne(circle_centre, 0, circle_radius + dist)
+            self.send_do_reposition(start_loc)
+            self.wait_location(start_loc, accuracy=0.2, minimum_duration=3, timeout=60)
+
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            # outside the circle, so this is not a breach
+            self.set_parameters({
+                "FENCE_ENABLE": 1,
+            })
+            self.change_mode('RTL')
+            if climbs_in_place:
+                self.wait_altitude(14, 16, relative=True, timeout=60)
+                self.assert_distance(self.get_location(), start_loc, 0, 2)
+                if self.statustext_in_collections('climbing en route') is not None:
+                    raise NotAchievedException("RTL skipped its climb clear of the fence")
+            else:
+                self.wait_statustext('RTL: climb target fenced, climbing en route', check_context=True)
+            self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
+            self.wait_disarmed(timeout=60)
+            self.context_pop()
+
     def Clamp(self):
         '''test Copter docking clamp'''
         # the simulated clamp only grabs within 0.5m of home
@@ -27033,6 +27081,7 @@ return update, 1000
             self.OAExclusionExitAvoidsOtherZone,
             self.OAExclusionExitRouteAvoidsOtherZone,
             self.OAExclusionExitRouteAvoidsOtherZoneMoving,
+            self.OARTLNearExclusionZone,
             self.CompassMot,
             self.CompassMotFastRate,
             self.FarOrigin,
