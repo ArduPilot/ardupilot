@@ -339,9 +339,15 @@ void CompassCalibrator::update_cal_status()
         case Status::RUNNING_STEP_ONE:
             cal_state.completion_pct = 33.3f * _samples_collected/COMPASS_CAL_NUM_SAMPLES;
             break;
-        case Status::RUNNING_STEP_TWO:
-            cal_state.completion_pct = 33.3f + 65.7f*((float)(_samples_collected-_samples_thinned)/(COMPASS_CAL_NUM_SAMPLES-_samples_thinned));
+        case Status::RUNNING_STEP_TWO: {
+            // step two collects again the samples thin_samples() removed
+            float step_two_fraction = 1.0f;
+            if (_samples_thinned > 0) {
+                step_two_fraction = float(_samples_collected + _samples_thinned - COMPASS_CAL_NUM_SAMPLES) / _samples_thinned;
+            }
+            cal_state.completion_pct = 33.3f + 65.7f * step_two_fraction;
             break;
+        }
         case Status::SUCCESS:
             cal_state.completion_pct = 100.0f;
             break;
