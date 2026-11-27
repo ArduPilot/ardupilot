@@ -1395,11 +1395,6 @@ public:
     uint32_t sysid_this_mav() const { return sysid; }
     uint32_t telem_delay() const { return mav_telem_delay; }
 
-#if AP_EXTERNAL_BINDING_ENABLED
-    // lua access to command_int
-    MAV_RESULT lua_command_int_packet(const mavlink_command_int_t &packet);
-#endif
-
 #if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
     // run a command_int for a script, which runs on its own thread
     MAV_RESULT run_command_int_for_script(const mavlink_command_int_t &packet);
