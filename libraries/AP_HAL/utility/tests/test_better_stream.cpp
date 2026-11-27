@@ -118,9 +118,13 @@ TEST(BetterStream, PrintfIntegers)
     EXPECT_STREQ(fmt_result("%ld", -1234567890L), "-1234567890");
     EXPECT_STREQ(fmt_result("%lu", 4000000000LU), "4000000000");
     EXPECT_STREQ(fmt_result("%lld", -1234567890123LL), "-1234567890123");
-    // values much beyond INT64_MAX overflow ulltoa_invert's decimal
-    // conversion (acknowledged in a comment there), so stick to this:
     EXPECT_STREQ(fmt_result("%llu", 9223372036854775807ULL), "9223372036854775807");
+    // ulltoa_invert's decimal conversion used to be off by one for
+    // some 64-bit values, and to overflow above about UINT64_MAX/1.6
+    EXPECT_STREQ(fmt_result("%llu", 7987804130885440680ULL), "7987804130885440680");
+    EXPECT_STREQ(fmt_result("%llu", 11529215046068469759ULL), "11529215046068469759");
+    EXPECT_STREQ(fmt_result("%llu", 11529215046068469760ULL), "11529215046068469760");
+    EXPECT_STREQ(fmt_result("%llu", 18446744073709551615ULL), "18446744073709551615");
 }
 
 TEST(BetterStream, PrintfBases)
@@ -138,6 +142,30 @@ TEST(BetterStream, PrintfBases)
     EXPECT_STREQ(fmt_result("%08x", 0x1fU), "0000001F");
     EXPECT_STREQ(fmt_result("%llx", 0x123456789abcdefULL), "123456789ABCDEF");
     EXPECT_STREQ(fmt_result("%p", (void*)0x1234), "0x1234");
+}
+
+/*
+  long and pointers are 64 bits on LP64 hosts (SITL, 64-bit Linux).
+  They used to be converted through a uint32_t, losing the upper half
+ */
+TEST(BetterStream, PrintfLong64)
+{
+#if __SIZEOF_LONG__ == 8
+    EXPECT_STREQ(fmt_result("%ld", 1234567890123L), "1234567890123");
+    EXPECT_STREQ(fmt_result("%ld", -1234567890123L), "-1234567890123");
+    EXPECT_STREQ(fmt_result("%ld", 9223372036854775807L), "9223372036854775807");
+    EXPECT_STREQ(fmt_result("%lu", 18446744073709551615UL), "18446744073709551615");
+    EXPECT_STREQ(fmt_result("%lx", 0x123456789abcdefUL), "123456789ABCDEF");
+    EXPECT_STREQ(fmt_result("%lo", 01234567012345670UL), "1234567012345670");
+    EXPECT_STREQ(fmt_result("[%15lu]", 4294967296UL), "[     4294967296]");
+#endif
+#if __SIZEOF_POINTER__ == 8
+    EXPECT_STREQ(fmt_result("%p", (void *)0x123456789abcULL), "0x123456789ABC");
+#endif
+    // values that fit in 32 bits are unchanged
+    EXPECT_STREQ(fmt_result("%ld", -2147483647L - 1), "-2147483648");
+    EXPECT_STREQ(fmt_result("%lu", 4294967295UL), "4294967295");
+    EXPECT_STREQ(fmt_result("%p", (void *)0), "0");
 }
 
 TEST(BetterStream, PrintfFloats)

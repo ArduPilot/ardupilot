@@ -394,23 +394,27 @@ flt_oper:
             
             /*
              * Handle integer formats variations for d/i, u, o, p, x, X.
+             * long and pointers are 64 bits on LP64 hosts, so all values
+             * are read as 64 bits. The faster 32-bit conversion is used
+             * whenever the value fits.
              */
             if (c == 'd' || c == 'i') {
+                int64_t x;
                 if (flags & FL_LONGLONG) {
-                    int64_t x = va_arg(ap,long long);
-                    flags &= ~(FL_NEGATIVE | FL_ALT);
-                    if (x < 0) {
-                        x = -x;
-                        flags |= FL_NEGATIVE;
-                    }
+                    x = va_arg(ap, long long);
+                } else if (flags & FL_LONG) {
+                    x = va_arg(ap, long);
+                } else {
+                    x = va_arg(ap, int);
+                }
+                flags &= ~(FL_NEGATIVE | FL_ALT);
+                if (x < 0) {
+                    x = -x;
+                    flags |= FL_NEGATIVE;
+                }
+                if ((uint64_t)x > UINT32_MAX) {
                     c = ulltoa_invert (x, (char *)buf, 10) - (char *)buf;
                 } else {
-                    long x = (flags & FL_LONG) ? va_arg(ap,long) : va_arg(ap,int);
-                    flags &= ~(FL_NEGATIVE | FL_ALT);
-                    if (x < 0) {
-                        x = -x;
-                        flags |= FL_NEGATIVE;
-                    }
                     c = ultoa_invert (x, (char *)buf, 10) - (char *)buf;
                 }
             } else {
@@ -442,14 +446,22 @@ flt_oper:
                         flags |= (FL_ALTHEX | FL_ALTUPP);
                     base = 16 | XTOA_UPPER;
 ultoa:
-                    if (flags & FL_LONGLONG) {
-                        c = ulltoa_invert (va_arg(ap, unsigned long long),
-                                           (char *)buf, base)  -  (char *)buf;
-                    } else {
-                        c = ultoa_invert ((flags & FL_LONG)
-                                          ? va_arg(ap, unsigned long)
-                                          : va_arg(ap, unsigned int),
-                                          (char *)buf, base)  -  (char *)buf;
+                    {
+                        uint64_t x;
+                        if (c == 'p') {
+                            x = (uintptr_t)va_arg(ap, void *);
+                        } else if (flags & FL_LONGLONG) {
+                            x = va_arg(ap, unsigned long long);
+                        } else if (flags & FL_LONG) {
+                            x = va_arg(ap, unsigned long);
+                        } else {
+                            x = va_arg(ap, unsigned int);
+                        }
+                        if (x > UINT32_MAX) {
+                            c = ulltoa_invert (x, (char *)buf, base) - (char *)buf;
+                        } else {
+                            c = ultoa_invert (x, (char *)buf, base) - (char *)buf;
+                        }
                     }
                     flags &= ~FL_NEGATIVE;
                     break;
