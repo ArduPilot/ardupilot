@@ -480,6 +480,17 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         }
         return MAV_RESULT_FAILED;
 
+#if MODE_AUTORTL_ENABLED
+    case MAV_CMD_DO_RETURN_PATH_START:
+        // Switch to AUTO_RTL mode which joins the DO_RETURN_PATH_START
+        // corridor at the closest point and follows it home.
+        if (rover.set_mode(Mode::Number::AUTO_RTL,
+                           ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+#endif
+
     case MAV_CMD_DO_MOTOR_TEST:
         // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
         // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
@@ -980,6 +991,9 @@ uint8_t GCS_MAVLINK_Rover::send_available_mode(uint8_t index) const
         &rover.mode_auto,
         &rover.mode_rtl,
         &rover.mode_smartrtl,
+#if MODE_AUTORTL_ENABLED
+        &rover.mode_auto_rtl,
+#endif
         &rover.mode_guided,
         &rover.mode_initializing,
 #if MODE_DOCK_ENABLED

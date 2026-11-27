@@ -265,12 +265,21 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
 // returns true if mode supports NAV_SCRIPT_TIME mission commands
 bool Rover::nav_scripting_enable(uint8_t mode)
 {
-    return mode == (uint8_t)mode_auto.mode_number();
+    return mode == (uint8_t)mode_auto.mode_number()
+#if MODE_AUTORTL_ENABLED
+           || mode == (uint8_t)mode_auto_rtl.mode_number()
+#endif
+    ;
 }
 
 // lua scripts use this to retrieve the contents of the active command
 bool Rover::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
+#if MODE_AUTORTL_ENABLED
+    if (control_mode == &mode_auto_rtl) {
+        return mode_auto_rtl.nav_script_time(id, cmd, arg1, arg2, arg3, arg4);
+    }
+#endif
     if (control_mode != &mode_auto) {
         return false;
     }
@@ -281,6 +290,12 @@ bool Rover::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2
 // lua scripts use this to indicate when they have complete the command
 void Rover::nav_script_time_done(uint16_t id)
 {
+#if MODE_AUTORTL_ENABLED
+    if (control_mode == &mode_auto_rtl) {
+        mode_auto_rtl.nav_script_time_done(id);
+        return;
+    }
+#endif
     if (control_mode != &mode_auto) {
         return;
     }
@@ -288,6 +303,37 @@ void Rover::nav_script_time_done(uint16_t id)
     return mode_auto.nav_script_time_done(id);
 }
 #endif // AP_EXTERNAL_BINDING_ENABLED
+
+bool Rover::start_command_callback(const AP_Mission::Mission_Command &cmd)
+{
+#if MODE_AUTORTL_ENABLED
+    if (control_mode == &mode_auto_rtl) {
+        return mode_auto_rtl.start_command(cmd);
+    }
+#endif
+    return mode_auto.start_command(cmd);
+}
+
+bool Rover::verify_command_callback(const AP_Mission::Mission_Command &cmd)
+{
+#if MODE_AUTORTL_ENABLED
+    if (control_mode == &mode_auto_rtl) {
+        return mode_auto_rtl.verify_command_callback(cmd);
+    }
+#endif
+    return mode_auto.verify_command_callback(cmd);
+}
+
+void Rover::exit_mission_callback()
+{
+#if MODE_AUTORTL_ENABLED
+    if (control_mode == &mode_auto_rtl) {
+        mode_auto_rtl.exit_mission();
+        return;
+    }
+#endif
+    mode_auto.exit_mission();
+}
 
 // update AHRS system
 void Rover::ahrs_update()

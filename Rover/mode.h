@@ -28,6 +28,10 @@ public:
         SMART_RTL    = 12,
         GUIDED       = 15,
         INITIALISING = 16,
+#if MODE_AUTORTL_ENABLED
+        AUTO_RTL     = 17,  // full mode: resumes mission at the closest
+                            // DO_RETURN_PATH_START corridor point.
+#endif
         // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
@@ -289,17 +293,8 @@ public:
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4);
     void nav_script_time_done(uint16_t id);
 
-    // 
-    void init_reversed_flag() override {
-        if (!mission.is_resume()) {
-            set_reversed(false);
-        }
-    }
-
-    AP_Mission mission{
-        FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command&),
-        FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command_callback, bool, const AP_Mission::Mission_Command&),
-        FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
+    //
+    void init_reversed_flag() override;
 
     enum class DoneBehaviour : uint8_t {
         HOLD      = 0,
@@ -324,6 +319,9 @@ protected:
         Circle,            // circle a given location
     } _submode;
 
+    bool waiting_to_start;  // true if waiting for EKF origin before starting mission
+    bool auto_triggered;    // true when auto has been triggered to start
+
 private:
 
     bool check_trigger(void);
@@ -335,6 +333,8 @@ private:
     bool start_command(const AP_Mission::Mission_Command& cmd);
     void exit_mission();
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
+
+    friend class Rover;
 
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void do_RTL(void);
@@ -363,9 +363,6 @@ private:
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_script_time();
 #endif
-
-    bool waiting_to_start;  // true if waiting for EKF origin before starting mission
-    bool auto_triggered;        // true when auto has been triggered to start
 
     // HeadingAndSpeed sub mode variables
     float _desired_speed;   // desired speed in HeadingAndSpeed submode
@@ -787,6 +784,35 @@ protected:
     bool _loitering;        // true if loitering at end of SRTL
 };
 
+
+
+#if MODE_AUTORTL_ENABLED
+// ModeAutoRTL - full flight mode that resumes the loaded AUTO mission
+// at the closest point on the DO_RETURN_PATH_START corridor.
+// All navigation is handled by the inherited ModeAuto machinery; this
+// class only overrides _enter() to jump the mission index before handing
+// off to ModeAuto::_enter().
+class ModeAutoRTL : public ModeAuto
+{
+public:
+
+    Number mode_number() const override { return Number::AUTO_RTL; }
+    const char *name() const override { return "Auto RTL"; }
+    const char *name4() const override { return "ARTL"; }
+
+    // do not allow arming from this mode
+    bool allows_arming() const override { return false; }
+
+    // Auto RTL does not wait for AUTO_KICKSTART / AUTO_TRIGGER_PIN
+    void calc_throttle(float target_speed, bool avoidance_enabled) override {
+        Mode::calc_throttle(target_speed, avoidance_enabled);
+    }
+
+protected:
+
+    bool _enter() override;
+};
+#endif
 
 
 class ModeSteering : public Mode

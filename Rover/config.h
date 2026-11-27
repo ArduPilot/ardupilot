@@ -36,6 +36,12 @@
 # define MODE_FOLLOW_ENABLED AP_FOLLOW_ENABLED
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// Auto RTL mode - return home along pre-planned mission corridor
+#ifndef MODE_AUTORTL_ENABLED
+# define MODE_AUTORTL_ENABLED (AP_MISSION_ENABLED && (HAL_PROGRAM_SIZE_LIMIT_KB > 1024))
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
