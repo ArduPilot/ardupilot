@@ -77,6 +77,9 @@ public:
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
 
+    // get collective output passed to the main rotor controller (after limits and land-min-coll clamping)
+    float get_collective_out() const { return _main_rotor.get_collective(); }
+
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed);
 
