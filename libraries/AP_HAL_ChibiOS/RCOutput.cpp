@@ -112,10 +112,10 @@ static const eventmask_t EVT_LED_SEND  = EVENT_MASK(15);
  */
 #if defined(RP2350) && defined(HAL_PWM_ALARM)
 /*
-  true if a servo channel's function makes it a PWM output. Function 0 does:
-  it sends no pulse until DO_SET_SERVO or a script sets one. A GPIO and the
+  true if a servo channel's function makes it a PWM output. A GPIO and the
   alarm do not, nor does a serial LED, whose waveform comes from the PIO
-  rather than the PWM slice.
+  rather than the PWM slice. On the buzzer's slice init() has already left
+  out an output with function 0.
  */
 static bool channel_runs_as_pwm(uint8_t chan)
 {
@@ -162,6 +162,13 @@ void RCOutput::init()
 #if defined(RP2350) && defined(HAL_PIN_ALT_CONFIG)
             // init below puts the PWM function back on the pin, which would take it from what BRD_ALT_CONFIG gave it to
             if (chan != CHAN_DISABLED && !GPIO::alt_config_allows_pwm(group.pal_lines[j])) {
+                group.chan[j] = CHAN_DISABLED;
+            } else
+#endif
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+            // an output with no function leaves the slice it shares with the buzzer to the buzzer
+            if (chan != CHAN_DISABLED && group.pwm_drv == ChibiOS::Util::toneAlarm_pwm_driver() &&
+                SRV_Channels::channel_function(chan+chan_offset) == SRV_Channel::k_none) {
                 group.chan[j] = CHAN_DISABLED;
             } else
 #endif
