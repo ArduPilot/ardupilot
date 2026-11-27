@@ -6128,8 +6128,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm(require_absolute=False, timeout=120)
         self.takeoff(altitude_min=40, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
         self.set_rc(3, 1500)
-        self.set_rc(2, 1450)
-        self.wait_groundspeed(1.0, 10, timeout=30)
+        # the drift decays through the fall, and a working estimate stays up to about 0.4 m/s out
+        # whatever the speed, so drift fast enough for that to be well inside the bound below
+        self.set_rc(2, 1400)
+        self.wait_groundspeed(2.0, 10, timeout=30)
         self.set_rc(2, 1500)
         self.change_mode('STABILIZE')
         self.set_rc(3, 1000)
