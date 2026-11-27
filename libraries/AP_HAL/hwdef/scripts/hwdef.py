@@ -65,7 +65,8 @@ class HWDef:
         return shlex.split(line, posix=posix)
 
     def __init__(self, quiet=False, outdir=None, hwdef: list | None = None,
-                 build_option_defines: dict | None = None):
+                 build_option_defines: dict | None = None,
+                 command_line_defines: dict | None = None):
         if hwdef is None:
             hwdef = []
 
@@ -74,6 +75,8 @@ class HWDef:
         self.quiet = quiet
         # {define: 0 or 1} for the build options given to waf configure
         self.build_option_defines = build_option_defines or {}
+        # {define: value string} for waf configure's --define options
+        self.command_line_defines = command_line_defines or {}
 
         # dictionary of all config lines, indexed by first word
         self.config = {}
@@ -207,6 +210,24 @@ class HWDef:
         like whether to embed the bootloader, not only in hwdef.h'''
         self.intdefines.update(self.build_option_defines)
 
+    def apply_command_line_defines(self):
+        '''use the --define values for the script's own decisions too.  They
+        reach the compiler ahead of hwdef.h, so a define the hwdef makes
+        itself still wins and they only stand in for ones it doesn't make'''
+        for name, value in self.command_line_defines.items():
+            if name in self.define_values or name in self.build_option_defines:
+                continue
+            value = {'TRUE': '1', 'FALSE': '0'}.get(value, value)
+            if re.match(r'^-?(?:0x[0-9a-fA-F]+|[1-9][0-9]*|0)$', value):
+                self.intdefines[name] = int(value, 0)
+
+    def get_define_value(self, name):
+        '''the value of a define as the compiler sees it, from the hwdef or
+        else from a --define, or None if neither defines it'''
+        if name in self.define_values:
+            return self.define_values[name]
+        return self.command_line_defines.get(name)
+
     def define_line(self, line):
         '''the #define for a "define NAME value" line. A build option given
         for NAME replaces the value, so that it matches the option's -D'''
@@ -294,6 +315,7 @@ class HWDef:
         # process input file
         self.process_hwdefs()
         self.apply_build_option_defines()
+        self.apply_command_line_defines()
 
         # write out hwdef.h
         self.write_hwdef_header(self.get_output_path("hwdef.h"))

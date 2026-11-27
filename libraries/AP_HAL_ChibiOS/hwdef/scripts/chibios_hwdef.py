@@ -2832,6 +2832,15 @@ Please run: Tools/scripts/build_bootloaders.py %s
             # without having to test the page number for definedness
             f.write('#define HAL_CHIBIOS_MCU_FLASH_STORAGE_ENABLED 1\n')
 
+        # write_peripheral_enable covers the peripherals the hwdef has;
+        # the ChibiOS driver can also be turned on by defining its
+        # STM32_WSPI_USE_* directly
+        for periph in ('QUADSPI1', 'QUADSPI2', 'OCTOSPI1', 'OCTOSPI2'):
+            if periph in self.bytype or periph in self.alttype:
+                continue
+            if self.get_define_value('STM32_WSPI_USE_%s' % periph) in ('1', 'TRUE'):
+                f.write('#define HAL_USE_%s TRUE\n' % periph)
+
     def build_peripheral_list(self):
         '''build a list of peripherals for DMA resolver to work on'''
         peripherals = []
@@ -3286,6 +3295,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # after validate_periph_defines(), which checks the board's own
         # defines only, as it did before build options were applied
         self.apply_build_option_defines()
+        self.apply_command_line_defines()
 
         if "MCU" not in self.config:
             self.error("Missing MCU type in config")
