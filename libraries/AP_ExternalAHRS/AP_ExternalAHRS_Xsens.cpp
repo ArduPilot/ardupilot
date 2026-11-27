@@ -76,7 +76,7 @@ AP_ExternalAHRS_Xsens::AP_ExternalAHRS_Xsens(AP_ExternalAHRS *_frontend,
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_Xsens::update_thread, void), 
-                                      "AHRS", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
+                                      "AHRS", 4096, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
         AP_BoardConfig::allocation_error("Failed to allocate ExternalAHRS update thread");
     }
 
@@ -94,7 +94,9 @@ void AP_ExternalAHRS_Xsens::update_thread(void)
     while (true) {
         process_received_data();
         update_state_machine();
-        hal.scheduler->delay_microseconds(1000);
+        // With the high-rate outputs the device sends a packet roughly every 0.9ms and
+        // its SPI output buffer is small, so poll faster than the packet interval.
+        hal.scheduler->delay_microseconds(250);
     }
 }
 
@@ -173,19 +175,50 @@ void AP_ExternalAHRS_Xsens::process_received_data()
             }
         }
         
-        // Read measurement pipe
+        // Read measurement pipe. A single read can return several MTData2 frames
+        // that the device buffered between polls, back to back in the pipe without
+        // the preamble/BID bytes. Handle every frame; parsing only the first one
+        // dropped the rest and let the device output buffer overflow (error 0x29).
         if (meas_size > 0) {
             uint8_t temp_buffer[BUFFER_SIZE];
             temp_buffer[0] = XBUS_PREAMBLE;
             temp_buffer[1] = XBUS_MASTERDEVICE;
-            
+
             read_pipe(&temp_buffer[2], meas_size, XBUS_MEASUREMENT_PIPE);
-            
-             if (verify_checksum(temp_buffer)) {
-                handle_message(temp_buffer);
-             } else {
-                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: Measurement checksum failed");
-             }
+
+            // For each frame, reuse the two bytes in front of its MID for the preamble
+            // and BID so the existing handlers can be used unchanged. Those bytes belong
+            // to the already-handled previous frame (or are the header written above).
+            uint16_t offset = 0;
+            while (offset + 2 <= meas_size) {
+                uint8_t *msg = &temp_buffer[offset];
+                msg[0] = XBUS_PREAMBLE;
+                msg[1] = XBUS_MASTERDEVICE;
+
+                uint16_t payload_length = msg[3];
+                uint16_t raw_length;
+                if (msg[3] == LENGTH_EXTENDER_BYTE) {
+                    if (offset + 4 > meas_size) {
+                        break;
+                    }
+                    payload_length = (msg[4] << 8) | msg[5];
+                    raw_length = payload_length + 7;
+                } else {
+                    raw_length = payload_length + 5;
+                }
+
+                const uint16_t frame_pipe_len = raw_length - 2;
+                if (offset + frame_pipe_len > meas_size) {
+                    break; // incomplete trailing frame
+                }
+
+                if (verify_checksum(msg)) {
+                    handle_message(msg);
+                } else {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: Measurement checksum failed");
+                }
+                offset += frame_pipe_len;
+            }
         }
     } else {
         // Original UART code
