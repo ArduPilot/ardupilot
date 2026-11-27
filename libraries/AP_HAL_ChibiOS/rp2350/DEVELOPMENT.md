@@ -1180,10 +1180,24 @@ loopback: log popped bytes ahead of the echo drop to see what went out.
 A group is one PWM slice of two channels (`HAL_PWM_GROUP_CHANNELS` 2),
 declared `PWMn_A`/`PWMn_B` with type `TIMn`, slices 0-11, FUNCSEL 4; both
 share the slice's divider and TOP. The divider's integer part is 8 bits, so
-a 1 MHz counter needs `clk_sys` under 256 MHz (`static_assert`). OneShot is
-refused (no EGR), and `setup_group_DMA()` always fails: with no timer DMAR,
-DShot and LEDs use the PIO, and ESC passthrough drives the motor pins from
-the CPU (see ESC passthrough).
+a 1 MHz counter needs `clk_sys` under 256 MHz (`static_assert`).
+`setup_group_DMA()` always fails: with no timer DMAR, DShot and LEDs use the
+PIO, and ESC passthrough drives the motor pins from the CPU (see ESC
+passthrough).
+
+The PWM has no one-pulse mode for OneShot. A oneshot group's counter runs to
+TOP 0xFFFF instead, and `trigger_groups()` writes TOP into it where STM32
+writes EGR: the counter wraps on its next count, which latches the
+double-buffered widths and starts the pulses. So each push sends one pulse,
+as on STM32, and `timer_tick()` triggers again within about 4 ms when no
+push comes. Unlike STM32's one-pulse mode, a slice left untriggered wraps by
+itself and repeats its last widths: after 65.5 ms for OneShot at 1 MHz, and
+after 8.2 ms for OneShot125 at 8 MHz. While the rcout thread runs,
+`timer_tick()` comes first; a stall longer than that sends the last widths
+again rather than nothing. On the bench, Plane's `ONESHOT_MASK` gave
+1500 us pulses at the 200 Hz loop rate, the counter never above 5016.
+`trigger_groupmask` has 8 bits, as upstream, so a hwdef with more than
+eight PWM groups cannot trigger OneShot on the ninth and later.
 
 The buzzer is an `ALARM` pin with no `GPIO(n)` or `HAL_BUZZER_PIN`, either
 of which lets `AP_Notify::Buzzer::init()` switch it to SIO. The transducers
@@ -1194,14 +1208,15 @@ the PIO: `set_default_rate()` skips LED-mode groups so it cannot overwrite
 the alarm's period, and `set_group_mode()` leaves the slice running for an
 LED mode, so the strip keeps the alarm's divider: tones measured 4 kHz on
 the bench with a strip there.
-Any function that makes output 8 a PWM output, 0 included, needs the slice's
-period, so RCOutput's init calls `Util::toneAlarm_release_pwm_slice()` and
-the tone alarm leaves the slice alone: the buzzer is off, and the RCOut
-banner ends ", buzzer off". A scripting function there may drive a strip
-instead; when it sets one up, `set_serial_led_num_LEDs()` hands the slice
-back with `Util::toneAlarm_reclaim_pwm_slice()`, which restarts it on the
-alarm's clock, as the output left it on its own 1 MHz. DShot beeps still
-work.
+With function 0 RCOutput's init leaves output 8 out of its group, so nothing
+drives it and the buzzer keeps the slice. Any other function that makes
+output 8 a PWM output needs the slice's period, so the init calls
+`Util::toneAlarm_release_pwm_slice()` and the tone alarm leaves the slice
+alone: the buzzer is off, and the RCOut banner ends ", buzzer off". A
+scripting function there may drive a strip instead; when it sets one up,
+`set_serial_led_num_LEDs()` hands the slice back with
+`Util::toneAlarm_reclaim_pwm_slice()`, which restarts it on the alarm's
+clock, as the output left it on its own 1 MHz. DShot beeps still work.
 
 ### Alternative configs
 
