@@ -81,7 +81,8 @@ end
 --- Handles the simple, one-shot accel calibration.
 local function callback_accel_cal(command_action)
     if command_action == CRSF_COMMAND_STATUS.START then
-        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p5 = 4 })
+        -- param5 travels in x: run_command_int has no p5
+        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { x = 4 })
         gcs:send_text(MAV_SEVERITY.INFO, "Accels calibrated")
     end
     return CRSF_COMMAND_STATUS.READY, "Execute"
@@ -90,7 +91,7 @@ end
 --- Handles the simple, one-shot "force" accel calibration.
 local function callback_force_accel_cal(command_action)
     if command_action == CRSF_COMMAND_STATUS.START then
-        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p5 = 76 })
+        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { x = 76 })
         gcs:send_text(MAV_SEVERITY.INFO, "Accels force calibrated")
     end
     return CRSF_COMMAND_STATUS.READY, "Execute"
@@ -108,7 +109,7 @@ end
 --- Handles the simple, one-shot AHRS trim.
 local function callback_ahrs_trim(command_action)
     if command_action == CRSF_COMMAND_STATUS.START then
-        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p5 = 2 })
+        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { x = 2 })
         gcs:send_text(MAV_SEVERITY.INFO, "AHRS trimmed")
     end
     return CRSF_COMMAND_STATUS.READY, "Execute"
