@@ -1437,8 +1437,9 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_vtx_config(sbuf_t *src, s
         // would contradict the band/channel a betaflight-style VTX keys off
         .type = VTXDEV_MSP,
         // a custom band is not in the VTX's own band map, so it is sent as a
-        // raw frequency
-        .band = vtx.table().band_is_factory(band) ? uint8_t(band + 1) : uint8_t(0),
+        // raw frequency. So is a frequency the VTX gave that the slot does
+        // not have, which is all there is to send for a disabled channel
+        .band = (vtx.table().band_is_factory(band) && freq_mhz == AP_VideoTX::get_frequency_mhz(band, channel)) ? uint8_t(band + 1) : uint8_t(0),
         .channel = uint8_t(channel + 1),
         .power = msp_vtx_get_power_index(),
         .pitmode = vtx.get_configured_pitmode(),
