@@ -678,6 +678,11 @@ private:
     // trigger group pulses
     void trigger_groups(void);
 
+    // true until the pulses last triggered, and the gap after them, are over
+    bool pulse_separation_pending(rcout_timer_t now) const {
+        return !AP_HAL::timeout_expired(last_pulse_trigger_us, now, trigger_widest_pulse);
+    }
+
     // setup output frequency for a group
     void set_freq_group(pwm_group &group);
 

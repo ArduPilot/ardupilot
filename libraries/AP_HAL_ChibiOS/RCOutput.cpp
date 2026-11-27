@@ -1465,7 +1465,7 @@ void RCOutput::trigger_groups()
 
     rcout_timer_t now = rcout_micros();
 
-    if (!AP_HAL::timeout_expired(last_pulse_trigger_us, now, trigger_widest_pulse)) {
+    if (pulse_separation_pending(now)) {
         // guarantee minimum pulse separation
         hal.scheduler->delay_microseconds(AP_HAL::timeout_remaining(last_pulse_trigger_us, now, trigger_widest_pulse));
     }
