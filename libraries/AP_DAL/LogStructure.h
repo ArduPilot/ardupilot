@@ -80,7 +80,7 @@ struct log_RFRF {
 // @LoggerMessage: RFRN
 // @Description: Replay FRame - aNother frame header
 // @Field: HLat: home latitude
-// @Field: HLon: home latitude
+// @Field: HLon: home longitude
 // @Field: HAlt: home altitude AMSL
 // @Field: E2T: EAS to TAS factor
 // @Field: AM: available memory
