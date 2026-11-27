@@ -25632,11 +25632,11 @@ return update, 1000
         self.wait_ready_to_arm()
         msp = self.msp_connect(port)
 
-        def set_vtx_config(band, channel, freq):
+        def set_vtx_config(band, channel, freq, legacy=5870):
             # MSP API 1.42 payload: band and channel one based, band 0 is a
             # raw frequency. The legacy field is the raw frequency the VTX is
             # on, which the 1.42 fields supersede
-            payload = struct.pack("<H", 5870)       # legacy field
+            payload = struct.pack("<H", legacy)     # legacy field
             payload += struct.pack("<BB", 1, 0)     # power index, pitmode
             payload += struct.pack("<B", 0)         # lowPowerDisarm
             payload += struct.pack("<H", 0)         # pitModeFreq
@@ -25701,6 +25701,34 @@ return update, 1000
             msp.send_command(MSP_SET_VTX_CONFIG, set_vtx_config(13, 1, 0)[0][1])
             self.delay_sim_time(0.2, reason="let the FC process the frame")
         self.assert_parameter_values({"VTX_BAND": 11, "VTX_CHANNEL": 0, "VTX_FREQ": 5870})
+
+        # a VTX that boots on a frequency the band table does not have, with
+        # a disabled channel configured, is left on its own frequency. That
+        # is sent as a raw frequency, as the band and channel would select a
+        # channel the user disabled
+        self.set_parameters({
+            "VTX_BND2_REPL": 0,
+            "VTX_BND2_CH1": -1,
+        })
+        for (name, band, channel) in ("added band", 11, 1), ("factory band", 0, 0):
+            self.start_subtest("VTX on an off-table frequency with a disabled %s channel configured" % name)
+            self.set_parameters({
+                "VTX_BAND": band,
+                "VTX_CHANNEL": channel,
+                "VTX_POWER": 25,
+            })
+            self.reboot_sitl()
+            msp = self.msp_connect(port)
+            self.msp_send_until_parameters(msp, set_vtx_config(0, 0, 5999, legacy=5999), {
+                "VTX_BAND": band,
+                "VTX_CHANNEL": channel,
+                "VTX_FREQ": 5999,
+            })
+            self.wait_msp_vtx_config_reply(msp, 0, channel + 1, 5999)
+            self.set_parameter("VTX_POWER", 800)
+            pushes = pushes_in(3)
+            if not pushes or any(p[0] != 0 or p[4] != 5999 for p in pushes):
+                raise NotAchievedException("power change not pushed on the VTX's own frequency: %s" % pushes)
         self.reboot_sitl()
 
     def tests2b(self):
