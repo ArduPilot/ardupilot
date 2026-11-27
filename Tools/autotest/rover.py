@@ -566,6 +566,100 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''maximum distance allowed from home at end'''
         return 6.5
 
+    def DriveReturnPathStart(self):
+        '''Test AUTO_DO_RETURN_PATH_START for Rover (issue #35359).
+
+        Layout (all offsets in metres from home):
+          WP1  N=50  - outbound survey point
+          WP2  N=100 - furthest outbound point
+          DRPS          - DO_RETURN_PATH_START marker
+          WP3  N=80 E=30  \\
+          WP4  N=40 E=30   > return corridor, offset 30 m east to simulate
+          WP5  N=0  E=0  /   navigating around a breakwater
+
+        The rover drives outbound to WP2, then we trigger RTL via
+        MAV_CMD_DO_RETURN_PATH_START (cmd 188).  The rover should:
+          1. Jump into the return corridor at the closest point
+             (somewhere on the leg WP3->WP4, not fly straight to home).
+          2. Follow the corridor with low cross-track error (< 10 m).
+          3. Reach home and stop / loiter.
+        '''
+        MAV_CMD_DO_RETURN_PATH_START = 188
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        items = [
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 0, 0),
+            self.create_MISSION_ITEM_INT(MAV_CMD_DO_RETURN_PATH_START),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 80, 30, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 30, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0),
+        ]
+        self.upload_simple_relhome_mission(items)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Rover is on leg WP1->WP2 once it crosses WP1 (50 m north)
+        self.wait_current_waypoint(2, timeout=120)
+        # Let it get past WP1 (around 65 m north)
+        self.wait_distance_to_home(65, 95, timeout=60)
+
+        # Trigger the return path via MAVLink command (simulates GCS button)
+        self.progress("Triggering DO_RETURN_PATH_START via GCS command")
+        self.run_cmd_int(
+            MAV_CMD_DO_RETURN_PATH_START,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
+
+        # Expect GCS text confirming return path join and mode 17 (AUTO_RTL)
+        self.wait_statustext(
+            "Return path started",
+            timeout=30, check_context=True)
+        self.wait_mode(17)
+
+        # Monitor cross-track error while rover follows the corridor.
+        # The return corridor runs south along E=30 m (WP3->WP4).
+        max_cross_track = 0.0
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 300:
+                raise NotAchievedException(
+                    "Did not complete return path in time")
+            if self.get_distance_to_home() < 5:
+                break
+            pos = self.mav.recv_match(
+                type='LOCAL_POSITION_NED', blocking=True, timeout=5)
+            if pos is None:
+                continue
+            north_m = pos.x
+            east_m = pos.y
+            # Only measure cross-track on the corridor legs
+            # (between WP3 and WP5)
+            if 5 < north_m < 80:
+                # Corridor target is 30 m east
+                cross_track = abs(east_m - 30)
+                if cross_track > max_cross_track:
+                    max_cross_track = cross_track
+
+        self.progress(
+            f"Maximum cross-track error: {max_cross_track:.1f} m")
+        if max_cross_track > 10:
+            raise NotAchievedException(
+                "Rover did not follow return corridor"
+                f" (cross-track {max_cross_track:.1f} m > 10 m)"
+            )
+
+        self.clear_rc_overrides()
+        self.change_mode('MANUAL')
+        self.disarm_vehicle(force=True)
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        self.reboot_sitl()
+        self.context_pop()
+
     def DriveRTL(self, timeout=120):
         '''Drive an RTL Mission'''
         self.wait_ready_to_arm()
@@ -8607,6 +8701,7 @@ return update()
             self.DriveSquare,
             self.SIMCompare,
             self.DriveMission,
+            self.DriveReturnPathStart,
             # self.DriveBrake,  # disabled due to frequent failures
             self.MAV_CMD_DO_SEND_BANNER,
             self.DO_SET_MODE,
