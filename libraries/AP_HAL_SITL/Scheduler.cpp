@@ -46,6 +46,8 @@ bool Scheduler::_in_semaphore_take_wait = false;
 Scheduler::thread_attr *Scheduler::threads;
 HAL_Semaphore Scheduler::_thread_sem;
 
+struct Scheduler::task_attr *Scheduler::_tasks = nullptr;
+
 Scheduler::Scheduler(SITL_State *sitlState) :
     _sitlState(sitlState),
     _stopped_clock_usec(0)
@@ -262,6 +264,26 @@ void Scheduler::_run_timer_procs()
     _in_timer_proc = false;
 }
 
+void Scheduler::_run_tasks()
+{
+    _in_io_proc = true;  // lies!  But it *is* convenient ans saves a byte
+
+    for (task_attr *task = _tasks; task != nullptr; task = task->next) {
+        // should we run this?
+        const uint32_t now_us = AP_HAL::micros();
+        if (now_us - task->last_run_us < task->delay_us) {
+            // no
+            continue;
+        }
+        // we should set things up here to ensure that the body
+        // *never* sleeps
+        task->last_run_us = now_us;
+        task->delay_us = task->task.update();
+    }
+
+    _in_io_proc = false;
+}
+
 void Scheduler::_run_io_procs()
 {
     if (_in_io_proc) {
@@ -336,6 +358,24 @@ void *Scheduler::thread_create_trampoline(void *ctx)
 #ifndef PTHREAD_STACK_MIN
 #define PTHREAD_STACK_MIN 16384U
 #endif
+
+bool Scheduler::task_create(
+    AP_HAL::Scheduler::Task &task,
+    const char *name,
+    uint32_t stack_size,
+    priority_base base,
+    int8_t priority)
+{
+    task_attr *attr = new task_attr{
+      task: task,
+    };
+    attr->name = name;
+
+    // link it into our tasks list
+    attr->next = _tasks;
+    _tasks = attr;
+    return true;
+}
 
 /*
   create a new thread
