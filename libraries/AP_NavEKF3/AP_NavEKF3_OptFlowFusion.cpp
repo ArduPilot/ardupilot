@@ -382,6 +382,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         // the velocity was solved from this sample, so fusing it as well would count it twice; it
         // still counts as flow fused for relative aiding's timeout
         prevFlowFuseTime_ms = imuSampleTime_ms;
+        flowWithheld_ms = 0;
         return;
     }
 
