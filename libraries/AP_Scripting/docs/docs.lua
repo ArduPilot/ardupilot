@@ -1422,6 +1422,16 @@ compass = {}
 ---@return boolean
 function compass:healthy(instance) end
 
+-- Get the state of the last calibration started on a compass. Success and
+-- failure hold until the next start, though with retry a failure lasts only
+-- until the next attempt; a cancel, or an accept from a GCS, returns the
+-- status to 0. Returns nil if no calibration has been requested for that
+-- compass since boot, or if there is no such compass
+---@param instance integer -- the 0-based priority of the compass
+---@return integer|nil -- status, a MAG_CAL_STATUS: 0 not started, 1 waiting to start, 2 and 3 running, 4 success, 5 to 10 failed
+---@return number|nil -- percent complete, 0 to 100
+function compass:get_cal_state(instance) end
+
 -- desc
 camera = {}
 
