@@ -341,7 +341,6 @@ void AP_ExternalAHRS_Xsens::handle_message(const uint8_t *message)
             break;
 
         case XsMessageId::Error:
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Xsens device error");
             handle_error_message(message);
             break;
 
@@ -398,7 +397,23 @@ void AP_ExternalAHRS_Xsens::handle_mtdata2_message(const uint8_t *message)
 
 void AP_ExternalAHRS_Xsens::handle_error_message(const uint8_t *message)
 {
-    set_device_state(DeviceState::ERROR);
+    // Log the device error but do not force a reconfigure. Some Xbus errors (for
+    // example 0x29 data overflow at start-up) are transient and clear on their own,
+    // and forcing the device back to config turned them into a reinit loop. Genuine
+    // loss of data is still caught by the 10s data watchdog in update().
+    // Report at most once every 2s with a count, so a burst of errors does not flood
+    // the GCS link and starve this thread.
+    const uint8_t *payload = get_const_pointer_to_payload(message);
+    static uint32_t err_count;
+    static uint32_t err_last_report_ms;
+    err_count++;
+    const uint32_t now = AP_HAL::millis();
+    if (now - err_last_report_ms >= 2000) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: Xbus error 0x%02X (x%u)",
+                      payload[0], (unsigned)err_count);
+        err_count = 0;
+        err_last_report_ms = now;
+    }
 }
 
 void AP_ExternalAHRS_Xsens::update_state_machine()
