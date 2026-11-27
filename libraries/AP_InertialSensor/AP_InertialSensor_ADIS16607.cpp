@@ -93,6 +93,10 @@
 #define ADIS16607_FIFO_THRESHOLD    0x400U
 #define ADIS16607_FIFO_CHANNEL_MAX_INDEX 28 // Data Counter Data
 #define ADIS16607_FIFO_MAX_WORDS    1024U
+// A full FIFO overwrites its oldest words. Normally it holds a few samples;
+// a backlog of more than half of it means the callback was delayed, and the
+// FIFO may overflow while it is being read.
+#define ADIS16607_FIFO_BACKLOG_WORDS (ADIS16607_FIFO_MAX_WORDS / 2)
 // bits [7:0] of the *_LOW data words are always zero
 #define ADIS16607_LOW_WORD_ZERO_MASK 0x00FFU
 #define ADIS16607_DIAG_CHECK_MS     50
@@ -442,10 +446,31 @@ bool AP_InertialSensor_ADIS16607::write_reg16(uint8_t regnum, uint16_t value, bo
 }
 
 /**
- * @brief Count a corrupt read and resynchronise to the FIFO sample blocks
+ * @brief Clear the FIFO and resynchronise to its sample blocks
  */
-void AP_InertialSensor_ADIS16607::handle_corrupt_data(void)
+void AP_InertialSensor_ADIS16607::reset_fifo(void)
 {
+    // Write unlock
+    write_reg16(REG_WRITE_LOCK, 0xAAAA, false);
+    write_reg16(REG_WRITE_LOCK, 0x5555, false);
+    write_reg16(REG_USER_FIFO_CFG, USER_FIFO_CFG_CLEAR_FIFO_B | (ADIS16607_FIFO_THRESHOLD << 0));
+    // Write lock
+    write_reg16(REG_WRITE_LOCK, 0x5555, false);
+    write_reg16(REG_WRITE_LOCK, 0xAAAA, false);
+    need_sync = true;
+}
+
+/**
+ * @brief Handle a rejected sample: a corrupt read is counted, an overflow is not
+ * @param backlog the FIFO held a backlog when this read started
+ */
+void AP_InertialSensor_ADIS16607::handle_corrupt_data(bool backlog)
+{
+    if (backlog) {
+        // the FIFO overwrote its oldest words while being read
+        reset_fifo();
+        return;
+    }
     _inc_accel_error_count(accel_instance);
     _inc_gyro_error_count(gyro_instance);
     need_sync = true;
@@ -547,7 +572,7 @@ void AP_InertialSensor_ADIS16607::read_sensor_fifo(void)
     if (fifo_word_num > ADIS16607_FIFO_MAX_WORDS) {
         // Bits [15:11] are reserved and the FIFO holds 1024 words, so the
         // read is corrupt (e.g. DOUT stuck high reads 0xFFFF)
-        handle_corrupt_data();
+        handle_corrupt_data(false);
         return;
     }
 
@@ -555,18 +580,13 @@ void AP_InertialSensor_ADIS16607::read_sensor_fifo(void)
         return;
     }
 
-    if (fifo_word_num == 1024) {
-        // FIFO full, data may be discontinuity. Reset FIFO
-        // Write unlock
-        write_reg16(REG_WRITE_LOCK, 0xAAAA, false);
-        write_reg16(REG_WRITE_LOCK, 0x5555, false);
-        write_reg16(REG_USER_FIFO_CFG, USER_FIFO_CFG_CLEAR_FIFO_B | (ADIS16607_FIFO_THRESHOLD << 0));
-        // Write lock
-        write_reg16(REG_WRITE_LOCK, 0x5555, false);
-        write_reg16(REG_WRITE_LOCK, 0xAAAA, false);
-        need_sync = true;
+    if (fifo_word_num == ADIS16607_FIFO_MAX_WORDS) {
+        // FIFO full, data may be discontinuous. Reset FIFO
+        reset_fifo();
         return;
     }
+
+    const bool backlog = fifo_word_num > ADIS16607_FIFO_BACKLOG_WORDS;
 
     uint8_t *buffer = (uint8_t *)fifo_buffer;
 
@@ -589,7 +609,7 @@ void AP_InertialSensor_ADIS16607::read_sensor_fifo(void)
             buffer[1] = uint8_t(val & 0xFF);
             need_sync = false;
             if (!accumulate_samples((adis_fifo_data *)&buffer[0], 1)) {
-                handle_corrupt_data();
+                handle_corrupt_data(backlog);
                 return;
             }
             fifo_word_num -= (WORD_PER_SAMPLE - 1);
@@ -621,7 +641,7 @@ void AP_InertialSensor_ADIS16607::read_sensor_fifo(void)
         }
 
         if (!accumulate_samples((adis_fifo_data *)&buffer[2], read_block)) {
-            handle_corrupt_data();
+            handle_corrupt_data(backlog);
             return;
         }
         total_block -= read_block;

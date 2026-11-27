@@ -63,7 +63,8 @@ private:
     bool accumulate_samples(const struct adis_fifo_data *fifo, const uint8_t num);
     void read_sensor_fifo(void);
     void check_diag_stat(void);
-    void handle_corrupt_data(void);
+    void reset_fifo(void);
+    void handle_corrupt_data(bool backlog);
 #if defined (ADIS16607_SYNC_INPUT_CLOCK_HZ) && defined (ADIS16607_SYNC_INPUT_BITMASK)
     void calc_sample_and_dec_rate();
 #endif
