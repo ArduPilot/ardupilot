@@ -296,7 +296,8 @@ public:
     void rcout_thread();
 
     /*
-      Force group trigger from all callers rather than just from the main thread
+      Force group trigger from all callers rather than just from the main thread.
+      While forced, a push does not wait for the last oneshot pulses either
     */
     void force_trigger_groups(bool onoff) override { force_trigger = onoff; }
 
@@ -599,7 +600,12 @@ private:
     uint8_t _dshot_cycle;
     // virtual timer for post-push() pulses
     virtual_timer_t _dshot_rate_timer;
-    // force triggering of groups, this is used by the rate thread to ensure output occurs
+    // virtual timer for the end of the oneshot pulses, and the gap after them, that a push did not wait for
+    virtual_timer_t oneshot_trigger_timer;
+    // last_pulse_trigger_us when oneshot_trigger_timer was set: the trigger whose pulses it waits for
+    rcout_timer_t oneshot_timer_trigger_us;
+    // force triggering of groups, this is used by the rate thread to ensure output occurs, and
+    // to keep its pushes from waiting for oneshot pulses
     bool force_trigger;
 
 #if HAL_DSHOT_ENABLED
@@ -684,6 +690,12 @@ private:
     // start the pulses of the groups in trigger_groupmask; trigger_mutex held, the last pulses over
     void start_group_pulses(void);
 
+    // set oneshot_trigger_timer for the end of the pulses going out and their gap; trigger_mutex held
+    void set_oneshot_trigger_timer(rcout_timer_t now);
+
+    // start the pulses of the push that set oneshot_trigger_timer, once it has expired
+    void start_group_pulses_after_timer(void);
+
     // true until the pulses last triggered, and the gap after them, are over
     bool pulse_separation_pending(rcout_timer_t now) const {
         return !AP_HAL::timeout_expired(last_pulse_trigger_us, now, trigger_widest_pulse);
@@ -734,11 +746,15 @@ private:
 #endif
     static const eventmask_t EVT_PWM_SEND  = EVENT_MASK(11);
     static const eventmask_t EVT_PWM_SYNTHETIC_SEND  = EVENT_MASK(13);
+    // oneshot_trigger_timer has expired
+    static const eventmask_t EVT_ONESHOT_TRIGGER  = EVENT_MASK(17);
 
     void dshot_send_groups(rcout_timer_t cycle_start_us, rcout_timer_t timeout_us);
     void dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_timer_t timeout_us);
     bool dshot_send_command(pwm_group &group, uint8_t command, uint8_t chan);
     static void dshot_update_tick(virtual_timer_t*, void* p);
+    // oneshot_trigger_timer's callback: wakes the rcout thread
+    static void oneshot_trigger_tick(virtual_timer_t*, void* p);
     static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
     sysinterval_t calc_ticks_remaining(pwm_group &group, rcout_timer_t cycle_start_us, rcout_timer_t timeout_period_us, rcout_timer_t output_period_us);
