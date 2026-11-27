@@ -38,7 +38,8 @@ public:
 
     // camera options parameter values
     enum class Option : uint8_t {
-        RecordWhileArmed = (1 << 0U)
+        RecordWhileArmed = (1 << 0U),
+        NoCameraFeedbackMsg = (1 << 1U),  // camera reports its own captures, don't send CAMERA_FEEDBACK
     };
     bool option_is_enabled(Option option) const {
         return (_params.options & (uint8_t)option) != 0;
