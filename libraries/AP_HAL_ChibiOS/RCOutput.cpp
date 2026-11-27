@@ -86,6 +86,12 @@ extern AP_IOMCU iomcu;
 #define HAL_PWM_GROUP_CHANNELS 4
 #endif
 
+#if defined(RP2350)
+// a oneshot group's TOP: with no one-pulse mode the counter runs to this
+// longest wrap, 65.5 ms at 1 MHz, and trigger_groups() wraps it early for each pulse
+static constexpr pwmcnt_t ONESHOT_TOP = 0xFFFF;
+#endif  // defined(RP2350)
+
 struct RCOutput::pwm_group RCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 #if HAL_SERIAL_ESC_COMM_ENABLED
 struct RCOutput::irq_state RCOutput::irq;
@@ -473,8 +479,12 @@ void RCOutput::set_freq_group(pwm_group &group)
 
     if (group.current_mode == MODE_PWM_ONESHOT ||
         group.current_mode == MODE_PWM_ONESHOT125) {
+#if defined(RP2350)
+        group.pwm_cfg.period = ONESHOT_TOP;
+#else
         // force a period of 0, meaning no pulses till we trigger
         group.pwm_cfg.period = 0;
+#endif  // defined(RP2350)
     } else {
         group.pwm_cfg.period = group.pwm_cfg.frequency/freq_set;
     }
@@ -1352,12 +1362,6 @@ void RCOutput::set_group_mode(pwm_group &group)
 
     case MODE_PWM_ONESHOT:
     case MODE_PWM_ONESHOT125:
-#if defined(RP2350)
-        // each oneshot pulse is started through the timer EGR, which the RP2350 PWM has no equivalent of
-        print_group_setup_error(group, "RP2350: OneShot not supported");
-        group.current_mode = MODE_PWM_NORMAL;
-        break;
-#endif  // defined(RP2350)
         // for oneshot we set a period of 0, which results in no pulses till we trigger
         group.pwm_cfg.period = 0;
         group.rc_frequency = 1;
@@ -1676,10 +1680,13 @@ void RCOutput::trigger_groups()
             group.current_mode == MODE_PWM_ONESHOT125) {
             const uint8_t i = &group - pwm_group_list;
             if (trigger_groupmask & (1U<<i)) {
-#if !defined(RP2350)
+#if defined(RP2350)
+                // a counter at TOP wraps on its next count, which latches the new widths and starts the pulses
+                group.pwm_drv->pwm->CH[group.pwm_drv->timer_id].CTR = ONESHOT_TOP;
+#else
                 // this triggers pulse output for a channel group
                 group.pwm_drv->tim->EGR = STM32_TIM_EGR_UG;
-#endif  // !defined(RP2350)
+#endif  // defined(RP2350)
             }
         }
     }
