@@ -1427,20 +1427,18 @@ void AP_ExternalAHRS_Xsens::read_pipe(uint8_t *buffer, uint16_t size, uint8_t pi
 uint16_t AP_ExternalAHRS_Xsens::create_raw_spi_message(uint8_t *dest, const uint8_t *msg)
 {
     uint16_t len = get_payload_length(msg);
-    // uint16_t total_len = (msg[3] == LENGTH_EXTENDER_BYTE) ? len + 7 : len + 5;
-    
-    dest[0] = XBUS_CONTROL_PIPE;
-    dest[1] = 0;
-    dest[2] = 0;
-    dest[3] = 0;
-    
+
+    // Build only the Xbus body (MID, LEN, payload, checksum). spi_transfer() already
+    // sends the pipe opcode and the three fill bytes in front of it; writing them here
+    // as well put a second header in front of the MID, so the device rejected every
+    // control message sent over SPI (config, output settings, measurement mode).
     uint8_t checksum = 0;
     checksum -= XBUS_MASTERDEVICE;
-    
-    dest[4] = msg[2]; // MID
-    checksum -= dest[4];
-    
-    uint16_t idx = 5;
+
+    dest[0] = msg[2]; // MID
+    checksum -= dest[0];
+
+    uint16_t idx = 1;
     if (len < LENGTH_EXTENDER_BYTE) {
         dest[idx++] = len;
         checksum -= len;
