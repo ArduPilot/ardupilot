@@ -175,14 +175,14 @@ void ModeRTL::advance_state()
     switch (_state) {
     case SubMode::STARTING:
         build_path();
-#if AP_OAPATHPLANNER_ENABLED
+#if AP_OAPATHPLANNER_BENDYRULER_ENABLED
         if (oa_avoids_climb_target()) {
             // BendyRuler would never let us reach the climb target, so climb on the way home instead
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RTL: climb target fenced, climbing en route");
             set_submode(SubMode::FLY_TO_RETURN_POINT);
             break;
         }
-#endif  // AP_OAPATHPLANNER_ENABLED
+#endif  // AP_OAPATHPLANNER_BENDYRULER_ENABLED
         set_submode(SubMode::INITIAL_CLIMB);
         break;
     case SubMode::INITIAL_CLIMB:
@@ -496,10 +496,11 @@ void ModeRTL::build_path()
     rtl_path.land = alt_final_m.get() <= 0;
 }
 
-#if AP_OAPATHPLANNER_ENABLED
+#if AP_OAPATHPLANNER_BENDYRULER_ENABLED
 // returns true if BendyRuler is the path planner and the initial climb target is inside an exclusion
-// zone or outside an inclusion zone, so BendyRuler would keep the vehicle away from it.  Dijkstra's
-// does not plan a path to a destination with the vehicle's own latitude and longitude, so allows the climb
+// zone, outside an inclusion zone, or too close to either's edge for BendyRuler to fly straight to it,
+// so BendyRuler would keep the vehicle away from it.  Dijkstra's does not plan a path to a destination
+// with the vehicle's own latitude and longitude, so allows the climb
 bool ModeRTL::oa_avoids_climb_target() const
 {
     const AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
@@ -509,9 +510,16 @@ bool ModeRTL::oa_avoids_climb_target() const
     if ((copter.fence.get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
         return false;
     }
-    return copter.fence.polyfence().breached(rtl_path.climb_target);
+    // unchanged if no polygon or circle fences are loaded
+    float distance_outside_fence = -FLT_MAX;
+    Vector2f fence_direction;
+    if (copter.fence.polyfence().breached(rtl_path.climb_target, distance_outside_fence, fence_direction)) {
+        return true;
+    }
+    // outside every fence, distance_outside_fence is minus the distance to the closest fence edge
+    return -distance_outside_fence < oa->get_bendyruler_fence_clearance_m();
 }
-#endif  // AP_OAPATHPLANNER_ENABLED
+#endif  // AP_OAPATHPLANNER_BENDYRULER_ENABLED
 
 // compute the return target - home or rally point
 //   return target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)

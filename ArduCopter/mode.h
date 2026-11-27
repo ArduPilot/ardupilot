@@ -1622,9 +1622,9 @@ private:
     void hold_at_return_point_run();
     void build_path();
     void compute_return_target();
-#if AP_OAPATHPLANNER_ENABLED
+#if AP_OAPATHPLANNER_BENDYRULER_ENABLED
     bool oa_avoids_climb_target() const;
-#endif  // AP_OAPATHPLANNER_ENABLED
+#endif  // AP_OAPATHPLANNER_BENDYRULER_ENABLED
 
     // RTL parameters
     AP_Float altitude_m;
