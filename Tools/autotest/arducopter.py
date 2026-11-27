@@ -24092,6 +24092,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def OAExclusionExitRouteAvoidsOtherZone(self):
         '''the route to the closest exit from an exclusion circle crosses another one; BendyRuler must use a different exit'''
+        self.oa_exclusion_exit_route_test(moving=False)
+
+    def OAExclusionExitRouteAvoidsOtherZoneMoving(self):
+        '''as OAExclusionExitRouteAvoidsOtherZone, but the closest exit changes sides of the other zone as the vehicle moves'''
+        self.oa_exclusion_exit_route_test(moving=True)
+
+    def oa_exclusion_exit_route_test(self, moving):
+        '''breach exclusion circle A on the line to a small circle B whose
+        middle lies on the straight route to A's closest exit.  RTL must get
+        home without entering B's fence margin.  If moving, the fence is
+        enabled while flying north across that line'''
         takeoff_loc = self.takeoff_for_fence_breach_test(oa_type=1)
 
         # circle A due north of home, and a small circle B just east of A.
@@ -24101,10 +24112,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         circle_a_centre = self.offset_location_ne(takeoff_loc, 20, 0)
         circle_b_centre = self.offset_location_ne(takeoff_loc, 20, 13)
         circle_b_radius = 1.5
-        start_loc = self.offset_location_ne(takeoff_loc, 20, 5)
-        self.send_do_reposition(start_loc)
-        # settle close to that line, so the route to the exit runs through B's middle
-        self.wait_location(start_loc, accuracy=0.2, minimum_duration=3, timeout=60)
 
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
@@ -24117,22 +24124,67 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             }),
         ])
 
-        def assert_outside_circle_b(mav, m):
-            if m.get_type() != 'GLOBAL_POSITION_INT':
+        # BendyRuler keeps the route to an exit FENCE_MARGIN clear of other
+        # zones; allow half a metre for the vehicle not flying it exactly
+        min_dist = circle_b_radius + self.get_parameter("FENCE_MARGIN") - 0.5
+        checking = [False]
+
+        def assert_clear_of_circle_b(mav, m):
+            if not checking[0] or m.get_type() != 'GLOBAL_POSITION_INT':
                 return
             here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
             dist = self.get_distance(here, circle_b_centre)
-            if dist < circle_b_radius:
-                raise NotAchievedException(f"Entered exclusion circle B ({dist=:.1f}m from its centre)")
+            if dist < min_dist:
+                raise NotAchievedException(f"Came {dist:.1f}m from exclusion circle B's centre (minimum {min_dist:.1f}m)")
 
-        self.install_message_hook_context(assert_outside_circle_b)
-
+        self.install_message_hook_context(assert_clear_of_circle_b)
         self.context_collect('STATUSTEXT')
-        self.set_parameters({
-            "FENCE_ENABLE": 1,
-        })
-        self.wait_mode('RTL')
-        self.wait_statustext('RTL: climb target fenced, climbing en route', check_context=True)
+
+        # BendyRuler runs once a second, at a time that drifts relative to
+        # the breach, and the exit only moves sides of B if it first runs
+        # while the vehicle is still south of A's east-west line.  Each of
+        # several breaches has a fresh chance of that
+        breaches = 3 if moving else 1
+        for breach in range(breaches):
+            if moving:
+                # enable the fence while flying north at about 5m/s, so that
+                # BendyRuler may first look for an exit from just south of
+                # A's east-west line, with the vehicle's momentum then
+                # carrying it north across the line.  That moves the closest
+                # exit from the south side of B to the north side
+                run_up_loc = self.offset_location_ne(takeoff_loc, 12, 5)
+                self.send_do_reposition(run_up_loc)
+                self.wait_location(run_up_loc, accuracy=0.2, minimum_duration=3, timeout=60)
+                self.send_do_reposition(self.offset_location_ne(takeoff_loc, 28, 5))
+                trigger_lat = self.offset_location_ne(takeoff_loc, 14.5, 5).lat
+                tstart = self.get_sim_time()
+                while self.assert_receive_message('GLOBAL_POSITION_INT').lat * 1e-7 < trigger_lat:
+                    if self.get_sim_time_cached() - tstart > 60:
+                        raise NotAchievedException("Did not reach the point to enable the fence")
+            else:
+                start_loc = self.offset_location_ne(takeoff_loc, 20, 5)
+                self.send_do_reposition(start_loc)
+                # settle close to that line, so the route to the exit runs through B's middle
+                self.wait_location(start_loc, accuracy=0.2, minimum_duration=3, timeout=60)
+
+            self.context_clear_collection('STATUSTEXT')
+            checking[0] = True
+            self.set_parameters({
+                "FENCE_ENABLE": 1,
+            })
+            self.wait_mode('RTL')
+            self.wait_statustext('RTL: climb target fenced, climbing en route', check_context=True)
+            if breach == breaches - 1:
+                break
+            # once well clear of both circles, go back for another breach
+            self.wait_statustext('Fence breach cleared', check_context=True, timeout=60)
+            self.delay_sim_time(10, reason="get well clear of both circles")
+            checking[0] = False
+            self.set_parameters({
+                "FENCE_ENABLE": 0,
+            })
+            self.change_mode('GUIDED')
+
         self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
         self.wait_disarmed(timeout=60)
 
@@ -26980,6 +27032,7 @@ return update, 1000
             self.FenceBreachWithoutOA,
             self.OAExclusionExitAvoidsOtherZone,
             self.OAExclusionExitRouteAvoidsOtherZone,
+            self.OAExclusionExitRouteAvoidsOtherZoneMoving,
             self.CompassMot,
             self.CompassMotFastRate,
             self.FarOrigin,
