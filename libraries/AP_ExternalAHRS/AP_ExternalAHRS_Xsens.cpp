@@ -294,8 +294,17 @@ void AP_ExternalAHRS_Xsens::handle_message(const uint8_t *message)
             break;
 
         case XsMessageId::MtData2:
-	    set_device_state(DeviceState::RUNNING);
-            handle_mtdata2_message(message);
+            // At power-up the MTi streams measurement data using the configuration it
+            // has stored. Switching to RUNNING on that data skipped the configuration
+            // sequence, so the requested outputs and rates were never applied. Only
+            // accept data as the end of configuration once we asked for measurement
+            // mode, and only publish it once running.
+            if (device_state == DeviceState::WAITING_FOR_MEASUREMENT_MODE) {
+                set_device_state(DeviceState::RUNNING);
+            }
+            if (device_state == DeviceState::RUNNING) {
+                handle_mtdata2_message(message);
+            }
             break;
 
         case XsMessageId::Error:
