@@ -162,6 +162,7 @@ public:
         NONE,
         AIRSPEED_CAL,
         SD_FORMAT,
+        SCRIPT_COMMAND,  // a script's command, waiting for the main thread to run it
     };
 
     // these can fail if there's no space on the channel to send the ack:
@@ -177,6 +178,20 @@ public:
 
     static void check_tasks();
 
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+    // hand a script's command to the main thread as a SCRIPT_COMMAND task
+    static MAV_RESULT start_script_command(const mavlink_command_int_t &packet);
+
+    // run the command of a SCRIPT_COMMAND task, if there is one
+    static void run_script_command();
+
+    // run a command for a script, so any task it starts reports to the script
+    static MAV_RESULT run_command_for_script(const mavlink_command_int_t &packet);
+
+    // take the result of a script's command that returned MAV_RESULT_IN_PROGRESS, once it has one
+    static bool take_script_result(MAV_CMD cmd, MAV_RESULT &result);
+#endif
+
 private:
 
     uint32_t requesting_sysid;
@@ -186,6 +201,28 @@ private:
     bool send_ack(MAV_RESULT result);
 
     static GCS_MAVLINK_InProgress in_progress_tasks[1];
+
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+    bool for_script;                      // the task concludes to a script, not with an ack
+    mavlink_command_int_t script_packet;  // the command of a SCRIPT_COMMAND task
+
+    // keep the result of a script's command for take_script_result()
+    static void set_script_result(MAV_CMD cmd, MAV_RESULT result);
+
+    // drop a result of cmd the script has not taken, as cmd is starting again
+    static void clear_script_result(MAV_CMD cmd);
+
+    // true while a command runs for a script
+    static bool running_for_script;
+
+    // the result of the last script command to conclude, until the script takes it
+    static struct ScriptResult {
+        HAL_Semaphore sem;  // the script reads it from its own thread
+        MAV_CMD cmd;        // the command the result is for
+        MAV_RESULT result;  // its result
+        bool valid;         // true until the script takes it or the command starts again
+    } script_result;
+#endif
 
     // allocate a task-tracking ID
     static uint32_t last_check_ms;
@@ -1361,6 +1398,20 @@ public:
 #if AP_EXTERNAL_BINDING_ENABLED
     // lua access to command_int
     MAV_RESULT lua_command_int_packet(const mavlink_command_int_t &packet);
+#endif
+
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+    // run a command_int for a script, which runs on its own thread
+    MAV_RESULT run_command_int_for_script(const mavlink_command_int_t &packet);
+
+    // take the result of a command run_command_int_for_script() returned MAV_RESULT_IN_PROGRESS for, once it has one
+    bool take_command_int_result_for_script(uint16_t command, uint8_t &result);
+
+    // run a command_int as if received on channel 0
+    MAV_RESULT run_command_int_on_chan0(const mavlink_command_int_t &packet);
+
+    // true if a script's command is handed to the main thread
+    bool runs_on_main_thread_for_script(const mavlink_command_int_t &packet) const;
 #endif
 
     // Sequence number should be incremented when available modes changes
