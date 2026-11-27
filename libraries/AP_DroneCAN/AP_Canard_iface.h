@@ -1,4 +1,6 @@
 #pragma once
+
+#include <hwdef_gpio.h>
 #include <AP_HAL/AP_HAL.h>
 #if HAL_ENABLE_DRONECAN_DRIVERS
 #include <canard/interface.h>

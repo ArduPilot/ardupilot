@@ -3,6 +3,8 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Logger/AP_Logger_config.h>
 
+#include <hwdef_ins.h>
+
 /**
    maximum number of INS instances available on this platform. If more
    than 1 then redundant sensors may be available

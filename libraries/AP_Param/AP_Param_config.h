@@ -1,6 +1,10 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include <hwdef_storage.h>
+
+#ifndef HAL_CHIBIOS_MCU_FLASH_STORAGE_ENABLED
+#define HAL_CHIBIOS_MCU_FLASH_STORAGE_ENABLED 0
+#endif
 
 #include <AP_Filesystem/AP_Filesystem_config.h>
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef_spidev.h>
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
 

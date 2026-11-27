@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_OpenDroneID/AP_OpenDroneID_config.h>
+#include <hwdef_caps.h>
 
 #ifndef AP_CHECK_FIRMWARE_ENABLED
 #define AP_CHECK_FIRMWARE_ENABLED AP_OPENDRONEID_ENABLED
@@ -8,4 +9,8 @@
 
 #ifndef BOOT_FROM_EXT_FLASH
 #define BOOT_FROM_EXT_FLASH 0
+#endif
+
+#ifndef AP_BOOTLOADER_FLASHING_ENABLED
+#define AP_BOOTLOADER_FLASHING_ENABLED 0
 #endif

@@ -27,7 +27,7 @@
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
-#include "hwdef.h"
+#include "chibios_hwdef_internal.h"
 
 #ifndef HAL_HAVE_DUAL_USB_CDC
 #define HAL_HAVE_DUAL_USB_CDC 0

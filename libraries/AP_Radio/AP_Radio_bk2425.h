@@ -14,6 +14,8 @@
  */
 #pragma once
 
+#include <hwdef_gpio.h>
+
 /*
   AP_Radio implementation for CC2500 2.4GHz radio.
 

@@ -14,6 +14,9 @@
  */
 
 #include "AP_Periph.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <hal.h>
+#endif
 
 #if AP_PERIPH_NETWORKING_ENABLED
 

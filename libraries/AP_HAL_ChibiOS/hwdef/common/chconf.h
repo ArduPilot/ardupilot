@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "hwdef.h"
+#include "chibios_hwdef_internal.h"
 
 #define _CHIBIOS_RT_CONF_
 #define _CHIBIOS_RT_CONF_VER_7_0_
