@@ -24,6 +24,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
+#include "AP_NavEKF3_feature.h"
 
 class NavEKF3_core;
 class EKFGSF_yaw;
@@ -462,13 +463,16 @@ private:
     AP_Enum<LogLevel> _log_level;   // log verbosity level
     AP_Float _gpsVAccThreshold;     // vertical accuracy threshold to use GPS as an altitude source
     AP_UInt32 _options;              // bit mask of processing options
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    AP_Float _aglKfAccelBiasPnse;   // AGL KF accel-Z bias state process noise : m/s/s/s
+#endif
 
     // enum for processing options
     enum class Option {
         JammingExpected         = (1<<0),
         ManualLaneSwitch        = (1<<1),
         OptflowMayUseTerrainAlt = (1<<2),
-        AglKfForOptflow         = (1<<3),  // Use IMU-aided 2-state AGL KF for optflow scaling
+        AglKfForOptflow         = (1<<3),  // Use IMU-aided AGL KF for optflow scaling
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;

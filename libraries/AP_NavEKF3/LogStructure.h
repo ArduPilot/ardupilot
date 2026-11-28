@@ -2,6 +2,7 @@
 
 #include <AP_Logger/LogStructure.h>
 #include <AP_AHRS/AP_AHRS_config.h>
+#include "AP_NavEKF3_feature.h"
 
 #define LOG_IDS_FROM_NAVEKF3 \
     LOG_XKF0_MSG, \
@@ -258,6 +259,8 @@ struct PACKED log_XKF5 {
 // @Field: VAgl: AGL velocity estimate
 // @Field: HAglStd: Std-dev of AGL height estimate
 // @Field: VAglStd: Std-dev of AGL velocity estimate
+// @Field: Bias: AGL KF accel-Z bias estimate
+// @Field: BiasStd: Std-dev of accel-Z bias estimate
 // @Field: Valid: 1 when rangefinder has been fused within the last 5s
 struct PACKED log_XKFA {
     LOG_PACKET_HEADER;
@@ -267,6 +270,8 @@ struct PACKED log_XKFA {
     float vAgl;
     float hAglStd;
     float vAglStd;
+    float bias;
+    float biasStd;
     uint8_t valid;
 };
 
@@ -452,6 +457,14 @@ struct PACKED log_XKV {
     float v11;
 };
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+#define LOG_STRUCTURE_FROM_NAVEKF3_XKFA \
+    { LOG_XKFA_MSG, sizeof(log_XKFA), \
+      "XKFA","QBffffffB","TimeUS,C,HAgl,VAgl,HAglStd,VAglStd,Bias,BiasStd,Valid", "s#mnmnoo-", "F--------", true },
+#else
+#define LOG_STRUCTURE_FROM_NAVEKF3_XKFA
+#endif
+
 #if HAL_NAVEKF3_AVAILABLE
 #define LOG_STRUCTURE_FROM_NAVEKF3        \
     { LOG_XKF0_MSG, sizeof(log_XKF0), \
@@ -466,8 +479,7 @@ struct PACKED log_XKV {
       "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
       "XKF5","QBBhhhcccCCffff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,TOfs,RI,rng,Herr,eAng,eVel,ePos,BOf", "s#----m???mrnmm", "F-----BBBBB0000" , true }, \
-    { LOG_XKFA_MSG, sizeof(log_XKFA), \
-      "XKFA","QBffffB","TimeUS,C,HAgl,VAgl,HAglStd,VAglStd,Valid", "s#mnmn-", "F------", true }, \
+    LOG_STRUCTURE_FROM_NAVEKF3_XKFA \
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
       "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" , true }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
