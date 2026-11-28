@@ -232,7 +232,6 @@ static void test_one_filter(float base_freq, float attenuation_dB,
         }
         integral.last_in = sample;
         integral.last_out = v;
-        f.update(source_freq);
     }
     phase_lag = integral.get_lag_degrees(test_freq);
     out_attenuation_dB = ratio_to_dB(integral.v_max/test_amplitude);
