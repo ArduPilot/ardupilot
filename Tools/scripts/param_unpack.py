@@ -18,11 +18,12 @@ data = open(args.file,'rb').read()
 last_name = ""
 
 magic = 0x671b
+magic_with_defaults = 0x671c
 
 # header of 6 bytes
 magic2,num_params,total_params = struct.unpack("<HHH", data[0:6])
-if magic != magic2:
-    print("Bad magic 0x%x expected 0x%x" % (magic2, magic))
+if magic2 not in (magic, magic_with_defaults):
+    print("Bad magic 0x%x expected 0x%x or 0x%x" % (magic2, magic, magic_with_defaults))
     sys.exit(1)
 
 data = data[6:]
@@ -67,7 +68,8 @@ while True:
     name = last_name[0:common_len] + data[2:2+name_len].decode('utf-8')
     vdata = data[2+name_len:2+name_len+type_len]
     last_name = name
-    data = data[2+name_len+type_len:]
+    default_len = type_len if flags & 1 else 0
+    data = data[2+name_len+type_len+default_len:]
     v, = struct.unpack("<" + type_format, vdata)
     count += 1
     print("%-16s %f" % (name, float(v)))
