@@ -97,6 +97,11 @@ local HIDDEN_FOLDERS = { "@SYS", "@ROMFS", "@MISSION", "@PARAM" }
 local MNT_PREFIX = "/mnt"
 local MNT_PREFIX2 = MNT_PREFIX .. "/"
 
+-- reboot into the bootloader (for a firmware update) once this many
+-- updates have passed, giving the reply time to go out
+local FWUPDATE_PATH = "/?FWUPDATE"
+local reboot_counter = nil
+
 local MIME_TYPES = {
    ["apj"] = CONTENT_OCTET_STREAM,
    ["dat"] = CONTENT_OCTET_STREAM,
@@ -206,6 +211,7 @@ local DYNAMIC_PAGES = {
   <div id="main">
     <ul>
       <li><a href="mnt/">SDCard Access</a></li>
+      <li><a href="/?FWUPDATE" onclick="return confirm('Reboot into the bootloader for a firmware update?')">Firmware Update</a></li>
     </ul>
     </div>
 <h2>Controller Status</h2>
@@ -842,6 +848,29 @@ local function Client(sock, idx)
          end
       end
 
+      if path == FWUPDATE_PATH then
+         self.send_header(200, "OK", {["Content-Type"]=CONTENT_TEXT_HTML})
+         if arming:is_armed() then
+            self.sendstring("<html><body>Vehicle is armed, not rebooting</body></html>\n")
+            return
+         end
+         -- a bootloader with networking serves its upload page on
+         -- port 80 of this address
+         local host = header_vars['Host'] and string.match(header_vars['Host'], "^[^:]+")
+         local url = host and string.format("http://%s/", host) or "/"
+         self.sendstring(string.format([[
+<html>
+<head>
+<meta http-equiv="refresh" content="5; url=%s">
+</head>
+<body>Rebooting into the bootloader for a firmware update</body>
+</html>
+]], url))
+         gcs:send_text(MAV_SEVERITY.INFO, "WebServer: rebooting for firmware update")
+         reboot_counter = 50
+         return
+      end
+
       if DYNAMIC_PAGES[path] ~= nil then
          self.file_download(path)
          return
@@ -966,6 +995,18 @@ end
 local function update()
    check_new_clients()
    check_clients()
+   if reboot_counter then
+      reboot_counter = reboot_counter - 1
+      if reboot_counter == 0 then
+         reboot_counter = nil
+         -- the vehicle may have been armed since the request
+         if arming:is_armed() then
+            gcs:send_text(MAV_SEVERITY.WARNING, "WebServer: armed, firmware update cancelled")
+         else
+            vehicle:reboot(true)
+         end
+      end
+   end
    return update,5
 end
 

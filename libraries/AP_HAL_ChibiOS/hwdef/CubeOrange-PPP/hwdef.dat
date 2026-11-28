@@ -1,0 +1,12 @@
+# CubeOrange with PPP networking on TELEM1, for use with a PPP gateway
+# such as a CubeNode-ETH. The bootloader accepts firmware updates over
+# the same link from its web page or Tools/scripts/uploader.py --ip
+
+include ../CubeOrange/hwdef.dat
+
+define AP_NETWORKING_BACKEND_PPP 1
+
+# PPP on TELEM1 at the speed and flow control the bootloader uses
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_PPP
+define DEFAULT_SERIAL1_BAUD 12500000
+define BOARD_SER1_RTSCTS_DEFAULT 1
