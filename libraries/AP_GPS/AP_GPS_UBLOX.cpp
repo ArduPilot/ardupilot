@@ -1156,6 +1156,12 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if UBLOX_GNSS_SETTINGS
         case MSG_CFG_GNSS:
             if (params.gnss_mode != 0 && !supports_F9_config()) {
+                if (_buffer.gnss.numConfigBlocks > UBLOX_MAX_GNSS_CONFIG_BLOCKS ||
+                    _payload_length < 4 + (8 * _buffer.gnss.numConfigBlocks)) {
+                    // more blocks than we can hold, or than the message
+                    // carries: ignore it, the config is requested again
+                    return false;
+                }
                 struct ubx_cfg_gnss start_gnss = _buffer.gnss;
                 uint8_t gnssCount = 0;
                 Debug("Got GNSS Settings %u %u %u %u:\n",
@@ -1180,7 +1186,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                 }
                 for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
                     // Reserve an equal portion of channels for all enabled systems that supports it
-                    if(params.gnss_mode & (1 << _buffer.gnss.configBlock[i].gnssId)) {
+                    const uint8_t gnssId = _buffer.gnss.configBlock[i].gnssId;
+                    if(gnssId < 8 && (params.gnss_mode & (1U << gnssId))) {
                         if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId && (_hardware_generation > UBLOX_M8 || GNSS_GAL !=_buffer.gnss.configBlock[i].gnssId)) {
                             _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
                             _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
