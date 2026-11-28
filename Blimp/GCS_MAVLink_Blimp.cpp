@@ -227,8 +227,9 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_com
     }
 
     Location request_location {};
-    if (!location_from_command_t(packet, request_location)) {
-        return MAV_RESULT_DENIED;
+    const MAV_RESULT loc_result = location_from_command_int(packet, request_location);
+    if (loc_result != MAV_RESULT_ACCEPTED) {
+        return loc_result;
     }
 
     if (request_location.sanitize(blimp.current_loc)) {
