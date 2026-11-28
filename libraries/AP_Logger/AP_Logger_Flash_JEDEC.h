@@ -11,14 +11,14 @@
 
 class AP_Logger_Flash_JEDEC : public AP_Logger_Block {
 public:
-    AP_Logger_Flash_JEDEC(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+    AP_Logger_Flash_JEDEC(AP_LoggerThread &front, LoggerMessageWriter_DFLogStart *writer) :
         AP_Logger_Block(front, writer) {}
-    static AP_Logger_Backend  *probe(AP_Logger &front,
+    static AP_Logger_Backend  *probe(AP_LoggerThread &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
         return NEW_NOTHROW AP_Logger_Flash_JEDEC(front, ls);
     }
     void              Init(void) override;
-    bool              CardInserted() const override { return !flash_died && df_NumPages > 0; }
+    bool              CardInserted() const override { return !flash_died && df_NumPages > 0; } // must not block; called from main thread
 
 private:
     void              BufferToPage(uint32_t PageAdr) override;

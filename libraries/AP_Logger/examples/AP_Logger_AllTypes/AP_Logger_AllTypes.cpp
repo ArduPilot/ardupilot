@@ -114,13 +114,11 @@ private:
 
 void AP_LoggerTest_AllTypes::flush_logger(AP_Logger &_logger)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if AP_LOGGER_FLUSH_SUPPORTED
     _logger.flush();
 #else
-    // flush is not available on e.g. stm32 as it would be a somewhat
-    // dangerous operation, but if we wait long enough (at time of
-    // writing, 2 seconds, see AP_Logger_File::_io_timer) the data
-    // will go out.
+    // flush is not available on e.g. stm32; wait long enough for the
+    // io_timer to drain the write buffer (see AP_Logger_File::_io_timer)
     hal.scheduler->delay(3000);
 #endif
 }
@@ -128,7 +126,7 @@ void AP_LoggerTest_AllTypes::flush_logger(AP_Logger &_logger)
 
 void AP_LoggerTest_AllTypes::Log_Write_TypeMessages()
 {
-    log_num = logger.find_last_log();
+    log_num = 0;  // logger.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
 
     hal.console->printf("Writing out a few messages to get formats out...");
@@ -178,12 +176,14 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages()
 
     flush_logger(logger);
 
+    // StopLogging is synchronous — blocks until the logger thread has
+    // flushed and closed all log files; may take several seconds on SD card.
     logger.StopLogging();
 }
 
 void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 {
-    log_num = logger.find_last_log();
+    log_num = 0;  // logger.find_last_log();
     hal.console->printf("Using log number for Log_Write %u\n", log_num);
 
     hal.console->printf("Writing out a few messages to get formats out...");
@@ -243,6 +243,8 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 
     flush_logger(logger);
 
+    // StopLogging is synchronous — blocks until the logger thread has
+    // flushed and closed all log files; may take several seconds on SD card.
     logger.StopLogging();
 }
 

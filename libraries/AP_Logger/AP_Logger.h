@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include "LoggerMessageWriter.h"
+#include "AP_LoggerThreadRequest.h"
 
 class AP_Logger_Backend;
 
@@ -188,7 +189,38 @@ enum class LogErrorCode : uint8_t {
     GPS_GLITCH = 2,
 };
 
-class AP_Logger
+enum class AP_Logger_Backend_Type : uint8_t {
+    NONE       = 0,
+    FILESYSTEM = (1<<0),
+    MAVLINK    = (1<<1),
+    BLOCK      = (1<<2),
+};
+
+enum class LogDisarmed : uint8_t {
+    NONE = 0,
+    LOG_WHILE_DISARMED = 1,
+    LOG_WHILE_DISARMED_NOT_USB = 2,
+    LOG_WHILE_DISARMED_DISCARD = 3,
+};
+
+// parameters are passed into the thread via this structure
+struct AP_LoggerParams {
+    AP_UInt8 backend_types;
+    AP_Int16 file_bufsize; // in kilobytes
+    AP_Int8 file_disarm_rot;
+    AP_Enum<LogDisarmed> log_disarmed;
+    AP_Int8 log_replay;
+    AP_UInt8 mav_bufsize; // in kilobytes
+    AP_Int16 file_timeout; // in seconds
+    AP_Int16 min_MB_free;
+    AP_Float file_ratemax;
+    AP_Float mav_ratemax;
+    AP_Float blk_ratemax;
+    AP_Float disarm_ratemax;
+    AP_UInt16 max_log_files;
+};
+
+class AP_LoggerThread
 {
     friend class AP_Logger_Backend; // for _num_types
     friend class AP_Logger_RateLimiter;
@@ -196,31 +228,26 @@ class AP_Logger
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
 
-    AP_Logger();
+    AP_LoggerThread(struct AP_LoggerParams &params, AP_LoggerThreadRequestQueue &_request_queue);
 
     /* Do not allow copies */
-    CLASS_NO_COPY(AP_Logger);
+    CLASS_NO_COPY(AP_LoggerThread);
 
-    // get singleton instance
-    static AP_Logger *get_singleton(void) {
-        return _singleton;
-    }
-
-    // initialisation
+    // called before the IO thread starts — not thread-safe
     void init(const AP_UInt32 &log_bitmask, const struct LogStructure *structure, uint8_t num_types);
-    void set_num_types(uint8_t num_types) { _num_types = num_types; }
 
+    // entry point for the IO thread — do not call from any other context
+    void run();
+
+    // called from main thread; implementations must not block
     bool CardInserted(void);
+    // written from main thread, read by IO thread (AP_Logger_RateLimiter);
+    // bool write is single-instruction on all supported targets so a
+    // one-iteration stale read by the IO thread is acceptable
     bool _log_pause;
 
-    // pause logging if aux switch is active and log rate limit enabled
-    void log_pause(bool value) {
-        _log_pause = value;
-    }
-
-    // erase handling
-    void EraseAll();
-
+    // safe from any thread: serialises under the backend's semaphore before
+    // writing into _writebuf; IO thread is the sole reader
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
 
@@ -233,96 +260,37 @@ public:
     /* Write a block of replay data at current offset */
     bool WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t size);
 
-    // high level interface
+    // reads _params.max_log_files and clamps it; the clamp write-back
+    // (set_and_save_ifchanged) is not thread-safe — only call from IO thread
+    uint16_t get_max_num_logs();
+
+private:
+    // only called from within AP_LoggerThread methods
     uint16_t find_last_log() const;
     void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page);
     uint16_t get_num_logs(void);
-    uint16_t get_max_num_logs();
+public:
 
+    // called before the IO thread starts — not thread-safe
     void setVehicle_Startup_Writer(vehicle_startup_message_Writer writer);
 
-    void PrepForArming();
-
-    void EnableWrites(bool enable) { _writes_enabled = enable; }
-    bool WritesEnabled() const { return _writes_enabled; }
-
-    void StopLogging();
-
-    void Write_RTC();
-
+    // safe from any thread: ring-buffer writes serialised under backend semaphore
     void Write_Parameter(const char *name, float value);
-    void Write_Event(LogEvent id);
-    void Write_Error(LogErrorSubsystem sub_system,
-                     LogErrorCode error_code);
-    void Write_RCIN(void);
-    void Write_RCOUT(void);
-    void Write_RSSI();
-    void Write_Rally();
-#if HAL_LOGGER_FENCE_ENABLED
-    void Write_Fence();
-#endif
-    void Write_NamedValueFloat(const char *name, float value);
-    void Write_Power(void);
-    void Write_Radio(const mavlink_radio_status_t &packet);
+
     void Write_Message(const char *message);
-    // support for multi-chunk messages:
-    uint8_t get_MSG_id() {
-        uint8_t ret = ++MSG_id;
-        if (ret > 0) {
-            return ret;
-        }
-        return ++MSG_id;
-    }
     void Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq);
 
-    void Write_MessageF(const char *fmt, ...);
-    void Write_Mode(uint8_t mode, const ModeReason reason);
-
-    void Write_EntireMission();
-    void Write_Command(const mavlink_command_int_t &packet,
-                       uint32_t target_system,
-                       uint32_t source_system,
-                       uint8_t source_component,
-                       MAV_RESULT result,
-                       bool was_command_long=false);
-    void Write_MISE(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
-        Write_Mission_Cmd(mission, cmd, LOG_MISE_MSG);
-    }
-    void Write_Mission_Cmd(const AP_Mission &mission,
-                           const AP_Mission::Mission_Command &cmd,
-                           LogMessages id);
     void Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
                           const class RallyLocation &rally_point);
-    void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
-    void Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp);
 
-    //! @deprecated Use the other signature with units and mults
-    void Write(const char *name, const char *labels, const char *fmt, ...);
-    void Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
-    //! @deprecated Use the other signature with units and mults
-    void WriteStreaming(const char *name, const char *labels, const char *fmt, ...);
-    void WriteStreaming(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
-    //! @deprecated Use the other signature with units and mults
-    void WriteCritical(const char *name, const char *labels, const char *fmt, ...);
-    void WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
-    void Write_PID(uint8_t msg_type, const class AP_PIDInfo &info);
-
-    // returns true if logging of a message should be attempted
+    // safe from any thread: reads _log_bitmask (AP_UInt32); stale read acceptable
     bool should_log(uint32_t mask) const;
 
+    // safe from any thread: read-only scalar queries; stale-by-one read acceptable
     bool logging_started(void) const;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    // currently only AP_Logger_File support this:
-    void flush(void);
-#endif
-
-    void handle_mavlink_msg(class GCS_MAVLINK &, const mavlink_message_t &msg);
-
-    void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
     // We may need to make sure data is loggable before starting the
     // EKF; when allow_start_ekf we should be able to log that data
@@ -332,51 +300,40 @@ public:
     uint32_t num_dropped(void) const;
 
     // access to public parameters
+    // safe from any thread: single-instruction scalar writes; stale-by-one
+    // read on the other thread is acceptable
     void set_force_log_disarmed(bool force_logging) { _force_log_disarmed = force_logging; }
     void set_long_log_persist(bool b) { _force_long_log_persist = b; }
+    // safe from any thread: read-only scalar queries; stale-by-one read acceptable
     bool log_while_disarmed(void) const;
     bool in_log_persistance(void) const;
     uint8_t log_replay(void) const { return _params.log_replay; }
 
+private:
+    // only accessed via vehicle_message_writer() — AP_Logger_Backend is a friend class
     vehicle_startup_message_Writer _vehicle_messages;
-
-    enum class LogDisarmed : uint8_t {
-        NONE = 0,
-        LOG_WHILE_DISARMED = 1,
-        LOG_WHILE_DISARMED_NOT_USB = 2,
-        LOG_WHILE_DISARMED_DISCARD = 3,
-    };
+public:
 
     // parameter support
-    static const struct AP_Param::GroupInfo        var_info[];
-    struct {
-        AP_UInt8 backend_types;
-        AP_Int16 file_bufsize; // in kilobytes
-        AP_Int8 file_disarm_rot;
-        AP_Enum<LogDisarmed> log_disarmed;
-        AP_Int8 log_replay;
-        AP_UInt8 mav_bufsize; // in kilobytes
-        AP_Int16 file_timeout; // in seconds
-        AP_Int16 min_MB_free;
-        AP_Float file_ratemax;
-        AP_Float mav_ratemax;
-        AP_Float blk_ratemax;
-        AP_Float disarm_ratemax;
-        AP_UInt16 max_log_files;
-    } _params;
+    AP_LoggerParams &_params;
 
+private:
+    // called only on IO thread, via _front (AP_Logger_Backend is a friend class)
     const struct LogStructure *structure(uint16_t num) const;
     const struct UnitStructure *unit(uint16_t num) const;
     const struct MultiplierStructure *multiplier(uint16_t num) const;
+public:
 
     // methods for mavlink SYS_STATUS message (update_sensor_status_flags) and
     // arming checks. these cover all backends.
+    // safe from any thread: read-only scalar queries; stale-by-one read acceptable
     bool logging_present() const;
     bool logging_enabled() const;
     bool logging_failed() const;
 
     // notify logging subsystem of an arming failure. This triggers
     // logging for HAL_LOGGER_ARM_PERSIST seconds
+    // safe from main thread: single-instruction scalar writes
     void arming_failure() {
         _last_arming_failure_ms = AP_HAL::millis();
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
@@ -384,21 +341,21 @@ public:
 #endif
     }
 
+    // safe from any thread; enqueues VehicleWasDisarmed request to IO thread
     void set_vehicle_armed(bool armed_state);
+    // safe from any thread: read-only; stale-by-one read acceptable
     bool vehicle_is_armed() const { return _armed; }
 
+private:
     void handle_log_send();
+public:
+    // safe from any thread: read-only; stale-by-one read acceptable
     bool in_log_download() const;
 
-    static float quiet_nanf() { return NaNf; } // "AR"
-    static double quiet_nan() { return nan("0x4152445550490a"); } // "ARDUPI"
-
-    // returns true if msg_type is associated with a message
+private:
+    // only called from find_free_msg_type()
     bool msg_type_in_use(uint8_t msg_type) const;
-
-    // calculate the length of a message using fields specified in
-    // fmt; includes the message header. returns -1 on on error.
-    int16_t Write_calc_msg_len(const char *fmt) const;
+public:
 
     // this structure looks much like struct LogStructure in
     // LogStructure.h, however we need to remember a pointer value for
@@ -415,19 +372,29 @@ public:
     } *log_write_fmts;
 
     // return (possibly allocating) a log_write_fmt for a name
+    // safe from any thread: protected internally by log_write_fmts_sem
     struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp = false, const bool copy_strings = false);
 
     // output a FMT message for each backend if not already done so
+    // safe from any thread: bottoms out in WriteCriticalBlock
     void Safe_Write_Emit_FMT(log_write_fmt *f);
 
     // get count of number of times we have started logging
+    // safe from any thread: read-only scalar; stale-by-one read acceptable
     uint8_t get_log_start_count(void) const {
         return _log_start_count;
     }
 
     // add a filename to list of files to log. The name is copied internally so
     // the pointer passed can be freed after return.
+    // safe from any thread: protected internally by file_content.sem
     void log_file_content(const char *name);
+
+    // safe from any thread: enqueues HandleRemoteLogBlockStatus request to IO thread
+    void remote_log_block_status_msg(class GCS_MAVLINK &link, const mavlink_message_t &msg);
+
+    // safe from any thread: posts fire-and-forget request to the IO thread queue
+    void enqueue_simple_thread_request(AP_LoggerThreadRequest::Type type);
 
 protected:
 
@@ -445,23 +412,11 @@ protected:
                                bool is_critical);
 
 private:
+
     #define LOGGER_MAX_BACKENDS 2
     uint8_t _next_backend;
     AP_Logger_Backend *backends[LOGGER_MAX_BACKENDS];
     const AP_UInt32 *_log_bitmask;
-
-    enum class Backend_Type : uint8_t {
-        NONE       = 0,
-        FILESYSTEM = (1<<0),
-        MAVLINK    = (1<<1),
-        BLOCK      = (1<<2),
-    };
-
-    enum class RCLoggingFlags : uint8_t {
-        HAS_VALID_INPUT = 1U<<0,  // true if the system is receiving good RC values
-        IN_RC_FAILSAFE =  1U<<1,  // true if the system is current in RC failsafe
-        RC_PROTOCOL_FAILSAFE =  1U<<2,  // true if the RC Protocol library is indicating the RC receiver is indicating failsafe via its protocol
-    };
 
     /*
      * support for dynamic Write; user-supplies name, format,
@@ -484,8 +439,6 @@ private:
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);
 
-    static AP_Logger *_singleton;
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     bool validate_structure(const struct LogStructure *logstructure, int16_t offset);
     void validate_structures(const struct LogStructure *logstructures, const uint8_t num_types);
@@ -503,7 +456,6 @@ private:
     bool labels_string_is_good(const char *labels) const;
 #endif
 
-    bool _writes_enabled:1;
     bool _force_log_disarmed:1;
     bool _force_long_log_persist:1;
 
@@ -564,7 +516,6 @@ private:
 
     // last time we handled a log-transfer-over-mavlink message:
     uint32_t _last_mavlink_log_transfer_message_handled_ms;
-    bool _warned_log_disarm; // true if we have sent a message warning to disarm for logging
 
     // next log list entry to send
     uint16_t _log_next_list_entry;
@@ -600,12 +551,11 @@ private:
     // can be used by other subsystems to detect if they should log data
     uint8_t _log_start_count;
 
-    void handle_log_message(class GCS_MAVLINK &, const mavlink_message_t &msg);
+    void handle_log_request_list(GCS_MAVLINK &link, uint16_t start, uint16_t end);
+    void handle_log_request_data(GCS_MAVLINK &link, uint16_t id, uint32_t ofs, uint32_t count);
+    void handle_log_request_erase(GCS_MAVLINK &link);
+    void handle_log_request_end(GCS_MAVLINK &link);
 
-    void handle_log_request_list(class GCS_MAVLINK &, const mavlink_message_t &msg);
-    void handle_log_request_data(class GCS_MAVLINK &, const mavlink_message_t &msg);
-    void handle_log_request_erase(class GCS_MAVLINK &, const mavlink_message_t &msg);
-    void handle_log_request_end(class GCS_MAVLINK &, const mavlink_message_t &msg);
     void end_log_transfer();
     void handle_log_send_listing(); // handle LISTING state
     void handle_log_sending(); // handle SENDING state
@@ -614,6 +564,8 @@ private:
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
 
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
+    // erases all logs:
+    bool erase(void);
 
     /* end support for retrieving logs via mavlink: */
 
@@ -622,8 +574,290 @@ private:
     void file_content_update(FileContent &file_content);
 #endif
 
+    // request handling
+    void handle_log_request_message(AP_LoggerThreadRequest &request);
+    void process_request(AP_LoggerThreadRequest &request);
+    void process_request_queue(void);
+
+    AP_LoggerThreadRequestQueue &request_queue;
+};
+
+class AP_Logger {
+public:
+
+    /* Do not allow copies */
+    CLASS_NO_COPY(AP_Logger);
+
+    AP_Logger();
+
+    enum class RCLoggingFlags : uint8_t {
+        HAS_VALID_INPUT = 1U<<0,  // true if the system is receiving good RC values
+        IN_RC_FAILSAFE =  1U<<1,  // true if the system is current in RC failsafe
+        RC_PROTOCOL_FAILSAFE =  1U<<2,  // true if the RC Protocol library is indicating the RC receiver is indicating failsafe via its protocol
+    };
+
+    static AP_Logger *get_singleton(void) { return _singleton; }
+
+    static const struct AP_Param::GroupInfo        var_info[];
+    AP_LoggerParams _params;
+
+    void init(const AP_UInt32 &log_bitmask, const struct LogStructure *structure, uint8_t num_types);
+
+    // Read-only queries on backend state: safe from the main thread.
+    // These read small scalar flags/counters in the thread object or its
+    // backends.  Races produce at worst a one-iteration stale read, which
+    // is acceptable for status/gating queries.
+    bool CardInserted(void) { return thread.CardInserted(); }
+    uint8_t get_log_start_count(void) const { return thread.get_log_start_count(); }
+    bool logging_started(void) { return thread.logging_started(); }
+    bool in_log_persistance(void) const { return thread.in_log_persistance(); }
+    // We may need to make sure data is loggable before starting the
+    // EKF; when allow_start_ekf we should be able to log that data
+    bool allow_start_ekf() const { return thread.allow_start_ekf(); }
+    uint32_t num_dropped(void) const { return thread.num_dropped(); }
+
+    // support for multi-chunk messages:
+    uint8_t get_MSG_id() {
+        uint8_t ret = ++MSG_id;
+        if (ret > 0) {
+            return ret;
+        }
+        return ++MSG_id;
+    }
+
+    //! @deprecated Use the other signature with units and mults
+
+    void Write(const char *name, const char *labels, const char *fmt, ...);
+    void Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    //! @deprecated Use the other signature with units and mults
+    void WriteStreaming(const char *name, const char *labels, const char *fmt, ...);
+    void WriteStreaming(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    //! @deprecated Use the other signature with units and mults
+    void WriteCritical(const char *name, const char *labels, const char *fmt, ...);
+    void WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+
+    // safe from main thread: protected internally by log_write_fmts_sem
+    struct AP_LoggerThread::log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp = false, const bool copy_strings = false) { return thread.msg_fmt_for_name(name, labels, units, mults, fmt, direct_comp, copy_strings); }
+
+    void Write_Event(LogEvent id);
+    void Write_Error(LogErrorSubsystem sub_system,
+                     LogErrorCode error_code);
+    void Write_RCIN(void);
+    void Write_RCOUT(void);
+    void Write_RSSI();
+
+    // Ring-buffer writes: safe from main thread.  All of the WriteBlock
+    // family and the Write_* message helpers below bottom out in
+    // _WritePrioritisedBlock, which serialises under the backend's semaphore
+    // before writing into the backend's ByteBuffer (_writebuf).  The IO
+    // thread also writes to _writebuf (startup messages, mission, rally,
+    // etc. via process_request), so writes are MPSC; the semaphore
+    // ensures at most one concurrent writer, making ByteBuffer's atomic
+    // head/tail sufficient for correctness.
+    /* Write a block of data at current offset */
+    void WriteBlock(const void *pBuffer, uint16_t size) {
+        return thread.WriteBlock(pBuffer, size);
+    }
+
+    /* Write block of data at current offset and return true if first backend succeeds*/
+    bool WriteBlock_first_succeed(const void *pBuffer, uint16_t size) {
+        return thread.WriteBlock_first_succeed(pBuffer, size);
+    }
+
+    /* Write an *important* block of data at current offset */
+    void WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+        thread.WriteCriticalBlock(pBuffer, size);
+    }
+
+    /* Write a block of replay data at current offset */
+    bool WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t size) {
+        return thread.WriteReplayBlock(msg_id, pBuffer, size);
+    }
+
+    // safe from main thread: synchronously enqueues PrepForArming request
+    void PrepForArming();
+
+    // Enqueue-and-forget writes: safe from main thread.  Each of these
+    // posts a request to the IO thread's queue; the actual backend call
+    // happens on the IO thread.
+    void Write_RTC() { thread.enqueue_simple_thread_request(AP_LoggerThreadRequest::Type::StartWriteRTC); }
+    void Write_Rally() { thread.enqueue_simple_thread_request(AP_LoggerThreadRequest::Type::StartWriteEntireRally); }
+#if HAL_LOGGER_FENCE_ENABLED
+    void Write_Fence() { thread.enqueue_simple_thread_request(AP_LoggerThreadRequest::Type::StartWriteEntireFence); }
+#endif
+    // safe from main thread: bool write is single-instruction on all
+    // supported targets; a one-iteration stale read by the IO thread is
+    // acceptable for this rate-limiting flag.
+    void log_pause(bool value) { thread._log_pause = value; }
+
+    // Ring-buffer writes (see WriteBlock comment above):
+    // safe from main thread: bottoms out in _WritePrioritisedBlock which
+    // serialises under the backend's semaphore — not enqueued.
+    void Write_Parameter(const char *name, float value) { thread.Write_Parameter(name, value); }
+    void Write_Power(void);
+    void Write_Radio(const mavlink_radio_status_t &packet);
+    void Write_Message(const char *message) {
+        return thread.Write_Message(message);
+    }
+    void Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq) {
+        thread.Write_MessageChunk(id, messagechunk, chunk_seq);
+    }
+    void Write_MessageF(const char *fmt, ...);
+    void Write_Mode(uint8_t mode, const ModeReason reason) {
+        static_assert(sizeof(ModeReason) <= sizeof(uint8_t), "Logging expects the ModeReason to fit in 8 bits");
+        const struct log_Mode pkt{
+            LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
+            time_us     : AP_HAL::micros64(),
+            mode        : mode,
+            mode_num    : mode,
+            mode_reason : static_cast<uint8_t>(reason)
+        };
+        WriteCriticalBlock(&pkt, sizeof(pkt));
+    }
+    void Write_MISE(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
+        mavlink_mission_item_int_t mav_cmd = {};
+        AP_Mission::mission_cmd_to_mavlink_int(cmd, mav_cmd);
+        const struct log_CMD pkt{
+            LOG_PACKET_HEADER_INIT(LOG_MISE_MSG),
+            time_us       : AP_HAL::micros64(),
+            command_total : mission.num_commands(),
+            sequence      : mav_cmd.seq,
+            command       : mav_cmd.command,
+            param1        : mav_cmd.param1,
+            param2        : mav_cmd.param2,
+            param3        : mav_cmd.param3,
+            param4        : mav_cmd.param4,
+            latitude      : mav_cmd.x,
+            longitude     : mav_cmd.y,
+            altitude      : mav_cmd.z,
+            frame         : mav_cmd.frame
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+    }
+
+    // Enqueue-and-forget (see enqueue comment above):
+    void Write_EntireMission() { thread.enqueue_simple_thread_request(AP_LoggerThreadRequest::Type::StartWriteEntireMission); }
+    void Write_Command(const mavlink_command_int_t &packet,
+                       uint32_t target_system,
+                       uint32_t source_system,
+                       uint8_t source_component,
+                       MAV_RESULT result,
+                       bool was_command_long=false);
+    void Write_RallyPoint(uint8_t total,
+                          uint8_t sequence,
+                          const class RallyLocation &rally_point) {
+        thread.Write_RallyPoint(total, sequence, rally_point);
+    }
+    void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
+    void Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp);
+
+    void Write_NamedValueFloat(const char *name, float value);
+
+    void Write_PID(uint8_t msg_type, const class AP_PIDInfo &info);
+
+    void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false, bool is_streaming=false);
+
+    static float quiet_nanf() { return nanf("0x4152"); } // "AR"
+    static double quiet_nan() { return nan("0x4152445550490a"); } // "ARDUPI"
+
+    // Read-only query: safe from main thread (reads _log_bitmask, an AP_UInt32)
+    bool should_log(uint32_t mask) const {
+        return thread.should_log(mask);
+    }
+
+    // Synchronous requests: block the main thread until the IO thread
+    // acknowledges completion; safe by design.
+    void StopLogging() {
+        synchronously_complete_simple_thread_request(
+            AP_LoggerThreadRequest::Type::StopLogging, "StopLogging", UINT16_MAX);
+    }
+
+#if AP_LOGGER_FLUSH_SUPPORTED
+    // blocks until the IO thread has flushed all pending writes to storage
+    void flush() {
+        synchronously_complete_simple_thread_request(
+            AP_LoggerThreadRequest::Type::Flush, "Flush", UINT16_MAX);
+    }
+#endif
+
+    // Read-only queries on backend state (see CardInserted comment above):
+    // methods for mavlink SYS_STATUS message (send_sys_status)
+    // these methods cover only the first logging backend used -
+    // typically AP_Logger_File.
+    bool logging_present() const { return thread.logging_present(); }
+    bool logging_enabled() const { return thread.logging_enabled(); }
+    bool logging_failed() const { return thread.logging_failed(); }
+
+    void handle_mavlink_msg(class GCS_MAVLINK &, const mavlink_message_t &msg);
+
+    void handle_log_message(class GCS_MAVLINK &, const mavlink_message_t &msg);
+
+    void handle_log_request_list(class GCS_MAVLINK &, const mavlink_message_t &msg);
+    void handle_log_request_data(class GCS_MAVLINK &, const mavlink_message_t &msg);
+    void handle_log_request_erase(class GCS_MAVLINK &, const mavlink_message_t &msg);
+    void handle_log_request_end(class GCS_MAVLINK &, const mavlink_message_t &msg);
+
+    // Read-only query (see CardInserted comment above):
+    bool in_log_download() const { return thread.in_log_download(); }
+
+    // Flag writes: safe from main thread.  These write small scalar
+    // members (bool bit-fields, uint32_t) that the IO thread reads.
+    // All supported platforms guarantee atomic aligned word reads, so
+    // the worst case is a one-iteration stale read on the IO side.
+    void arming_failure() { return thread.arming_failure(); }
+    void set_long_log_persist(bool b) { thread.set_long_log_persist(b); }
+    void set_force_log_disarmed(bool force_logging) { thread.set_force_log_disarmed(force_logging); }
+
+    // safe from main thread: protected internally by file_content.sem
+    void log_file_content(const char*name) { thread.log_file_content(name); }
+
+    // calculate the length of a message using fields specified in
+    // fmt; includes the message header
+    static int16_t Write_calc_msg_len(const char *fmt);
+
+    // safe from main thread: bottoms out in WriteCriticalBlock (ring buffer)
+    void Safe_Write_Emit_FMT(AP_LoggerThread::log_write_fmt *f) {
+        thread.Safe_Write_Emit_FMT(f);
+    }
+
+    // safe to call before the IO thread starts (init-time only):
+    void setVehicle_Startup_Writer(AP_LoggerThread::vehicle_startup_message_Writer writer) {
+        thread.setVehicle_Startup_Writer(writer);
+    }
+    // safe from main thread: enqueues VehicleWasDisarmed request if needed
+    void set_vehicle_armed(bool armed_state) {
+        thread.set_vehicle_armed(armed_state);
+    }
+
+    // Thread-related functions:
+    AP_LoggerThreadRequest *claim_thread_request() {
+        return request_queue.claim_thread_request();
+    }
+    AP_LoggerThreadRequest *claim_thread_request(AP_LoggerThreadRequest::Type type) {
+        return request_queue.claim_thread_request(type);
+    }
+    bool synchronously_complete_simple_thread_request(AP_LoggerThreadRequest::Type type, const char *name, uint16_t limit_ms=100);
+    bool synchronously_complete_thread_request(AP_LoggerThreadRequest &request, uint16_t limit_ms=100);
+
+private:
+
+    static AP_Logger *_singleton;
+
+    void start_io_thread(void);
+    void io_thread() {
+        thread.run();
+    }
+    AP_LoggerThread thread;
+
+    // state to help us not log unnecessary RCIN values:
+    bool should_log_rcin2;
+
+    bool _warned_log_disarm; // true if we have sent a message warning to disarm for logging
+
     // support for multi-chunk messages:
     uint8_t MSG_id;
+
+    AP_LoggerThreadRequestQueue request_queue;  // do we need to be so protective?
 };
 
 namespace AP {

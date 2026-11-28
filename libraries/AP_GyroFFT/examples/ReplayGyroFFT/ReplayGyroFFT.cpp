@@ -140,7 +140,6 @@ void loop()
 
     ins.update();
     ins.periodic();
-    logger.periodic_tasks();
     ins.Write_IMU();
     replay.loop();
 

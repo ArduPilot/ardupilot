@@ -85,7 +85,6 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK(ten_hz_logging_loop,   10,    350,  57),
     SCHED_TASK(twentyfive_hz_logging, 25,    110,  60),
-    SCHED_TASK_CLASS(AP_Logger,      &blimp.logger,           periodic_tasks, 400, 300,  63),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,    &blimp.ins,                 periodic,       400,  50,  66),
 #if HAL_LOGGING_ENABLED
