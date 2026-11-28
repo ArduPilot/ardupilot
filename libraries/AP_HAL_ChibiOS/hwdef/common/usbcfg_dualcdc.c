@@ -38,7 +38,7 @@
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 #endif
 
-#if defined(HAL_USB_PRODUCT_ID) && HAL_HAVE_DUAL_USB_CDC
+#if defined(HAL_USB_PRODUCT_ID) && HAL_HAVE_DUAL_USB_CDC && !HAL_WITH_USB_CDC_ECM
 /*
  * Virtual serial ports over USB.
  */

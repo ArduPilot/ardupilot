@@ -1,0 +1,39 @@
+# Experimental Matek H743 lab board: single CDC-ACM + CDC-ECM composite USB.
+# Default MatekH743 remains dual-ACM (OTG1+OTG2). This overlay is OFF the default
+# path — build with: ./waf configure --board MatekH743-ECM && ./waf copter
+#
+# Platform floor: H743 OTG1 has 8 EPs (OK). ECM is not enabled in the bootloader.
+# Experimental board target — stock MatekH743 remains dual-ACM only.
+#
+# Security defaults (spike): static addressing only when networking is wired in;
+# no default ETH gateway; distinct USB PID/product string vs stock.
+
+include ../MatekH743/hwdef.dat
+
+# Share stock MatekH743 bootloader (ACM-only BL — never ECM in bootloader)
+USE_BOOTLOADER_FROM_BOARD MatekH743
+
+# Single ACM (SERIAL0 / OTG1) + ECM — drop OTG2 so we do not allocate SDU2 / EP1–4 all ACM
+SERIAL_ORDER OTG1 UART7 USART1 USART2 USART3 UART8 UART4 USART6
+
+# Enable CDC-ECM composite descriptors (usbcfg_cdc_ecm.c)
+define HAL_WITH_USB_CDC_ECM 1
+
+# Distinct USB identity vs stock dual-CDC (PID 0x5740) / single (0x5741)
+USB_PRODUCT 0x574E
+USB_STRING_PRODUCT "MatekH743-ECM"
+
+# Phase 2: AP_Networking USB-ECM backend (lwIP netif over ECM bulk)
+define AP_NETWORKING_ENABLED 1
+define AP_NETWORKING_BACKEND_USB_ECM 1
+define AP_NETWORKING_BACKEND_PPP 0
+define AP_NETWORKING_DEFAULT_NET_ENABLE 1
+define AP_NETWORKING_DEFAULT_DHCP_ENABLE 0
+define AP_NETWORKING_DEFAULT_MAC_ADDR "02:00:00:00:01:14"
+# Static defaults: FC 192.168.144.14, host peer 192.168.144.1 (GWADDR default)
+
+# No OTG2 / no SERIAL8 on this lab board (single ACM + ECM only).
+# For dual ACM with SERIAL8=MAVLink2 use stock board target MatekH743.
+
+# defaults.parm: NET_P1 UDP server MAVLink2 :14550 for GCS over ECM
+
