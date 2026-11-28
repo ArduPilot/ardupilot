@@ -40,9 +40,8 @@ bool ModeQRTL::_enter()
             submode = SubMode::climb;
             plane.next_WP_loc = plane.current_loc;
 #if AP_TERRAIN_AVAILABLE
-            int32_t curent_alt_terrain_cm;
-            if (use_terrain && plane.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curent_alt_terrain_cm)) {
-                plane.next_WP_loc.set_alt_cm(curent_alt_terrain_cm + dist_to_climb * 100UL, Location::AltFrame::ABOVE_TERRAIN);
+            if (use_terrain && plane.next_WP_loc.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN)) {
+                plane.next_WP_loc.offset_up_m(dist_to_climb);
                 return true;
             }
 #endif
@@ -66,10 +65,9 @@ bool ModeQRTL::_enter()
     plane.do_RTL(RTL_alt_abs_cm);
     quadplane.poscontrol_init_approach();
 
-    int32_t from_alt;
-    int32_t to_alt;
-    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,to_alt)) {
-        poscontrol.slow_descent = from_alt > to_alt;
+    ftype current_loc_height_above_next_loc;
+    if (plane.current_loc.get_height_above(plane.next_WP_loc, current_loc_height_above_next_loc)) {
+        poscontrol.slow_descent = current_loc_height_above_next_loc > 0;
         return true;
     }
     // default back to old method
@@ -209,11 +207,9 @@ bool ModeQRTL::calc_alt_delta_m(float &alt_delta_m) const
         return true;
     }
 #endif
-    int32_t current_alt_cm;
-    int32_t dest_alt_cm;
-    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_cm) &&
-        plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, dest_alt_cm)) {
-        alt_delta_m = (current_alt_cm - dest_alt_cm) * 0.01;
+    ftype height_above_dest_m;
+    if (plane.current_loc.get_height_above(plane.next_WP_loc, height_above_dest_m)) {
+        alt_delta_m = height_above_dest_m;
         return true;
     }
     // no usable altitudes
