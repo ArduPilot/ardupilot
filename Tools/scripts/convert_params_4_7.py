@@ -424,8 +424,8 @@ def vehicle_specific_names_present(lines: List[cps.Line], patch: int) -> List[st
 
 
 def convert_file(path: str, vehicle: str, patch: int, sig_digits: int, dry_run: bool,
-                 out_path: Optional[str]) -> None:
-    '''Convert one parameter file, raising ConversionError on failure.'''
+                 out_path: Optional[str]) -> bool:
+    '''Convert one parameter file and return whether it has pending conversions.'''
     lines = cps.read_param_file(path)
     if vehicle == 'auto':
         detected = detect_vehicle(lines)
@@ -449,6 +449,7 @@ def convert_file(path: str, vehicle: str, patch: int, sig_digits: int, dry_run: 
     elif changes:
         cps.write_param_file(path, lines)
     logging.info("%s: %u parameters converted", path, len(changes))
+    return bool(changes)
 
 
 def collect_files(paths: List[str]) -> List[Tuple[str, str]]:
@@ -475,6 +476,7 @@ def parse_arguments(argv: Optional[List[str]] = None) -> argparse.Namespace:
                         help="vehicle the files belong to (default: detect from content)")
     parser.add_argument('--sig-digits', type=int, default=cps.DEFAULT_SIG_DIGITS,
                         help="significant digits kept in rescaled values (default %(default)s)")
+    parser.add_argument('--check', action='store_true', help="preview changes and exit nonzero if any conversion is pending")
     parser.add_argument('--dry-run', action='store_true', help="print the changes without writing any file")
     parser.add_argument('--output-dir', help="write converted files below this directory instead of in place")
     parser.add_argument('-v', '--verbose', action='store_true', help="print a summary for every file")
@@ -490,17 +492,19 @@ def main(argv: Optional[List[str]] = None) -> int:
     except ConversionError as e:
         logging.error("%s", e)
         return 1
+    pending = False
     failed = 0
     for path, root in files:
         out_path = None
         if args.output_dir is not None:
             out_path = os.path.join(args.output_dir, os.path.relpath(path, root))
         try:
-            convert_file(path, args.vehicle, args.patch, args.sig_digits, args.dry_run, out_path)
+            changed = convert_file(path, args.vehicle, args.patch, args.sig_digits, args.dry_run or args.check, out_path)
+            pending |= changed
         except (ConversionError, OSError, ValueError, OverflowError) as e:
             logging.error("%s: %s", path, e)
             failed += 1
-    return 1 if failed else 0
+    return 1 if failed or (args.check and pending) else 0
 
 
 if __name__ == "__main__":
