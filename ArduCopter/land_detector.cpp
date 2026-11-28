@@ -158,6 +158,34 @@ void Copter::update_land_detector()
         }
     }
 
+    // a mid-air disarm is over once the airframe has stopped
+    // accelerating and stopped descending for as long as a landing
+    // takes to detect.  A vertical velocity we cannot read is not
+    // evidence of having landed, so require the read to succeed.
+    // A re-arm while it falls leaves land_complete set until throttle
+    // clears it, so this goes on after the re-arm: a vehicle that falls
+    // to rest at zero throttle is then reported landed while armed
+    if (ap.disarmed_in_air && ap.land_complete) {
+        float vel_d_ms = 0;
+        const bool vel_d_ok = AP::ahrs().get_velocity_D(vel_d_ms, copter.vibration_check.high_vibes);
+        const bool accel_stationary = land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX;
+        const bool descent_rate_low = vel_d_ok && fabsf(vel_d_ms) < LAND_DETECTOR_VEL_Z_MAX;
+        SET_LOG_FLAG(accel_stationary, LandDetectorLoggingFlag::ACCEL_STATIONARY);
+        SET_LOG_FLAG(descent_rate_low, LandDetectorLoggingFlag::DESCENT_RATE_LOW);
+        if (!accel_stationary || !descent_rate_low) {
+            land_detector_count = 0;
+        } else if (land_detector_count < LAND_DETECTOR_TRIGGER_SEC*scheduler.get_loop_rate_hz()) {
+            land_detector_count++;
+        } else {
+            ap.disarmed_in_air = false;
+            ahrs.set_vehicle_landed(ap.land_complete);
+            // set_land_complete() zeroes the shared counter on every
+            // change, so a landed vehicle has always logged it at zero.
+            // Leave it that way rather than parked at the trigger
+            land_detector_count = 0;
+        }
+    }
+
     set_land_complete_maybe(ap.land_complete || (land_detector_count >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*scheduler.get_loop_rate_hz()));
 
 #if HAL_LOGGING_ENABLED
@@ -228,9 +256,16 @@ void Copter::set_land_complete(bool b)
     AP::stats()->set_flying(!b);
 #endif
 
-    // tell AHRS flying state
+    // under power again after a re-arm in the air, as at any takeoff, so that disarm is over and the armed
+    // land detector decides when it lands: a later disarm records afresh whether it came in the air
+    if (!b) {
+        ap.disarmed_in_air = false;
+    }
+
+    // tell AHRS flying state. A vehicle disarmed in the air is not reported landed until the land
+    // detector says it has come to rest, whatever land_complete reads after a re-arm while it falls
     set_likely_flying(!b);
-    ahrs.set_vehicle_landed(b);
+    ahrs.set_vehicle_landed(b && !ap.disarmed_in_air);
 
     if (!b) {
         // not landed, no further action

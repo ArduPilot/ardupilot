@@ -693,6 +693,14 @@ void NavEKF2_core::readBaroData()
 
         baroDataNew.hgt = baro.get_altitude();
 
+        if (baroHgtOffsetNeedsInit) {
+            // first sample since a datum reset, which defined this height as
+            // zero.  Taken here, before the takeoff floor below can raise it
+            baroHgtOffset = baroDataNew.hgt;
+            meaHgtAtTakeOff = baroDataNew.hgt;
+            baroHgtOffsetNeedsInit = false;
+        }
+
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
         if (dal.get_takeoff_expected() && !assume_zero_sideslip()) {

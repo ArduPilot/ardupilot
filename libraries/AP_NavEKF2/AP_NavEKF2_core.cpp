@@ -198,6 +198,7 @@ void NavEKF2_core::InitialiseVariables()
     gpsPosAccuracy = 0.0f;
     gpsHgtAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
+    baroHgtOffsetNeedsInit = false;
     rngOnGnd = 0.05f;
     yawResetCount = 0;
     tiltErrFilt = 1.0f;
