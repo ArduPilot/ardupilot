@@ -133,6 +133,9 @@ public:
     float scale_weathervane_output(float wv_out) const;
     float get_weathervane_yaw_rate_cds(void);
 
+    // yaw target when landing on a moving platform
+    bool get_moving_platform_yaw_deg(const Vector2f &landing_velocity_ne_ms, float &yaw_deg);
+
     // see if we are flying from vtol point of view
     bool is_flying_vtol(void) const;
 

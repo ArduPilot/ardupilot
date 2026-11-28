@@ -2762,9 +2762,16 @@ void QuadPlane::vtol_position_controller(void)
 
         // call attitude controller
         set_pilot_yaw_rate_time_constant();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
-                                                                      plane.nav_pitch_cd,
-                                                                      get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
+        float yaw_deg;
+        if (get_moving_platform_yaw_deg(landing_velocity_ne_ms, yaw_deg)) {
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
+                                                               plane.nav_pitch_cd,
+                                                               yaw_deg * 100, true);
+        } else {
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
+                                                                          plane.nav_pitch_cd,
+                                                                          get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
+        }
         break;
     }
 
@@ -2804,9 +2811,16 @@ void QuadPlane::vtol_position_controller(void)
 
         // call attitude controller
         set_pilot_yaw_rate_time_constant();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
-                                                                      plane.nav_pitch_cd,
-                                                                      get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
+        float yaw_deg;
+        if (get_moving_platform_yaw_deg(landing_velocity_ne_ms, yaw_deg)) {
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
+                                                               plane.nav_pitch_cd,
+                                                               yaw_deg * 100, true);
+        } else {
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
+                                                                          plane.nav_pitch_cd,
+                                                                          get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
+        }
         break;
 
     case QPOS_LAND_COMPLETE:
@@ -3958,6 +3972,31 @@ float QuadPlane::forward_throttle_pct()
 float QuadPlane::scale_weathervane_output(float wv_out) const
 {
     return constrain_float(wv_out * (1/45.0), -100.0, 100.0) * command_model_pilot.get_rate() * 0.5;
+}
+
+/*
+  when landing on a moving platform (a script is matching our velocity
+  to it) point the nose into the apparent wind rather than holding the
+  heading we arrived on, which can leave us flying sideways at the
+  platform's speed
+ */
+bool QuadPlane::get_moving_platform_yaw_deg(const Vector2f &landing_velocity_ne_ms, float &yaw_deg)
+{
+    if (landing_velocity_ne_ms.is_zero() ||
+        !is_zero(get_pilot_input_yaw_rate_cds()) ||
+        should_relax()) {
+        return false;
+    }
+    // as in the POSITION1 overshoot handling, use the wind estimate
+    // even if it is not marked valid
+    Vector3f wind_ned_ms;
+    IGNORE_RETURN(plane.ahrs.get_wind(wind_ned_ms));
+    const Vector2f airspeed_ne_ms = plane.ahrs.groundspeed_vector() - wind_ned_ms.xy();
+    if (airspeed_ne_ms.length_squared() < 1) {
+        return false;
+    }
+    yaw_deg = degrees(airspeed_ne_ms.angle());
+    return true;
 }
 
 /*
