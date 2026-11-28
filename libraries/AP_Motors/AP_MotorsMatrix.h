@@ -58,6 +58,9 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     bool                output_test_num(uint8_t motor, int16_t pwm);
 
+    // return a bitmask of the outputs that output_test_seq() drives for motor_seq
+    uint32_t            get_test_seq_output_mask(uint8_t motor_seq) const override;
+
     // output_to_motors - sends minimum values out to the motors
     virtual void        output_to_motors() override;
 
@@ -140,6 +143,9 @@ protected:
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+
+    // return a bitmask of the motors that _output_test_seq() spins for motor_seq
+    uint32_t            get_test_seq_motor_mask(uint8_t motor_seq) const;
 
     float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
     float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch
