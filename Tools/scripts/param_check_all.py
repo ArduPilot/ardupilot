@@ -96,6 +96,7 @@ def check_sitl(skip: SkippedChecks | None = None):
         'AntennaTracker': 'Tracker',
         'sitl_periph_universal': 'AP_Periph',
         'sitl_periph_PPP': 'AP_Periph',
+        'sitl_periph_volz': 'AP_Periph',
     }
     directory = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),

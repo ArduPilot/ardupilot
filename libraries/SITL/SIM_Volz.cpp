@@ -38,6 +38,7 @@ extern const AP_HAL::HAL& hal;
 #include "SIM_Aircraft.h"
 
 #include <errno.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 using namespace SITL;
 
@@ -102,11 +103,23 @@ void Volz::update_servos(const class Aircraft &aircraft)
     const float dt = delta_t_us / 1000000.0;
 
     for (auto  &servo : servos) {
+#if APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+        // the simulated servo positions are not transferred in the
+        // sitl_fdm structure passed to a simulated AP_Periph, so the
+        // servo goes where the Volz protocol told it to.  It reports
+        // 3 degrees more than that so that its feedback can't be
+        // mistaken for the demand.  A failed servo stays where it is.
+        servo.failed = _failed_mask.get() & (1U<<(servo.id - 1));
+        if (!servo.failed) {
+            servo.position = servo.desired_position + 0.03;
+        }
+#else
         const uint8_t idx = servo.id - 1;
         if (idx >= ARRAY_SIZE(aircraft.servo_filter)) {
             continue;
         }
         servo.position = aircraft.servo_filter[idx].angle();
+#endif
 
         // update primary current - proportional to airspeed and aileron deflection:
         float airspeed = aircraft.get_airspeed_pitot();

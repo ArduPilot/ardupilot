@@ -1,0 +1,4 @@
+# Plane sending its aileron, elevator and rudder outputs (1, 2 and 4)
+# to a DroneCAN peripheral driving Volz servos; see periph-volz.parm
+CAN_P1_DRIVER 1
+CAN_D1_UC_SRV_BM 0x0B

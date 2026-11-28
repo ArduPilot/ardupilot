@@ -1,0 +1,16 @@
+include ../sitl_periph/hwdef.inc
+
+define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_volz"
+define APJ_BOARD_ID 101
+
+undef AP_PERIPH_RC_OUT_ENABLED
+define AP_PERIPH_RC_OUT_ENABLED 1
+define HAL_PWM_COUNT 32
+
+undef AP_SERVO_TELEM_ENABLED
+define AP_SERVO_TELEM_ENABLED 1
+
+define AP_VOLZ_ENABLED 1
+
+# the Volz servos are attached to a serial port configured by parameter
+define HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS 1
