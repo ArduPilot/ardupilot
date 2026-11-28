@@ -339,8 +339,8 @@ void NavEKF3_core::SelectMagFusion()
     // used for load levelling
     magFusePerformed = false;
 
-    // Store yaw angle when moving for use as a static reference when not moving
-    if (!onGroundNotMoving) {
+    // Store yaw angle when moving or while the compass is in use, for use as a static reference when not moving
+    if (!onGroundNotMoving || (use_compass() && yawAlignComplete)) {
         if (fabsF(prevTnb[0][2]) < fabsF(prevTnb[1][2])) {
             // A 321 rotation order is best conditioned because the X axis is closer to horizontal than the Y axis
             yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_321;
