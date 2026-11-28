@@ -42,7 +42,7 @@ Inspired by the Copter/Rover AC_Avoidance implementation by Randy Mackay and Ris
 
 SCRIPT_NAME         = "Plane DAA"
 SCRIPT_NAME_SHORT   = "pDAA"
-SCRIPT_VERSION      = "4.8.0-131"
+SCRIPT_VERSION      = "4.8.0-133"
 
 STARTUP_DELAY       = 25  -- wait this many seconds for the FC to come up before starting the main loop
 

@@ -21,7 +21,7 @@
 
 local DAAcore = {}
 
-DAAcore.SCRIPT_VERSION = "4.8.0-031"
+DAAcore.SCRIPT_VERSION = "4.8.0-035"
 DAAcore.SCRIPT_NAME = "DAA core"
 DAAcore.SCRIPT_NAME_SHORT = "DAAcore"
 
@@ -64,6 +64,8 @@ local AIRCRAFT_TAU_GAP_S    = 5.0
 -- before deciding a fence is genuinely clear - long enough to matter physically, short
 -- enough to stay a "where am I actually about to be" check rather than a second sweep.
 local VALIDATE_PROJECTION_S = 2.0
+-- Bridge a short sweep gap using only a recent command and a fresh contact fix.
+local MISSED_SWEEP_HOLD_MS = 1000
 
 -- Clamp a possibly-nil clearance (m) to +/-LOG_CLEARANCE_MAX_M for logging, treating "no
 -- value at all" the same as "no obstacle" (LOG_CLEARANCE_MAX_M).
@@ -139,7 +141,7 @@ function DAAcore.new(deps)
     -- silently reading the initial 0.0 as "not closing" for a brand new contact.
     aircraft_closure_rate_valid = false
     local last_avoid_bearing_deg    = nil
-    local last_cmd_bearing_ms       = nil
+    local moving_command            = {}
     local committed_side_sign       = 0
     local side_flip_pending         = false
     local side_flip_want_ms         = uint32_t(0)
@@ -550,7 +552,7 @@ function DAAcore.new(deps)
     Static obstacles (fences, ~zero velocity) return (true, 0, closing-based ttc) so
     their behaviour is unchanged.
     --]]
-    local function assess_obstacle_motion(obstacle)
+    local function assess_obstacle_motion(obstacle, resume_bearing_deg, resume_distance_m)
         if obstacle == nil or current_loc == nil or obstacle.location == nil then
             -- no geometry to assess: treat as a conflict (the safe default is to avoid)
             return { is_conflict = true, closing_speed = 0.0, cpa_miss = 0.0, ttc = FLT_MAX, pass_behind = 0 }
@@ -563,15 +565,27 @@ function DAAcore.new(deps)
         local own = ahrs:get_velocity_NED()
         local ovn = (ov ~= nil) and ov:x() or 0.0
         local ove = (ov ~= nil) and ov:y() or 0.0
-        local rvn = ovn - ((own ~= nil) and own:x() or 0.0)   -- relative velocity (obstacle - own), North
-        local rve = ove - ((own ~= nil) and own:y() or 0.0)   -- East
+        local own_n = (own ~= nil) and own:x() or 0.0
+        local own_e = (own ~= nil) and own:y() or 0.0
+        local horizon_s = FLT_MAX
+        if resume_bearing_deg ~= nil and resume_distance_m ~= nil then
+            local speed_ms = effective_groundspeed(airspeed_ms, resume_bearing_deg, wind_dir_rad, wind_speed)
+            if speed_ms > 0 then
+                local bearing = math.rad(resume_bearing_deg)
+                own_n = speed_ms * math.cos(bearing)
+                own_e = speed_ms * math.sin(bearing)
+                horizon_s = resume_distance_m / speed_ms
+            end
+        end
+        local rvn = ovn - own_n
+        local rve = ove - own_e
 
         local rel_dot_rv = rn * rvn + re * rve                -- < 0 => range decreasing (closing)
         local rv2 = rvn * rvn + rve * rve
         local closing_speed = (range_h > 0.1) and (-rel_dot_rv / range_h) or 0.0
 
         -- horizontal closest point of approach
-        local t_cpa = (rv2 > 1e-4) and math.max(0.0, -rel_dot_rv / rv2) or 0.0
+        local t_cpa = (rv2 > 1e-4) and math.max(0.0, math.min(horizon_s, -rel_dot_rv / rv2)) or 0.0
         local miss_n = rn + rvn * t_cpa
         local miss_e = re + rve * t_cpa
         local cpa_miss_h = math.sqrt(miss_n * miss_n + miss_e * miss_e)
@@ -747,15 +761,12 @@ function DAAcore.new(deps)
     local function apply_slew_limit(bearing)
         -- last_avoid_bearing_deg is shared with the fence-avoidance path, so it can
         -- already be non-nil the FIRST time a moving obstacle ever triggers this
-        -- function in a flight (a fence was avoided earlier, this is not the "first
-        -- cycle" refine_avoidance_bearing() thinks it is) - last_cmd_bearing_ms is
-        -- only ever set below, in THIS function's own caller, so it genuinely is
-        -- still nil then and must be checked on its own, not inferred from
-        -- last_avoid_bearing_deg.
-        if slew_dps <= 0 or last_avoid_bearing_deg == nil or last_cmd_bearing_ms == nil then
+        -- function in a flight (a fence was avoided earlier), so also require a
+        -- previous moving-obstacle command.
+        if slew_dps <= 0 or last_avoid_bearing_deg == nil or moving_command.time_ms == nil then
             return bearing
         end
-        local dt = (now_ms - last_cmd_bearing_ms):tofloat() / 1000.0
+        local dt = (now_ms - moving_command.time_ms):tofloat() / 1000.0
         local max_step = slew_dps * dt
         if max_step <= 0 then
             return bearing
@@ -830,7 +841,8 @@ function DAAcore.new(deps)
             end
             resisted_distance_m = distance
         end
-        last_cmd_bearing_ms = now_ms
+        moving_command.time_ms = now_ms
+        moving_command.obstacle = obstacle
 
         log_smoothing(direct_bearing_deg, raw_bearing_deg, resisted, bearing,
                       committed_side_sign, side_flip_pending, urgent, motion, obstacle)
@@ -1477,6 +1489,8 @@ function DAAcore.new(deps)
     -- clears it, and only once it has confirmed the fence is genuinely clear.
     local function reset_horizontal_avoidance()
         last_avoid_bearing_deg = nil
+        moving_command.time_ms = nil
+        moving_command.obstacle = nil
         reversal_target_sign   = nil
         committed_side_sign    = 0
         side_flip_pending      = false
@@ -1493,6 +1507,8 @@ function DAAcore.new(deps)
         best_bearing_deg, best_distance_m = resist_fence_bearing_change(
             last_avoid_bearing_deg, best_bearing_deg, best_distance_m, target_loc)
         last_avoid_bearing_deg  = best_bearing_deg
+        moving_command.time_ms  = nil
+        moving_command.obstacle = nil
         -- Independent of last_avoid_bearing_deg - see fence_hold_bearing_deg's own
         -- declaration and reset_horizontal_avoidance()'s comment for why.
         fence_hold_bearing_deg  = best_bearing_deg
@@ -1517,26 +1533,32 @@ function DAAcore.new(deps)
     -- independently-conflicting contact can have been masked behind it the whole time.
     -- validate_horizontal_release() uses this identity to re-probe excluding just the
     -- dismissed contact, rather than accepting the release on its say-so alone.
-    local function resolve_moving_bearing(bearing_deg, target_loc, best_bearing_deg, best_distance_m)
+    function moving_command.rejoin_conflicts(obstacle, bearing_deg, target_loc)
+        local distance_m = math.min(detect_m, current_loc:get_distance(target_loc))
+        local resume = assess_obstacle_motion(obstacle, bearing_deg, distance_m)
+        return resume.cpa_miss <= get_standoff(obstacle.type, true)
+    end
+
+    local function resolve_moving_bearing(obstacle, bearing_deg, target_loc, best_bearing_deg, best_distance_m)
         -- resist_fence_bearing_change()'s reversal latch is fence-specific state: clear it
         -- whenever the resolver switches to a moving obstacle instead, so it cannot survive
         -- stale into a later, unrelated fence episode.
         reversal_target_sign = nil
-        local dismissed_candidate = obstacle_avoiding
-        local motion = assess_obstacle_motion(obstacle_avoiding)
-        if not motion.is_conflict then
-            -- the obstacle is leaving (opening range, predicted miss beyond its keep-out
-            -- radius): drop it so avoid_obstacle() does not steer or announce for it. Any
-            -- avoidance already in progress reverts cleanly (avoid_obstacle(nil)). This is
-            -- re-decided every cycle from current geometry (no hold) so a manoeuvring obstacle
-            -- is always tracked on fresh data; near a marginal crossing that can cost a few
-            -- extra (slew-limited) heading reversals, which is the safe trade.
+        local motion = assess_obstacle_motion(obstacle)
+        local resume_conflict = false
+        local previous = moving_command.obstacle
+        if not motion.is_conflict and previous ~= nil and previous.sysid == obstacle.sysid then
+            -- The current velocity already reflects our detour. Returning to the waypoint
+            -- can close on the same contact again, so test that course before giving it back.
+            resume_conflict = moving_command.rejoin_conflicts(obstacle, bearing_deg, target_loc)
+        end
+        if not motion.is_conflict and not resume_conflict then
             obstacle_avoiding       = nil
             reset_horizontal_avoidance()
-            return best_bearing_deg, best_distance_m, true, dismissed_candidate
+            return best_bearing_deg, best_distance_m, true, obstacle
         end
         best_bearing_deg, best_distance_m = refine_avoidance_bearing(
-            bearing_deg, best_bearing_deg, best_distance_m, motion, obstacle_avoiding, target_loc)
+            bearing_deg, best_bearing_deg, best_distance_m, motion, obstacle, target_loc)
         last_avoid_bearing_deg  = best_bearing_deg
         return best_bearing_deg, best_distance_m, false, nil
     end
@@ -1878,9 +1900,29 @@ function DAAcore.new(deps)
                     resolve_fence_bearing(target_loc, best_bearing_deg, best_distance_m)
         elseif obstacle_avoiding ~= nil then
             best_bearing_deg, best_distance_m, gone, dismissed_obstacle =
-                    resolve_moving_bearing(bearing_deg, target_loc, best_bearing_deg, best_distance_m)
+                    resolve_moving_bearing(obstacle_avoiding, bearing_deg, target_loc, best_bearing_deg, best_distance_m)
             if gone then
                 obstacle_avoiding = nil
+            end
+        elseif raw_ok and last_avoid_bearing_deg ~= nil then
+            -- A sweep can miss the contact during the detour. Recheck the actual
+            -- rejoin before handing off. Reusing a fix must never extend its life.
+            local previous = moving_command.obstacle
+            local command_ms = moving_command.time_ms
+            if previous ~= nil and command_ms ~= nil and previous.timestamp_ms ~= nil
+                    and (previous.type == OBSTACLE_TYPE.UNCREWED_AIRCRAFT
+                         or previous.type == OBSTACLE_TYPE.CREWED_AIRCRAFT)
+                    and (now_ms - command_ms):tofloat() <= MISSED_SWEEP_HOLD_MS
+                    and (now_ms - uint32_t(previous.timestamp_ms)):tofloat() <= MISSED_SWEEP_HOLD_MS
+                    and moving_command.rejoin_conflicts(previous, bearing_deg, target_loc) then
+                local held_distance_m, _, blocker =
+                    probe_bearing(last_avoid_bearing_deg, bearing_deg, distance_to_target_m, target_loc, false)
+                -- A blocked detour must go through the normal release checks with the sweep result.
+                if blocker == nil then
+                    obstacle_avoiding = previous
+                    best_bearing_deg = last_avoid_bearing_deg
+                    best_distance_m = held_distance_m
+                end
             end
         end
 
@@ -1923,10 +1965,12 @@ function DAAcore.new(deps)
                 best_bearing_deg, best_distance_m, obstacle_avoiding =
                         resolved_bearing_deg, resolved_distance_m, resolved_obstacle
                 if held then
-                    -- The fence-hold path bypasses resolve_fence_bearing()'s own
-                    -- bookkeeping - sync it the same way, or the next cycle's slew
-                    -- limiter anchors to a stale heading.
+                    -- Match resolve_fence_bearing()'s bookkeeping. Clearing the
+                    -- previous traffic timestamp leaves the first traffic command
+                    -- after a fence hold unslewed.
                     last_avoid_bearing_deg = best_bearing_deg
+                    moving_command.time_ms = nil
+                    moving_command.obstacle = nil
                     committed_side_sign    = 0
                     side_flip_pending      = false
                 end

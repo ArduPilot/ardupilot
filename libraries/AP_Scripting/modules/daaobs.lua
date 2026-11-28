@@ -15,7 +15,7 @@
 
 local DAAobstacles = {}
 
-DAAobstacles.SCRIPT_VERSION = "4.8.0-013"
+DAAobstacles.SCRIPT_VERSION = "4.8.0-014"
 DAAobstacles.SCRIPT_NAME = "DAA obstacles"
 DAAobstacles.SCRIPT_NAME_SHORT = "DAAobs"
 
@@ -328,9 +328,14 @@ function DAAobstacles.new()
     -- unconditional (the conservative "safer is better" floor). Distinct from the detection margin in
     -- find_closest_obstacle, which adds a look-ahead buffer on top so obstacles are picked up earlier.
     -- Aircraft/drone/plane share one CPA calculation; only this standoff differs.
-    local function get_standoff(obstacle_type)
+    local function get_standoff(obstacle_type, include_margin)
         -- AIRCRAFT, AIS and anything else: the aircraft well-clear radius (AVD_WCLR_XY)
-        return standoff_by_type[obstacle_type] or well_clear_xy
+        local standoff = standoff_by_type[obstacle_type] or well_clear_xy
+        if include_margin and (obstacle_type == OBSTACLE_TYPE.UNCREWED_AIRCRAFT
+                or obstacle_type == OBSTACLE_TYPE.CREWED_AIRCRAFT) then
+            standoff = standoff + detect_margin_by_type[obstacle_type]
+        end
+        return standoff
     end
 
     -- Shared by find_closest_obstacle() and find_closest_fence(): applies the
