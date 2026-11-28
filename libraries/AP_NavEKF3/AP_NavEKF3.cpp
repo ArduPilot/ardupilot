@@ -1164,6 +1164,35 @@ bool NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
     return true;
 }
 
+// set EK3_PRIMARY, the core preferred as primary, without saving it. The change is
+// logged as a parameter, which Replay applies as it does any parameter changed in flight. Returns
+// false, saying why, for a core that is not running, and while armed without EK3_OPTIONS bit 1, when
+// the primary would not move until disarmed. armed is the vehicle's state now, as the DAL holds it only
+// as it was at the last EKF update. An RC switch can be read before the cores start, when the DAL has
+// not yet counted the IMUs, so until then a core EK3_IMU_MASK names is taken; if its IMU is missing the
+// EKF falls back to core 0, as it does for EK3_PRIMARY
+bool NavEKF3::setPrimaryCore(uint8_t core_index, bool armed)
+{
+    uint8_t cores = num_cores;
+    if (core == nullptr && _enable != 0) {
+        for (uint8_t i=0; i<MAX_EKF_CORES; i++) {
+            if (_imuMask & (1U<<i)) {
+                cores++;
+            }
+        }
+    }
+    if (core_index >= cores) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 core %u not running", (unsigned)core_index);
+        return false;
+    }
+    if (armed && !option_is_enabled(Option::ManualLaneSwitch)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 core change armed needs EK3_OPTIONS bit 1");
+        return false;
+    }
+    _primary_core.set_and_notify(core_index);
+    return true;
+}
+
 // Check basic filter health metrics and return a consolidated health status
 bool NavEKF3::healthy(void) const
 {

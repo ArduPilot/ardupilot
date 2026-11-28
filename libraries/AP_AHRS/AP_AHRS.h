@@ -485,6 +485,11 @@ public:
     // returns false if the set was not selected
     bool set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx);
 
+#if AP_AHRS_NAVEKF3_ENABLED
+    // set the configured EKF's preferred primary core without saving it, returning false if refused
+    bool set_primary_core_for_configured_backend(uint8_t core_index);
+#endif
+
     //returns index of active source set used, 0=primary, 1=secondary, 2=tertiary
     uint8_t get_posvelyaw_source_set() const;
 

@@ -375,6 +375,9 @@ public:
 #if AP_AHRS_EKF_RESET_ENABLED
         EKF_RESET =          187, // trigger full EKF bootstrap reset
 #endif  // AP_AHRS_EKF_RESET_ENABLED
+#if AP_AHRS_NAVEKF3_ENABLED
+        EKF_PRIMARY_CORE =   188, // select the EKF primary core: low 0, middle 1, high 2
+#endif
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input

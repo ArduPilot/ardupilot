@@ -252,6 +252,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 185:Mount Roll/Pitch Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 186:Mount POI Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 187:EKF Reset
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 188:EKF Primary Core
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -730,6 +731,9 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
 #if AP_AHRS_ENABLED
     case AUX_FUNC::EKF_SOURCE_SET:
+#endif
+#if AP_AHRS_NAVEKF3_ENABLED
+    case AUX_FUNC::EKF_PRIMARY_CORE:
 #endif
 #if HAL_TORQEEDO_ENABLED
     case AUX_FUNC::TORQEEDO_CLEAR_ERR:
@@ -1724,6 +1728,30 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         break;
     }
 #endif  // AP_AHRS_ENABLED
+
+#if AP_AHRS_NAVEKF3_ENABLED
+    case AUX_FUNC::EKF_PRIMARY_CORE: {
+        // a position outside the enum matches no case and leaves an index the EKF refuses
+        uint8_t core_index = UINT8_MAX;
+        switch (ch_flag) {
+        case AuxSwitchPos::LOW:
+            core_index = 0;
+            break;
+        case AuxSwitchPos::MIDDLE:
+            core_index = 1;
+            break;
+        case AuxSwitchPos::HIGH:
+            core_index = 2;
+            break;
+        }
+        // a refusal is reported by the EKF or AHRS, which know why
+        if (!AP::ahrs().set_primary_core_for_configured_backend(core_index)) {
+            return false;
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF primary core %u", core_index);
+        break;
+    }
+#endif  // AP_AHRS_NAVEKF3_ENABLED
 
 #if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     case AUX_FUNC::OPTFLOW_CAL: {
