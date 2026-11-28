@@ -444,6 +444,16 @@ void AP_IOMCU_FW::init()
     // we generally do no allocations after setup completes
     reg_status.freemem = hal.util->available_memory();
 
+    static_assert(P_STATUS_RESET_CAUSE_POWER_ON == STM32_RESET_CAUSE_POWER_ON &&
+                  P_STATUS_RESET_CAUSE_PIN == STM32_RESET_CAUSE_PIN &&
+                  P_STATUS_RESET_CAUSE_SOFTWARE == STM32_RESET_CAUSE_SOFTWARE &&
+                  P_STATUS_RESET_CAUSE_IWDG == STM32_RESET_CAUSE_IWDG &&
+                  P_STATUS_RESET_CAUSE_WWDG == STM32_RESET_CAUSE_WWDG &&
+                  P_STATUS_RESET_CAUSE_LOW_POWER == STM32_RESET_CAUSE_LOW_POWER &&
+                  P_STATUS_RESET_CAUSE_BROWNOUT == STM32_RESET_CAUSE_BROWNOUT,
+                  "reset cause flags must match");
+    reg_status.reset_cause = stm32_reset_cause() | P_STATUS_RESET_CAUSE_VALID;
+
     if (hal.util->was_watchdog_safety_off()) {
         hal.rcout->force_safety_off();
         reg_status.flag_safety_off = true;

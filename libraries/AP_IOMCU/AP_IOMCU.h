@@ -334,6 +334,7 @@ private:
     uint32_t total_errors;
     uint32_t num_delayed;
     uint32_t last_iocmu_timestamp_ms;
+    uint32_t last_iocmu_timestamp_read_ms;  // our time when it last changed
     uint32_t read_status_errors;
     uint32_t read_status_ok;
     uint32_t last_rc_protocols;
@@ -363,6 +364,7 @@ private:
     bool check_crc(void);
     void handle_repeated_failures();
     void check_iomcu_reset();
+    static const char *reset_cause_string(uint8_t cause);
 
     void write_log();  // handle onboard logging
 

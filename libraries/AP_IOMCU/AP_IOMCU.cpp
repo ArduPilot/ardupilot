@@ -22,6 +22,7 @@
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <ch.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -542,7 +543,9 @@ void AP_IOMCU::write_log()
 // @Field: Nerr: Protocol failures on MCU side
 // @Field: Nerr2: Reported number of failures on IOMCU side
 // @Field: NDel: Number of delayed packets received by MCU
-            AP::logger().WriteStreaming("IOMC", "TimeUS,RSErr,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHHIIIII",
+// @Field: RstC: IOMCU reset cause flags
+// @FieldBitmaskEnum: RstC: iomcu_reset_cause
+            AP::logger().WriteStreaming("IOMC", "TimeUS,RSErr,Mem,TS,NPkt,Nerr,Nerr2,NDel,RstC", "QHHIIIIIB",
                                AP_HAL::micros64(),
                                read_status_errors,
                                reg_status.freemem,
@@ -550,7 +553,8 @@ void AP_IOMCU::write_log()
                                reg_status.total_pkts,
                                total_errors,
                                reg_status.num_errors,
-                               num_delayed);
+                               num_delayed,
+                               reg_status.reset_cause);
         }
 #endif  // HAL_LOGGING_ENABLED
 #if IOMCU_DEBUG_ENABLE
@@ -1316,13 +1320,48 @@ void AP_IOMCU::handle_repeated_failures(void)
 }
 
 /*
+  return the most specific cause in a P_STATUS_RESET_CAUSE_* bitmask
+ */
+const char *AP_IOMCU::reset_cause_string(uint8_t cause)
+{
+    if ((cause & P_STATUS_RESET_CAUSE_VALID) == 0) {
+        return "cause not reported";
+    }
+    // most specific first: power-on and watchdog resets also set the pin flag
+    if (cause & P_STATUS_RESET_CAUSE_IWDG) {
+        return "watchdog";
+    }
+    if (cause & P_STATUS_RESET_CAUSE_WWDG) {
+        return "window watchdog";
+    }
+    if (cause & P_STATUS_RESET_CAUSE_BROWNOUT) {
+        return "brownout";
+    }
+    if (cause & P_STATUS_RESET_CAUSE_LOW_POWER) {
+        return "low power";
+    }
+    if (cause & P_STATUS_RESET_CAUSE_SOFTWARE) {
+        return "software";
+    }
+    if (cause & P_STATUS_RESET_CAUSE_POWER_ON) {
+        return "power on";
+    }
+    if (cause & P_STATUS_RESET_CAUSE_PIN) {
+        return "reset pin";
+    }
+    return "unknown";
+}
+
+/*
   check for IOMCU reset (possibly due to a watchdog).
  */
 void AP_IOMCU::check_iomcu_reset(void)
 {
+    const uint32_t now_ms = AP_HAL::millis();
     if (last_iocmu_timestamp_ms == 0) {
         // initialisation
         last_iocmu_timestamp_ms = reg_status.timestamp_ms;
+        last_iocmu_timestamp_read_ms = now_ms;
         DEV_PRINTF("IOMCU startup\n");
         return;
     }
@@ -1333,6 +1372,19 @@ void AP_IOMCU::check_iomcu_reset(void)
     // when we are in an expected delay allow for a larger time
     // delta. This copes with flash erase, such as bootloader update
     const uint32_t max_delay = hal.scheduler->in_expected_delay()?8000:500;
+    // a long gap can also be a stall. After a reboot the IOMCU's clock
+    // looks as if it ran ahead of ours, and its uptime is no longer than
+    // the time since its timestamp last changed. Comparing intervals
+    // copes with its millis wrapping
+    const uint32_t read_interval_ms = now_ms - last_iocmu_timestamp_read_ms;
+    const bool rebooted = dt_ms > read_interval_ms + 100 &&
+                          reg_status.timestamp_ms <= read_interval_ms + 100;
+    if (reg_status.timestamp_ms != last_iocmu_timestamp_ms) {
+        // the status page is answered from an interrupt, so a stalled
+        // main loop leaves the timestamp unchanged; measure from when it
+        // last moved
+        last_iocmu_timestamp_read_ms = now_ms;
+    }
     last_iocmu_timestamp_ms = reg_status.timestamp_ms;
 
     if (dt_ms < max_delay) {
@@ -1342,6 +1394,9 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     detected_io_reset = true;
     INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
+    if (rebooted) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IOMCU reset: %s", reset_cause_string(reg_status.reset_cause));
+    }
     debug("IOMCU reset t=%u %u %u dt=%u\n",
           unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));
 
