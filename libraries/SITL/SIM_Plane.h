@@ -90,6 +90,13 @@ protected:
         // the X CoG offset should be -0.02, but that makes the plane too tail heavy
         // in manual flight. Adjusted to -0.15 gives reasonable flight
         Vector3f CGOffset{-0.15, 0, -0.05};
+        // Moment of inertia in kg.m^2 that getTorque()'s aerodynamic moments
+        // are divided by. The {1,1,1} default is not physical: it reproduces,
+        // bit for bit, the behaviour from before this term was explicit, when
+        // the moments went straight into rot_accel. It cannot be derived from
+        // mass and geometry, because it depends on how the mass is
+        // distributed. See issue #26972.
+        Vector3f moment_of_inertia{1, 1, 1};
     } default_coefficients;
 
     struct Coefficients coefficient;
