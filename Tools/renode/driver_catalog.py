@@ -4288,6 +4288,7 @@ I2C_SOURCE_CLASSIFICATIONS = {
     'AP_Airspeed/AP_Airspeed_SDP3X.cpp': 'device',
     'AP_Baro/AP_Baro.cpp': 'frontend',
     'AP_Baro/AP_Baro_KellerLD.cpp': 'device',
+    'AP_Baro/AP_Baro_MS5611.cpp': 'device',
     'AP_BattMonitor/AP_BattMonitor_AD7091R5.cpp': 'device',
     'AP_BattMonitor/AP_BattMonitor_INA2xx.cpp': 'device',
     'AP_BattMonitor/AP_BattMonitor_INA3221.cpp': 'device',
