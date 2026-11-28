@@ -5,6 +5,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS_config.h>
 #include <AP_BoardConfig/IMU_heater_config.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
@@ -108,6 +109,10 @@ public:
     bool is_armed() const;
     bool is_armed_and_safety_off() const;
 
+    // pending arm - waits for pre-arm checks to pass after switch toggle
+    virtual void set_pending_arm(bool with_airmode) { _pending_arm = true; }
+    virtual void clear_pending_arm() { _pending_arm = false; }
+
     // Returns the time since boot (in microseconds) that we armed. Returns 0 if disarmed.
     uint64_t arm_time_us() const { return is_armed() ? last_arm_time_us : 0; }
 
@@ -162,6 +167,7 @@ public:
         DISABLE_PREARM_DISPLAY             = (1U << 0),
         DISABLE_STATUSTEXT_ON_STATE_CHANGE = (1U << 1),
         SKIP_IMU_CONSISTENCY_ICE_RUNNING   = (1U << 2),
+        PENDING_ARM_ON_SWITCH              = (1U << 3),
     };
     bool option_enabled(Option option) const {
         return (_arming_options & uint32_t(option)) != 0;
@@ -189,11 +195,18 @@ protected:
     AP_UInt32               _arming_options;
     AP_Int16                magfield_error_threshold;
     AP_Enum<RequireLocation> require_location;
+#if AP_AHRS_EKF_RESET_ENABLED
+    AP_Float                 _pending_arm_timeout_s;
+#endif
 
     // internal members
     bool                    armed;
     uint32_t                last_accel_pass_ms;
     uint32_t                last_gyro_pass_ms;
+    // pending arm flag
+    bool _pending_arm;
+    // true while a pending arm retries quietly, so a failed retry is not reported
+    bool _pending_arm_quiet;
 
     virtual bool barometer_checks(bool report);
 

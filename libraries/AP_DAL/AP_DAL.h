@@ -64,6 +64,9 @@ public:
         setSourceSet0             = 13,
         setSourceSet1             = 14,
         setSourceSet2             = 15,
+        //setInhibitAccelBiasLearning   = 16, // reserved, #32471
+        //unsetInhibitAccelBiasLearning = 17, // reserved, #32471
+        bootstrapReset            = 18,
     };
 
     // must remain the same as AP_AHRS_VehicleClass numbers-wise
