@@ -157,40 +157,46 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
 
 bool GCS_MAVLINK_Sub::send_info()
 {
-    // Just do this all at once, hopefully the hard-wire telemetry requirement means this is ok
     // Name is char[10]
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("CamTilt",
-                     1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_tilt) / 2.0f + 0.5f));
+    for (; send_info_index < 9; send_info_index++) {
+        CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+        switch (send_info_index) {
+        case 0:
+            send_named_float("CamTilt",
+                             1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_tilt) / 2.0f + 0.5f));
+            break;
+        case 1:
+            send_named_float("CamPan",
+                             1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_pan) / 2.0f + 0.5f));
+            break;
+        case 2:
+            send_named_float("TetherTrn",
+                             (float)sub.quarter_turn_count / 4);
+            break;
+        case 3:
+            send_named_float("Lights1",
+                             SRV_Channels::get_output_norm(SRV_Channel::k_lights1) / 2.0f + 0.5f);
+            break;
+        case 4:
+            send_named_float("Lights2",
+                             SRV_Channels::get_output_norm(SRV_Channel::k_lights2) / 2.0f + 0.5f);
+            break;
+        case 5:
+            send_named_float("PilotGain", sub.gain);
+            break;
+        case 6:
+            send_named_float("InputHold", sub.input_hold_engaged);
+            break;
+        case 7:
+            send_named_float("RollPitch", sub.roll_pitch_flag);
+            break;
+        case 8:
+            send_named_float("RFTarget", sub.mode_surftrak.get_rangefinder_target_cm() * 0.01f);
+            break;
+        }
+    }
 
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("CamPan",
-                     1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_pan) / 2.0f + 0.5f));
-
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("TetherTrn",
-                     (float)sub.quarter_turn_count / 4);
-
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("Lights1",
-                     SRV_Channels::get_output_norm(SRV_Channel::k_lights1) / 2.0f + 0.5f);
-
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("Lights2",
-                     SRV_Channels::get_output_norm(SRV_Channel::k_lights2) / 2.0f + 0.5f);
-
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("PilotGain", sub.gain);
-
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("InputHold", sub.input_hold_engaged);
-
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("RollPitch", sub.roll_pitch_flag);
-
-    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("RFTarget", sub.mode_surftrak.get_rangefinder_target_cm() * 0.01f);
-
+    send_info_index = 0;
     return true;
 }
 
@@ -338,8 +344,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     switch (id) {
 
     case MSG_NAMED_FLOAT:
-        send_info();
-        break;
+        return send_info();
 
     case MSG_WIND: // other vehicles do something custom with wind:
         return true;

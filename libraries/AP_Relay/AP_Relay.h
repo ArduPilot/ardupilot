@@ -66,7 +66,7 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-    bool send_relay_status(const class GCS_MAVLINK &link) const;
+    bool send_relay_status(const class GCS_MAVLINK &link) const WARN_IF_UNUSED;
 
     // Set the state of all relays that are configured as the specified function type
     void set(AP_Relay_Params::FUNCTION function, bool value);
