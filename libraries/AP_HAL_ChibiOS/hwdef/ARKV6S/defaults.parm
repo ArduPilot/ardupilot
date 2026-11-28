@@ -1,3 +1,6 @@
 # Enable CAN drivers by default
 CAN_P1_DRIVER 1
 CAN_P2_DRIVER 1
+
+# The ARK PAB Carrier has no IO MCU; set to 1 on a carrier that has one
+BRD_IO_ENABLE 0
