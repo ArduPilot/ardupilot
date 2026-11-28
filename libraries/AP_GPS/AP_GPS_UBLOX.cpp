@@ -897,14 +897,21 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
         return;
     }
 
+    // numSV is taken from the message: log only the SVs that were
+    // received and fit in the receive buffer
+    const uint16_t hdr_len = offsetof(struct ubx_rxm_raw, svinfo);
+    const uint16_t received = _payload_length > hdr_len ?
+        uint16_t((_payload_length - hdr_len) / sizeof(raw.svinfo[0])) : 0;
+    const uint8_t num_sv = uint8_t(MIN(uint16_t(raw.numSV), MIN(received, uint16_t(ARRAY_SIZE(raw.svinfo)))));
+
     uint64_t now = AP_HAL::micros64();
-    for (uint8_t i=0; i<raw.numSV; i++) {
+    for (uint8_t i=0; i<num_sv; i++) {
         struct log_GPS_RAW pkt = {
             LOG_PACKET_HEADER_INIT(LOG_GPS_RAW_MSG),
             time_us    : now,
             iTOW       : raw.iTOW,
             week       : raw.week,
-            numSV      : raw.numSV,
+            numSV      : num_sv,
             sv         : raw.svinfo[i].sv,
             cpMes      : raw.svinfo[i].cpMes,
             prMes      : raw.svinfo[i].prMes,
@@ -925,6 +932,13 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
         return;
     }
 
+    // numMeas is taken from the message: log only the measurements
+    // that were received and fit in the receive buffer
+    const uint16_t hdr_len = offsetof(struct ubx_rxm_rawx, svinfo);
+    const uint16_t received = _payload_length > hdr_len ?
+        uint16_t((_payload_length - hdr_len) / sizeof(raw.svinfo[0])) : 0;
+    const uint8_t num_meas = uint8_t(MIN(uint16_t(raw.numMeas), MIN(received, uint16_t(ARRAY_SIZE(raw.svinfo)))));
+
     uint64_t now = AP_HAL::micros64();
 
     struct log_GPS_RAWH header = {
@@ -933,12 +947,12 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
         rcvTow     : raw.rcvTow,
         week       : raw.week,
         leapS      : raw.leapS,
-        numMeas    : raw.numMeas,
+        numMeas    : num_meas,
         recStat    : raw.recStat
     };
     AP::logger().WriteBlock(&header, sizeof(header));
 
-    for (uint8_t i=0; i<raw.numMeas; i++) {
+    for (uint8_t i=0; i<num_meas; i++) {
         struct log_GPS_RAWS pkt = {
             LOG_PACKET_HEADER_INIT(LOG_GPS_RAWS_MSG),
             time_us    : now,
@@ -1156,6 +1170,12 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if UBLOX_GNSS_SETTINGS
         case MSG_CFG_GNSS:
             if (params.gnss_mode != 0 && !supports_F9_config()) {
+                if (_buffer.gnss.numConfigBlocks > UBLOX_MAX_GNSS_CONFIG_BLOCKS ||
+                    _payload_length < 4 + (8 * _buffer.gnss.numConfigBlocks)) {
+                    // more blocks than we can hold, or than the message
+                    // carries: ignore it, the config is requested again
+                    return false;
+                }
                 struct ubx_cfg_gnss start_gnss = _buffer.gnss;
                 uint8_t gnssCount = 0;
                 Debug("Got GNSS Settings %u %u %u %u:\n",
@@ -1180,7 +1200,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                 }
                 for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
                     // Reserve an equal portion of channels for all enabled systems that supports it
-                    if(params.gnss_mode & (1 << _buffer.gnss.configBlock[i].gnssId)) {
+                    const uint8_t gnssId = _buffer.gnss.configBlock[i].gnssId;
+                    if(gnssId < 8 && (params.gnss_mode & (1U << gnssId))) {
                         if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId && (_hardware_generation > UBLOX_M8 || GNSS_GAL !=_buffer.gnss.configBlock[i].gnssId)) {
                             _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
                             _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
