@@ -25,6 +25,7 @@
 #include "analog.h"
 #include "rc.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#include <AP_HAL_ChibiOS/hwdef/common/supply_dip_detect.h>
 #if defined(__DCACHE_PRESENT)
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #else
@@ -443,6 +444,24 @@ void AP_IOMCU_FW::init()
 
     // we generally do no allocations after setup completes
     reg_status.freemem = hal.util->available_memory();
+
+    static_assert(P_STATUS_RESET_CAUSE_POWER_ON == STM32_RESET_CAUSE_POWER_ON &&
+                  P_STATUS_RESET_CAUSE_PIN == STM32_RESET_CAUSE_PIN &&
+                  P_STATUS_RESET_CAUSE_SOFTWARE == STM32_RESET_CAUSE_SOFTWARE &&
+                  P_STATUS_RESET_CAUSE_IWDG == STM32_RESET_CAUSE_IWDG &&
+                  P_STATUS_RESET_CAUSE_WWDG == STM32_RESET_CAUSE_WWDG &&
+                  P_STATUS_RESET_CAUSE_LOW_POWER == STM32_RESET_CAUSE_LOW_POWER &&
+                  P_STATUS_RESET_CAUSE_BROWNOUT == STM32_RESET_CAUSE_BROWNOUT,
+                  "reset cause flags must match");
+    reg_status.reset_cause = stm32_reset_cause() | P_STATUS_RESET_CAUSE_VALID;
+
+#if AP_MCU_SUPPLY_DIP_DETECT_ENABLED
+#ifdef HAL_DISABLE_ADC_DRIVER
+    // otherwise the HAL AnalogIn driver runs the detector
+    stm32_supply_dip_detect_init();
+#endif // HAL_DISABLE_ADC_DRIVER
+    reg_status.supply_dips = P_STATUS_SUPPLY_DIPS_DETECTED;
+#endif // AP_MCU_SUPPLY_DIP_DETECT_ENABLED
 
     if (hal.util->was_watchdog_safety_off()) {
         hal.rcout->force_safety_off();
@@ -879,6 +898,19 @@ void AP_IOMCU_FW::page_status_update(void)
         reg_status.vrssi = 0;
     }
     reg_status.vservo = adc_vservo();
+
+#if AP_MCU_SUPPLY_DIP_DETECT_ENABLED
+#if defined(HAL_DISABLE_ADC_DRIVER) || defined(HAL_NO_TIMER_THREAD)
+    // the HAL AnalogIn driver only polls the detector from the timer thread
+    if (stm32_supply_dip_detect_poll()) {
+        supply_dip_count++;
+    }
+#else
+    supply_dip_count = hal.analogin->mcu_supply_dips();
+#endif // defined(HAL_DISABLE_ADC_DRIVER) || defined(HAL_NO_TIMER_THREAD)
+    reg_status.supply_dips = P_STATUS_SUPPLY_DIPS_DETECTED |
+        MIN(supply_dip_count, P_STATUS_SUPPLY_DIPS_MASK);
+#endif // AP_MCU_SUPPLY_DIP_DETECT_ENABLED
 }
 
 bool AP_IOMCU_FW::handle_code_read()

@@ -5,6 +5,7 @@ $repo?=@.
 $elf?=@none
 $platform?=$repo/Tools/renode/platforms/stm32f767_base.repl
 
+include $repo/Tools/renode/peripherals/common/AP_PowerFaults.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32F4_RCC.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_OTG_Stub.cs

@@ -79,6 +79,7 @@ public:
     float servorail_voltage(void) override { return _servorail_voltage; }
     uint16_t power_status_flags(void) override { return _power_flags; }
     uint16_t accumulated_power_status_flags(void) const override { return _accumulated_power_flags; }
+    uint32_t mcu_supply_dips(void) const override { return _mcu_supply_dips; }
 
 #if HAL_WITH_MCU_MONITORING
     float mcu_temperature(void) override { return _mcu_temperature; }
@@ -101,6 +102,7 @@ private:
     float _rssi_voltage;
     uint16_t _power_flags;
     uint16_t _accumulated_power_flags;  // bitmask of all _power_flags ever set
+    uint32_t _mcu_supply_dips;
 
     ADCConversionGroup adcgrpcfg[HAL_NUM_ANALOG_INPUTS];
 
