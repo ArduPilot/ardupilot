@@ -1066,10 +1066,12 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
 }
 
 // returns true if the destination is within fence (used to reject waypoints outside the fence)
-bool AC_Fence::check_location_within_fence(const Location& loc)
+bool AC_Fence::check_location_within_fence(const Location& loc, uint8_t fence_types)
 {
+    const uint8_t enabled_fence_types = get_enabled_fences() & fence_types;
+
     // Altitude fence check - Fence Ceiling
-    if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {
+    if ((enabled_fence_types & AC_FENCE_TYPE_ALT_MAX)) {
         float alt_m;
         if (loc.get_alt_m(_alt_max_type, alt_m)) {
             if (alt_m > _alt_max_m) {
@@ -1079,7 +1081,7 @@ bool AC_Fence::check_location_within_fence(const Location& loc)
     }
 
     // Altitude fence check - Fence Floor
-    if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)) {
+    if ((enabled_fence_types & AC_FENCE_TYPE_ALT_MIN)) {
         float alt_m;
         if (loc.get_alt_m(_alt_min_type, alt_m)) {
             if (alt_m < _alt_min_m) {
@@ -1089,14 +1091,14 @@ bool AC_Fence::check_location_within_fence(const Location& loc)
     }
 
     // Circular fence check
-    if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE)) {
+    if ((enabled_fence_types & AC_FENCE_TYPE_CIRCLE)) {
         if (AP::ahrs().get_home().get_distance(loc) > _circle_radius_m) {
             return false;
         }
     }
 
     // polygon fence check
-    if ((get_enabled_fences() & AC_FENCE_TYPE_POLYGON)) {
+    if ((enabled_fence_types & AC_FENCE_TYPE_POLYGON)) {
         if (_poly_loader.breached(loc)) {
             return false;
         }
@@ -1377,7 +1379,7 @@ uint8_t AC_Fence::get_enabled_fences() const { return 0; }
 bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const  { return true; }
 bool AC_Fence::terrain_database_required() const { return false; }
 uint8_t AC_Fence::check(bool disable_auto_fences) { return 0; }
-bool AC_Fence::check_location_within_fence(const Location& loc) { return true; }
+bool AC_Fence::check_location_within_fence(const Location& loc, uint8_t fence_types) { return true; }
 float AC_Fence::get_breach_distance(uint8_t fence_type) const { return 0.0; }
 bool AC_Fence::get_breach_direction_NED(uint8_t fence_type, Vector3f& direction, Location& fence_check_pos) const { return false; }
 void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg) { }

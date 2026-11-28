@@ -77,8 +77,22 @@ void ModeRTL::update()
 void ModeRTL::navigate()
 {
 #if HAL_QUADPLANE_ENABLED
+    bool defer_landing = false;
+#if AP_FENCE_ENABLED
+    // An RTL destination outside the fence cannot clear the breach.
+    constexpr uint8_t horizontal_fences = AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON;
+    defer_landing = plane.fence.get_action() != AC_Fence::Action::REPORT_ONLY &&
+                    (plane.fence.get_breaches() & plane.fence.get_enabled_fences() & horizontal_fences) &&
+                    plane.fence.check_location_within_fence(plane.next_WP_loc, horizontal_fences);
+#endif
     if (plane.quadplane.available()) {
         if (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::VTOL_APPROACH_QRTL) {
+            if (defer_landing && plane.vtol_approach_s.approach_stage == Plane::VTOLApproach::Stage::RTL) {
+                // Fly inside before starting the approach. Once descending, the
+                // approach needs to finish its orbit to reach the breakout heading.
+                plane.nav_controller->update_waypoint(plane.current_loc, plane.next_WP_loc);
+                return;
+            }
             // VTOL approach landing
             AP_Mission::Mission_Command cmd;
             cmd.content.location = plane.next_WP_loc;
@@ -89,7 +103,7 @@ void ModeRTL::navigate()
             return;
         }
 
-        if ((AP_HAL::millis() - plane.last_mode_change_ms > 1000) && switch_QRTL()) {
+        if (!defer_landing && (AP_HAL::millis() - plane.last_mode_change_ms > 1000) && switch_QRTL()) {
             return;
         }
     }
