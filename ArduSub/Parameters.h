@@ -219,7 +219,7 @@ public:
         k_param_flight_modes4,
         k_param_flight_modes5,
         k_param_simple_modes,
-        k_param_flight_mode_chan,
+        k_param_flight_mode_chan_old,
 #if AP_RSSI_ENABLED
         k_param_rssi,
 #endif 
@@ -236,7 +236,7 @@ public:
         k_param_rpm_sensor_old = 232, // unused - moved to vehicle
 
         // RC_Mapper Library
-        k_param_rcmap, // Disabled
+        k_param_rcmap_old, // Disabled
 
         k_param_gcs4_unused,           // unused in ArduPilot-4.7
         k_param_gcs5_unused,           // unused in ArduPilot-4.7
@@ -364,7 +364,6 @@ public:
     //
     AP_Int8         flight_modes[6];
     AP_Int8         simple_modes;
-    AP_Int8         flight_mode_chan;
 #endif 
 
     AP_Float                surface_depth;
@@ -422,10 +421,6 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "RC3_TRIM",            1500},
     { "COMPASS_OFFS_MAX",    1000},
     { "INS_GYR_CAL",         0},
-    { "RCMAP_ROLL",          2},
-    { "RCMAP_PITCH",         1},
-    { "RCMAP_FORWARD",       5},
-    { "RCMAP_LATERAL",       6},
 #if HAL_MOUNT_ENABLED
     { "MNT1_TYPE",           1},
     { "MNT1_DEFLT_MODE",     MAV_MOUNT_MODE_RC_TARGETING},
