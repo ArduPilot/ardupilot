@@ -77,6 +77,10 @@
 # define RANGEFINDER_SIGNAL_MIN_DEFAULT 90 // rangefinder readings with signal quality below this value are ignored
 #endif
 
+#ifndef RANGEFINDER_MAVLINK_TIMEOUT_DEFAULT
+# define RANGEFINDER_MAVLINK_TIMEOUT_DEFAULT 0.5f // timeout in seconds for MAVLink rangefinder readings
+#endif
+
 #ifndef SURFTRAK_DEPTH_DEFAULT
 # define SURFTRAK_DEPTH_DEFAULT -50.0f     // surftrak will try to keep the sub below this depth
 #endif

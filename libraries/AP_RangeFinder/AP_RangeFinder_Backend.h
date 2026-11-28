@@ -39,6 +39,10 @@ public:
 
     virtual void handle_msg(const mavlink_message_t &msg) { return; }
 
+#if AP_RANGEFINDER_MAVLINK_ENABLED
+    virtual void set_mavlink_timeout_ms(uint32_t timeout_ms) { return; }
+#endif
+
 #if AP_EXTERNAL_BINDING_ENABLED
     void get_state(RangeFinder::RangeFinder_State &state_arg);
 

@@ -270,6 +270,11 @@ public:
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(const mavlink_message_t &msg);
 
+#if AP_RANGEFINDER_MAVLINK_ENABLED
+    // Set timeout in milliseconds for MAVLink rangefinder backends
+    void set_mavlink_timeout_ms(uint32_t timeout_ms);
+#endif
+
 #if HAL_MSP_RANGEFINDER_ENABLED
     // Handle an incoming DISTANCE_SENSOR message (from a MSP enabled range finder)
     void handle_msp(const MSP::msp_rangefinder_data_message_t &pkt);

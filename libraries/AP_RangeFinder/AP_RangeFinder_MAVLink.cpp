@@ -79,8 +79,8 @@ float AP_RangeFinder_MAVLink::min_distance() const
 void AP_RangeFinder_MAVLink::update(void)
 {
     //Time out on incoming data; if we don't get new
-    //data in 500ms, dump it
-    if (AP_HAL::millis() - state.last_reading_ms > AP_RANGEFINDER_MAVLINK_TIMEOUT_MS) {
+    //data before _timeout_ms, dump it
+    if (AP_HAL::millis() - state.last_reading_ms > _timeout_ms) {
         set_status(RangeFinder::Status::NoData);
         state.distance_m = 0.0f;
         state.signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;

@@ -29,6 +29,10 @@ void Sub::init_rangefinder()
 void Sub::read_rangefinder()
 {
 #if AP_RANGEFINDER_ENABLED
+#if AP_RANGEFINDER_MAVLINK_ENABLED
+    rangefinder.set_mavlink_timeout_ms(
+        uint32_t(constrain_float(g.rangefinder_mavlink_timeout * 1000.0f, 100.0f, UINT32_MAX)));
+#endif
     rangefinder.update();
 
     // signal quality ranges from 0 (worst) to 100 (perfect), -1 means n/a

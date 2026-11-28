@@ -250,6 +250,7 @@ public:
         k_param_pilot_speed,
         k_param_failsafe_throttle,
         k_param_failsafe_throttle_value,
+        k_param_rangefinder_mavlink_timeout,
         k_param_vehicle = 257, // vehicle common block of parameters
         k_param__gcs = 258,
     };
@@ -261,6 +262,9 @@ public:
     AP_Float        throttle_filt;
 
 #if AP_RANGEFINDER_ENABLED
+#if AP_RANGEFINDER_MAVLINK_ENABLED
+    AP_Float        rangefinder_mavlink_timeout; // timeout in seconds for MAVLink rangefinder readings
+#endif
     AP_Int8         rangefinder_signal_min;     // minimum signal quality for good rangefinder readings
     AP_Float        surftrak_depth;             // surftrak will try to keep sub below this depth
 #endif
