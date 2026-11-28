@@ -30,6 +30,8 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
         {{'0','0'}, "Unknown"},
         {{'7','5'}, "A2"},
         {{'7','3'}, "A8"},
+        {{'8','A'}, "MT11"},
+        {{'9','7'}, "NV10"},
         {{'6','B'}, "ZR10"},
         {{'7','8'}, "ZR30"},
         {{'8','3'}, "ZT6"},
@@ -62,6 +64,10 @@ void AP_Mount_Siyi::update()
             return;
         } else {
             request_configuration();
+            // enable the laser in case it is off (e.g. after a gimbal reboot)
+            if (needs_laser_enabled()) {
+                send_1byte_packet(SiyiCommandId::SET_LASER_RANGING, 1);
+            }
         }
 
 #if AP_RTC_ENABLED
@@ -82,8 +88,8 @@ void AP_Mount_Siyi::update()
         _last_req_current_angle_rad_ms = now_ms;
     }
 
-    // request rangefinder distance from ZT30 at 10hz
-    if ((_hardware_model == HardwareModel::ZT30) && (now_ms - _last_rangefinder_req_ms > 100)) {
+    // request rangefinder distance at 10hz
+    if (has_rangefinder() && (now_ms - _last_rangefinder_req_ms > 100)) {
         request_rangefinder_distance();
         _last_rangefinder_req_ms = now_ms;
     }
@@ -505,7 +511,7 @@ void AP_Mount_Siyi::process_packet()
 #endif
 
     case SiyiCommandId::READ_RANGEFINDER: {
-        _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]);
+        _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]) * get_rangefinder_scale_to_m();
         _last_rangefinder_dist_ms = AP_HAL::millis();
         break;
     }
@@ -782,6 +788,12 @@ float AP_Mount_Siyi::get_zoom_mult_max() const
     case HardwareModel::ZT6:
         // a8, zt6 have 6x digital zoom
         return 6;
+    case HardwareModel::MT11:
+        // 11x optical, 165x hybrid zoom
+        return 165;
+    case HardwareModel::NV10:
+        // 100x hybrid zoom
+        return 100;
     case HardwareModel::ZR10:
     case HardwareModel::ZR30:
     case HardwareModel::ZT30:
@@ -995,6 +1007,10 @@ float AP_Mount_Siyi::get_camera_focal_length_mm() const
     case HardwareModel::A8:
     case HardwareModel::ZT6:
         return 21;
+    case HardwareModel::MT11:
+        // zoom camera focal length range from 15 ~ 50
+        return 15;
+    case HardwareModel::NV10:
     case HardwareModel::ZR10:
     case HardwareModel::ZR30:
     case HardwareModel::ZT30:
@@ -1075,17 +1091,97 @@ const char* AP_Mount_Siyi::get_model_name() const
     return hardware_lookup_table[0].model_name;
 }
 
+// true if the gimbal has a laser rangefinder
+bool AP_Mount_Siyi::has_rangefinder() const
+{
+    switch (_hardware_model) {
+    case HardwareModel::UNKNOWN:
+    case HardwareModel::A2:
+    case HardwareModel::A8:
+    case HardwareModel::ZR10:
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT6:
+        return false;
+    case HardwareModel::MT11:
+    case HardwareModel::NV10:
+    case HardwareModel::ZT30:
+        return true;
+    }
+    return false;
+}
+
+// get the scale to convert the rangefinder's reported distance to meters
+float AP_Mount_Siyi::get_rangefinder_scale_to_m() const
+{
+    switch (_hardware_model) {
+    case HardwareModel::UNKNOWN:
+    case HardwareModel::A2:
+    case HardwareModel::A8:
+    case HardwareModel::ZR10:
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT6:
+    case HardwareModel::ZT30:
+        return 1;
+    case HardwareModel::MT11:
+    case HardwareModel::NV10:
+        // distance is reported in decimetres
+        return 0.1f;
+    }
+    return 1;
+}
+
+// true if the rangefinder reports a distance of zero when it has no valid reading
+bool AP_Mount_Siyi::reports_zero_for_no_reading() const
+{
+    switch (_hardware_model) {
+    case HardwareModel::UNKNOWN:
+    case HardwareModel::A2:
+    case HardwareModel::A8:
+    case HardwareModel::ZR10:
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT6:
+    case HardwareModel::ZT30:
+        return false;
+    case HardwareModel::MT11:
+    case HardwareModel::NV10:
+        return true;
+    }
+    return false;
+}
+
+// true if the rangefinder's laser must be enabled before it will measure
+bool AP_Mount_Siyi::needs_laser_enabled() const
+{
+    switch (_hardware_model) {
+    case HardwareModel::UNKNOWN:
+    case HardwareModel::A2:
+    case HardwareModel::A8:
+    case HardwareModel::ZR10:
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT6:
+    case HardwareModel::ZT30:
+        return false;
+    case HardwareModel::MT11:
+    case HardwareModel::NV10:
+        return true;
+    }
+    return false;
+}
+
 // get rangefinder distance.  Returns true on success
 bool AP_Mount_Siyi::get_rangefinder_distance(float& distance_m) const
 {
-    // only supported on ZT30
-    if (_hardware_model != HardwareModel::ZT30) {
+    if (!has_rangefinder()) {
         return false;
     }
 
     // unhealthy if distance not received recently
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _last_rangefinder_dist_ms > AP_MOUNT_SIYI_TIMEOUT_MS) {
+        return false;
+    }
+
+    if (reports_zero_for_no_reading() && is_zero(_rangefinder_dist_m)) {
         return false;
     }
 
@@ -1117,6 +1213,8 @@ void AP_Mount_Siyi::check_firmware_version() const
             break;
 
         case HardwareModel::A2:
+        case HardwareModel::MT11:
+        case HardwareModel::NV10:
         case HardwareModel::ZR10:
         case HardwareModel::ZR30:
         case HardwareModel::ZT30:

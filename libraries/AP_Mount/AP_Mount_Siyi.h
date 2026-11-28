@@ -151,6 +151,7 @@ private:
         SET_THERMAL_PALETTE = 0x1B,
         EXTERNAL_ATTITUDE = 0x22,
         SET_TIME = 0x30,
+        SET_LASER_RANGING = 0x32,
         SET_THERMAL_RAW_DATA = 0x34,
         SET_THERMAL_GAIN = 0x38,
         POSITION_DATA = 0x3e,
@@ -195,6 +196,8 @@ private:
         UNKNOWN = 0,
         A2,
         A8,
+        MT11,
+        NV10,
         ZR10,
         ZR30,
         ZT6,
@@ -331,6 +334,18 @@ private:
     // get thermal min/max if available at 5hz
     void request_thermal_minmax();
 #endif
+
+    // true if the gimbal has a laser rangefinder
+    bool has_rangefinder() const;
+
+    // get the scale to convert the rangefinder's reported distance to meters
+    float get_rangefinder_scale_to_m() const;
+
+    // true if the rangefinder reports a distance of zero when it has no valid reading
+    bool reports_zero_for_no_reading() const;
+
+    // true if the rangefinder's laser must be enabled before it will measure
+    bool needs_laser_enabled() const;
 
     // internal variables
     bool _got_hardware_id;                          // true once hardware id ha been received
