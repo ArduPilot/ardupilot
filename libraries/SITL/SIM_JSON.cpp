@@ -34,6 +34,41 @@
 
 #define UDP_TIMEOUT_MS 100
 
+#if HAL_SITL_WASM_ENABLED
+#include <emscripten/emscripten.h>
+#include <AP_HAL/utility/RingBuffer.h>
+
+/*
+  browsers have no UDP, so in WebAssembly the physics backend runs in
+  JavaScript and exchanges the JSON protocol through these buffers.
+  ArduPilot runs on its own thread, so each buffer has exactly one
+  writer and one reader, and only the reader may discard data. A
+  message that does not fit is dropped whole, as UDP would drop it.
+ */
+static ByteBuffer wasm_json_servos{1024};
+static ByteBuffer wasm_json_sensors{65000};
+
+extern "C" {
+
+// physics to ArduPilot: newline separated JSON sensor data
+EMSCRIPTEN_KEEPALIVE size_t ardupilot_json_sensors_write(const uint8_t *buf, size_t len)
+{
+    // a partial message would wedge the parser, so only write whole messages
+    if (wasm_json_sensors.space() < len) {
+        return 0;
+    }
+    return wasm_json_sensors.write(buf, len);
+}
+
+// ArduPilot to physics: binary servo packets, as sent over UDP
+EMSCRIPTEN_KEEPALIVE size_t ardupilot_json_servos_read(uint8_t *buf, size_t max_len)
+{
+    return wasm_json_servos.read(buf, max_len);
+}
+
+}
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
@@ -99,6 +134,36 @@ void JSON::set_interface_ports(const char* address, const int port_in, const int
     printf("JSON control interface set to %s:%u\n", target_ip, control_port);
 }
 
+ssize_t JSON::send_servos(const void *pkt, size_t size)
+{
+#if HAL_SITL_WASM_ENABLED
+    // the physics reads everything queued and uses the newest packet, so
+    // when it falls behind drop this packet rather than splitting it
+    if (wasm_json_servos.space() < size) {
+        return 0;
+    }
+    return wasm_json_servos.write((const uint8_t *)pkt, size);
+#else
+    return sock.sendto(pkt, size, target_ip, control_port);
+#endif
+}
+
+ssize_t JSON::recv_sensors(void *buf, size_t size, uint32_t timeout_ms)
+{
+#if HAL_SITL_WASM_ENABLED
+    const uint64_t start_us = get_wall_time_us();
+    while (wasm_json_sensors.is_empty()) {
+        if (get_wall_time_us() - start_us >= timeout_ms * 1000ULL) {
+            return 0;
+        }
+        usleep(500);
+    }
+    return wasm_json_sensors.read((uint8_t *)buf, size);
+#else
+    return sock.recv(buf, size, timeout_ms);
+#endif
+}
+
 /*
     Decode and send servos
 */
@@ -114,7 +179,7 @@ void JSON::output_servos(const struct sitl_input &input)
           pkt.pwm[i] = input.servos[i];
       }
       pkt_size = sizeof(pkt);
-      send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
+      send_ret = send_servos(&pkt, pkt_size);
     } else {
       servo_packet_16 pkt;
       pkt.frame_rate = rate_hz;
@@ -123,7 +188,7 @@ void JSON::output_servos(const struct sitl_input &input)
           pkt.pwm[i] = input.servos[i];
       }
       pkt_size = sizeof(pkt);
-      send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
+      send_ret = send_servos(&pkt, pkt_size);
     }
 
     if ((size_t)send_ret != pkt_size) {
@@ -303,7 +368,7 @@ uint64_t JSON::parse_sensors(const char *json)
 void JSON::recv_fdm(const struct sitl_input &input)
 {
     // Receive sensor packet
-    ssize_t ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+    ssize_t ret = recv_sensors(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
     uint32_t wait_ms = UDP_TIMEOUT_MS;
 
     if (state.no_lockstep && ret <= 0) {
@@ -320,7 +385,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     while (ret <= 0) {
         //printf("No JSON sensor message received - %s\n", strerror(errno));
-        ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+        ret = recv_sensors(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
         wait_ms += UDP_TIMEOUT_MS;
         // if no sensor message is received after 10 second resend servos, this help cope with SITL and the physics getting out of sync
         if (wait_ms > 1000) {
