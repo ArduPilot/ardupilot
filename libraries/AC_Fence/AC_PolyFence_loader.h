@@ -233,6 +233,10 @@ public:
 private:
     // multi-thread access support
     mutable HAL_Semaphore _loaded_fence_sem;
+    // protects the index and the stored fence it describes; the fence
+    // may be written (e.g. over MAVLink FTP) by another thread while
+    // the main thread reads it
+    HAL_Semaphore _index_sem;
 
     /*
      * Fence storage Index related functions
