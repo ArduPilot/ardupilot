@@ -30,6 +30,7 @@ from pysim import util
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 import board_list  # noqa
 import extract_features  # noqa
+import build_options  # noqa
 
 
 class TestBuildOptionsResult(object):
@@ -118,7 +119,7 @@ class TestBuildOptions(object):
         print("###### %s" % message, file=sys.stderr)
 
     # swiped from app.py:
-    def get_build_options_from_ardupilot_tree(self):
+    def get_build_options_from_ardupilot_tree(self) -> build_options.BuildOptions:
         '''return a list of build options'''
         import importlib.util
         spec = importlib.util.spec_from_file_location(
@@ -127,7 +128,7 @@ class TestBuildOptions(object):
                          '..', 'scripts', 'build_options.py'))
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        return mod.BUILD_OPTIONS
+        return mod.BuildOptions()
 
     def write_defines_to_file(self, defines, filepath):
         self.write_defines_to_Path(defines, pathlib.Path(filepath))
@@ -164,26 +165,12 @@ class TestBuildOptions(object):
                     break
         return ret
 
-    def update_get_enable_defines_for_feature(self, ret, feature, options):
-        '''recursive function to turn on required feature and what it depends
-        on'''
-        ret[feature.define] = 1
-        if feature.dependency is None:
-            return
-        for depname in feature.dependency.split(','):
-            dep = None
-            for f in options:
-                if f.label == depname:
-                    dep = f
-            if dep is None:
-                raise ValueError("Invalid dep (%s) for feature (%s)" %
-                                 (depname, feature.label))
-            self.update_get_enable_defines_for_feature(ret, dep, options)
-
     def get_enable_defines(self, feature, options):
         '''returns a hash of (name, value) defines to turn all features *but* feature (and whatever it depends on) on'''
         ret = self.get_disable_all_defines()
-        self.update_get_enable_defines_for_feature(ret, feature, options)
+        build_options = self.get_build_options_from_ardupilot_tree()
+        for define in build_options.get_enable_defines_for_feature(feature):
+            ret[define] = 1
         for define in self.must_have_defines_for_board(self._board):
             ret[define] = 1
         return ret
@@ -565,7 +552,8 @@ class TestBuildOptions(object):
     def run_disable_in_turn(self):
         progress_file = pathlib.Path("/tmp/run-disable-in-turn-progress")
         resume_number = self.resume_number_from_progress_Path(progress_file)
-        options = self.get_build_options_from_ardupilot_tree()
+        build_options = self.get_build_options_from_ardupilot_tree()
+        options = build_options.options()
         count = 1
         for feature in sorted(options, key=lambda x : x.define):
             if resume_number is not None:
@@ -624,7 +612,8 @@ class TestBuildOptions(object):
     def run_enable_in_turn(self):
         progress_file = pathlib.Path("/tmp/run-enable-in-turn-progress")
         resume_number = self.resume_number_from_progress_Path(progress_file)
-        options = self.get_build_options_from_ardupilot_tree()
+        build_options = self.get_build_options_from_ardupilot_tree()
+        options = build_options.options()
         count = 1
         blacklisted_defines = {
             'AP_NETWORKING_CAN_MCAST_ENABLED': "can't enable this without one of native-ethernet or PPP backends, don't want either in our deps!",  # noqa:E501
@@ -659,7 +648,8 @@ class TestBuildOptions(object):
 
     def get_disable_all_defines(self):
         '''returns a hash of defines which turns all features off'''
-        options = self.get_build_options_from_ardupilot_tree()
+        build_options = self.get_build_options_from_ardupilot_tree()
+        options = build_options.options()
         defines = {}
         for feature in options:
             if self.match_glob is not None:
@@ -683,7 +673,8 @@ class TestBuildOptions(object):
         self.sizes_nothing_disabled = self.find_build_sizes()
 
     def run_with_defaults(self):
-        options = self.get_build_options_from_ardupilot_tree()
+        build_options = self.get_build_options_from_ardupilot_tree()
+        options = build_options.options()
         defines = {}
         for feature in options:
             if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
@@ -693,13 +684,15 @@ class TestBuildOptions(object):
 
     def check_deps_consistency(self):
         # self.progress("Checking deps consistency")
-        options = self.get_build_options_from_ardupilot_tree()
+        build_options = self.get_build_options_from_ardupilot_tree()
+        options = build_options.options()
         for feature in options:
             self.get_disable_defines(feature, options)
 
     def check_duplicate_labels(self):
         '''check that we do not have multiple features with same labels'''
-        options = self.get_build_options_from_ardupilot_tree()
+        build_options = self.get_build_options_from_ardupilot_tree()
+        options = build_options.options()
         seen_labels = {}
         for feature in options:
             if seen_labels.get(feature.label, None) is not None:

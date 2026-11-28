@@ -153,6 +153,8 @@ define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_PPP
 define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Sbus1
 define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_RCIN
 
+# networking is only used for PPP on this board, so --disable-PPP turns it off too
+define AP_NETWORKING_ENABLED AP_NETWORKING_BACKEND_PPP
 define AP_NETWORKING_BACKEND_PPP 1
 
 define MAV_SYSID_DEFAULT 2

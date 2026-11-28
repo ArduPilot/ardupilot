@@ -297,9 +297,6 @@ submodules at specific revisions.
                  default=False,
                  help="Enables GPS logging")
 
-    g.add_option('--disable-networking', action='store_true',
-                 help="Disable the networking API code")
-
     g.add_option('--enable-networking-tests', action='store_true',
                  help="Enable the networking test code. Automatically enables networking.")
     
@@ -519,6 +516,7 @@ def configure(cfg):
         cfg.env.HWDEF_EXTRA = os.path.abspath(cfg.env.HWDEF_EXTRA)
 
     cfg.env.OPTIONS = cfg.options.__dict__
+    boards.check_build_options(cfg)
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
