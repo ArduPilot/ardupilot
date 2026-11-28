@@ -300,6 +300,75 @@ void GCS_MAVLINK::send_mcu_status(void)
 #endif
 
 #if AP_BATTERY_ENABLED
+static struct {
+    float amps;
+    bool valid;
+    bool healthy;
+} battery_current_telemetry[AP_BATT_MONITOR_MAX_INSTANCES];
+static bool battery_current_smoothing_active;
+
+// Sample at the battery monitor's nominal 10 Hz, independently of MAVLink streams.
+static void update_battery_current_telemetry()
+{
+    const AP_BattMonitor *battery = AP_BattMonitor::get_singleton();
+    if (battery == nullptr) {
+        return;
+    }
+
+    const int8_t time_constant_sec = battery->gcs_current_smooth_sec();
+    if (time_constant_sec == 0) {
+        if (battery_current_smoothing_active) {
+            for (auto &filtered : battery_current_telemetry) {
+                filtered.valid = false;
+            }
+            battery_current_smoothing_active = false;
+        }
+        return;
+    }
+
+    static uint32_t last_update_ms;
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t elapsed_ms = now_ms - last_update_ms;
+    if (battery_current_smoothing_active && elapsed_ms < 100) {
+        return;
+    }
+    last_update_ms = now_ms;
+    battery_current_smoothing_active = true;
+
+    const float time_constant_ms = 1000.0f * time_constant_sec;
+    const float alpha = 1.0f - expf(-(elapsed_ms / time_constant_ms));
+    for (uint8_t i = 0; i < battery->num_instances(); i++) {
+        auto &filtered = battery_current_telemetry[i];
+        float amps;
+        if (!battery->current_amps(amps, i) || !isfinite(amps)) {
+            filtered.valid = false;
+            continue;
+        }
+        const bool healthy = battery->healthy(i);
+        // Start from the first healthy reading after startup or a dropout.
+        if (!filtered.valid || (healthy && !filtered.healthy)) {
+            filtered.amps = amps;
+            filtered.valid = true;
+        } else {
+            filtered.amps += alpha * (amps - filtered.amps);
+        }
+        filtered.healthy = healthy;
+    }
+}
+
+static int16_t battery_current_centiamps(const AP_BattMonitor &battery, uint8_t instance)
+{
+    float amps;
+    if (!battery.current_amps(amps, instance)) {
+        return -1;
+    }
+    const auto &filtered = battery_current_telemetry[instance];
+    if (battery_current_smoothing_active && filtered.valid) {
+        amps = filtered.amps;
+    }
+    return constrain_float(amps * 100, -INT16_MAX, INT16_MAX);
+}
+
 // returns the battery remaining percentage if valid, -1 otherwise
 int8_t GCS_MAVLINK::battery_remaining_pct(const uint8_t instance) const {
     uint8_t percentage;
@@ -389,14 +458,9 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
         }
     }
 
-    float current, consumed_mah, consumed_wh;
+    float consumed_mah, consumed_wh;
     const int8_t percentage = battery_remaining_pct(instance);
-    
-    if (battery.current_amps(current, instance)) {
-         current = constrain_float(current * 100,-INT16_MAX,INT16_MAX);
-    } else {
-        current = -1;
-    }
+
     if (!battery.consumed_mah(consumed_mah, instance)) {
         consumed_mah = -1;
     }
@@ -416,7 +480,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     MAV_BATTERY_TYPE_UNKNOWN, // type
                                     got_temperature ? ((int16_t) (temp * 100)) : INT16_MAX, // temperature. INT16_MAX if unknown
                                     cell_mvolts, // cell voltages
-                                    current,      // current in centiampere
+                                    battery_current_centiamps(battery, instance),
                                     consumed_mah, // total consumed current in milliampere.hour
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     constrain_int16(percentage, -1, 100),
@@ -2773,6 +2837,10 @@ void GCS::update_send()
     mavlink_system.sysid = sysid;
 
     update_send_has_been_called = true;
+
+#if AP_BATTERY_ENABLED
+    update_battery_current_telemetry();
+#endif
 
     if (!initialised_missionitemprotocol_objects) {
         initialised_missionitemprotocol_objects = true;
@@ -6073,14 +6141,8 @@ void GCS_MAVLINK::send_sys_status()
     }
 #if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
-    float battery_current;
+    const int16_t battery_current = battery.healthy() ? battery_current_centiamps(battery, AP_BATT_PRIMARY_INSTANCE) : -1;
     const int8_t battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
-
-    if (battery.healthy() && battery.current_amps(battery_current)) {
-        battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
-    } else {
-        battery_current = -1;
-    }
 #endif
 
     uint32_t control_sensors_present;
