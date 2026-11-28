@@ -804,9 +804,21 @@ def run_renode(cmd, env, cpusel, launcher_pid):
         raise
 
 
+def _terminate_on_signal(signum, frame):
+    # Renode runs in its own session so that terminal signals reach only
+    # this process; turn a termination request into the same cleanup path
+    # as Ctrl-C so Renode, the GDB helpers and device sidecars are stopped
+    # rather than orphaned.
+    raise KeyboardInterrupt
+
+
 def main():
     launcher_pid = os.getppid()
     root = Path(__file__).resolve().parents[2]
+    for name in ('SIGTERM', 'SIGHUP'):
+        signum = getattr(signal, name, None)
+        if signum is not None:
+            signal.signal(signum, _terminate_on_signal)
     boards = gen_board.supported_boards(root)
 
     parser = argparse.ArgumentParser(description=__doc__,
@@ -851,7 +863,8 @@ def main():
                         help='expose the selected UART as APM-UDS-serialN '
                              'below the board state directory')
     parser.add_argument('--sigrok', action='store_true',
-                        help='stream the MAVLink UART and first SPI bus to sigrok')
+                        help='stream the MAVLink UART, first SPI bus, GPIOs and PWM '
+                             'outputs to sigrok')
     parser.add_argument('--sigrok-port', type=int, default=4242,
                         help='TCP port for sigrok capture (default: 4242)')
     parser.add_argument('--sigrok-sample-rate', type=int, default=10000000,

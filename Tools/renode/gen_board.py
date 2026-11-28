@@ -1412,9 +1412,11 @@ def _hwdef_gpios(app):
     return sorted(gpios.items())
 
 
-def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings,
-                            physics_machine=None):
-    '''Map expanded hwdef PWM(n) pins onto protocol actuator channels.'''
+def _timer_pwm_channels(app, family, iomcu_uart, warnings):
+    '''Map expanded hwdef PWM(n) pins onto (timer, channel) tuples.
+
+    Each value is (physics actuator output, complementary, pin).
+    '''
     pins = list(app.bylabel.values())
     for alternate in app.altmap.values():
         pins.extend(alternate.values())
@@ -1448,9 +1450,13 @@ def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings,
         if output in outputs and outputs[output] != key:
             warnings.append('PWM(%u) is assigned to multiple timer channels' % pwm)
             continue
-        timer_channels[key] = (output, complementary)
+        timer_channels[key] = (output, complementary, pin)
         outputs[output] = key
+    return timer_channels
 
+
+def _timer_actuator_devices(timer_channels, alloc, physics_machine=None):
+    '''Emit the physics actuator sampler for every PWM timer.'''
     lines = []
     for timer in sorted({key[0] for key in timer_channels}):
         lines += [
@@ -1463,10 +1469,54 @@ def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings,
         for channel in range(1, 5):
             channel_config = timer_channels.get((timer, channel))
             if channel_config is not None:
-                output, complementary = channel_config
+                output, complementary, _ = channel_config
                 lines.append('    output%d: %d' % (channel, output))
                 if complementary:
                     lines.append('    complementary%d: true' % channel)
+        lines.append('')
+    return lines
+
+
+# Timers with a BDTR register, whose outputs all follow BDTR.MOE.
+ADVANCED_TIMERS = {1, 8, 15, 16, 17, 20}
+
+
+def _timer_waveform_devices(timer_channels, sigrok_pins, alloc, family_name):
+    '''Emit a sigrok PWM waveform reconstruction for every PWM timer whose
+    pins have sigrok channels. Each channel is given its pad's GPIO port and
+    pin as well, because whether the timer or firmware drives that pad is
+    decided by the pad's mode register, not by the timer's CCER.'''
+    lines = []
+    for timer in sorted({key[0] for key in timer_channels}):
+        mapped = []
+        for channel in range(1, 5):
+            channel_config = timer_channels.get((timer, channel))
+            if channel_config is None:
+                continue
+            _, complementary, pin = channel_config
+            sigrok_channel = sigrok_pins.get((pin.port, pin.pin))
+            if sigrok_channel is not None:
+                mapped.append((channel, sigrok_channel, complementary, pin))
+        if not mapped:
+            continue
+        lines += [
+            'timer%dWaveform: Miscellaneous.AP_STM32_Timer_Waveform @ '
+            'sysbus 0x%08X' % (timer, alloc()),
+            '    timer: timer%d' % timer,
+            '    analyzer: sigrok',
+            '    name: "TIM%d"' % timer,
+        ]
+        for channel, sigrok_channel, complementary, pin in mapped:
+            lines.append('    channel%d: %d' % (channel, sigrok_channel))
+            if complementary:
+                lines.append('    complementary%d: true' % channel)
+            lines.append('    port%d: gpioPort%s' % (channel, pin.port))
+            lines.append('    padPin%d: %u' % (channel, pin.pin))
+        if timer in ADVANCED_TIMERS:
+            lines.append('    advanced: true')
+        if family_name.startswith('f1'):
+            # STM32F1 pads are configured through CRL/CRH, not MODER
+            lines.append('    f1Pads: true')
         lines.append('')
     return lines
 
@@ -1587,9 +1637,10 @@ def _iomcu_peripherals(root, outdir, firmware, warnings):
         '    14 -> iomcuHeater@0 | afio#1@14',
         '',
     ]
+    iomcu_timer_channels = _timer_pwm_channels(
+        iomcu, FAMILIES['STM32F103xB'], None, warnings)
     lines += _timer_actuator_devices(
-        iomcu, FAMILIES['STM32F103xB'], None, alloc, warnings,
-        physics_machine='ardupilot')
+        iomcu_timer_channels, alloc, physics_machine='ardupilot')
     return '\n'.join(lines).rstrip() + '\n'
 
 
@@ -2097,6 +2148,10 @@ def _sigrok_signal(pin, fallback, *aliases):
 def _sigrok_gpio_signal(gpio, pin):
     signal = _sigrok_signal(pin, pin.label, 'GPIO%u' % gpio)
     signal['name'] += '/GPIO%u' % gpio
+    pwm = pin.extra_value('PWM', type=int)
+    if pwm is not None:
+        signal['aliases'].add('PWM%u' % pwm)
+        signal['name'] += '/PWM%u' % pwm
     return signal
 
 
@@ -2289,8 +2344,8 @@ def _platform(root, board, app, bootloader, outdir, fram_path, is_periph, warnin
         address += size
         return value
 
-    lines += _timer_actuator_devices(
-        app, family, iomcu_uart, alloc, warnings)
+    timer_channels = _timer_pwm_channels(app, family, iomcu_uart, warnings)
+    lines += _timer_actuator_devices(timer_channels, alloc)
     if esc_signal_port is not None or esc_sim:
         lines += _bdshot_devices(root, app, defines, base, iomcu_uart, alloc,
                                  warnings, esc_signal_port, esc_sim)
@@ -2638,6 +2693,13 @@ def _platform(root, board, app, bootloader, outdir, fram_path, is_periph, warnin
             for channel, (_, pin) in enumerate(
                 sigrok_capture['gpio_pins'], start=first_gpio_channel)
         })
+        # The pins a waveform peripheral covers stay in the GPIO fan-out as
+        # well: firmware can drive a PWM-capable pin as a GPIO at runtime,
+        # through SERVO_GPIO_MASK or SERVOx_FUNCTION, and AP_Relay does.  The
+        # analyser arbitrates, taking the waveform source while the timer
+        # drives the pad and the GPIO route otherwise.
+        lines += _timer_waveform_devices(
+            timer_channels, sigrok_pins, alloc, family['name'])
     heater_gpio = defines.get('HAL_HEATER_GPIO_PIN')
     if heater_gpio is not None:
         heater_pin = dict(gpio_pins).get(_constant_integer(heater_gpio))
