@@ -188,6 +188,8 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_VIDEOTX_ENABLED', 'AP_VideoTX::AP_VideoTX',),
             ('AP_SMARTAUDIO_ENABLED', 'AP_SmartAudio::AP_SmartAudio',),
             ('AP_TRAMP_ENABLED', 'AP_Tramp::AP_Tramp',),
+            ('AP_VIDEOTX_TABLE_ENABLED', 'AP_VideoTX::update_user_bands',),
+            ('AP_VIDEOTX_POWER_TABLE_ENABLED', 'AP_VideoTX::power_channel_levels',),
 
             ('AP_CHECK_FIRMWARE_ENABLED', 'AP_CheckFirmware::check_signed_bootloader',),
 

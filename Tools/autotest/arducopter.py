@@ -27385,6 +27385,636 @@ return update, 1000
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
 
+    def VTXTable(self):
+        '''test the user-definable VTX bands (VTX_BNDn_* parameters)'''
+        # SITL has no VTX to command, so VTX_FREQ only follows VTX_BAND and
+        # VTX_CHANNEL when a VTX_BNDn_* parameter changes and the band table
+        # is rebuilt
+        self.set_parameters({"VTX_ENABLE": 1})
+        self.reboot_sitl()
+        self.set_parameters({"VTX_BAND": 4, "VTX_CHANNEL": 0})
+        self.set_parameter("VTX_BND1_CH8", 5940)
+        self.wait_parameter_value("VTX_FREQ", 5658)
+        self.progress("factory band R1 at 5658 MHz")
+
+        # an added band becomes VTX_BAND 11, and VTX_FREQ follows its
+        # parameters when they change
+        self.set_parameters({"VTX_BAND": 11, "VTX_CHANNEL": 1})
+        self.set_parameters({"VTX_BND1_CH1": 5999, "VTX_BND1_CH2": 5990})
+        self.wait_parameter_value("VTX_FREQ", 5990)
+        self.set_parameter("VTX_BND1_CH2", 5980)
+        self.wait_parameter_value("VTX_FREQ", 5980)
+        self.progress("added band follows its parameters")
+
+        # disabling the selected channel leaves VTX_FREQ alone, so nothing
+        # new is commanded
+        self.set_parameter("VTX_BND1_CH2", -1)
+        self.delay_sim_time(2, reason="let the band table rebuild")
+        self.assert_parameter_value("VTX_FREQ", 5980)
+        self.progress("disabled channel not selected")
+
+        # replacing a factory band edits it in place: set channels change,
+        # unset ones keep the factory frequency
+        self.set_parameters({"VTX_BAND": 4, "VTX_CHANNEL": 0})
+        self.set_parameters({"VTX_BND2_REPL": 4, "VTX_BND2_CH1": 5650})
+        self.wait_parameter_value("VTX_FREQ", 5650)
+        self.set_parameter("VTX_CHANNEL", 1)
+        self.set_parameter("VTX_BND2_CH8", 5917)  # same as factory R8
+        self.wait_parameter_value("VTX_FREQ", 5695)
+        self.progress("replaced factory band R edited in place")
+
+        # the user bands are parameters, so they persist
+        self.reboot_sitl()
+        self.set_parameters({"VTX_BAND": 11, "VTX_CHANNEL": 0})
+        self.set_parameter("VTX_BND2_CH7", 5880)  # same as factory R7
+        self.wait_parameter_value("VTX_FREQ", 5999)
+        self.set_parameters({"VTX_BAND": 4, "VTX_CHANNEL": 0})
+        self.set_parameter("VTX_BND2_CH7", 0)
+        self.wait_parameter_value("VTX_FREQ", 5650)
+        self.progress("user bands persist across a reboot")
+
+    def msp_vtx_config_frames(self, msp, seconds, poll=False):
+        '''MSP_VTX_CONFIG frames from the FC over the given time, as (kind,
+        band, channel, power, pitmode, freq) tuples, band and channel one
+        based. kind is "reply" for MSPv1 replies to polls (sent when poll is
+        True) and "push" for MSPv2 frames an MSP DisplayPort link sends
+        unprompted; both are parsed from the raw stream, as they interleave'''
+        MSP_VTX_CONFIG = 88
+        buf = bytearray()
+        frames = []
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < seconds:
+            self.drain_mav()
+            if poll:
+                msp.send_command(MSP_VTX_CONFIG)
+            buf.extend(msp.do_read())
+            while True:
+                starts = [i for i in (buf.find(b'$M>'), buf.find(b'$X>')) if i >= 0]
+                if not starts:
+                    break
+                i = min(starts)
+                if buf[i+1] == ord('M'):
+                    if len(buf) < i + 5:
+                        break
+                    size = buf[i+3]
+                    cmd = buf[i+4]
+                    data_start = i + 5
+                    kind = "reply"
+                else:
+                    if len(buf) < i + 8:
+                        break
+                    cmd, size = struct.unpack("<HH", bytes(buf[i+4:i+8]))
+                    data_start = i + 8
+                    kind = "push"
+                end = data_start + size + 1
+                if len(buf) < end:
+                    break
+                data = bytes(buf[data_start:data_start+size])
+                del buf[:end]
+                if cmd == MSP_VTX_CONFIG and len(data) >= 8:
+                    (t, band, channel, power, pitmode, freq, ready) = struct.unpack("<BBBBBHB", data[:8])
+                    frames.append((kind, band, channel, power, pitmode, freq))
+        return frames
+
+    def wait_msp_vtx_config_reply(self, msp, band, channel, freq, timeout=10):
+        '''poll MSP_VTX_CONFIG on an MSP DisplayPort link until the FC replies
+        with the given band, channel (one based) and frequency'''
+        tstart = self.get_sim_time()
+        last = None
+        while self.get_sim_time_cached() - tstart < timeout:
+            for f in self.msp_vtx_config_frames(msp, 0.5, poll=True):
+                if f[0] == "reply":
+                    last = f
+                    if f[1:3] == (band, channel) and f[5] == freq:
+                        return
+        raise NotAchievedException("MSP_VTX_CONFIG reply never matched band %u channel %u freq %u (last %s)" %
+                                   (band, channel, freq, str(last)))
+
+    def start_simulated_vtx(self, vtx_class, serial_protocol, **vtx_kwargs):
+        """restart SITL with a simulated VTX on serial5, on R3 at 25mW"""
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": serial_protocol,
+            "VTX_ENABLE": 1,
+        })
+        self.set_parameters({
+            "VTX_BAND": 4,
+            "VTX_CHANNEL": 2,
+            "VTX_FREQ": 5732,
+            "VTX_POWER": 25,
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port  # serial5 listens on localhost port
+        ])
+        # the VTX answers in real time
+        self.context_set_speedup(1)
+        vtx = vtx_class(("127.0.0.1", port), self.progress, **vtx_kwargs)
+        try:
+            self.context_collect("STATUSTEXT")
+            self.delay_sim_time(10, reason="VTX to be found")
+        except Exception:
+            # the VTX has a thread of its own, which the caller is not yet
+            # in a position to stop
+            vtx.close()
+            raise
+        return vtx
+
+    def vtx_statustext_count(self, text):
+        return len([m for m in self.context_collection("STATUSTEXT") if text in m.text])
+
+    def wait_statustext_count_vtx(self, text, count, timeout=60):
+        tstart = self.get_sim_time()
+        while self.vtx_statustext_count(text) < count:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("%u of %u '%s'" % (self.vtx_statustext_count(text), count, text))
+            self.delay_sim_time(0.5, reason="VTX message")
+
+    def wait_vtx_frequency(self, vtx, frequency, timeout=20):
+        tstart = self.get_sim_time()
+        while vtx.frequency != frequency:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("VTX on %uMHz, want %uMHz" % (vtx.frequency, frequency))
+            self.delay_sim_time(0.5, reason="VTX to change frequency")
+
+    def SmartAudioVTX(self):
+        """test SmartAudio against a simulated VTX that takes, refuses and misses changes"""
+        vtx = self.start_simulated_vtx(vehicle_test_suite.SmartAudioVTX, 37)
+        try:
+            self.start_subtest("A VTX that stops answering is asked until it answers, without being reported as refusing")
+            vtx.set_behaviour("silent")
+            tstart = time.time()
+            self.set_parameter("VTX_CHANNEL", 4)
+            self.delay_sim_time(15, reason="frequency to be asked for")
+            if vtx.count("SET_FREQUENCY", tstart) <= 12:
+                raise NotAchievedException("Gave up on a silent VTX after %u attempts" % vtx.count("SET_FREQUENCY", tstart))
+            vtx.set_behaviour("corrupt")
+            self.delay_sim_time(10, reason="corrupt replies to be ignored")
+            vtx.set_behaviour()
+            self.wait_vtx_frequency(vtx, 5806)
+            if self.vtx_statustext_count("rejected") != 0:
+                raise NotAchievedException("A VTX that was not answering was reported as refusing")
+
+            self.start_subtest("A refused channel gives one warning and is not asked for again")
+            self.delay_sim_time(5, reason="VTX to settle")
+            vtx.set_behaviour("refuse_freq", "refuse_channel")
+            self.set_parameter("VTX_CHANNEL", 5)
+            self.wait_statustext("VTX: rejected frequency 5843MHz", check_context=True, timeout=40)
+            tstart = time.time()
+            self.delay_sim_time(8, reason="no more attempts")
+            attempts = vtx.count("SET_FREQUENCY", tstart) + vtx.count("SET_CHANNEL", tstart)
+            if attempts != 0:
+                raise NotAchievedException("Asked %u more times after the refusal" % attempts)
+            if self.vtx_statustext_count("rejected frequency") != 1:
+                raise NotAchievedException("Expected one refusal warning")
+            self.assert_parameter_value("VTX_CHANNEL", 5)
+
+            self.start_subtest("A power change still goes out after a refusal")
+            tstart = time.time()
+            self.set_parameter("VTX_POWER", 200)
+            self.delay_sim_time(5, reason="power to be sent")
+            if vtx.count("SET_POWER", tstart) == 0:
+                raise NotAchievedException("No power change sent after the refusal")
+
+            self.start_subtest("Setting the channel back to the VTX's own does not put the refused one back")
+            tstart = time.time()
+            self.set_parameter("VTX_CHANNEL", 4)
+            self.delay_sim_time(10, reason="channel to settle")
+            self.assert_parameter_value("VTX_CHANNEL", 4)
+            self.assert_parameter_value("VTX_FREQ", 5806)
+            if vtx.frequency != 5806:
+                raise NotAchievedException("VTX moved to %uMHz" % vtx.frequency)
+
+            self.start_subtest("A VTX on another frequency is moved, though its channel is the configured one")
+            # on a user frequency the VTX's channel is the last one it was
+            # given, and says nothing about where it is
+            vtx.set_behaviour()
+            with vtx.lock:
+                vtx.channel = 4 * 8 + 4
+                vtx.frequency = 5700
+                vtx.mode |= 0x01
+            # the VTX's settings are read again after a change is sent
+            self.set_parameter("VTX_POWER", 25)
+            self.wait_vtx_frequency(vtx, 5806)
+
+            self.start_subtest("A channel a locked VTX refused is sent again once the VTX is unlocked")
+            self.delay_sim_time(5, reason="VTX to settle")
+            vtx.set_behaviour("locked")
+            self.set_parameter("VTX_CHANNEL", 3)
+            self.wait_statustext("VTX: rejected frequency 5769MHz", check_context=True, timeout=40)
+            self.delay_sim_time(8, reason="the last attempt's replies to be over")
+            # unlocked at the VTX, whose settings are read now and then
+            # while it is refusing
+            with vtx.lock:
+                vtx.unlocked = True
+            self.wait_vtx_frequency(vtx, 5769, timeout=30)
+        finally:
+            vtx.close()
+        self.reboot_sitl()
+
+    def SmartAudio21VTX(self):
+        """test SmartAudio 2.1, which sets power in dBm from the levels the VTX lists"""
+        vtx = self.start_simulated_vtx(vehicle_test_suite.SmartAudio21VTX, 37)
+        try:
+            self.start_subtest("Power is set in dBm")
+            for (power_mw, power_dbm) in (100, 20), (400, 26), (25, 14):
+                self.set_parameter("VTX_POWER", power_mw)
+                self.delay_sim_time(5, reason="power to be sent")
+                if vtx.power_dbm != power_dbm:
+                    raise NotAchievedException("VTX at %udBm, want %udBm for %umW" % (vtx.power_dbm, power_dbm, power_mw))
+
+            self.start_subtest("A channel change is sent")
+            self.set_parameter("VTX_CHANNEL", 4)
+            self.wait_vtx_frequency(vtx, 5806)
+
+            self.start_subtest("A power the VTX does not list is not sent")
+            tstart = time.time()
+            self.set_parameter("VTX_POWER", 200)
+            self.delay_sim_time(8, reason="power not to be sent")
+            self.progress("SET_POWER sent %u times, VTX at %udBm, VTX_POWER %s" %
+                          (vtx.count("SET_POWER", tstart), vtx.power_dbm, self.get_parameter("VTX_POWER")))
+            if vtx.count("SET_POWER", tstart) != 0:
+                raise NotAchievedException("Power sent %u times" % vtx.count("SET_POWER", tstart))
+            if vtx.power_dbm != 14:
+                raise NotAchievedException("VTX moved to %udBm" % vtx.power_dbm)
+        finally:
+            vtx.close()
+        self.reboot_sitl()
+
+    def CRSFVTXUserBands(self):
+        """test a user band over CRSF against a simulated VTX that takes, refuses and misses a frequency"""
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 23,  # RC input, where the receiver is
+            "RC_PROTOCOLS": 512,     # CRSF only, not SITL's own RC input
+            "VTX_ENABLE": 1,
+        })
+        self.set_parameters({
+            "VTX_BAND": 4,
+            "VTX_CHANNEL": 2,
+            "VTX_FREQ": 5732,
+            "VTX_POWER": 25,
+            # user band Y, added as VTX_BAND 11
+            "VTX_BND1_CH1": 5700,
+            "VTX_BND1_CH2": 5750,
+            "VTX_BND1_CH3": 5850,
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port  # serial5 listens on localhost port
+        ])
+        # the receiver sends in real time
+        self.context_set_speedup(1)
+        vtx = vehicle_test_suite.CRSFVTX(("127.0.0.1", port), self.progress)
+        try:
+            self.context_collect("STATUSTEXT")
+            self.delay_sim_time(10, reason="VTX to be found")
+
+            self.start_subtest("A user band channel is commanded by frequency")
+            self.set_parameters({"VTX_BAND": 11, "VTX_CHANNEL": 1})
+            self.wait_vtx_frequency(vtx, 5750)
+            self.wait_parameter_value("VTX_FREQ", 5750)
+
+            self.start_subtest("A VTX that stops reporting is asked until it reports, without being reported as refusing")
+            vtx.set_behaviour("silent")
+            tstart = time.time()
+            self.set_parameter("VTX_CHANNEL", 2)
+            self.delay_sim_time(15, reason="frequency to be asked for")
+            if vtx.count("FREQ", tstart) <= 12:
+                raise NotAchievedException("Gave up on a silent VTX after %u attempts" % vtx.count("FREQ", tstart))
+            vtx.set_behaviour()
+            self.wait_vtx_frequency(vtx, 5850)
+            if self.vtx_statustext_count("rejected") != 0:
+                raise NotAchievedException("A VTX that was not reporting was reported as refusing")
+
+            self.start_subtest("A refused frequency gives one warning and is not asked for again")
+            self.delay_sim_time(5, reason="VTX to settle")
+            vtx.set_behaviour("refuse_freq")
+            tstart = time.time()
+            self.set_parameter("VTX_CHANNEL", 0)
+            self.wait_statustext("VTX: rejected frequency 5700MHz", check_context=True, timeout=60)
+            sends_to_refuse = vtx.count("FREQ", tstart)
+            tstart = time.time()
+            self.delay_sim_time(8, reason="no more attempts")
+            if vtx.count("FREQ", tstart) != 0:
+                raise NotAchievedException("Asked %u more times after the refusal" % vtx.count("FREQ", tstart))
+            self.assert_parameter_value("VTX_CHANNEL", 0)
+
+            self.start_subtest("Setting the channel back to the VTX's own does not put the refused one back")
+            tstart = time.time()
+            self.set_parameter("VTX_CHANNEL", 2)
+            self.delay_sim_time(10, reason="channel to settle")
+            self.assert_parameter_value("VTX_CHANNEL", 2)
+            self.assert_parameter_value("VTX_FREQ", 5850)
+            if vtx.frequency != 5850:
+                raise NotAchievedException("VTX moved to %uMHz" % vtx.frequency)
+            if self.vtx_statustext_count("rejected frequency") != 1:
+                raise NotAchievedException("Expected one refusal warning in total")
+
+            self.start_subtest("A frequency the VTX took is asked for from scratch when it is returned to")
+            # the VTX takes the frequency after more than half the sends a
+            # refusal takes, twice, with a factory channel in between. Sends
+            # carried over from the first time would add up to a refusal
+            for attempt in range(2):
+                vtx.set_behaviour("refuse_freq")
+                tstart = time.time()
+                self.set_parameters({"VTX_BAND": 11, "VTX_CHANNEL": 1})
+                tstart_sim = self.get_sim_time()
+                while vtx.count("FREQ", tstart) < (sends_to_refuse * 6) // 10:
+                    if self.vtx_statustext_count("rejected frequency") != 1:
+                        raise NotAchievedException("A frequency the VTX had taken was reported as refused")
+                    if self.get_sim_time_cached() - tstart_sim > 60:
+                        raise NotAchievedException("Frequency sent %u times" % vtx.count("FREQ", tstart))
+                    self.delay_sim_time(0.2, reason="frequency to be asked for")
+                vtx.set_behaviour()
+                self.wait_vtx_frequency(vtx, 5750)
+                self.delay_sim_time(3, reason="VTX to report the frequency")
+                if attempt == 0:
+                    self.set_parameters({"VTX_BAND": 4, "VTX_CHANNEL": 2})
+                    self.wait_vtx_frequency(vtx, 5732)
+                    self.delay_sim_time(3, reason="VTX to report the channel")
+            if self.vtx_statustext_count("rejected frequency") != 1:
+                raise NotAchievedException("A frequency the VTX had taken was reported as refused")
+        finally:
+            vtx.close()
+        self.reboot_sitl()
+
+    def TrampVTX(self):
+        """test Tramp against a simulated VTX that takes, refuses and misses changes"""
+        vtx = self.start_simulated_vtx(vehicle_test_suite.TrampVTX, 44)
+        try:
+            self.start_subtest("Channel, power and pit mode changes are sent")
+            self.set_parameter("VTX_CHANNEL", 4)
+            self.wait_vtx_frequency(vtx, 5806)
+            self.set_parameter("VTX_POWER", 200)
+            self.delay_sim_time(4, reason="power to be sent")
+            if vtx.power != 200:
+                raise NotAchievedException("VTX at %umW" % vtx.power)
+            self.set_parameter("VTX_OPTIONS", 1)
+            self.delay_sim_time(4, reason="pit mode to be sent")
+            if not vtx.pitmode:
+                raise NotAchievedException("VTX not in pit mode")
+            self.set_parameter("VTX_OPTIONS", 0)
+            self.delay_sim_time(4, reason="pit mode to be sent")
+            if vtx.pitmode:
+                raise NotAchievedException("VTX still in pit mode")
+
+            self.start_subtest("A VTX moved off a channel it had taken is put back")
+            with vtx.lock:
+                vtx.frequency = 5732
+            self.wait_vtx_frequency(vtx, 5806)
+
+            self.start_subtest("A VTX moved off a power it had taken is put back, without being reported as refusing")
+            with vtx.lock:
+                vtx.power = 25
+            self.delay_sim_time(5, reason="power to be put back")
+            if vtx.power != 200:
+                raise NotAchievedException("VTX at %umW, want 200mW" % vtx.power)
+            if self.vtx_statustext_count("rejected") != 0:
+                raise NotAchievedException("A VTX moved off its power was reported as refusing")
+
+            self.start_subtest("A VTX that stops answering is moved when it answers again")
+            vtx.set_behaviour("silent")
+            self.set_parameter("VTX_CHANNEL", 5)
+            self.delay_sim_time(15, reason="frequency to be asked for")
+            vtx.set_behaviour()
+            self.wait_vtx_frequency(vtx, 5843)
+            if self.vtx_statustext_count("rejected") != 0:
+                raise NotAchievedException("A VTX that had not refused anything was reported as refusing")
+
+            self.start_subtest("A silent VTX on a link that echoes has not refused either")
+            vtx.set_behaviour("silent", "echo")
+            self.set_parameter("VTX_CHANNEL", 3)
+            self.delay_sim_time(15, reason="frequency to be asked for")
+            vtx.set_behaviour()
+            self.wait_vtx_frequency(vtx, 5769)
+            if self.vtx_statustext_count("rejected") != 0:
+                raise NotAchievedException("An echo was taken for the VTX refusing")
+            self.set_parameter("VTX_CHANNEL", 5)
+            self.wait_vtx_frequency(vtx, 5843)
+
+            self.start_subtest("A channel change still goes out while pit mode is refused")
+            vtx.set_behaviour("refuse_pit")
+            self.set_parameter("VTX_OPTIONS", 1)
+            self.delay_sim_time(5, reason="pit mode to be refused")
+            self.set_parameter("VTX_CHANNEL", 4)
+            self.wait_vtx_frequency(vtx, 5806)
+            vtx.set_behaviour()
+            self.delay_sim_time(4, reason="pit mode to be taken")
+            if not vtx.pitmode:
+                raise NotAchievedException("Pit mode not taken once the VTX accepted it")
+            self.set_parameter("VTX_OPTIONS", 0)
+            self.delay_sim_time(4, reason="pit mode to be left")
+
+            self.start_subtest("A refused frequency gives one warning, and a later channel change is followed")
+            vtx.set_behaviour("refuse_freq")
+            self.set_parameter("VTX_CHANNEL", 1)
+            self.wait_statustext("VTX: rejected frequency 5695MHz", check_context=True, timeout=40)
+            self.assert_parameter_value("VTX_CHANNEL", 1)
+            vtx.set_behaviour()
+            self.set_parameter("VTX_CHANNEL", 5)
+            self.wait_vtx_frequency(vtx, 5843)
+
+            self.start_subtest("A channel change made during the retries is followed")
+            vtx.set_behaviour("refuse_freq")
+            self.set_parameter("VTX_CHANNEL", 1)
+            self.delay_sim_time(3, reason="retries to start")
+            vtx.set_behaviour()
+            self.set_parameter("VTX_CHANNEL", 2)
+            self.wait_vtx_frequency(vtx, 5732, timeout=30)
+            if self.vtx_statustext_count("rejected frequency") != 1:
+                raise NotAchievedException("Expected one refusal warning in total")
+
+            self.start_subtest("A VTX that answers at first and then goes quiet has not refused")
+            vtx.set_behaviour("refuse_freq")
+            self.set_parameter("VTX_CHANNEL", 5)
+            self.delay_sim_time(2, reason="a few sends to be answered")
+            vtx.set_behaviour("silent")
+            self.delay_sim_time(14, reason="retries to run out")
+            vtx.set_behaviour()
+            self.wait_vtx_frequency(vtx, 5843, timeout=30)
+            if self.vtx_statustext_count("rejected frequency") != 1:
+                raise NotAchievedException("A VTX that went quiet was reported as refusing")
+            self.set_parameter("VTX_CHANNEL", 2)
+            self.wait_vtx_frequency(vtx, 5732)
+
+            self.start_subtest("A VTX that misreports its power is left on the power asked for")
+            vtx.set_behaviour("misreport_power")
+            self.set_parameter("VTX_POWER", 800)
+            self.delay_sim_time(20, reason="power to be sent")
+            self.progress("VTX at %umW, reporting %s, VTX_POWER %s, %u power warnings" %
+                          (vtx.power, vtx.reported_power, self.get_parameter("VTX_POWER"),
+                           self.vtx_statustext_count("rejected power")))
+            if vtx.power != 800:
+                raise NotAchievedException("VTX at %umW" % vtx.power)
+            self.assert_parameter_value("VTX_POWER", 800)
+            if self.vtx_statustext_count("rejected power") > 1:
+                raise NotAchievedException("More than one power warning")
+            self.set_parameter("VTX_CHANNEL", 4)
+            self.wait_vtx_frequency(vtx, 5806)
+
+            self.start_subtest("A channel on a frequency another band also has is taken as the configured one")
+            # 5880MHz is both R7 and F8
+            vtx.set_behaviour()
+            self.set_parameter("VTX_CHANNEL", 6)
+            self.wait_vtx_frequency(vtx, 5880)
+            self.wait_statustext("VTX: R7 5880MHz", check_context=True, timeout=20)
+            self.assert_parameter_value("VTX_BAND", 4)
+            self.assert_parameter_value("VTX_CHANNEL", 6)
+
+            self.start_subtest("A refused frequency asked for again on another band's channel is a new request")
+            self.set_parameter("VTX_CHANNEL", 4)
+            self.wait_vtx_frequency(vtx, 5806)
+            vtx.set_behaviour("refuse_freq")
+            refusals = self.vtx_statustext_count("rejected frequency 5880MHz")
+            self.set_parameter("VTX_CHANNEL", 6)
+            self.wait_statustext_count_vtx("rejected frequency 5880MHz", refusals + 1)
+            # F8 is 5880MHz too. Band and channel are sent together, as MSP
+            # and a Spektrum VTX channel set them
+            for (name, value) in ("VTX_BAND", 3), ("VTX_CHANNEL", 7):
+                self.mav.mav.param_set_send(self.sysid_thismav(), 1, name.encode(), value,
+                                            mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+            self.wait_statustext_count_vtx("rejected frequency 5880MHz", refusals + 2)
+            self.set_parameter("VTX_POWER", 200)
+            self.delay_sim_time(6, reason="power to be sent")
+            if vtx.power != 200:
+                raise NotAchievedException("VTX at %umW, want 200mW" % vtx.power)
+        finally:
+            vtx.close()
+
+        self.start_subtest("A frequency outside the VTX's range is not sent on another band's channel either")
+        vtx = self.start_simulated_vtx(vehicle_test_suite.TrampVTX, 44, freq_max=5850)
+        try:
+            refusals = self.vtx_statustext_count("rejected frequency 5880MHz")
+            self.set_parameter("VTX_CHANNEL", 6)
+            self.wait_statustext_count_vtx("rejected frequency 5880MHz", refusals + 1)
+            for (name, value) in ("VTX_BAND", 3), ("VTX_CHANNEL", 7):
+                self.mav.mav.param_set_send(self.sysid_thismav(), 1, name.encode(), value,
+                                            mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+            self.wait_statustext_count_vtx("rejected frequency 5880MHz", refusals + 2)
+            if vtx.count('F') != 0:
+                raise NotAchievedException("A frequency outside the VTX's range was sent")
+        finally:
+            vtx.close()
+        self.reboot_sitl()
+
+    def MSPVTXUserBands(self):
+        '''test MSP VTX control with user-defined VTX bands: an added band is
+        sent as a raw frequency, and selecting a disabled channel commands
+        nothing while power and pit mode changes still go out'''
+        MSP_SET_VTX_CONFIG = 89
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 42,  # MSP DisplayPort
+            "OSD_TYPE": 5,           # MSP DisplayPort
+            "VTX_ENABLE": 1,
+            "VTX_BND1_CH1": 5870,
+            "VTX_BND1_CH2": -1,
+            "VTX_BND1_CH3": 5900,
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port  # serial5 listens on localhost port
+        ])
+        self.wait_ready_to_arm()
+        msp = self.msp_connect(port)
+
+        def set_vtx_config(band, channel, freq, legacy=5870):
+            # MSP API 1.42 payload: band and channel one based, band 0 is a
+            # raw frequency. The legacy field is the raw frequency the VTX is
+            # on, which the 1.42 fields supersede
+            payload = struct.pack("<H", legacy)     # legacy field
+            payload += struct.pack("<BB", 1, 0)     # power index, pitmode
+            payload += struct.pack("<B", 0)         # lowPowerDisarm
+            payload += struct.pack("<H", 0)         # pitModeFreq
+            payload += struct.pack("<BBH", band, channel, freq)
+            return [(MSP_SET_VTX_CONFIG, payload)]
+
+        def pushes_in(seconds):
+            # (band, channel, power, pitmode, freq) of the frames pushed
+            return [f[1:] for f in self.msp_vtx_config_frames(msp, seconds) if f[0] == "push"]
+
+        # the VTX reports a raw frequency, which is the added band
+        self.msp_send_until_parameters(msp, set_vtx_config(0, 0, 5870), {
+            "VTX_BAND": 11,
+            "VTX_CHANNEL": 0,
+            "VTX_FREQ": 5870,
+        })
+        self.wait_msp_vtx_config_reply(msp, 0, 1, 5870)
+
+        self.set_parameter("VTX_POWER", 800)
+        pushes = pushes_in(3)
+        if not any(p[0] == 0 and p[4] == 5870 for p in pushes):
+            raise NotAchievedException("added band not pushed as a raw frequency: %s" % pushes)
+        last_power = pushes[-1][2]
+
+        # a disabled channel is never commanded
+        self.set_parameter("VTX_CHANNEL", 1)
+        pushes = pushes_in(3)
+        if pushes:
+            raise NotAchievedException("disabled channel pushed: %s" % pushes)
+        self.wait_msp_vtx_config_reply(msp, 0, 1, 5870)
+
+        # but power and pit mode changes still go out, on the last channel
+        self.set_parameter("VTX_POWER", 25)
+        pushes = pushes_in(3)
+        if not any(p[2] != last_power and p[4] == 5870 for p in pushes):
+            raise NotAchievedException("power change not pushed on a disabled channel: %s" % pushes)
+        self.set_parameter("VTX_OPTIONS", 1)
+        pushes = pushes_in(3)
+        if not any(p[3] == 1 and p[4] == 5870 for p in pushes):
+            raise NotAchievedException("pit mode not pushed on a disabled channel: %s" % pushes)
+        self.set_parameter("VTX_OPTIONS", 0)
+
+        # after a move to another added channel, a disabled channel keeps
+        # that channel and its frequency, not the frequency before it
+        self.set_parameter("VTX_CHANNEL", 2)
+        pushes = pushes_in(3)
+        if not any(p[0] == 0 and p[4] == 5900 for p in pushes):
+            raise NotAchievedException("second added channel not pushed: %s" % pushes)
+        self.set_parameter("VTX_CHANNEL", 1)
+        pushes = pushes_in(3)
+        if pushes:
+            raise NotAchievedException("disabled channel pushed: %s" % pushes)
+        self.wait_msp_vtx_config_reply(msp, 0, 3, 5900)
+        self.set_parameter("VTX_POWER", 800)
+        pushes = pushes_in(3)
+        if not pushes or any(p[4] != 5900 for p in pushes):
+            raise NotAchievedException("power change pushed on another frequency: %s" % pushes)
+
+        # a VTX reporting an empty user band (Z, band 13 one based) is ignored
+        self.set_parameter("VTX_CHANNEL", 0)
+        for i in range(5):
+            msp.send_command(MSP_SET_VTX_CONFIG, set_vtx_config(13, 1, 0)[0][1])
+            self.delay_sim_time(0.2, reason="let the FC process the frame")
+        self.assert_parameter_values({"VTX_BAND": 11, "VTX_CHANNEL": 0, "VTX_FREQ": 5870})
+
+        # a VTX that boots on a frequency the band table does not have, with
+        # a disabled channel configured, is left on its own frequency. That
+        # is sent as a raw frequency, as the band and channel would select a
+        # channel the user disabled
+        self.set_parameters({
+            "VTX_BND2_REPL": 0,
+            "VTX_BND2_CH1": -1,
+        })
+        for (name, band, channel) in ("added band", 11, 1), ("factory band", 0, 0):
+            self.start_subtest("VTX on an off-table frequency with a disabled %s channel configured" % name)
+            self.set_parameters({
+                "VTX_BAND": band,
+                "VTX_CHANNEL": channel,
+                "VTX_POWER": 25,
+            })
+            self.reboot_sitl()
+            msp = self.msp_connect(port)
+            self.msp_send_until_parameters(msp, set_vtx_config(0, 0, 5999, legacy=5999), {
+                "VTX_BAND": band,
+                "VTX_CHANNEL": channel,
+                "VTX_FREQ": 5999,
+            })
+            self.wait_msp_vtx_config_reply(msp, 0, channel + 1, 5999)
+            self.set_parameter("VTX_POWER", 800)
+            pushes = pushes_in(3)
+            if not pushes or any(p[0] != 0 or p[4] != 5999 for p in pushes):
+                raise NotAchievedException("power change not pushed on the VTX's own frequency: %s" % pushes)
+        self.reboot_sitl()
+
     def tests2b(self):
         '''return list of all tests'''
         ret = ([
@@ -27425,6 +28055,12 @@ return update, 1000
             self.GyroFFTMotorNoiseCheck,
             self.MSPVTXConfig,
             self.MSPDisplayPortVTXConfig,
+            self.MSPVTXUserBands,
+            self.VTXTable,
+            self.SmartAudioVTX,
+            self.SmartAudio21VTX,
+            self.TrampVTX,
+            self.CRSFVTXUserBands,
             self.OSDParamConfig,
             self.EKFBootstrapReset,
             self.RTL_ALT_FINAL_M,

@@ -76,6 +76,7 @@ known_units = {
              'PWM'     : 'PWM in microseconds'   , # should be microseconds, this is NOT a SI unit, but follows https://github.com/ArduPilot/ardupilot/pull/5538#issuecomment-271943061
              'Hz'      : 'hertz'                 ,
              'kHz'     : 'kilohertz'             ,
+             'MHz'     : 'megahertz'             ,
              '1/s'     : 'per second'            , # Not SI but in some situations more user-friendly than hertz
 # distance
              'km'      : 'kilometers'                , # metre is the SI unit name, meter is the american spelling of it
@@ -108,6 +109,7 @@ known_units = {
              'A'       : 'ampere'                ,
              'V'       : 'volt'                  ,
              'W'       : 'watt'                  ,
+             'mW'      : 'milliwatt'             ,
 # magnetism
              'Gauss'   : 'gauss'                 , # Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
              'Gauss/s' : 'gauss per second'      , # Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
