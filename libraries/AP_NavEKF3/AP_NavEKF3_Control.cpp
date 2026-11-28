@@ -587,8 +587,9 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
     }
 
     // flow that is not fused because the sensor is below its focus altitude cannot aid. Without this a vehicle
-    // held below that altitude leaves relative aiding on the flow timeout and re-enters it on the next sample
-    if (flowRngBelowAltMin) {
+    // held below that altitude leaves relative aiding on the flow timeout and re-enters it on the next sample.
+    // The same holds for flow withheld because the range finder reads an armed vehicle off the ground
+    if (flowRngBelowAltMin || flowWithheldOffGround) {
         return false;
     }
 
