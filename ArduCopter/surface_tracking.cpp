@@ -10,27 +10,31 @@ void Copter::SurfaceTracking::update_surface_offset()
     const uint32_t now_ms = millis();
     const bool timeout = (now_ms - last_update_ms) > SURFACE_TRACKING_TIMEOUT_MS;
 
-    // check tracking state and that range finders are healthy
-    if (((surface == Surface::GROUND) && copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0)) ||
-        ((surface == Surface::CEILING) && copter.rangefinder_up_ok() && (copter.rangefinder_up_state.glitch_count == 0))) {
+    // Get the appropriate surface distance state, the terrain offset is calculated in the surface distance lib.
+    AP_SurfaceDistance &rf_state = (surface == Surface::CEILING) ? copter.rangefinder_up_state : copter.rangefinder_state;
+    float terrain_u_m = rf_state.terrain_u_m;
 
-        // Get the appropriate surface distance state, the terrain offset is calculated in the surface distance lib. 
-        AP_SurfaceDistance &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
+    // check tracking state and that range finders or terrain database are healthy
+    if (((surface == Surface::GROUND) && copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0)) ||
+        ((surface == Surface::CEILING) && copter.rangefinder_up_ok() && (copter.rangefinder_up_state.glitch_count == 0)) ||
+        ((surface == Surface::TERRAIN) && copter.wp_nav->get_terrain_U_m(terrain_u_m))) {
 
         // update position controller target offset to the surface's alt above the EKF origin
-        copter.pos_control->set_pos_terrain_target_D_m(-rf_state.terrain_u_m);
+        copter.pos_control->set_pos_terrain_target_D_m(-terrain_u_m);
         last_update_ms = now_ms;
         valid_for_logging = true;
 
         // reset target altitude if this controller has just been engaged
         // target has been changed between upwards vs downwards
-        // or glitch has cleared
+        // or glitch has cleared or terrain source has changed
         if (timeout ||
             reset_target ||
-            (last_glitch_cleared_ms != rf_state.glitch_cleared_ms)) {
-            copter.pos_control->init_pos_terrain_D_m(-rf_state.terrain_u_m);
+            (last_glitch_cleared_ms != rf_state.glitch_cleared_ms) ||
+            ((surface == Surface::TERRAIN) && (last_terrain_source != copter.wp_nav->get_terrain_source()))) {
+            copter.pos_control->init_pos_terrain_D_m(-terrain_u_m);
             reset_target = false;
             last_glitch_cleared_ms = rf_state.glitch_cleared_ms;
+            last_terrain_source = copter.wp_nav->get_terrain_source();
         }
 
     } else {
@@ -60,7 +64,7 @@ bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist_m) 
         return false;
     }
 
-    const float dir = (surface == Surface::GROUND) ? 1.0f : -1.0f;
+    const float dir = (surface == Surface::CEILING) ? -1.0f : 1.0f;
     target_dist_m = dir * copter.pos_control->get_pos_desired_U_m();
     return true;
 }

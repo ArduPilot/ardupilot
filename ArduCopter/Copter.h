@@ -280,7 +280,8 @@ private:
         enum class Surface {
             NONE = 0,
             GROUND = 1,
-            CEILING = 2
+            CEILING = 2,
+            TERRAIN = 3
         };
         // set surface to track
         void set_surface(Surface new_surface);
@@ -291,6 +292,7 @@ private:
         Surface surface;
         uint32_t last_update_ms;    // system time of last update to target_alt_m
         uint32_t last_glitch_cleared_ms;    // system time of last handle glitch recovery
+        AC_WPNav::TerrainSource last_terrain_source;    // terrain source used at last target reset
         bool valid_for_logging;     // true if we have a desired target altitude
         bool reset_target;          // true if target should be reset because of change in surface being tracked
     } surface_tracking;
