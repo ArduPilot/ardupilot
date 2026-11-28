@@ -4695,6 +4695,161 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # believes it is flying:
         self.disarm_vehicle(force=True)
 
+    def fly_transition_after_gps_loss(self, assume_flying_forward, extra_params):
+        '''climb in QHOVER, lose GPS, transition in CRUISE and return
+        fly-forward and EKF3 navigation statistics for the transition
+        from the onboard log'''
+        q_options = 0
+        if assume_flying_forward:
+            q_options |= 1 << 23  # ASSUME_FLYING_FORWARD_IN_TRANSITION
+        params = {
+            "LOG_DISARMED": 1,
+            "LOG_REPLAY": 1,  # RFRN records the fly-forward state
+            "Q_OPTIONS": q_options,
+            "SIM_GPS1_ENABLE": 1,
+        }
+        params.update(extra_params)
+        self.set_parameters(params)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.change_mode('QHOVER')
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        start_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+        want_alt = start_alt + 100
+        self.wait_altitude(want_alt-10, want_alt+10, timeout=120, altitude_source='SIM_STATE.alt')
+        self.set_rc(3, 1500)
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter('SIM_GPS1_ENABLE', 0)
+        self.change_mode('CRUISE')
+        self.wait_statustext("Transition.*done", regex=True, check_context=True, timeout=120)
+        self.delay_sim_time(5, reason="post-transition EKF state")
+        stopped_aiding = self.statustext_in_collections("stopped aiding")
+        self.context_pop()
+        self.disarm_vehicle(force=True)
+        self.set_rc(3, 1000)
+
+        ret = self.transition_fly_forward_stats_from_log()
+        ret["stopped_aiding"] = stopped_aiding is not None
+        self.progress("VERIFY: Q_OPTIONS=%u %s" % (q_options, str(ret)))
+        return ret
+
+    def transition_fly_forward_stats_from_log(self):
+        '''return the fly-forward state sampled through the first
+        fixed-wing transition in the current onboard log, and the worst
+        EKF3 core-0 horizontal position error against the simulator from
+        the start of that transition to the end of the log'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        cruise = self.get_mode_from_mode_mapping('CRUISE')
+        fly_forward = None
+        origin = None
+        sim = None
+        started = False
+        in_transition = False
+        ff_true = 0
+        ff_false = 0
+        max_pos_error = 0
+        while True:
+            m = dfreader.recv_match(type=['RFRN', 'MODE', 'QTUN', 'ORGN', 'SIM', 'XKF1'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'RFRN':
+                fly_forward = bool(m.Flags & (1 << 2))
+            elif mtype == 'ORGN' and m.Type == 0:
+                origin = m
+            elif mtype == 'SIM':
+                sim = m
+            elif mtype == 'MODE':
+                if m.Mode == cruise and not started:
+                    started = True
+                    in_transition = True
+            elif mtype == 'QTUN' and in_transition:
+                if m.Trn == 2:
+                    in_transition = False
+                elif fly_forward:
+                    ff_true += 1
+                else:
+                    ff_false += 1
+            elif mtype == 'XKF1' and m.C == 0 and started and origin is not None and sim is not None:
+                sim_n = (sim.Lat - origin.Lat) * 111319.5
+                sim_e = (sim.Lng - origin.Lng) * 111319.5 * math.cos(math.radians(origin.Lat))
+                max_pos_error = max(max_pos_error, math.hypot(m.PN - sim_n, m.PE - sim_e))
+        if ff_true + ff_false == 0:
+            raise NotAchievedException("No transition found in onboard log")
+        return {
+            "ff_true": ff_true,
+            "ff_false": ff_false,
+            "max_pos_error": max_pos_error,
+        }
+
+    def assert_fly_forward_through_transition(self, stats, want):
+        '''assert the fly-forward state was want for every sample taken
+        during the transition'''
+        wrong = stats["ff_false"] if want else stats["ff_true"]
+        if wrong != 0:
+            raise NotAchievedException(
+                "fly-forward was not %s for %u of %u samples in transition" %
+                (want, wrong, stats["ff_true"] + stats["ff_false"]))
+
+    def ASSUME_FLYING_FORWARD_IN_TRANSITION(self):
+        '''test the QuadPlane option for assumption of fly-forward in transition'''
+        # a 20 second transition timer makes the transition outlast
+        # EKF3's 15 second limit on flying without any aiding; without
+        # fly-forward EKF3 fuses neither airspeed nor sideslip
+        transition_params = {
+            "Q_TRANSITION_MS": 20000,
+        }
+
+        self.start_subtest("Without the option EKF3 stops aiding in the transition")
+        without = self.fly_transition_after_gps_loss(False, transition_params)
+        self.assert_fly_forward_through_transition(without, False)
+        if not without["stopped_aiding"]:
+            raise NotAchievedException(
+                "EKF3 kept aiding through the transition without the option; "
+                "this test no longer exercises the option")
+
+        self.start_subtest("With the option EKF3 dead-reckons through the transition")
+        with_ff = self.fly_transition_after_gps_loss(True, transition_params)
+        self.assert_fly_forward_through_transition(with_ff, True)
+        if with_ff["stopped_aiding"]:
+            raise NotAchievedException("EKF3 stopped aiding in the transition")
+        if with_ff["max_pos_error"] > 50:
+            raise NotAchievedException(
+                "EKF3 position error %.1fm exceeds 50m" % with_ff["max_pos_error"])
+
+    def ASSUME_FLYING_FORWARD_IN_TRANSITION_Tailsitter(self):
+        '''test the QuadPlane option for assumption of fly-forward in transition on a tailsitter'''
+        self.customise_SITL_commandline(
+            [],
+            model="quadplane-copter_tailsitter",
+            wipe=True,
+        )
+        # an 8m/s crosswind from the East while the tailsitter pitches
+        # over from vertical
+        wind_params = {
+            "SIM_WIND_SPD": 8,
+            "SIM_WIND_DIR": 90,
+        }
+
+        self.start_subtest("Without the option fly-forward waits for the transition to complete")
+        without = self.fly_transition_after_gps_loss(False, wind_params)
+        self.assert_fly_forward_through_transition(without, False)
+
+        # a tailsitter's forward transition starts while it is still
+        # vertical, so the option asserts fly-forward from there
+        self.start_subtest("With the option fly-forward covers the whole tailsitter transition")
+        with_ff = self.fly_transition_after_gps_loss(True, wind_params)
+        self.assert_fly_forward_through_transition(with_ff, True)
+        if with_ff["stopped_aiding"]:
+            raise NotAchievedException("EKF3 stopped aiding in the transition")
+        if with_ff["max_pos_error"] > 25:
+            raise NotAchievedException(
+                "EKF3 position error %.1fm exceeds 25m" % with_ff["max_pos_error"])
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -4739,6 +4894,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.DoRepositionTerrain,
             self.DoRepositionTerrain2,
             self.SimBatteryResistance,
+            self.ASSUME_FLYING_FORWARD_IN_TRANSITION,
+            self.ASSUME_FLYING_FORWARD_IN_TRANSITION_Tailsitter,
             self.FastInvertedRecovery,
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.TerrainAvoidAppletPitching,
