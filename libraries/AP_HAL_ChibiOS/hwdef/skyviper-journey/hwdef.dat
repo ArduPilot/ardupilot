@@ -138,6 +138,10 @@ include ../include/skyviper.inc
 define HAL_WITH_ESC_TELEM 0
 define AP_FETTEC_ONEWIRE_ENABLED 0
 
+# the Sonix board is a MAVLink camera (component 100)
+define AP_CAMERA_MAVLINK_ENABLED 0
+define AP_CAMERA_MAVLINKCAMV2_ENABLED 1
+
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
 
