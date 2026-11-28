@@ -92,6 +92,7 @@ bool AP_GPS_SITL::read(void)
         int32_t(altitude*100),
         Location::AltFrame::ABSOLUTE
     };
+    set_heights(state, altitude, NaNf);
 
     state.hdop = 100;
     state.vdop = 100;

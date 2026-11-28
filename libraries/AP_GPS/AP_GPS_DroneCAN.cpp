@@ -101,14 +101,14 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     int8_t found_match = -1, last_match = -1;
     AP_GPS_DroneCAN* backend = nullptr;
     bool bad_override_config = false;
-    for (int8_t i = GPS_MAX_RECEIVERS - 1; i >= 0; i--) {
+    for (int8_t i = ARRAY_SIZE(_detected_modules) - 1; i >= 0; i--) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
             if (_gps.params[_state.instance].override_node_id != 0 &&
                 _gps.params[_state.instance].override_node_id != _detected_modules[i].node_id) {
                 continue; // This device doesn't match the correct node
             }
             last_match = found_match;
-            for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
+            for (uint8_t j = 0; j < ARRAY_SIZE(_gps.params); j++) {
                 if (_detected_modules[i].node_id == _gps.params[j].override_node_id &&
                     (j != _state.instance)) {
                     //wrong instance
@@ -119,7 +119,7 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
             }
 
             // Handle Duplicate overrides
-            for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
+            for (uint8_t j = 0; j < ARRAY_SIZE(_gps.params); j++) {
                 if (_gps.params[i].override_node_id != 0 && (i != j) &&
                     _gps.params[i].override_node_id == _gps.params[j].override_node_id) {
                     bad_override_config = true;
@@ -162,7 +162,7 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         backend->_detected_module = found_match;
         snprintf(backend->_name, ARRAY_SIZE(backend->_name), "DroneCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
-        for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
+        for (uint8_t i=0; i < ARRAY_SIZE(_detected_modules); i++) {
             if (_detected_modules[found_match].node_id == AP::gps().params[i].node_id) {
                 if (i == _state.instance) {
                     // Nothing to do here
@@ -190,7 +190,7 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 bool AP_GPS_DroneCAN::inter_instance_pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
 {
     // lint parameters and detected node IDs:
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(AP::gps().params); i++) {
         const auto &params_i = AP::gps().params[i];
         // we are only interested in parameters for DroneCAN GPSs:
         if (!is_dronecan_gps_type(params_i.type)) {
@@ -202,7 +202,7 @@ bool AP_GPS_DroneCAN::inter_instance_pre_arm_checks(char failure_msg[], uint16_t
             //anything goes
             continue;
         }
-        for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
+        for (uint8_t j = 0; j < ARRAY_SIZE(_detected_modules); j++) {
             const auto &params_j = AP::gps().params[j];
             // we are only interested in parameters for DroneCAN GPSs:
             if (!is_dronecan_gps_type(params_j.type)) {
@@ -239,7 +239,7 @@ AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan,
         return nullptr;
     }
 
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_detected_modules); i++) {
         if (_detected_modules[i].driver != nullptr &&
             _detected_modules[i].ap_dronecan == ap_dronecan && 
             _detected_modules[i].node_id == node_id) {
@@ -249,7 +249,7 @@ AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan,
 
     bool already_detected = false;
     // Check if there's an empty spot for possible registeration
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_detected_modules); i++) {
         if (_detected_modules[i].ap_dronecan == ap_dronecan && _detected_modules[i].node_id == node_id) {
             // Already Detected
             already_detected = true;
@@ -257,7 +257,7 @@ AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan,
         }
     }
     if (!already_detected) {
-        for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        for (uint8_t i = 0; i <ARRAY_SIZE(_detected_modules); i++) {
             if (_detected_modules[i].ap_dronecan == nullptr) {
                 _detected_modules[i].ap_dronecan = ap_dronecan;
                 _detected_modules[i].node_id = node_id;
@@ -272,7 +272,7 @@ AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan,
     // Sort based on the node_id, larger values first
     // we do this, so that we have repeatable GPS
     // registration
-    for (uint8_t i = 1; i < GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i = 1; i < ARRAY_SIZE(_detected_modules); i++) {
         for (uint8_t j = i; j > 0; j--) {
             if (_detected_modules[j].node_id > _detected_modules[j-1].node_id) {
                 tempslot = _detected_modules[j];
@@ -361,7 +361,6 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         Location loc = { };
         loc.lat = msg.latitude_deg_1e8 / 10;
         loc.lng = msg.longitude_deg_1e8 / 10;
-        const int32_t alt_amsl_cm = msg.height_msl_mm / 10;
         // if ellipsoid height is not supported by the GPS driver (or always
         // with older releases), AP_Periph reports height_ellipsoid_mm == height_msl_mm .
         // only trust that we have a valid ellipsoid height if we've ever seen
@@ -369,12 +368,10 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         if (msg.height_msl_mm != msg.height_ellipsoid_mm) {
             seen_valid_height_ellipsoid = true;
         }
-        interim_state.have_undulation = seen_valid_height_ellipsoid;
-        if (seen_valid_height_ellipsoid) {
-            interim_state.undulation = (msg.height_msl_mm - msg.height_ellipsoid_mm) * 0.001;
-        }
         interim_state.location = loc;
-        set_alt_amsl_cm(interim_state, alt_amsl_cm);
+        set_heights(interim_state,
+                    msg.height_msl_mm * 0.001,
+                    seen_valid_height_ellipsoid ? msg.height_ellipsoid_mm * 0.001 : NaNf);
 
         handle_velocity(msg.ned_velocity[0], msg.ned_velocity[1], msg.ned_velocity[2]);
 

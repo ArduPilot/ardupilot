@@ -276,7 +276,13 @@ AP_GPS_SBP::_attempt_state_update()
 
         state.location.lat      = (int32_t) (pos_llh->lat * (double)1e7);
         state.location.lng      = (int32_t) (pos_llh->lon * (double)1e7);
-        state.location.alt      = (int32_t) (pos_llh->height * 100);
+        // flags bit 3 is the height mode: above the WGS84 ellipsoid if
+        // clear, above mean sea level if set
+        if (pos_llh->flags & (1U<<3)) {
+            set_heights(state, pos_llh->height, NaNf);
+        } else {
+            set_heights(state, NaNf, pos_llh->height);
+        }
         state.num_sats          = pos_llh->n_sats;
 
         if (pos_llh->flags == 0) {

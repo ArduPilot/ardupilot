@@ -230,7 +230,8 @@ AP_GPS_GSOF::pack_state_data()
 
     state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * position.latitude_rad * (double)1e7);
     state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * position.longitude_rad * (double)1e7);
-    state.location.alt = (int32_t)(position.altitude * 100);
+    // the LLH record's height is above the WGS84 ellipsoid
+    set_heights(state, NaNf, position.altitude);
     state.last_gps_time_ms = AP_HAL::millis();
 
     if ((vel.velocity_flags & 1) == 1) {

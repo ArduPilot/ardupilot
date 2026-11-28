@@ -111,6 +111,9 @@ public:
         GPS_TYPE_UNICORE_NMEA = 24,
         GPS_TYPE_UNICORE_MOVINGBASE_NMEA = 25,
         GPS_TYPE_SBF_DUAL_ANTENNA = 26,
+#if AP_GPS_BLENDED_ENABLED
+        GPS_TYPE_BLENDED = 27,
+#endif
 #if AP_SIM_GPS_ENABLED
         GPS_TYPE_SITL = 100,
 #endif
@@ -119,6 +122,15 @@ public:
     // convenience methods for working out what general type an instance is:
     bool is_rtk_base(uint8_t instance) const;
     bool is_rtk_rover(uint8_t instance) const;
+    /*
+     * if base_instance is an RTK base *and* there exists a rover instance
+     * corresponding to that base then set rover_instance and return true.
+     * DOES NOT MODIFY rover_instance unless true is returned
+     */
+    bool get_rtk_rover_for_rtk_base(uint8_t &rover_instance, const uint8_t base_instance) const;
+    // return the moving baseline base instance of a rover instance, or
+    // -1 if it has none
+    int8_t rtk_base_for_rtk_rover(uint8_t rover_instance) const;
 
     // return the instance whose moving baseline rover solution provides the
     // yaw reported for this instance by gps_yaw_deg
@@ -143,7 +155,9 @@ public:
 #if GPS_MOVING_BASELINE
         MovingBase mb_params;
 #endif // GPS_MOVING_BASELINE
-
+#if AP_GPS_BLENDED_ENABLED
+        AP_Int8 blend_mask;
+#endif
         static const struct AP_Param::GroupInfo var_info[];
     };
 
@@ -218,8 +232,10 @@ public:
         bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         bool have_gps_yaw;                ///< does GPS give yaw? Set to true only once available.
         bool have_gps_yaw_accuracy;       ///< does the GPS give a heading accuracy estimate? Set to true only once available
-        float undulation;                   //<height that WGS84 is above AMSL at the current location
-        bool have_undulation;               ///<do we have a value for the undulation
+        float height_amsl;                  ///< height above the geoid (mean sea level) reported by the receiver, metres
+        float height_ellipsoid;             ///< height above the WGS84 ellipsoid reported by the receiver, metres
+        bool have_height_amsl;              ///< true if height_amsl is valid
+        bool have_height_ellipsoid;         ///< true if height_ellipsoid is valid
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
         bool announced_detection;           ///< true once we have announced GPS has been seen to the user
         uint64_t last_corrected_gps_time_us;///< the system time we got the last corrected GPS timestamp, microseconds
@@ -352,6 +368,17 @@ public:
     bool get_undulation(float &undulation) const {
         return get_undulation(primary_instance, undulation);
     }
+
+    // heights reported by the receiver, in metres, whichever height
+    // location.alt holds
+    bool get_height_amsl(uint8_t instance, float &height_m) const;
+    bool get_height_ellipsoid(uint8_t instance, float &height_m) const;
+
+    // convert a height in the frame of the vehicle's absolute
+    // altitude (the ellipsoid height with HeightEllipsoid, else AMSL)
+    // to AMSL or to the ellipsoid height.  False if unknown
+    bool location_alt_to_amsl(float alt_m, float &amsl_m) const;
+    bool location_alt_to_ellipsoid(float alt_m, float &ellipsoid_m) const;
 
     // report speed accuracy
     bool speed_accuracy(uint8_t instance, float &sacc) const;
@@ -523,12 +550,19 @@ public:
 
     void send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst);
 
+    void send_mavlink_gnss(class GCS_MAVLINK &link);
+    // next backend to send a GNSS message for, on each MAVLink channel:
+    uint8_t next_backend_to_send_gnss[MAVLINK_COMM_NUM_BUFFERS];
+
     // Returns true if there is an unconfigured GPS, and provides the instance number of the first non configured GPS
     bool first_unconfigured_gps(uint8_t &instance) const WARN_IF_UNUSED;
     void broadcast_first_configuration_failure_reason(void) const;
 
     // pre-arm check that all GPSs are close to each other.  farthest distance between GPSs (in meters) is returned
     bool all_consistent(float &distance) const;
+
+    // true if instance is a configured receiver checked by all_consistent()
+    bool is_receiver_for_consistency(uint8_t instance) const;
 
     // handle sending of initialisation strings to the GPS - only used by backends
     void send_blob_start(uint8_t instance);
@@ -689,7 +723,7 @@ private:
     GPS_timing timing[GPS_MAX_INSTANCES];
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
-    AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
+    AP_HAL::UARTDriver *_port[GPS_MAX_INSTANCES];
 
     /// primary GPS instance
     uint8_t primary_instance;
@@ -724,12 +758,12 @@ private:
 #if AP_GPS_ERB_ENABLED
         struct ERB_detect_state erb_detect_state;
 #endif
-    } detect_state[GPS_MAX_RECEIVERS];
+    } detect_state[GPS_MAX_INSTANCES];
 
     struct {
         const char *blob;
         uint16_t remaining;
-    } initblob_state[GPS_MAX_RECEIVERS];
+    } initblob_state[GPS_MAX_INSTANCES];
 
     static const uint32_t  _baudrates[];
     static const char _initialisation_blob[];
@@ -787,7 +821,7 @@ private:
 
     bool needs_uart(GPS_Type type) const;
 
-#if GPS_MAX_RECEIVERS > 1
+#if GPS_MAX_INSTANCES > 1
     // Selection priority is independent of the protocol fix-type numbering.
     static uint8_t fix_type_priority(AP_GPS_FixType status);
 
@@ -809,7 +843,7 @@ private:
     enum class GPSAutoSwitch {
         NONE        = 0,
         USE_BEST    = 1,
-        BLEND       = 2,
+        // BLEND = 2, replaced by a blended backend (GPSn_TYPE 27)
         //USE_SECOND  = 3, deprecated for new primary param
         USE_PRIMARY_IF_3D_FIX = 4,
     };

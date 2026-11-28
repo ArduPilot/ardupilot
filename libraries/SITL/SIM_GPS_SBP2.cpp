@@ -76,7 +76,7 @@ void GPS_SBP2::publish(const GPS_Data *d)
     pos.tow = gps_tow.ms;
     pos.lon = d->longitude;
     pos.lat= d->latitude;
-    pos.height = d->altitude;
+    pos.height = d->altitude + d->geoid_separation;  // above the WGS84 ellipsoid
     pos.h_accuracy = d->horizontal_acc*1000;
     pos.v_accuracy = d->vertical_acc*1000;
     pos.n_sats = d->have_lock ? d->num_sats : 3;

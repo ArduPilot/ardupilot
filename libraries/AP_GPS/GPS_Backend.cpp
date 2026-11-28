@@ -211,6 +211,88 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 #endif  // AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
 
 
+#if AP_GPS_GNSS_SENDING_ENABLED
+/*
+  an uncorrected fix is in WGS84.  A fix corrected by DGNSS or RTK is in
+  the datum of the correction source, which a backend must read from
+  its receiver to report
+ */
+MAV_GNSS_DATUM AP_GPS_Backend::gnss_datum() const
+{
+    const AP_GPS_FixType fix_type = state.status;
+    if (fix_type == AP_GPS_FixType::FIX_2D || fix_type == AP_GPS_FixType::FIX_3D) {
+        return MAV_GNSS_DATUM_WGS84;
+    }
+    return MAV_GNSS_DATUM_UNKNOWN;
+}
+
+void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
+{
+    const AP_GPS_FixType fix_type = state.status;
+    float alt_amsl = NaNf;
+    float alt_ellipsoid = NaNf;
+    if (fix_type >= AP_GPS_FixType::FIX_3D) {
+        // the heights the receiver reported, whichever one location.alt
+        // holds
+        if (state.have_height_amsl) {
+            alt_amsl = state.height_amsl;
+        }
+        if (state.have_height_ellipsoid) {
+            alt_ellipsoid = state.height_ellipsoid;
+        }
+    }
+    // one-sigma standard deviation in mm/s; UINT16_MAX is unknown
+    uint16_t vel_acc_mms = UINT16_MAX;
+    if (state.have_speed_accuracy) {
+        vel_acc_mms = MIN(state.speed_accuracy * 1000, UINT16_MAX - 1);
+    }
+    const bool have_2d_fix = fix_type >= AP_GPS_FixType::FIX_2D;
+    // GNSS yaw is 0..35999 with 0 as north; UINT16_MAX means this
+    // receiver does not provide yaw, UINT16_MAX-1 that it is
+    // configured to but cannot currently:
+    uint16_t yaw_cd = UINT16_MAX;
+    // one-sigma yaw standard deviation in cdeg; UINT16_MAX is unknown
+    uint16_t yaw_acc_cd = UINT16_MAX;
+    if (AP::gps().have_gps_yaw_configured(state.instance)) {
+        float yaw_deg, yaw_accuracy_deg;
+        uint32_t yaw_time_ms;
+        if (AP::gps().gps_yaw_deg(state.instance, yaw_deg, yaw_accuracy_deg, yaw_time_ms)) {
+            yaw_cd = wrap_360_cd(yaw_deg * 100);
+            // gps_yaw_deg() substitutes a default when the receiver
+            // gives no accuracy; only send the receiver's own
+            const auto &yaw_state = AP::gps().state[AP::gps().yaw_source_instance(state.instance)];
+            if (yaw_state.have_gps_yaw_accuracy) {
+                yaw_acc_cd = MIN(yaw_accuracy_deg * 100, UINT16_MAX - 1);
+            }
+        } else {
+            yaw_cd = UINT16_MAX - 1;
+        }
+    }
+    mavlink_msg_gnss_send(
+        link.get_chan(),
+        AP_HAL::millis(),
+        state.instance,
+        (uint8_t)fix_type,
+        state.location.lat,
+        state.location.lng,
+        alt_amsl,
+        alt_ellipsoid,
+        gnss_datum(),
+        gnss_geoid_model(),
+        // a receiver may report a velocity without a fix; send it as unknown
+        have_2d_fix ? state.ground_speed : NaNf,
+        (fix_type >= AP_GPS_FixType::FIX_3D && state.have_vertical_velocity) ? -state.velocity.z : NaNf,  // NED down -> up
+        have_2d_fix ? uint16_t(state.ground_course * 100) : UINT16_MAX,  // degrees*100
+        state.num_sats,
+        yaw_cd,
+        state.have_horizontal_accuracy ? state.horizontal_accuracy : NaNf, // one-sigma standard deviation in m
+        state.have_vertical_accuracy ? state.vertical_accuracy : NaNf,     // one-sigma standard deviation in m
+        vel_acc_mms,
+        yaw_acc_cd
+        );
+}
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
+
 
 /*
   set a timestamp based on arrival time on uart at current byte,
@@ -331,10 +413,22 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
     bool selectedOffset = false;
     Vector3f offset;
     switch (MovingBase::Type(gps.params[interim_state.instance].mb_params.type)) {
-        case MovingBase::Type::RelativeToAlternateInstance:
-            offset = gps.params[interim_state.instance^1].antenna_offset.get() - gps.params[interim_state.instance].antenna_offset.get();
+        case MovingBase::Type::RelativeToAlternateInstance: {
+            // relative to this rover's base
+            int8_t base = gps.rtk_base_for_rtk_rover(interim_state.instance);
+            if (base == -1) {
+                // the base is not one of our instances (eg. on
+                // AP_Periph, where it is another node): use the other
+                // instance of the pair as before
+                base = interim_state.instance ^ 1;
+            }
+            if (base >= GPS_MAX_INSTANCES) {
+                goto bad_yaw;
+            }
+            offset = gps.params[base].antenna_offset.get() - gps.params[interim_state.instance].antenna_offset.get();
             selectedOffset = true;
             break;
+        }
         case MovingBase::Type::RelativeToCustomBase:
             offset = gps.params[interim_state.instance].mb_params.base_offset.get();
             selectedOffset = true;
@@ -481,15 +575,30 @@ good_yaw:
   set altitude in location structure, honouring the driver option for
   MSL vs ellipsoid height
  */
-void AP_GPS_Backend::set_alt_amsl_cm(AP_GPS::GPS_State &_state, int32_t alt_amsl_cm)
+void AP_GPS_Backend::set_heights(AP_GPS::GPS_State &_state, float amsl_m, float ellipsoid_m)
 {
-    if (option_set(AP_GPS::HeightEllipsoid) && _state.have_undulation) {
-        // user has asked ArduPilot to use ellipsoid height in the
-        // canonical height for mission and navigation
-        _state.location.alt = alt_amsl_cm - _state.undulation*100;
-    } else {
-        _state.location.alt = alt_amsl_cm;
+    _state.have_height_amsl = !isnan(amsl_m);
+    _state.have_height_ellipsoid = !isnan(ellipsoid_m);
+    if (_state.have_height_amsl) {
+        _state.height_amsl = amsl_m;
     }
+    if (_state.have_height_ellipsoid) {
+        _state.height_ellipsoid = ellipsoid_m;
+    }
+
+    // location.alt is the height used for mission and navigation:
+    // AMSL, or the ellipsoid height if the user has asked for it.  If
+    // the receiver reported only one of them then that one is used
+    float alt_m;
+    if (_state.have_height_ellipsoid &&
+        (option_set(AP_GPS::HeightEllipsoid) || !_state.have_height_amsl)) {
+        alt_m = ellipsoid_m;
+    } else if (_state.have_height_amsl) {
+        alt_m = amsl_m;
+    } else {
+        return;
+    }
+    _state.location.alt = roundf(alt_m * 100);  // m -> cm
 }
 
 #if AP_GPS_DEBUG_LOGGING_ENABLED

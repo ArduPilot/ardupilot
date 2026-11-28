@@ -487,16 +487,18 @@ AP_GPS_SBF::process_message(void)
         }
 
         // Update position state (don't use -2·10^10)
+        datum = temp.Datum;
         if (temp.Latitude > -200000) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
-            state.have_undulation = !is_DNU(temp.Undulation);
-            double height = temp.Height;  // in metres
-            if (state.have_undulation) {
-                height -= temp.Undulation;
-                state.undulation = -temp.Undulation;
+            // Height is above the ellipsoid; Undulation is the height
+            // of the geoid above the ellipsoid
+            if (!is_DNU(temp.Undulation)) {
+                set_heights(state, temp.Height - temp.Undulation, temp.Height);
+            } else {
+                // without the undulation there is no AMSL height
+                set_heights(state, NaNf, temp.Height);
             }
-            set_alt_amsl_cm(state, (float)height * 1e2f);  // m -> cm
         }
 
         state.num_sats = temp.NrSV;
@@ -695,6 +697,40 @@ bool AP_GPS_SBF::is_configured (void) const {
     return ((gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) ||
             (config_step == Config_State::Complete) ||AP_SIM_GPS_SBF_ENABLED);
 }
+
+#if AP_GPS_GNSS_SENDING_ENABLED
+/*
+  the datum the receiver reports in PVTGeodetic.  Codes which name no
+  datum (the DGNSS/RTK base station's, local and user-defined datums,
+  and do-not-use) are reported as unknown
+ */
+MAV_GNSS_DATUM AP_GPS_SBF::gnss_datum() const
+{
+    if (state.status < AP_GPS_FixType::FIX_2D) {
+        return MAV_GNSS_DATUM_UNKNOWN;
+    }
+    switch (datum) {
+    case 0:
+        return MAV_GNSS_DATUM_WGS84;  // WGS84/ITRS
+    case 30:
+        return MAV_GNSS_DATUM_ETRS89;
+    case 31:
+        return MAV_GNSS_DATUM_NAD83_2011;
+    case 32:
+        return MAV_GNSS_DATUM_NAD83_PA11;
+    case 33:
+        return MAV_GNSS_DATUM_NAD83_MA11;
+    case 34:
+        return MAV_GNSS_DATUM_GDA94;
+    case 35:
+        return MAV_GNSS_DATUM_GDA2020;
+    case 36:
+        return MAV_GNSS_DATUM_JGD2011;
+    default:
+        return MAV_GNSS_DATUM_UNKNOWN;
+    }
+}
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
 
 bool AP_GPS_SBF::is_healthy (void) const {
     return (RxError & RX_ERROR_MASK) == 0;

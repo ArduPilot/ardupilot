@@ -74,6 +74,15 @@ public:
 #if AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan);
 #endif
+
+    void send_mavlink_gnss(class GCS_MAVLINK &link);
+#if AP_GPS_GNSS_SENDING_ENABLED
+    // the datum and geoid model reported in GNSS; a backend which
+    // knows its receiver's overrides them
+    virtual MAV_GNSS_DATUM gnss_datum() const;
+    virtual MAV_GNSS_GEOID_MODEL gnss_geoid_model() const { return MAV_GNSS_GEOID_MODEL_UNKNOWN; }
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
+
     virtual void handle_msg(const mavlink_message_t &msg) { return ; }
 #endif
 
@@ -91,6 +100,11 @@ public:
 
     // driver specific health, returns true if the driver is healthy
     virtual bool is_healthy(void) const { return true; }
+
+#if AP_GPS_BLENDED_ENABLED
+    // true if this backend calculates its state from other backends
+    virtual bool is_blended() const { return false; }
+#endif
     // returns true if the GPS is doing any logging it is expected to
     virtual bool logging_healthy(void) const { return true; }
 
@@ -119,6 +133,10 @@ public:
 
     // Convert BCD date (DDMMYY) and time (MTK19 millisecond form) to GPS week and time
     static void BCD_to_gps_time(uint32_t bcd_date, uint32_t bcd_time_ms, uint16_t& gps_week, uint32_t& gps_time_ms);
+
+    virtual const Vector3f &get_antenna_offset() const {
+        return params.antenna_offset.get();
+    }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
@@ -180,7 +198,9 @@ protected:
 #endif
 
     // set alt in location, honouring GPS driver option for ellipsoid height
-    void set_alt_amsl_cm(AP_GPS::GPS_State &_state, int32_t alt_amsl_cm);
+    // set the heights the receiver reported, in metres, NaN for one
+    // it did not report, and location.alt from them
+    void set_heights(AP_GPS::GPS_State &_state, float amsl_m, float ellipsoid_m);
 
 private:
     // itow from previous message

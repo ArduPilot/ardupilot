@@ -25,7 +25,7 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:DroneCAN,10:Septentrio(SBF),11:Trimble(GSOF),13:ERB,14:MAVLink,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:DroneCAN-MovingBaseline-Base,23:DroneCAN-MovingBaseline-Rover,24:UnicoreNMEA,25:UnicoreMovingBaselineNMEA,26:Septentrio-DualAntenna(SBF)
+    // @Values: 0:None,1:AUTO,2:uBlox,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:DroneCAN,10:Septentrio(SBF),11:Trimble(GSOF),13:ERB,14:MAVLink,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:DroneCAN-MovingBaseline-Base,23:DroneCAN-MovingBaseline-Rover,24:UnicoreNMEA,25:UnicoreMovingBaselineNMEA,26:Septentrio-DualAntenna(SBF),27:Blended
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("TYPE",    1, AP_GPS::Params, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -111,6 +111,15 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     // @Description: GPS Node id for GPS. If 0 the gps will be automatically selected on a first-come-first-GPS basis.
     // @User: Advanced
     AP_GROUPINFO("CAN_OVRIDE", 9, AP_GPS::Params, override_node_id, 0),
+#endif
+
+#if AP_GPS_BLENDED_ENABLED
+    // @Param: BLEND_MASK
+    // @DisplayName: Blended backend include mask
+    // @Description: If this is a blended backend then this mask specifies which GPS instances are included in the blend
+    // @Bitmask: 0:GPS1,1:GPS2,2:GPS3,3:GPS4,4:GPS5,5:GPS6,6:GPS7,7:GPS8
+    // @User: Advanced
+    AP_GROUPINFO("BLEND_MASK", 10, AP_GPS::Params, blend_mask, 255),
 #endif
 
     AP_GROUPEND

@@ -4,7 +4,6 @@ include ../MatekL431/hwdef.inc
 define AP_PERIPH_GPS_ENABLED 1
 define GPS_MAX_RATE_MS 200
 
-define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 
 define HAL_PERIPH_GPS_PORT_DEFAULT 2

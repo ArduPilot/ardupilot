@@ -31,7 +31,6 @@ define AP_PERIPH_RC_OUT_ENABLED 1
 
 
 # single GPS and compass for peripherals
-define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 

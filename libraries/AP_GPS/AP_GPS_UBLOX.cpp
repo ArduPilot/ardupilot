@@ -1526,9 +1526,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         _last_pos_time        = _buffer.posllh.itow;
         state.location.lng    = _buffer.posllh.longitude;
         state.location.lat    = _buffer.posllh.latitude;
-        state.have_undulation = true;
-        state.undulation = (_buffer.posllh.altitude_msl - _buffer.posllh.altitude_ellipsoid) * 0.001;
-        set_alt_amsl_cm(state, _buffer.posllh.altitude_msl / 10);
+        set_heights(state, _buffer.posllh.altitude_msl * 0.001, _buffer.posllh.altitude_ellipsoid * 0.001);
 
         state.status          = next_fix;
         _new_position = true;
@@ -1741,9 +1739,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         _last_pos_time        = _buffer.pvt.itow;
         state.location.lng    = _buffer.pvt.lon;
         state.location.lat    = _buffer.pvt.lat;
-        state.have_undulation = true;
-        state.undulation = (_buffer.pvt.h_msl - _buffer.pvt.h_ellipsoid) * 0.001;
-        set_alt_amsl_cm(state, _buffer.pvt.h_msl / 10);
+        set_heights(state, _buffer.pvt.h_msl * 0.001, _buffer.pvt.h_ellipsoid * 0.001);
         switch (_buffer.pvt.fix_type)
         {
             case 0:

@@ -34,6 +34,14 @@ const AP_Param::GroupInfo MovingBase::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OFS", 2, MovingBase, base_offset, 0.0f),
 
+    // @Param: BASE
+    // @DisplayName: Moving baseline base GPS
+    // @Description: For a moving baseline rover, the GPS which is its base: 1 for GPS1, 2 for GPS2 and so on. 0 picks the base automatically: the other GPS of the rover's pair (GPS1 with GPS2, GPS3 with GPS4 and so on) if that is a base, otherwise the only base.
+    // @Range: 0 8
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("BASE", 3, MovingBase, base, 0),
+
     AP_GROUPEND
 
 };
