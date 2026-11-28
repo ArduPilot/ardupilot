@@ -147,7 +147,7 @@ class CompatOptionParser(optparse.OptionParser):
             opts = e.opts
             mavproxy_args = [str(e)[16:]]  # this trims "no such option" off
             mavproxy_args.extend(e.rargs)
-            opts.ensure_value("mavproxy_args", " ".join(mavproxy_args))
+            opts.ensure_value("mavproxy_args", shlex.join(mavproxy_args))
 
         return opts, args
 
@@ -1167,39 +1167,11 @@ def start_mavproxy(opts, stuff):
     if "extra_mavlink_cmds" in stuff:
         extra_cmd += " " + stuff["extra_mavlink_cmds"]
 
-    # Parsing the arguments to pass to mavproxy, split args on space
-    # and "=" signs and ignore those signs within quotation marks
+    # Split the arguments to pass to mavproxy as a shell would, so
+    # quoted values stay together. mavproxy's parser accepts
+    # "--option=value" itself, so those are passed unchanged.
     if opts.mavproxy_args:
-        # It would be great if this could be done with regex
-        mavargs = opts.mavproxy_args.split(" ")
-        # Find the arguments with '=' in them and split them up
-        for i, x in enumerate(mavargs):
-            if '=' in x:
-                mavargs[i] = x.split('=')[0]
-                mavargs.insert(i+1, x.split('=')[1])
-        # Use this flag to tell if parsing character in between a pair
-        # of quotation marks
-        inString = False
-        beginStringIndex = []
-        endStringIndex = []
-        # Iterate through the arguments, looking for the arguments
-        # that begin with a quotation mark and the ones that end with
-        # a quotation mark
-        for i, x in enumerate(mavargs):
-            if not inString and x[0] == "\"":
-                beginStringIndex.append(i)
-                mavargs[i] = x[1:]
-                inString = True
-            elif inString and x[-1] == "\"":
-                endStringIndex.append(i)
-                inString = False
-                mavargs[i] = x[:-1]
-        # Replace the list items with one string to be passed into mavproxy
-        for begin, end in zip(beginStringIndex, endStringIndex):
-            replacement = " ".join(mavargs[begin:end+1])
-            mavargs[begin] = replacement
-            mavargs = mavargs[0:begin+1] + mavargs[end+1:]
-        cmd.extend(mavargs)
+        cmd.extend(shlex.split(opts.mavproxy_args))
 
     # compatibility pass-through parameters (for those that don't want
     # to use -C :-)
@@ -1493,7 +1465,9 @@ group_sim.add_option("-w", "--wipe-eeprom",
 group_sim.add_option("-m", "--mavproxy-args",
                      default=None,
                      type='string',
-                     help="additional arguments to pass to mavproxy.py")
+                     help="additional arguments to pass to mavproxy.py, split as "
+                     "a shell would split them. Put a value that contains double "
+                     "quotes, such as a JSON module argument, in single quotes")
 group_sim.add_option("", "--scrimmage-args",
                      default=None,
                      type='string',
@@ -1757,6 +1731,13 @@ if cmd_opts.instance < 0:
 if cmd_opts.count < 1:
     print("May not specify a count less than 1")
     sys.exit(1)
+
+if cmd_opts.mavproxy_args:
+    try:
+        shlex.split(cmd_opts.mavproxy_args)
+    except ValueError as e:
+        print("Cannot parse --mavproxy-args %r: %s" % (cmd_opts.mavproxy_args, e))
+        sys.exit(1)
 
 if cmd_opts.strace and cmd_opts.valgrind:
     print("valgrind and strace almost certainly not a good idea")
