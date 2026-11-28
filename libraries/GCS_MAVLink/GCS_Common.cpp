@@ -5039,9 +5039,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
     if (reset_and_restart && packet.param1 >= 0) {
         mission.resume();
     }
-
-    // volunteer the new current waypoint for all listeners
-    send_message(MSG_CURRENT_WAYPOINT);
+    if (packet.param1 < 0) {
+        // mission.set_current_cmd() above broadcast the new current
+        // waypoint to all MAVLink listeners when it changed it.  Nothing
+        // changed here (-1 means "do not reset waypoint"), so volunteer
+        // the current waypoint on this link only:
+        send_message(MSG_CURRENT_WAYPOINT);
+    }
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -5056,8 +5060,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_jump_tag(const mavlink_command_int_t &
         return MAV_RESULT_FAILED;
     }
 
-    // volunteer the new current waypoint for all listeners
-    send_message(MSG_CURRENT_WAYPOINT);
+    // AP_Mission::set_current_cmd() has broadcast the new current
+    // waypoint to all MAVLink listeners
 
     return MAV_RESULT_ACCEPTED;
 }
