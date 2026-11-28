@@ -1,0 +1,59 @@
+# RPI_UAVFC copter flight under Renode physics (test_physics_flight.py
+# rpi-uavfc-copter). Build with an absolute path, as for RPI_UAVFC-renode.parm.
+@include RPI_UAVFC-renode.parm
+
+# no RC, battery or safety switch in the emulation; the test force-arms
+ARMING_SKIPCHK -1
+BATT_MONITOR 0
+BRD_SAFETY_DEFLT 0
+FS_THR_ENABLE 0
+RC_PROTOCOLS 0
+
+# IST8310 model on the external I2C1 bus; the SITL copter offsets, as KakuteF4-copter.parm
+COMPASS_OFS_X 5
+COMPASS_OFS_Y 13
+COMPASS_OFS_Z -18
+
+# u-blox model on SERIAL2 (uart1)
+GPS1_TYPE 1
+SERIAL2_PROTOCOL 5
+EK3_GPS_CHECK 0
+
+# MAV2 is the second MAVLink channel, SERIAL1 (uart0), after SERIAL0 (USB)
+MAV2_EXT_STAT 2
+MAV2_POSITION 2
+MAV2_EXTRA1 2
+MAV2_EXTRA2 2
+
+# bfx physics model: motors on outputs 1-4 in Betaflight order
+FRAME_CLASS 1
+FRAME_TYPE 12
+
+AUTO_OPTIONS 3
+WP_SPD 1
+WP_ACC 0.5
+WP_YAW_BEHAVIOR 0
+LAND_SPD_MS 1
+
+ATC_ANG_RLL_P 2
+ATC_ANG_PIT_P 2
+ATC_RAT_RLL_P 0.05
+ATC_RAT_RLL_I 0.05
+ATC_RAT_RLL_D 0.001
+ATC_RAT_PIT_P 0.05
+ATC_RAT_PIT_I 0.05
+ATC_RAT_PIT_D 0.001
+ATC_RAT_YAW_P 0.3
+ATC_RAT_YAW_I 0.02
+MOT_THST_EXPO 0.65
+MOT_THST_HOVER 0.39
+MOT_BAT_VOLT_MIN 9.6
+MOT_BAT_VOLT_MAX 12.8
+
+INS_ACCOFFS_X 0.001
+INS_ACCOFFS_Y 0.001
+INS_ACCOFFS_Z 0.001
+INS_ACCSCAL_X 1.001
+INS_ACCSCAL_Y 1.001
+INS_ACCSCAL_Z 1.001
+INS_GYR_CAL 0

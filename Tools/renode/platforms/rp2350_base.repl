@@ -1,0 +1,171 @@
+// Raspberry Pi RP2350, both Cortex-M33 cores - base platform for the ChibiOS
+// RP2350 boards (RPI_UAVFC, Laurel).
+//
+// Addresses and IRQ numbers are from the RP2350 datasheet (2.2 Address map,
+// 3.2 Interrupts). There is no boot ROM model: the harness loads the
+// application ELF and points core0 at its vector table, and core1 waits in
+// its halted "ROM" state until the SIO launch handshake releases it.
+
+rom: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x8000
+
+// Boot flash, executed in place. RPI_UAVFC fits a 4 MB part.
+flash: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x400000
+
+// SRAM0-7 striped (0x20000000-0x2007ffff) plus the 4 KB SRAM8/SRAM9 scratch
+// banks. One region: they are contiguous and Renode cannot map overlaps.
+sram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x82000
+
+// XIP cache maintenance window (0x18000000-0x1bffffff): the firmware
+// invalidates and pins cache lines by writing here. Nothing to model, the
+// writes just need somewhere to land.
+xip_maintenance: Memory.MappedMemory @ sysbus 0x18000000
+    size: 0x4000000
+
+bootram: Memory.MappedMemory @ sysbus 0x400e0000
+    size: 0x400
+
+usbram: Memory.MappedMemory @ sysbus 0x50100000
+    size: 0x1000
+
+// Blocks whose status bits the start-up code polls (AP_RP2350_Basic.cs).
+// Each registration covers the normal view plus the XOR/SET/CLR aliases.
+resets: Miscellaneous.AP_RP2350_Resets @ sysbus <0x40020000, +0x4000>
+clocks: Miscellaneous.AP_RP2350_Clocks @ sysbus <0x40010000, +0x4000>
+psm: Miscellaneous.AP_RP2350_PSM @ sysbus <0x40018000, +0x4000>
+xosc: Miscellaneous.AP_RP2350_XOSC @ sysbus <0x40048000, +0x4000>
+pll_sys: Miscellaneous.AP_RP2350_PLL @ sysbus <0x40050000, +0x4000>
+pll_usb: Miscellaneous.AP_RP2350_PLL @ sysbus <0x40058000, +0x4000>
+
+// 1 MHz timers (AP_RP2350_Timer.cs): outputs 0-3 go to core0, 4-7 to core1.
+timer0: Miscellaneous.AP_RP2350_Timer @ sysbus <0x400b0000, +0x4000>
+    [0-3] -> nvic0@[0-3]
+    [4-7] -> nvic1@[0-3]
+
+timer1: Miscellaneous.AP_RP2350_Timer @ sysbus <0x400b8000, +0x4000>
+    [0-3] -> nvic0@[4-7]
+    [4-7] -> nvic1@[4-7]
+
+// SIO (AP_RP2350_SIO.cs), which also stands in for core1's boot ROM.
+// IRQ 25 = SIO_IRQ_FIFO, 26 = SIO_IRQ_BELL, per core.
+sio: Miscellaneous.AP_RP2350_SIO @ sysbus 0xd0000000
+    core1: cpu1
+    [0, 2] -> nvic0@[25, 26]
+    [1, 3] -> nvic1@[25, 26]
+
+adc: Miscellaneous.AP_RP2350_ADC @ sysbus <0x400a0000, +0x4000>
+
+// PWM slices: plain registers for now; no actuator output yet.
+pwm: Miscellaneous.AP_RP2350_Block @ sysbus <0x400a8000, +0x4000>
+
+// DMA (AP_RP2350_DMA.cs): DMA_IRQ_0..3 are IRQs 10-13 on each core. Its GPIO
+// inputs are the DREQs, numbered as TREQ_SEL.
+dma: Miscellaneous.AP_RP2350_DMA @ sysbus <0x50000000, +0x4000>
+    [0-3] -> nvic0@[10-13]
+    [4-7] -> nvic1@[10-13]
+
+// UARTs (AP_RP2350_UART.cs): IRQ 33/34, DREQs 28-31.
+uart0: Miscellaneous.AP_RP2350_UART @ sysbus <0x40070000, +0x4000>
+    IRQ -> nvic0@33
+    DmaTx -> dma@28
+    DmaRx -> dma@29
+
+uart1: Miscellaneous.AP_RP2350_UART @ sysbus <0x40078000, +0x4000>
+    IRQ -> nvic0@34
+    DmaTx -> dma@30
+    DmaRx -> dma@31
+
+// I2C (AP_RP2350_I2C.cs): IRQ 36/37. A board file attaches the devices.
+i2c0: Miscellaneous.AP_RP2350_I2C @ sysbus <0x40090000, +0x4000>
+    IRQ -> nvic0@36
+
+i2c1: Miscellaneous.AP_RP2350_I2C @ sysbus <0x40098000, +0x4000>
+    IRQ -> nvic0@37
+
+// SPI (AP_RP2350_SPI.cs). A board file attaches an AP_SPIMultiplexer to each
+// bus it uses and wires the chip selects from sio.
+spi0: Miscellaneous.AP_RP2350_SPI @ sysbus <0x40080000, +0x4000>
+    IRQ -> nvic0@31
+    DmaTx -> dma@24
+    DmaRx -> dma@25
+
+spi1: Miscellaneous.AP_RP2350_SPI @ sysbus <0x40088000, +0x4000>
+    IRQ -> nvic0@32
+    DmaTx -> dma@26
+    DmaRx -> dma@27
+
+// USB controller registers. There is no USB model: the firmware configures
+// the block and nothing ever enumerates.
+usbctrl_regs: Miscellaneous.AP_RP2350_Block @ sysbus <0x50110000, +0x4000>
+
+// Each core has its own DWT cycle counter.
+dwt0: Miscellaneous.AP_DWT @ sysbus new Bus.BusPointRegistration {
+        address: 0xe0001000;
+        cpu: cpu0
+    }
+    frequency: 225000000
+
+dwt1: Miscellaneous.AP_DWT @ sysbus new Bus.BusPointRegistration {
+        address: 0xe0001000;
+        cpu: cpu1
+    }
+    frequency: 225000000
+
+// QMI direct mode with a SPI NOR flash behind it (AP_RP2350_QMI.cs): the
+// parameter storage erases and programs the boot flash through it.
+qmi: Miscellaneous.AP_RP2350_QMI @ sysbus <0x400d0000, +0x4000>
+    flash: flash
+
+// PIO blocks: FIFO status only for now (AP_RP2350_PIO in AP_RP2350_Basic.cs).
+pio0: Miscellaneous.AP_RP2350_PIO @ sysbus <0x50200000, +0x4000>
+pio1: Miscellaneous.AP_RP2350_PIO @ sysbus <0x50300000, +0x4000>
+pio2: Miscellaneous.AP_RP2350_PIO @ sysbus <0x50400000, +0x4000>
+
+// Configuration-only blocks at this stage: plain registers with the aliases.
+sysinfo: Miscellaneous.AP_RP2350_Block @ sysbus <0x40000000, +0x4000>
+syscfg: Miscellaneous.AP_RP2350_Block @ sysbus <0x40008000, +0x4000>
+io_bank0: Miscellaneous.AP_RP2350_Block @ sysbus <0x40028000, +0x4000>
+io_qspi: Miscellaneous.AP_RP2350_Block @ sysbus <0x40030000, +0x4000>
+pads_bank0: Miscellaneous.AP_RP2350_Block @ sysbus <0x40038000, +0x4000>
+pads_qspi: Miscellaneous.AP_RP2350_Block @ sysbus <0x40040000, +0x4000>
+accessctrl: Miscellaneous.AP_RP2350_Block @ sysbus <0x40060000, +0x4000>
+busctrl: Miscellaneous.AP_RP2350_Block @ sysbus <0x40068000, +0x4000>
+xip_ctrl: Miscellaneous.AP_RP2350_Block @ sysbus <0x400c8000, +0x4000>
+watchdog: Miscellaneous.AP_RP2350_Block @ sysbus <0x400d8000, +0x4000>
+powman: Miscellaneous.AP_RP2350_Powman @ sysbus <0x40100000, +0x4000>
+ticks: Miscellaneous.AP_RP2350_Block @ sysbus <0x40108000, +0x4000>
+
+cpu0: CPU.CortexM @ sysbus
+    cpuType: "cortex-m33"
+    // RP2350 cores boot in secure state and ChibiOS is built for it
+    // (CMSE=3): TrustZone on, SAU off, so everything is secure.
+    enableTrustZone: true
+    id: 0
+    nvic: nvic0
+
+cpu1: CPU.CortexM @ sysbus
+    cpuType: "cortex-m33"
+    // RP2350 cores boot in secure state and ChibiOS is built for it
+    // (CMSE=3): TrustZone on, SAU off, so everything is secure.
+    enableTrustZone: true
+    id: 1
+    nvic: nvic1
+
+// Each core has its own NVIC at the same address, visible only to that core.
+nvic0: IRQControllers.NVIC @ sysbus new Bus.BusPointRegistration {
+        address: 0xe000e000;
+        cpu: cpu0
+    }
+    priorityMask: 0xF0
+    systickFrequency: 225000000
+    -> cpu0@0
+
+nvic1: IRQControllers.NVIC @ sysbus new Bus.BusPointRegistration {
+        address: 0xe000e000;
+        cpu: cpu1
+    }
+    priorityMask: 0xF0
+    systickFrequency: 225000000
+    -> cpu1@0
