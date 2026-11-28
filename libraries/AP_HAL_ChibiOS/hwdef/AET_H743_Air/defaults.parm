@@ -1,1 +1,3 @@
 SERVO11_FUNCTION 120
+# Skip compass arming check (no onboard compass); bit 2 = 4
+ARMING_SKIPCHK 4
