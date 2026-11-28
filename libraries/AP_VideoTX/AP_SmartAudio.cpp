@@ -155,6 +155,11 @@ void AP_SmartAudio::loop()
                 AP::vtx().announce_vtx_settings();
                 set_configuration_pending(false);
                 vtx.set_configuration_finished(true);
+            } else if (vtx.configured_rejected() && now - _last_request_sent_ms > SMARTAUDIO_REFUSED_POLL_MS) {
+                // nothing is sent while the configuration is one the VTX
+                // refused, so ask for its settings now and then: a VTX
+                // unlocked with its button is then seen and asked again
+                request_settings();
             }
         }
     }
@@ -165,18 +170,24 @@ void AP_SmartAudio::update_vtx_params()
 {
     AP_VideoTX& vtx = AP::vtx();
 
-    _vtx_freq_change_pending = vtx.update_band() || vtx.update_channel() || vtx.update_frequency() || _vtx_freq_change_pending;
+    _vtx_freq_change_pending = vtx.update_tuning() || _vtx_freq_change_pending;
     _vtx_power_change_pending = vtx.update_power() || _vtx_power_change_pending;
     _vtx_options_change_pending = vtx.update_options() || _vtx_options_change_pending;
 
     if (_vtx_freq_change_pending || _vtx_power_change_pending || _vtx_options_change_pending) {
         // make the desired frequency match the desired band and channel
         if (_vtx_freq_change_pending) {
-            if (vtx.update_band() || vtx.update_channel()) {
+            // VTX_FREQ may still be a frequency the VTX refused: a band or
+            // channel change since then is what is wanted, even one back to
+            // the channel the VTX is on
+            if (vtx.update_band() || vtx.update_channel() || vtx.rejected_frequency_superseded()) {
                 vtx.update_configured_frequency();
             } else {
                 vtx.update_configured_channel_and_band();
             }
+        }
+        if (!_vtx_freq_change_pending) {
+            _freq_attempts = 0;
         }
 
         debug("update_params(): freq %d->%d, chan: %d->%d, band: %d->%d, pwr: %d->%d, opts: %d->%d",
@@ -218,10 +229,35 @@ void AP_SmartAudio::update_vtx_params()
             set_operation_mode(mode);
         } else if (_vtx_freq_change_pending) {
             debug("update frequency");
+            const uint16_t freq = vtx.get_configured_frequency_mhz();
+            const uint8_t band = vtx.get_configured_band();
+            const uint8_t channel = vtx.get_configured_channel();
+            if (freq != _freq_attempt_mhz || band != _freq_attempt_band || channel != _freq_attempt_channel) {
+                _freq_attempt_mhz = freq;
+                _freq_attempt_band = band;
+                _freq_attempt_channel = channel;
+                _freq_attempts = 0;
+            } else if (_replies_parsed != _freq_attempt_replies && vtx.update_tuning()) {
+                // the VTX has answered since it was last asked and is still
+                // not there. A VTX that is not answering (unpowered, or the
+                // replies are lost or corrupt) has not refused anything:
+                // keep asking until it does answer
+                _freq_attempts++;
+            }
+            _freq_attempt_replies = _replies_parsed;
+            if (_freq_attempts >= VTX_MAX_FREQUENCY_ATTEMPTS) {
+                // the VTX does not take this frequency or channel (it may be
+                // out of its range, or locked): stop asking so that other
+                // changes can go out
+                vtx.frequency_rejected(band, channel, freq);
+                _vtx_freq_change_pending = false;
+                _freq_attempts = 0;
+                return;
+            }
             if (_vtx_use_set_freq) {
-                set_frequency(vtx.get_configured_frequency_mhz(), false);
+                set_frequency(freq, false);
             } else {
-                set_channel(vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel());
+                set_channel(band * VTX_MAX_CHANNELS + channel);
             }
         } else if (_vtx_power_change_pending) {
             debug("update power (ver %u)", _protocol_version);
@@ -358,6 +394,9 @@ bool AP_SmartAudio::read_response(uint8_t *response_buffer)
     _inline_buffer_length=0;
     _packet_size = 0;
     _packets_rcvd++;
+    if (correct_parse) {
+        _replies_parsed++;
+    }
     // reset the lost packets to 0
     _packets_sent =_packets_rcvd;
     return correct_parse;
@@ -517,7 +556,14 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     AP_VideoTX& vtx = AP::vtx();
 
     vtx.set_enabled(true);
-    vtx.set_frequency_mhz(settings.frequency);
+    // in channel mode the settings frequency is the VTX's stored user
+    // frequency, not the one it is on, so take it from the band and channel.
+    // Mode bit 0 is set in frequency mode, as print_settings() reads it
+    if ((settings.mode & 1) || settings.band >= AP_VideoTX::MAX_BANDS) {
+        vtx.set_frequency_mhz(settings.frequency);
+    } else {
+        vtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(settings.band, settings.channel));
+    }
     vtx.set_band(settings.band);
     vtx.set_channel(settings.channel);
     // SA21 sends us a complete packet with the supported power levels
@@ -547,6 +593,13 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     _initialised = true;
 
     _vtx_power_change_pending = _vtx_freq_change_pending = _vtx_options_change_pending = false;
+
+    if (!vtx.update_tuning() && !vtx.configured_rejected()) {
+        // the VTX is where it was asked to be, so asking for this again
+        // later starts from scratch
+        _freq_attempt_mhz = 0;
+        _freq_attempts = 0;
+    }
 }
 
 bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer_length)
@@ -620,10 +673,24 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U16ResponseFrame *resp = (const U16ResponseFrame *)buffer;
-        unpack_frequency(&settings, resp->payload);
+        unpack_frequency(&settings, be16toh(resp->payload));
+        // the reply says what the VTX is now on. The configuration is what
+        // the user set and is left alone, so a change made while the command
+        // was in flight is still sent. The band and channel go with the
+        // frequency, or stale ones would have every reply that matched
+        // counted as the VTX not being where it was asked to be
         vtx.set_frequency_mhz(settings.frequency);
-        vtx.set_configured_frequency_mhz(vtx.get_frequency_mhz());
-        vtx.update_configured_channel_and_band();
+        AP_VideoTX::VideoBand band;
+        uint8_t channel;
+        if (AP_VideoTX::get_frequency_mhz(vtx.get_configured_band(), vtx.get_configured_channel()) == settings.frequency) {
+            // two channels can share a frequency, 5880MHz is both F8 and
+            // R7. The VTX is on the configured one if it has its frequency
+            vtx.set_band(vtx.get_configured_band());
+            vtx.set_channel(vtx.get_configured_channel());
+        } else if (AP_VideoTX::get_band_and_channel(settings.frequency, band, channel)) {
+            vtx.set_band(band);
+            vtx.set_channel(channel);
+        }
         debug("Frequency was set to %d", settings.frequency);
     }
         break;
@@ -633,11 +700,14 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U8ResponseFrame *resp = (const U8ResponseFrame *)buffer;
-        vtx.set_band(resp->payload / VTX_MAX_CHANNELS);
-        vtx.set_channel(resp->payload % VTX_MAX_CHANNELS);
-        vtx.set_configured_channel(vtx.get_channel());
-        vtx.set_configured_band(vtx.get_band());
-        vtx.update_configured_frequency();
+        // as for SET_FREQUENCY, only what the VTX is on is updated
+        const uint8_t band = resp->payload / VTX_MAX_CHANNELS;
+        const uint8_t channel = resp->payload % VTX_MAX_CHANNELS;
+        vtx.set_band(band);
+        vtx.set_channel(channel);
+        if (band < AP_VideoTX::MAX_BANDS) {
+            vtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(band, channel));
+        }
         debug("Channel was set to %d", resp->payload);
     }
         break;
@@ -654,21 +724,18 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
                 vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
             vtx.set_power_dbm(power);
-            vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         case SMARTAUDIO_SPEC_PROTOCOL_v2:
             if (vtx.get_configured_power_level() != power) {
                 vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
             vtx.set_power_level(power);
-            vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         default:
             if (vtx.get_configured_power_dac() != power) {
                 vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
             vtx.set_power_dac(power);
-            vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         }
         debug("Power was set to %d", power);
