@@ -59,8 +59,8 @@ public:
     // relative-origin functions for fallback in AP_InertialNav
     // set the origin, allowing a common origin established by another
     // AHRS backend to be shared with the external AHRS
-    bool set_origin(const Location &loc) override;
-    bool get_origin(Location &ret) const override;
+    bool set_origin(const AbsAltLocation &loc) override;
+    bool get_origin(AbsAltLocation &ret) const override;
 };
 
 #endif

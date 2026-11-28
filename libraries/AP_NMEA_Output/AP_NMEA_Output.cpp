@@ -116,7 +116,7 @@ void AP_NMEA_Output::update()
     char tstring[10];
     hal.util->snprintf(tstring, sizeof(tstring), "%02u%02u%05.2f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
 
-    Location loc;
+    AbsAltLocation loc;
     const auto &gps = AP::gps();
     const AP_GPS_FixType gps_status = gps.status();
 
@@ -212,7 +212,7 @@ void AP_NMEA_Output::update()
                                     fix_quality,
                                     gps.num_sats(),
                                     gps.get_hdop()*0.01,
-                                    loc.alt * 0.01f);
+                                    loc.get_alt_cm() * 0.01f);
 
         space_required += gga_length;
     }

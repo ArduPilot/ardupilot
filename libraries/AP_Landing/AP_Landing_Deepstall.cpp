@@ -292,9 +292,9 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             landing.ahrs.get_relative_position_D_home(height_above_target);
             height_above_target = -height_above_target;
         } else {
-            Location position;
+            AbsAltLocation position;
             if (landing.ahrs.get_location(position)) {
-                height_above_target = (position.alt - landing_point.alt + approach_alt_offset * 100) * 1e-2f;
+                height_above_target = (position.get_alt_cm() - landing_point.alt + approach_alt_offset * 100) * 1e-2f;
             } else {
                 height_above_target = approach_alt_offset;
             }

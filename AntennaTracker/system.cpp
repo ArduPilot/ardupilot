@@ -81,7 +81,7 @@ void Tracker::init_ardupilot()
 /*
   fetch HOME from EEPROM
 */
-bool Tracker::get_home_eeprom(Location &loc) const
+bool Tracker::get_home_eeprom(AbsAltLocation &loc) const
 {
     // Find out proper location in memory by using the start_byte position + the index
     // --------------------------------------------------------------------------------
@@ -93,17 +93,16 @@ bool Tracker::get_home_eeprom(Location &loc) const
     loc = {
         int32_t(wp_storage.read_uint32(5)),
         int32_t(wp_storage.read_uint32(9)),
-        int32_t(wp_storage.read_uint32(1)),
-        Location::AltFrame::ABSOLUTE
+        int32_t(wp_storage.read_uint32(1))
     };
 
     return true;
 }
 
-bool Tracker::set_home_eeprom(const Location &temp)
+bool Tracker::set_home_eeprom(const AbsAltLocation &temp)
 {
     wp_storage.write_byte(0, 0);
-    wp_storage.write_uint32(1, temp.alt);
+    wp_storage.write_uint32(1, temp.get_alt_cm());
     wp_storage.write_uint32(5, temp.lat);
     wp_storage.write_uint32(9, temp.lng);
 
@@ -117,7 +116,7 @@ bool Tracker::set_home_to_current_location(bool lock)
     return set_home(AP::gps().location(), lock);
 }
 
-bool Tracker::set_home(const Location &temp, bool lock)
+bool Tracker::set_home(const AbsAltLocation &temp, bool lock)
 {
     // check EKF origin has been set
     if (ahrs.has_origin()) {

@@ -134,7 +134,7 @@ void AIS::update(const class Aircraft &aircraft)
     last_sim_update_ms = now_ms;
 
     // Get current location to remove any vessel that is too far away
-    const Location &aircraft_loc = aircraft.get_location();
+    const auto &aircraft_loc = aircraft.get_location();
 
     // Update all vessels, marking any that move too far from the aircraft as in-active
     for (uint8_t i=0; i<ARRAY_SIZE(vessels); i++) {

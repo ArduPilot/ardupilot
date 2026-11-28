@@ -1539,7 +1539,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if UBLOX_FAKE_3DLOCK
         state.location.lng = 1491652300L;
         state.location.lat = -353632610L;
-        state.location.alt = 58400;
+        state.location.set_alt_cm(58400);
         state.vertical_accuracy = 0;
         state.horizontal_accuracy = 0;
 #endif
@@ -1810,7 +1810,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if UBLOX_FAKE_3DLOCK
         state.location.lng = 1491652300L;
         state.location.lat = -353632610L;
-        state.location.alt = 58400;
+        state.location.set_alt_cm(58400);
         state.vertical_accuracy = 0;
         state.horizontal_accuracy = 0;
         state.status = AP_GPS_FixType::FIX_3D;

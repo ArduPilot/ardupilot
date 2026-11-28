@@ -4,7 +4,7 @@
 void Blimp::read_inertia()
 {
     // pull position from ahrs
-    Location loc;
+    AbsAltLocation loc;
     // AHRS provides a best-guess in case of failure
     UNUSED_RESULT(ahrs.get_location(loc));
     current_loc.lat = loc.lat;

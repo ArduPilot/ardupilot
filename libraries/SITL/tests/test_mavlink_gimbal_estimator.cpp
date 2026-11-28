@@ -21,7 +21,7 @@ static mavlink_autopilot_state_for_gimbal_device_t attitude_packet()
 TEST(MAVLinkGimbalEstimator, RequiresBothFreshMessages)
 {
     MAVLinkGimbalv2_Estimator estimator;
-    Location location;
+    AbsAltLocation location;
     EXPECT_FALSE(estimator.get_location(0, location));
     mavlink_global_position_int_t position {};
     position.lat = -350000000;
@@ -34,7 +34,7 @@ TEST(MAVLinkGimbalEstimator, RequiresBothFreshMessages)
     ASSERT_TRUE(estimator.get_location(100, location));
     EXPECT_EQ(location.lat, position.lat);
     EXPECT_EQ(location.lng, position.lon);
-    EXPECT_EQ(location.alt, 60000);
+    EXPECT_EQ(location.get_alt_cm(), 60000);
     EXPECT_EQ(location.get_alt_frame(), Location::AltFrame::ABSOLUTE);
 
     // Refreshing either stream alone must not conceal loss of the other.
@@ -76,13 +76,13 @@ TEST(MAVLinkGimbalEstimator, PredictsWithGlobalPositionVelocity)
     position.vy = -1000;
     position.vz = 400;
     estimator.handle_position(position, 100);
-    Location start, predicted;
+    AbsAltLocation start, predicted;
     ASSERT_TRUE(estimator.get_location(100, start));
     ASSERT_TRUE(estimator.get_location(600, predicted));
     const Vector2f displacement = start.get_distance_NE(predicted);
     EXPECT_NEAR(displacement.x, 10, 0.02);
     EXPECT_NEAR(displacement.y, -5, 0.02);
-    EXPECT_EQ(predicted.alt, 59800);
+    EXPECT_EQ(predicted.get_alt_cm(), 59800);
 }
 
 TEST(MAVLinkGimbalEstimator, CombinesVehicleAttitudeAndThreeEncoders)

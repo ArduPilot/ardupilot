@@ -84,7 +84,7 @@ public:
     }
 
     // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
+    bool get_origin(AbsAltLocation &ret) const override;
 
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
@@ -104,7 +104,7 @@ private:
     Vector2f groundspeed_vector();
 
     // dead-reckoning support
-    bool get_location(Location &loc) const;
+    bool get_location(AbsAltLocation &loc) const;
 
     // settable parameters
     AP_Float &_kp_yaw;
@@ -234,7 +234,7 @@ private:
     uint32_t _last_startup_ms;
 
     // last origin we returned, for DCM fallback from EKF
-    Location last_origin;
+    AbsAltLocation last_origin;
 
     // Declare filter states for HPF and LPF used by complementary
     // filter in AP_AHRS::groundspeed_vector

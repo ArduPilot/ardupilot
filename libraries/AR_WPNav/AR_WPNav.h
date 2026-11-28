@@ -112,7 +112,7 @@ protected:
     bool is_active() const;
 
     // move target location along track from origin to destination using SCurves navigation
-    void advance_wp_target_along_track(const Location &current_loc, float dt);
+    void advance_wp_target_along_track(const AbsAltLocation &current_loc, float dt);
 
     // update psc input shaping navigation controller
     void update_psc_input_shaping(float dt);
@@ -121,11 +121,11 @@ protected:
     void update_distance_and_bearing_to_destination();
 
     // calculate steering and speed to drive along line from origin to destination waypoint
-    void update_steering_and_speed(const Location &current_loc, float dt);
+    void update_steering_and_speed(const AbsAltLocation &current_loc, float dt);
 
     // calculate the crosstrack error
     // value is negative when the vehicle is on the path's left side
-    float calc_crosstrack_error(const Location& current_loc) const;
+    float calc_crosstrack_error(const AbsAltLocation& current_loc) const;
 
     // calculate yaw change at next waypoint in degrees
     // returns zero if the angle cannot be calculated because some points are on top of others

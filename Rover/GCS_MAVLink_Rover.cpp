@@ -159,7 +159,7 @@ void GCS_MAVLINK_Rover::send_water_depth()
 
     // get position
     const AP_AHRS &ahrs = AP::ahrs();
-    Location loc;
+    AbsAltLocation loc;
     IGNORE_RETURN(ahrs.get_location(loc));
 
     const auto num_sensors = rangefinder->num_sensors();
@@ -190,7 +190,7 @@ void GCS_MAVLINK_Rover::send_water_depth()
             sensor_healthy,     // sensor healthy
             loc.lat,            // latitude of vehicle
             loc.lng,            // longitude of vehicle
-            loc.alt * 0.01f,    // altitude of vehicle (MSL)
+            loc.get_alt_cm() * 0.01f,    // altitude of vehicle (MSL)
             ahrs.get_roll_rad(),    // roll in radians
             ahrs.get_pitch_rad(),   // pitch in radians
             ahrs.get_yaw_rad(),     // yaw in radians
@@ -621,7 +621,7 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
     }
 
     // need ekf origin
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (!rover.ahrs.get_origin(ekf_origin)) {
         return;
     }

@@ -484,7 +484,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 state.velocity = Vector3f(cached.sbg.ekfNav.velocity[0], cached.sbg.ekfNav.velocity[1], cached.sbg.ekfNav.velocity[2]);
                 state.have_velocity = true;
 
-                state.location = Location(cached.sbg.ekfNav.position[0]*1e7, cached.sbg.ekfNav.position[1]*1e7, cached.sbg.ekfNav.position[2]*1e2, Location::AltFrame::ABSOLUTE);
+                state.location = AbsAltLocation(cached.sbg.ekfNav.position[0]*1e7, cached.sbg.ekfNav.position[1]*1e7, cached.sbg.ekfNav.position[2]*1e2);
                 state.last_location_update_us = AP_HAL::micros();
 
                 ekf_is_full_nav = SbgEkfStatus_is_fullNav(cached.sbg.ekfNav.status);

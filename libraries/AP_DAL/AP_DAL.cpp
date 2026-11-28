@@ -66,7 +66,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _home = ahrs.get_home();
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
-    _RFRN.alt = _home.alt;
+    _RFRN.alt = _home.get_alt_cm();
     // EAS2TAS is essentially a sensor input to the EKFs, so it is
     // deliberately taken from the barometer's atmosphere model
     // rather than the AHRS, lest a state estimator's output be fed
@@ -197,14 +197,14 @@ void AP_DAL::log_event2(AP_DAL::Event event)
 #endif
 }
 
-void AP_DAL::log_SetOriginLLH2(const Location &loc)
+void AP_DAL::log_SetOriginLLH2(const AbsAltLocation &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     end_frame();
     struct log_RSO2 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
-        alt            : loc.alt,
+        alt            : loc.get_alt_cm(),
     };
     WRITE_REPLAY_BLOCK(RSO2, pkt);
 #endif
@@ -232,14 +232,14 @@ void AP_DAL::log_event3(AP_DAL::Event event)
 #endif
 }
 
-void AP_DAL::log_SetOriginLLH3(const Location &loc)
+void AP_DAL::log_SetOriginLLH3(const AbsAltLocation &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     end_frame();
     struct log_RSO3 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
-        alt            : loc.alt,
+        alt            : loc.get_alt_cm(),
     };
     WRITE_REPLAY_BLOCK(RSO3, pkt);
 #endif
@@ -377,7 +377,7 @@ void AP_DAL::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float 
     WRITE_REPLAY_BLOCK_IFCHANGED(REPH, _REPH, old);
 }
 
-void AP_DAL::log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
+void AP_DAL::log_SetLatLng(const AbsAltLocation &loc, float posAccuracy, uint32_t timestamp_ms)
 {
     end_frame();
     const log_RSLL old = _RSLL;
@@ -557,7 +557,7 @@ void AP_DAL::handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _RSLL = msg;
     // note that EKF2 does not support body frame odometry
-    const Location loc {msg.lat, msg.lng, 0, Location::AltFrame::ABSOLUTE };
+    const AbsAltLocation loc {msg.lat, msg.lng, 0 };
     ekf3.setLatLng(loc, msg.posAccSD, msg.timestamp_ms);
 }
 #endif // APM_BUILD_Replay

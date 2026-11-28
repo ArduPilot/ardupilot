@@ -10,7 +10,7 @@ bool ModeSmartRTL::enabled() const
 bool ModeSmartRTL::_enter()
 {
     // SmartRTL requires EKF (not DCM)
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (!ahrs.get_origin(ekf_origin)) {
         return false;
     }

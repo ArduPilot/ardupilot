@@ -4,17 +4,18 @@
 
 #include "AP_AHRS.h"
 
-bool AP_AHRS_SIM::get_location(Location &loc) const
+bool AP_AHRS_SIM::get_location(AbsAltLocation &loc) const
 {
     if (_sitl == nullptr) {
         return false;
     }
 
     const struct SITL::sitl_fdm &fdm = _sitl->state;
-    loc = {};
-    loc.lat = fdm.latitude * 1e7;
-    loc.lng = fdm.longitude * 1e7;
-    loc.alt = fdm.altitude*100;
+    loc = {
+        int32_t(fdm.latitude * 1e7),
+        int32_t(fdm.longitude * 1e7),
+        int32_t(fdm.altitude*100)
+    };
 
     return true;
 }
@@ -49,7 +50,7 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
     return true;
 }
 
-bool AP_AHRS_SIM::get_origin(Location &ret) const
+bool AP_AHRS_SIM::get_origin(AbsAltLocation &ret) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -180,9 +181,9 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // origin-relative position:
     {
-        Location orgn;
+        AbsAltLocation orgn;
         if (get_origin(orgn)) {
-            results.position_D = -(fdm.altitude - orgn.alt*0.01f);
+            results.position_D = -(fdm.altitude - orgn.get_alt_cm()*0.01f);
             results.position_D_valid = true;
 
             if (results.location_valid) {
@@ -193,7 +194,7 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     }
 
     results.hagl_valid = true;
-    results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
+    results.hagl = _sitl->state.altitude - AP::ahrs().get_home().get_alt_cm()*0.01f;
 
     /*
      * air data estimates

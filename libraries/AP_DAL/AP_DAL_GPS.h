@@ -15,7 +15,7 @@ public:
     AP_GPS_FixType status() const {
         return status(primary_sensor());
     }
-    const Location &location(uint8_t instance) const {
+    const AbsAltLocation &location(uint8_t instance) const {
         return tmp_location[instance];
     }
     bool have_vertical_velocity(uint8_t instance) const {
@@ -97,7 +97,7 @@ public:
     }
 
     // TODO: decide if this really, really should be here!
-    const Location &location() const {
+    const AbsAltLocation &location() const {
         return location(_RGPH.primary_sensor);
     }
 
@@ -128,7 +128,7 @@ public:
 
         tmp_location[msg.instance].lat = msg.lat;
         tmp_location[msg.instance].lng = msg.lng;
-        tmp_location[msg.instance].alt = msg.alt;
+        tmp_location[msg.instance].set_alt_cm(msg.alt);
     }
 #if AP_DAL_RGPK_LOGGING_ENABLED
     void handle_message(const log_RGPK &msg) {
@@ -147,5 +147,5 @@ private:
     struct log_RGPK _RGPK[GPS_MAX_INSTANCES];
 #endif
 
-    Location tmp_location[GPS_MAX_INSTANCES];
+    AbsAltLocation tmp_location[GPS_MAX_INSTANCES];
 };

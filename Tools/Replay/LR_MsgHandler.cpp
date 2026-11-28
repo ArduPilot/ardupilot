@@ -138,10 +138,10 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
 void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RSO2, msgbytes);
-    Location loc;
+    AbsAltLocation loc;
     loc.lat = msg.lat;
     loc.lng = msg.lng;
-    loc.alt = msg.alt;
+    loc.set_alt_cm(msg.alt);
     ekf2.setOriginLLH(loc);
 
     if (replay_force_ekf3) {
@@ -171,10 +171,10 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
 void LR_MsgHandler_RSO3::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RSO3, msgbytes);
-    Location loc;
+    AbsAltLocation loc;
     loc.lat = msg.lat;
     loc.lng = msg.lng;
-    loc.alt = msg.alt;
+    loc.set_alt_cm(msg.alt);
     ekf3.setOriginLLH(loc);
     if (replay_force_ekf2) {
         ekf2.setOriginLLH(loc);

@@ -884,7 +884,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 
     update_parameters();
 
-    const float air_density = get_air_density(aircraft.get_location().alt*0.01);
+    const float air_density = get_air_density(aircraft.get_location().get_alt_m());
     const Vector3f gyro = aircraft.get_gyro();
 
     Vector3f vel_air_bf = aircraft.get_dcm().transposed() * aircraft.get_velocity_air_ef();

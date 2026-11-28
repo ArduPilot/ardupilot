@@ -627,13 +627,13 @@ void GCS_MAVLINK::send_ahrs2()
         return;
     }
 
-    const Location &loc = estimates->location;
+    const AbsAltLocation &loc = estimates->location;
 
         mavlink_msg_ahrs2_send(chan,
                                estimates->roll_rad,
                                estimates->pitch_rad,
                                estimates->yaw_rad,
-                               loc.alt*1.0e-2f,
+                               loc.get_alt_cm()*1.0e-2f,
                                loc.lat,
                                loc.lng);
 }
@@ -3143,7 +3143,7 @@ void GCS_MAVLINK::send_home_position() const
         return;
     }
 
-    const Location &home = AP::ahrs().get_home();
+    const AbsAltLocation &home = AP::ahrs().get_home();
 
     // get home position from origin
     Vector3f home_pos_ned;
@@ -3160,7 +3160,7 @@ void GCS_MAVLINK::send_home_position() const
         chan,
         home.lat,
         home.lng,
-        home.alt * 10,
+        home.get_alt_cm() * 10,
         home_pos_ned.x,
         home_pos_ned.y,
         home_pos_ned.z,
@@ -3171,7 +3171,7 @@ void GCS_MAVLINK::send_home_position() const
 
 void GCS_MAVLINK::send_gps_global_origin() const
 {
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
         return;
     }
@@ -3179,7 +3179,7 @@ void GCS_MAVLINK::send_gps_global_origin() const
         chan,
         ekf_origin.lat,
         ekf_origin.lng,
-        ekf_origin.alt * 10,
+        ekf_origin.get_alt_cm() * 10,
         AP_HAL::micros64());
 }
 #endif  // AP_AHRS_ENABLED
@@ -3523,7 +3523,7 @@ float GCS_MAVLINK::vfr_hud_climbrate() const
 #if AP_AHRS_ENABLED
 float GCS_MAVLINK::vfr_hud_alt() const
 {
-    return global_position_current_loc.alt * 0.01f; // cm -> m
+    return global_position_current_loc.get_alt_cm() * 0.01f; // cm -> m
 }
 
 void GCS_MAVLINK::send_vfr_hud()
@@ -3892,7 +3892,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_int_t &packe
 #if AP_AHRS_ENABLED
 // sets ekf_origin if it has not been set.
 //  should only be used when there is no GPS to provide an absolute position
-MAV_RESULT GCS_MAVLINK::set_ekf_origin(const Location& loc)
+MAV_RESULT GCS_MAVLINK::set_ekf_origin(const AbsAltLocation& loc)
 {
     // check location is valid
     if (loc.is_zero()) {
@@ -3905,7 +3905,7 @@ MAV_RESULT GCS_MAVLINK::set_ekf_origin(const Location& loc)
     AP_AHRS &ahrs = AP::ahrs();
 
     // check if EKF origin has already been set
-    Location ekf_origin;
+    AbsAltLocation ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
         return MAV_RESULT_FAILED;
     }
@@ -3939,11 +3939,10 @@ void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
         return;
     }
 
-    const Location ekf_origin {
+    const AbsAltLocation ekf_origin {
         packet.latitude,
         packet.longitude,
         int32_t(packet.altitude * 0.1f),  // mm -> cm
-        Location::AltFrame::ABSOLUTE
     };
     set_ekf_origin(ekf_origin);
 }
@@ -4846,7 +4845,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_global_origin(const mavlink_comman
         return MAV_RESULT_DENIED;
     }
 
-    return set_ekf_origin(global_origin);
+    // the altitude is used as-is, whatever its frame
+    return set_ekf_origin(AbsAltLocation{global_origin.lat, global_origin.lng, global_origin.alt});
 }
 #endif  // AP_AHRS_ENABLED
 
@@ -5532,7 +5532,11 @@ bool GCS_MAVLINK::set_home_to_current_location(bool _lock)
 
 bool GCS_MAVLINK::set_home(const Location& loc, bool _lock) {
 #if AP_VEHICLE_ENABLED
-    return AP::vehicle()->set_home(loc, _lock);
+    AbsAltLocation abs_loc;
+    if (!abs_loc.from(loc)) {
+        return false;
+    }
+    return AP::vehicle()->set_home(abs_loc, _lock);
 #else
     return false;
 #endif
@@ -5591,13 +5595,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavl
     if (!location_from_command_t(p2, loc)) {
         return MAV_RESULT_DENIED;
     }
+    // the frame is global and the altitude is not used
+    const AbsAltLocation abs_loc { loc.lat, loc.lng, 0 };
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(uint64_t(p2.param1*1e6), PAYLOAD_SIZE(chan, COMMAND_INT));
     const uint32_t processing_ms = p2.param2*1e3;
     const float pos_accuracy = p2.param3;
     if (timestamp_ms > processing_ms) {
         timestamp_ms -= processing_ms;
     }
-    if (!AP::ahrs().handle_external_position_estimate(loc, pos_accuracy, timestamp_ms)) {
+    if (!AP::ahrs().handle_external_position_estimate(abs_loc, pos_accuracy, timestamp_ms)) {
         return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_ACCEPTED;
@@ -6184,7 +6190,7 @@ void GCS_MAVLINK::send_attitude_quaternion() const
 }
 
 int32_t GCS_MAVLINK::global_position_int_alt() const {
-    return global_position_current_loc.alt * 10UL;
+    return global_position_current_loc.get_alt_cm() * 10UL;
 }
 int32_t GCS_MAVLINK::global_position_int_relative_alt() const {
 #if AP_AHRS_ENABLED
@@ -7871,7 +7877,7 @@ void GCS_MAVLINK::send_high_latency2() const
 {
 #if AP_AHRS_ENABLED
     AP_AHRS &ahrs = AP::ahrs();
-    Location global_position_current;
+    AbsAltLocation global_position_current;
     UNUSED_RESULT(ahrs.get_location(global_position_current));
 #if AP_BATTERY_ENABLED
     const int8_t battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
@@ -7918,7 +7924,7 @@ void GCS_MAVLINK::send_high_latency2() const
         gcs().custom_mode(), // A bitfield for use for autopilot-specific flags (2 byte version).
         global_position_current.lat, // [degE7] Latitude
         global_position_current.lng, // [degE7] Longitude
-        global_position_current.alt * 0.01f, // [m] Altitude above mean sea level
+        global_position_current.get_alt_cm() * 0.01f, // [m] Altitude above mean sea level
         high_latency_target_altitude(), // [m] Altitude setpoint
         uint16_t(ahrs.get_yaw_deg()) / 2, // [deg/2] Heading
         high_latency_tgt_heading(), // [deg/2] Heading setpoint

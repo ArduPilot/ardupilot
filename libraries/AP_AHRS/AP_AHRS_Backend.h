@@ -175,10 +175,10 @@ public:
         /*
          * position estimates
          */
-        Location location;
+        AbsAltLocation location;
         bool location_valid;
 
-        bool get_location(Location &loc) const {
+        bool get_location(AbsAltLocation &loc) const {
             loc = location;
             return location_valid;
         };
@@ -345,10 +345,10 @@ public:
     static float get_EAS2TAS(void);
     static float get_TAS2EAS(void) { return 1.0/get_EAS2TAS(); }
 
-    virtual bool set_origin(const Location &loc) {
+    virtual bool set_origin(const AbsAltLocation &loc) {
         return false;
     }
-    virtual bool get_origin(Location &ret) const = 0;
+    virtual bool get_origin(AbsAltLocation &ret) const = 0;
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;

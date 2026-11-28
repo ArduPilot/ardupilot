@@ -785,7 +785,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     }
 
     // adjust Z coordinate to NED frame (NEU altitude -> NED)
-    Location origin;
+    AbsAltLocation origin;
     if (!AP::ahrs().get_origin(origin)) {
         return false;
     }
@@ -817,7 +817,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     }
 
     _target_pos_ned_m.xy() = target_pos_neu_m.xy();
-    _target_pos_ned_m.z = -packet.alt + origin.alt * 0.01;
+    _target_pos_ned_m.z = -packet.alt + origin.get_alt_cm() * 0.01;
 
     // decode velocity if available (bit 1 of est_capabilities)
     if (packet.est_capabilities & (1<<1)) {

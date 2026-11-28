@@ -133,15 +133,14 @@ bool Plane::update_home()
     }
     bool ret = false;
     if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS_FixType::FIX_3D) {
-        Location loc;
+        AbsAltLocation loc;
         if (ahrs.get_location(loc)) {
             // we take the altitude directly from the GPS as we are
             // about to reset the baro calibration. We can't use AHRS
             // altitude or we can end up perpetuating a bias in
             // altitude, as AHRS alt depends on home alt, which means
             // we would have a circular dependency
-            loc.set_alt_cm(gps.location().alt,
-                           Location::AltFrame::ABSOLUTE);
+            loc.set_alt_cm(gps.location().get_alt_cm());
             ret = AP::ahrs().set_home(loc);
         }
     }
@@ -156,7 +155,7 @@ bool Plane::update_home()
     return ret;
 }
 
-bool Plane::set_home_persistently(const Location &loc, bool lock)
+bool Plane::set_home_persistently(const AbsAltLocation &loc, bool lock)
 {
     if (hal.util->was_watchdog_armed()) {
         return false;

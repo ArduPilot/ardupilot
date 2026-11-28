@@ -76,7 +76,7 @@ void AP_Periph_FW::send_msp_GPS(void)
     }
     msp.last_gps_ms = gps.last_message_time_ms(0);
 
-    const Location &loc = gps.location(0);
+    const AbsAltLocation &loc = gps.location(0);
     const Vector3f &vel = gps.velocity(0);
 
     p.instance = 0;
@@ -96,7 +96,7 @@ void AP_Periph_FW::send_msp_GPS(void)
     p.hdop = gps.get_hdop(0);
     p.longitude = loc.lng;
     p.latitude = loc.lat;
-    p.msl_altitude = loc.alt;
+    p.msl_altitude = loc.get_alt_cm();
     p.ned_vel_north = vel.x*100;
     p.ned_vel_east = vel.y*100;
     p.ned_vel_down = vel.z*100;

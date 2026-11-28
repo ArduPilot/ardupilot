@@ -373,8 +373,8 @@ void AP_Mount_MAVLink::send_target_location(const Location &roi_loc)
     pkt.target_component = _compid;
 
     if (roi_loc.initialised()) {
-        Location global_roi = roi_loc;
-        if (!global_roi.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+        AbsAltLocation global_roi;
+        if (!global_roi.from(roi_loc)) {
             // Do not leave a previous location target active while the new
             // target cannot be represented in the gimbal's global frame.
             pkt.command = MAV_CMD_DO_SET_ROI_NONE;
@@ -382,7 +382,7 @@ void AP_Mount_MAVLink::send_target_location(const Location &roi_loc)
             pkt.command = MAV_CMD_DO_SET_ROI_LOCATION;
             pkt.x = global_roi.lat,  // param5: latitude in degrees * 10^7
             pkt.y = global_roi.lng,  // param6: longitude in degrees * 10^7
-            pkt.z = global_roi.alt * 0.01f;  // param7: AMSL altitude in meters
+            pkt.z = global_roi.get_alt_cm() * 0.01f;  // param7: AMSL altitude in meters
             pkt.frame = MAV_FRAME_GLOBAL;
         }
     } else {

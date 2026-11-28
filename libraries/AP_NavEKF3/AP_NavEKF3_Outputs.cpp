@@ -224,7 +224,7 @@ bool NavEKF3_core::getPosNE(Vector2p &posNE) const
             auto &gps = dal.gps();
             if ((gps.status(selected_gps) >= AP_GPS_FixType::FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
-                const Location &gpsloc = gps.location(selected_gps);
+                const AbsAltLocation &gpsloc = gps.location(selected_gps);
                 posNE = public_origin.get_distance_NE_postype(gpsloc);
                 return false;
 #if EK3_FEATURE_BEACON_FUSION
@@ -266,9 +266,9 @@ bool NavEKF3_core::getPosD(postype_t &posD) const
     bool ret = getPosD_local(posD);
 
     // adjust posD for difference between our origin and the public_origin
-    Location local_origin;
+    AbsAltLocation local_origin;
     if (getOriginLLH(local_origin)) {
-        posD += (public_origin.alt - local_origin.alt) * 0.01;
+        posD += (public_origin.get_alt_cm() - local_origin.get_alt_cm()) * 0.01;
     }
 
     return ret;
@@ -293,9 +293,9 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 // unless that GPS must re-pass its quality checks before we will fuse it again
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF3_core::getLLH(Location &loc) const
+bool NavEKF3_core::getLLH(AbsAltLocation &loc) const
 {
-    Location origin;
+    AbsAltLocation origin;
     // never fall back to reporting a GPS we are refusing to fuse
     const bool pos_from_GPS = (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS) &&
         !waitingForGpsChecks;
@@ -303,7 +303,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
         postype_t posD;
         if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
             // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-            loc.set_alt_cm(origin.alt - posD*100.0, Location::AltFrame::ABSOLUTE);
+            loc.set_alt_cm(origin.get_alt_cm() - posD*100.0);
             if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel ||
                 waitingForGpsChecks) {
                 // The EKF is able to provide a position estimate, including
@@ -335,7 +335,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
                 loc.lng = EKF_origin.lng;
                 loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
                            lastKnownPositionNE.y + posOffsetNED.y);
-                loc.alt = EKF_origin.alt - lastKnownPositionD*100.0;
+                loc.set_alt_cm(EKF_origin.get_alt_cm() - lastKnownPositionD*100.0);
                 return false;
             }
         }
@@ -345,7 +345,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
     }
 }
 
-bool NavEKF3_core::getGPSLLH(Location &loc) const
+bool NavEKF3_core::getGPSLLH(AbsAltLocation &loc) const
 {
     const auto &gps = dal.gps();
     if ((gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D)) {
@@ -379,13 +379,13 @@ void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 
 
 // return the LLH location of the filters NED origin
-bool NavEKF3_core::getOriginLLH(Location &loc) const
+bool NavEKF3_core::getOriginLLH(AbsAltLocation &loc) const
 {
     if (validOrigin) {
         loc = public_origin;
         // report internally corrected reference height if enabled
         if ((frontend->_originHgtMode & (1<<2)) == 0) {
-            loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
+            loc.set_alt_cm((int32_t)(100.0f * (float)ekfGpsRefHgt));
         }
     }
     return validOrigin;

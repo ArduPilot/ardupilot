@@ -13,7 +13,7 @@ void MAVLinkGimbalv2_Estimator::handle_position(const mavlink_global_position_in
     }
     _location.lat = packet.lat;
     _location.lng = packet.lon;
-    _location.set_alt_cm(packet.alt / 10, Location::AltFrame::ABSOLUTE);
+    _location.set_alt_cm(packet.alt / 10);
     _velocity = Vector3f(packet.vx, packet.vy, packet.vz) * 0.01f;
     _position_ms = now_ms;
 }
@@ -57,7 +57,7 @@ bool MAVLinkGimbalv2_Estimator::position_valid(uint32_t now_ms) const
            attitude_valid(now_ms) && (_estimator_status & required) == required;
 }
 
-bool MAVLinkGimbalv2_Estimator::get_location(uint32_t now_ms, Location &location) const
+bool MAVLinkGimbalv2_Estimator::get_location(uint32_t now_ms, AbsAltLocation &location) const
 {
     if (!position_valid(now_ms)) {
         return false;
@@ -66,7 +66,7 @@ bool MAVLinkGimbalv2_Estimator::get_location(uint32_t now_ms, Location &location
     location = _location;
     location.offset(_velocity.x * dt, _velocity.y * dt);
     // GLOBAL_POSITION_INT altitude is MSL-up, while its velocity is NED.
-    location.alt -= _velocity.z * dt * 100;
+    location.set_alt_cm(int32_t(location.get_alt_cm() - _velocity.z * dt * 100));
     return true;
 }
 
