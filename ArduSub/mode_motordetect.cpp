@@ -134,6 +134,8 @@ void ModeMotordetect::run()
         // Good read, not inverted
         if (directions == motors.get_motor_angular_factors(current_motor)) {
             gcs().send_text(MAV_SEVERITY_INFO, "Thruster %d is ok!", current_motor + 1);
+            // clear a direction a previous run or the user may have reversed
+            motors.set_reversed(current_motor, false);
         }
         // Good read, inverted
         else if (-directions == motors.get_motor_angular_factors(current_motor)) {

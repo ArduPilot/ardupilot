@@ -617,6 +617,50 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.set_parameter("MOT_THST_HOVER", value)
             self.AltitudeHold()
 
+    def MotorDetect(self):
+        '''Test MOTOR_DETECT mode detects and saves thruster directions'''
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        def run_motor_detect(expected_directions, expected_texts):
+            self.context_clear_collection('STATUSTEXT')
+            self.change_mode(20)  # MOTOR_DETECT
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.wait_statustext('Motor direction detection is complete', check_context=True, timeout=60)
+            self.wait_disarmed()
+            for text in expected_texts:
+                self.wait_statustext(text, check_context=True)
+            for i, direction in enumerate(expected_directions, 1):
+                self.assert_parameter_value('MOT_%u_DIRECTION' % i, direction)
+
+        all_ok = ['Thruster %u is ok!' % i for i in range(1, 7)]
+
+        self.start_subtest('Default frame: every thruster is wired correctly')
+        run_motor_detect([1] * 6, all_ok)
+
+        self.start_subtest('A stale reversed direction is cleared')
+        self.set_parameter('MOT_3_DIRECTION', -1)
+        run_motor_detect([1] * 6, all_ok)
+
+        self.start_subtest('Thrusters move with MOT_PWM_TYPE PWMRange')
+        self.set_parameter('MOT_PWM_TYPE', 8)
+        self.reboot_sitl()
+        run_motor_detect([1] * 6, all_ok)
+
+        self.start_subtest('A physically reversed thruster is detected')
+        # with PWMAngle the thruster output goes through SRV_Channel,
+        # so SERVO3_REVERSED swaps the direction thruster 3 spins
+        self.set_parameters({
+            'MOT_PWM_TYPE': 9,
+            'SERVO3_REVERSED': 1,
+        })
+        self.reboot_sitl()
+        run_motor_detect([1, 1, -1, 1, 1, 1], ['Thruster 3 is reversed! Saving it!'])
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def SIMCompare(self):
         '''compare logged EKF2 and EKF3 estimates against simulator truth'''
         self.set_parameters({
@@ -1893,6 +1937,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.mission_NAV_LOITER_TURNS,
             self.mission_NAV_LOITER_TURNS_ccw,
             self.MotorThrustHoverParameterIgnore,
+            self.MotorDetect,
             self.SET_POSITION_TARGET_GLOBAL_INT,
             self.TestLogDownloadMAVProxy,
             self.TestLogDownloadMAVProxyNetwork,
