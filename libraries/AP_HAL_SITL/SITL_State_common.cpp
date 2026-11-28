@@ -44,6 +44,7 @@
 #include <SITL/SIM_RF_USD1_v1.h>
 #include <SITL/SIM_RF_Wasp.h>
 #include <SITL/SIM_RF_LightWare_GRF.h>
+#include <SITL/SIM_RF_A02YYUW.h>
 
 using namespace HALSITL;
 
@@ -74,6 +75,7 @@ static const struct {
 #if !defined(HAL_BUILD_AP_PERIPH)
     { "rf_mavlink", SITL::RF_MAVLink::create },
 #endif
+    { "a02yyuw_serial", SITL::RF_A02YYUW::create },
     { "teraranger_serial", SITL::RF_TeraRanger_Serial::create },
     { "USD1_v0", SITL::RF_USD1_v0::create },
     { "USD1_v1", SITL::RF_USD1_v1::create },
