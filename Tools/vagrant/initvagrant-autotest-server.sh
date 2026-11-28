@@ -38,6 +38,9 @@ pushd arm-gcc
 ln -sf /opt/gcc-arm-none-eabi-10-2020-q4-major g++-10.2.1
 popd
 
+mkdir -p /storage/autotest
+chown $VAGRANT_USER:$VAGRANT_USER /storage/autotest
+
 cat <<"EOF" | sudo -u $VAGRANT_USER -H bash
 
 # configure git so we can tag
@@ -45,7 +48,12 @@ git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
 
 
-mkdir -p APM
+if [ -e APM ] && [ ! -L APM ]; then
+    echo "APM is a real directory from an older provisioning; move it to /storage/autotest/APM and re-run" >&2
+    exit 1
+fi
+mkdir -p /storage/autotest/APM
+ln -sfn /storage/autotest/APM APM
 pushd APM
 
 # clone ArduPilot and related repos
