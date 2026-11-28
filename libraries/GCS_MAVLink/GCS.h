@@ -397,6 +397,10 @@ public:
     void send_opticalflow();
     virtual void send_attitude() const;
     virtual void send_attitude_quaternion() const;
+    // fill in ATTITUDE_QUATERNION.repr_offset_q, the rotation a GCS
+    // should apply to the attitude for display (w, x, y, z).  It is
+    // left as [0, 0, 0, 0], meaning no offset, unless overridden
+    virtual void attitude_quaternion_repr_offset(float repr_offset_q[4]) const {}
     void send_autopilot_version() const;
     void send_extended_sys_state() const;
     void send_local_position() const;

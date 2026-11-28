@@ -82,6 +82,17 @@ void AP_AHRS_View::update()
                    trig.sin_roll, trig.sin_pitch, trig.sin_yaw);
 }
 
+// get the rotation from the AHRS body frame to this view's body frame
+// as a quaternion; see update() for how it is applied
+bool AP_AHRS_View::get_quat_view_offset(Quaternion &quat) const
+{
+    if (is_zero(y_angle + _pitch_trim_deg)) {
+        return false;
+    }
+    quat.from_rotation_matrix(rot_view_T);
+    return true;
+}
+
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
 Vector3f AP_AHRS_View::get_gyro_latest(void) const {
     return rot_view * ahrs.get_gyro_latest();

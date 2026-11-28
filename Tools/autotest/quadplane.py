@@ -1623,6 +1623,104 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("Rangefinder engaged", check_context=True, timeout=60)
         self.wait_disarmed(timeout=100)
 
+    def ATTITUDE_QUATERNION_repr_offset_q(self):
+        '''check ATTITUDE_QUATERNION plus repr_offset_q shows what ATTITUDE shows'''
+        self.customise_SITL_commandline(
+            [],
+            model="quadplane-copter_tailsitter",
+            wipe=True,
+        )
+        self.reboot_sitl()
+        self.set_message_rate_hz('ATTITUDE', 10)
+        self.set_message_rate_hz('ATTITUDE_QUATERNION', 10)
+
+        def angle_error_deg(a, b):
+            return abs((math.degrees(a - b) + 180) % 360 - 180)
+
+        def receive_same_time_pair():
+            '''the vehicle may be turning, so compare messages sent at the same time'''
+            self.drain_mav()
+            last = {}
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 10:
+                m = self.mav.recv_match(type=['ATTITUDE', 'ATTITUDE_QUATERNION'], blocking=True, timeout=1)
+                if m is None:
+                    continue
+                last[m.get_type()] = m
+                if len(last) == 2 and last['ATTITUDE'].time_boot_ms == last['ATTITUDE_QUATERNION'].time_boot_ms:
+                    return (last['ATTITUDE_QUATERNION'], last['ATTITUDE'])
+            raise NotAchievedException("No ATTITUDE and ATTITUDE_QUATERNION sent at the same time")
+
+        def pitch_offset(pitch_deg):
+            return [float(x) for x in quaternion.Quaternion([0, math.radians(pitch_deg), 0]).q]
+
+        def check_attitude_quaternion(expected_offset, trim_deg=0):
+            '''trim_deg: PTCH_TRIM_DEG carried in the offset.  ATTITUDE
+            removes it from the Euler pitch, while the offset rotates
+            about the body Y axis; when banked by roll the two differ
+            by up to trim_deg*sin(roll) in roll and yaw'''
+            max_error = {"roll": 0, "pitch": 0, "yaw": 0}
+            for i in range(10):
+                (aq, att) = receive_same_time_pair()
+                if i == 0:
+                    self.progress(f"{aq}\n{att}")
+                q = quaternion.Quaternion([aq.q1, aq.q2, aq.q3, aq.q4])
+                offset = aq.repr_offset_q
+                if expected_offset is None:
+                    if offset != [0, 0, 0, 0]:
+                        raise NotAchievedException(f"Expected no offset, got {offset}")
+                    shown = q
+                else:
+                    # q and -q are the same rotation
+                    sign = 1 if offset[0] * expected_offset[0] >= 0 else -1
+                    for got, want in zip(offset, expected_offset):
+                        if abs(sign * got - want) > 0.01:
+                            raise NotAchievedException(f"Expected offset {expected_offset}, got {offset}")
+                    shown = q * quaternion.Quaternion(list(offset))
+                (roll, pitch, yaw) = shown.euler
+                tolerance = 1 + abs(trim_deg * math.sin(att.roll))
+                for (name, got, want) in (("roll", roll, att.roll),
+                                          ("pitch", pitch, att.pitch),
+                                          ("yaw", yaw, att.yaw)):
+                    error = angle_error_deg(got, want)
+                    max_error[name] = max(max_error[name], error)
+                    if error > tolerance:
+                        raise NotAchievedException(
+                            f"{name}: ATTITUDE_QUATERNION shows {math.degrees(got):.1f}, "
+                            f"ATTITUDE shows {math.degrees(want):.1f} (roll {math.degrees(att.roll):.1f})")
+            errors = ", ".join([f"{k} {v:.2f}" for (k, v) in max_error.items()])
+            self.progress(f"ATTITUDE_QUATERNION offset {offset} matches ATTITUDE (max error deg: {errors})")
+            return q
+
+        pitch_trim = 3
+        self.set_parameter('PTCH_TRIM_DEG', pitch_trim)
+        self.wait_ready_to_arm()
+        self.takeoff(30, mode='GUIDED')
+
+        self.progress("Hovering: offset is the VTOL view, without PTCH_TRIM_DEG")
+        q = check_attitude_quaternion(pitch_offset(-(90 + self.get_parameter('Q_TRIM_PITCH'))))
+        raw_pitch = math.degrees(q.euler[1])
+        if raw_pitch < 60:
+            raise NotAchievedException(f"Expected AHRS pitch near 90 in hover, got {raw_pitch:.1f}")
+
+        self.progress("Fixed-wing flight: offset is PTCH_TRIM_DEG")
+        self.change_mode("LOITER")
+        self.delay_sim_time(20, reason="transition to complete")
+        check_attitude_quaternion(pitch_offset(-pitch_trim), trim_deg=pitch_trim)
+
+        self.progress("Fixed-wing flight, trim not removed on the GCS horizon: no offset")
+        flight_options = int(self.get_parameter('FLIGHT_OPTIONS'))
+        self.set_parameter('FLIGHT_OPTIONS', flight_options | (1 << 8))  # GCS_REMOVE_TRIM_PITCH
+        check_attitude_quaternion(None)
+        self.set_parameter('FLIGHT_OPTIONS', flight_options)
+
+        self.progress("Fixed-wing flight, no PTCH_TRIM_DEG: no offset")
+        self.set_parameter('PTCH_TRIM_DEG', 0)
+        check_attitude_quaternion(None)
+
+        self.change_mode("QLAND")
+        self.wait_disarmed(timeout=100)
+
     def setup_ICEngine_vehicle(self):
         '''restarts SITL with an IC Engine setup'''
         model = "quadplane-ice"
@@ -4715,6 +4813,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QRTLGradualAltDescent,
             self.QAssist,
             self.CopterTailsitter,
+            self.ATTITUDE_QUATERNION_repr_offset_q,
             self.ICEngine,
             self.ICEngineMission,
             self.MAV_CMD_DO_ENGINE_CONTROL,

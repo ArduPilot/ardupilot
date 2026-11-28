@@ -56,6 +56,12 @@ public:
         quat.from_rotation_matrix(rot_body_to_ned);
     }
 
+    // get the rotation from the AHRS body frame to this view's body
+    // frame, as a quaternion such that this view's attitude is the
+    // AHRS attitude multiplied by it.  Returns false if this view is
+    // not rotated from the AHRS body frame
+    bool get_quat_view_offset(Quaternion &quat) const WARN_IF_UNUSED;
+
     // apply pitch trim
     void set_pitch_trim(float trim_deg);
 

@@ -31,6 +31,8 @@ protected:
 
     void send_aoa_ssa();
     void send_attitude() const override;
+    bool get_attitude_display_offset(Quaternion &offset) const;
+    void attitude_quaternion_repr_offset(float repr_offset_q[4]) const override;
     void send_attitude_target() override;
     void send_wind() const;
 
