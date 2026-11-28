@@ -833,6 +833,7 @@ bool AP_BLHeli::BL_ConnectEx(void)
     case 0xF850:
     case 0xE8B1:
     case 0xE8B2:
+    case 0xE8B5: // EFM8BB51
         blheli.interface_mode[blheli.chan] = imSIL_BLB;
         debug("Interface type imSIL_BLB");
         break;
