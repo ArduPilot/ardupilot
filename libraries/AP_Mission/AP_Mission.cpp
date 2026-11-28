@@ -757,6 +757,12 @@ bool AP_Mission::set_current_cmd(uint16_t index)
 
         // if we got this far then the mission can safely be "resumed" from the specified index so we set the state to "stopped"
         _flags.state = MISSION_STOPPED;
+
+        // broadcast the new current waypoint to all MAVLink listeners
+        // (see the MAVLink mission protocol's "Set Current Mission Item"
+        // and "Monitor Mission Progress" sections)
+        GCS_SEND_MESSAGE(MSG_CURRENT_WAYPOINT);
+
         return true;
     }
 
@@ -2349,6 +2355,10 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     if (!_flags.do_cmd_loaded) {
         _flags.do_cmd_all_done = true;
     }
+
+    // broadcast the new current waypoint to all MAVLink listeners
+    // (see the MAVLink mission protocol's "Monitor Mission Progress" section)
+    GCS_SEND_MESSAGE(MSG_CURRENT_WAYPOINT);
 
     // if we got this far we must have successfully advanced the nav command
     return true;
