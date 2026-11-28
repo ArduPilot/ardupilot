@@ -16296,6 +16296,7 @@ return update, 200
             self.AltOffsetReset,
             self.MAV_CMD_DO_AUX_FUNCTION,
             self.AHRS_ORIENTATION,
+            self.SimpleAccelCalBoardOrientation,
             self.AHRS2Logging,
             self.TakeoffAuto2,
             self.TakeoffAuto3,

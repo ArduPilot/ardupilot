@@ -59,6 +59,12 @@
 #define AP_AHRS_ENABLED 0
 #endif
 
+// a peripheral has no AP_BoardConfig to ask for the board orientation,
+// so the code which would ask is dead weight here:
+#ifndef AP_BOARDCONFIG_ORIENTATION_ENABLED
+#define AP_BOARDCONFIG_ORIENTATION_ENABLED 0
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
+
 #ifndef AP_MISSION_ENABLED
 #define AP_MISSION_ENABLED 0
 #endif
