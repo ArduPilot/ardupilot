@@ -39,7 +39,7 @@ define HAL_SERIAL9_BAUD				(115200/1000)*/
 
 # SPI Buses
 #            Host      DMA Channel     MOSI        MISO        SCLK
-ESP32_SPIBUS VSPI_HOST 2               GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
+ESP32_SPIBUS SPI3_HOST 2               GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
 
 # SPI Devices
 #            Name                Bus   Device  ChipSel      Mode LoSpeed HiSpeed
@@ -89,7 +89,7 @@ define HAL_ESP32_RMT_RX_PIN_NUMBER			4
 
 # SD CARD
 #           Host      DMACh MOSI        MISO        SCLK        CS
-ESP32_SDSPI HSPI_HOST 1     GPIO_NUM_13 GPIO_NUM_12 GPIO_NUM_14 GPIO_NUM_15
+ESP32_SDSPI SPI2_HOST 1     GPIO_NUM_13 GPIO_NUM_12 GPIO_NUM_14 GPIO_NUM_15
 
 define HAL_ESP32_SDCARD 				1
 

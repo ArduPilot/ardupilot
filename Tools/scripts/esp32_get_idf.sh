@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # if you have modules/esp_idf setup as a submodule, then leave it as a submodule and switch branches
 
-COMMIT="cc3203dc4f087ab41b434afff1ed7520c6d90993"
+COMMIT=""
+BRANCH="release/v6.1"
 
 if [ ! -d modules ]; then
 echo "this script needs to be run from the root of your repo, sorry, giving up."
@@ -27,28 +28,34 @@ else
     if  [ ! `ls  esp_idf/install.sh 2>/dev/null` ]; then
         echo "found empty IDF, cloning"
         # add esp_idf as almost submodule, depths  uses less space
-        git clone -b 'release/v5.3'  https://github.com/espressif/esp-idf.git esp_idf
-        git checkout $COMMIT
+        git clone -b "$BRANCH"  https://github.com/espressif/esp-idf.git esp_idf
+        if [ -n "$COMMIT" ]; then
+            git -C esp_idf checkout "$COMMIT"
+        fi
     fi
 fi
 
 echo "inspecting possible IDF... "
 cd esp_idf
 echo `git rev-parse HEAD`
-# these are a selection of possible specific commit/s that represent v5.3 branch of the esp_idf 
-if [ `git rev-parse HEAD` == '$COMMIT' ]; then 
-    echo "IDF version 'release/5.3' found OK, great."; 
+# these are a selection of possible specific commit/s that represent v6.1 branch of the esp_idf 
+if [ -n "$COMMIT" ] && [ `git rev-parse HEAD` == "$COMMIT" ]; then 
+    echo "IDF version '$BRANCH' found OK, great."; 
 else
-    echo "looks like an idf, but not v5.3 branch, or wrong commit , trying to switch branch and reflect upstream";
+    echo "looks like an idf, but not $BRANCH branch, or wrong commit , trying to switch branch and reflect upstream";
     ../../Tools/gittools/submodule-sync.sh >/dev/null
-    git fetch ; git checkout -f release/v5.3 
-    git checkout $COMMIT
+    git fetch ; git checkout -f "$BRANCH" 
+    if [ -n "$COMMIT" ]; then
+        git checkout "$COMMIT"
+    fi
 
     # retry same as above
     echo `git rev-parse HEAD`
-    if [ `git rev-parse HEAD` == '$COMMIT' ]; then 
-        echo "IDF version 'release/5.3' found OK, great."; 
-        git checkout $COMMIT
+    if [ -n "$COMMIT" ] && [ `git rev-parse HEAD` == "$COMMIT" ]; then 
+        echo "IDF version '$BRANCH' found OK, great."; 
+        git checkout "$COMMIT"
+    elif [ -z "$COMMIT" ]; then
+        echo "IDF branch '$BRANCH' checked out.";
     fi
 fi
 cd ../..
@@ -56,14 +63,17 @@ cd ../..
 cd modules/esp_idf
 git submodule update --init --recursive
 
-echo
-echo "installing missing python modules"
-python3 -m pip install empy==3.3.4
-python3 -m pip install pexpect
-
 cd ../..
 
+IDF_VER="${BRANCH#release/v}"
+IDF_VENV_PY=$(find -L "$HOME/.espressif/python_env" -maxdepth 5 -path "*idf${IDF_VER}*" -name "python*" -type f 2>/dev/null | head -n 1)
+
 echo
-echo "after changing IDF versions [ such as between 4.4 and 5.3 ] you should re-run these in your console:"
+echo "after changing IDF versions [ such as between 4.4 and 6.1 ] you should re-run these in your console:"
 echo "./modules/esp_idf/install.sh"
+if [ -n "$IDF_VENV_PY" ]; then
+    echo "\"$IDF_VENV_PY\" -m pip install empy==3.3.4 pexpect"
+else
+    echo "IDF_VENV_PY=\$(find -L \"\$HOME/.espressif/python_env\" -maxdepth 5 -path \"*idf${IDF_VER}*\" -name \"python*\" -type f 2>/dev/null | head -n 1) && \"\$IDF_VENV_PY\" -m pip install empy==3.3.4 pexpect"
+fi
 echo "source ./modules/esp_idf/export.sh"
