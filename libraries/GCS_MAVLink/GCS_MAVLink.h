@@ -89,5 +89,8 @@ uint16_t comm_get_txspace(mavlink_channel_t chan);
 void comm_send_lock(mavlink_channel_t chan, uint16_t size);
 void comm_send_unlock(mavlink_channel_t chan);
 HAL_Semaphore &comm_chan_lock(mavlink_channel_t chan);
+// true if anything written to a channel is dropped however much space
+// it has, e.g. while an alternative protocol is active on it
+bool comm_send_suppressed(mavlink_channel_t chan);
 
 #pragma GCC diagnostic pop
