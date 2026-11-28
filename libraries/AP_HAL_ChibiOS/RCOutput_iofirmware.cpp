@@ -385,7 +385,7 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32
     // transposed. we thus need to untranspose as we decode
     dmar_uint_t oldValue = buffer[1];
 
-    for (int32_t i = 0; i <= count+1; ) {
+    for (uint32_t i = 0; i <= count+1; ) {
         if (i < count) {
             dmar_int_t diff = buffer[i] - oldValue;
             if (bits >= 21U) {
@@ -401,7 +401,7 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32
         oldValue = buffer[i];
         bits += len;
 
-        i += (i%2 ? -1 : 3);
+        i = (i%2) ? i - 1 : i + 3;
     }
 
 

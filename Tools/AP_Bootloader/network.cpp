@@ -323,7 +323,7 @@ char *BL_Network::substitute_vars(const char *str, uint32_t size)
     }
     char *p = result;
     const char *str0 = str;
-    while (*str && str-str0<size) {
+    while (*str && uint32_t(str-str0)<size) {
         if (*str != '{') {
             *p++ = *str++;
             continue;
@@ -442,7 +442,7 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
             break;
         }
         // we need a whole number of words
-        if (n % 4 != 0 && n < needed) {
+        if (n % 4 != 0 && uint32_t(n) < needed) {
             auto n2 = sock->recv(((uint8_t*)buf)+n, 4 - n%4, 10000);
             if (n2 > 0) {
                 n += n2;
