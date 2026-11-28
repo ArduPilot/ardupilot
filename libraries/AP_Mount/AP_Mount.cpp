@@ -13,6 +13,7 @@
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
 #include "AP_Mount_MAVLink.h"
+#include "AP_Mount_GimbalManager.h"
 #include "AP_Mount_Siyi.h"
 #include "AP_Mount_Scripting.h"
 #include "AP_Mount_Xacti.h"
@@ -126,6 +127,14 @@ void AP_Mount::init()
             _num_instances++;
             break;
 #endif // HAL_MOUNT_MAVLINK_ENABLED
+
+#if HAL_MOUNT_GIMBAL_MANAGER_ENABLED
+        // check for external MAVLink gimbal managers
+        case Type::GimbalManager:
+            _backends[instance] = NEW_NOTHROW AP_Mount_GimbalManager(*this, _params[instance], instance);
+            _num_instances++;
+            break;
+#endif // HAL_MOUNT_GIMBAL_MANAGER_ENABLED
 
 #if HAL_MOUNT_SERVO_ENABLED
         // check for BrushlessPWM mounts (uses Servo backend)

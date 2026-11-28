@@ -142,10 +142,10 @@ public:
     virtual uint32_t get_gimbal_manager_capability_flags() const;
 
     // send a GIMBAL_MANAGER_INFORMATION message to GCS
-    void send_gimbal_manager_information(mavlink_channel_t chan);
+    virtual void send_gimbal_manager_information(mavlink_channel_t chan);
 
     // send a GIMBAL_MANAGER_STATUS message to GCS
-    void send_gimbal_manager_status(mavlink_channel_t chan);
+    virtual void send_gimbal_manager_status(mavlink_channel_t chan);
 
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
