@@ -17,6 +17,8 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_WRITE_DISABLE          0x04
 #define JEDEC_READ_STATUS            0x05
 #define JEDEC_WRITE_STATUS           0x01
+#define MX35_GET_FEATURES            0x0F
+#define MX35_SET_FEATURES            0x1F
 #define JEDEC_READ_DATA              0x03
 #define JEDEC_PAGE_DATA_READ         0x13
 #define JEDEC_FAST_READ              0x0b
@@ -48,6 +50,16 @@ extern const AP_HAL::HAL& hal;
 #define W25NXX_CONFIG_ECC_ENABLE         (1 << 4)
 #define W25NXX_CONFIG_BUFFER_READ_MODE   (1 << 3)
 
+#if HAL_LOGGING_FLASH_W25NXX_MX35_ENABLED
+#define W25NXX_READ_STATUS_COMMAND  MX35_GET_FEATURES
+#define W25NXX_WRITE_STATUS_COMMAND MX35_SET_FEATURES
+#define W25NXX_CONFIG_DEFAULT W25NXX_CONFIG_ECC_ENABLE
+#else
+#define W25NXX_READ_STATUS_COMMAND  JEDEC_READ_STATUS
+#define W25NXX_WRITE_STATUS_COMMAND JEDEC_WRITE_STATUS
+#define W25NXX_CONFIG_DEFAULT (W25NXX_CONFIG_ECC_ENABLE | W25NXX_CONFIG_BUFFER_READ_MODE)
+#endif
+
 #define W25NXX_TIMEOUT_PAGE_READ_US        60   // tREmax = 60us (ECC enabled)
 #define W25NXX_TIMEOUT_PAGE_PROGRAM_US     700  // tPPmax = 700us
 #define W25NXX_TIMEOUT_BLOCK_ERASE_MS      10   // tBEmax = 10ms
@@ -58,6 +70,9 @@ extern const AP_HAL::HAL& hal;
 
 #define JEDEC_ID_WINBOND_W25N01GV      0xEFAA21
 #define JEDEC_ID_WINBOND_W25N02KV      0xEFAA22
+#if HAL_LOGGING_FLASH_W25NXX_MX35_ENABLED
+#define JEDEC_ID_MACRONIX_MX35LF2GE4AD 0xC22603
+#endif
 
 void AP_Logger_W25NXX::Init()
 {
@@ -87,8 +102,8 @@ void AP_Logger_W25NXX::Init()
 
     // disable write protection
     WriteStatusReg(W25NXX_PROT_REG, 0);
-    // enable ECC and buffer mode
-    WriteStatusReg(W25NXX_CONF_REG, W25NXX_CONFIG_ECC_ENABLE|W25NXX_CONFIG_BUFFER_READ_MODE);
+    // configure ECC and optional buffer mode
+    WriteStatusReg(W25NXX_CONF_REG, W25NXX_CONFIG_DEFAULT);
 
     printf("W25NXX status: SR-1=0x%x, SR-2=0x%x, SR-3=0x%x\n",
         ReadStatusRegBits(W25NXX_PROT_REG),
@@ -139,6 +154,9 @@ bool AP_Logger_W25NXX::getSectorCount(void)
         flash_blockNum = W25N01G_NUM_BLOCKS;
         break;
     case JEDEC_ID_WINBOND_W25N02KV:
+#if HAL_LOGGING_FLASH_W25NXX_MX35_ENABLED
+    case JEDEC_ID_MACRONIX_MX35LF2GE4AD:
+#endif
         df_PageSize = 2048;
         df_PagePerBlock = 64;
         df_PagePerSector = 64; // make sectors equivalent to block
@@ -161,7 +179,7 @@ bool AP_Logger_W25NXX::getSectorCount(void)
 uint8_t AP_Logger_W25NXX::ReadStatusRegBits(uint8_t bits)
 {
     WITH_SEMAPHORE(dev_sem);
-    uint8_t cmd[2] { JEDEC_READ_STATUS, bits };
+    uint8_t cmd[2] { W25NXX_READ_STATUS_COMMAND, bits };
     uint8_t status;
     dev->transfer(cmd, 2, &status, 1);
     return status;
@@ -171,7 +189,7 @@ void AP_Logger_W25NXX::WriteStatusReg(uint8_t reg, uint8_t bits)
 {
     WaitReady();
     WITH_SEMAPHORE(dev_sem);
-    uint8_t cmd[3] = {JEDEC_WRITE_STATUS, reg, bits};
+    uint8_t cmd[3] = {W25NXX_WRITE_STATUS_COMMAND, reg, bits};
     dev->transfer(cmd, 3, nullptr, 0);
 }
 
