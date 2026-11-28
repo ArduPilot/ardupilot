@@ -798,8 +798,8 @@ bool AP_Mount_Topotek::send_location_info()
     }
 
     // convert latitude and longitude to positive angles in degrees
-    const double latitude = labs(loc.lat) * 1e-7;
-    const double longitude = labs(loc.lng) * 1e-7;
+    const double latitude = (double)labs(loc.lat) / 1.0e7;
+    const double longitude = (double)labs(loc.lng) / 1.0e7;
 
     // get the degree part
     const int16_t lat_deg = (int16_t)latitude;
