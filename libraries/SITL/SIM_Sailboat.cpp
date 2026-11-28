@@ -265,14 +265,21 @@ void Sailboat::update(const struct sitl_input &input)
     dcm.rotate(gyro * delta_time);
     dcm.normalize();
 
-    // hull drag
-    float hull_drag = sq(speed) * 0.5f;
+    // hull drag: quadratic pressure drag plus a small linear (viscous)
+    // term. Purely quadratic drag decays like 1/t, so a drifting hull
+    // never actually comes to rest -- any impulse (waves, a throttle
+    // blip, a mode-change transient) leaves it coasting indefinitely.
+    // With the linear term a coasting hull covers a finite distance and
+    // decays exponentially at low speed, like a real displacement hull.
+    // The linear term is not negligible: it is 1/speed of the quadratic
+    // term (about 50-67% at 1.5-2m/s) and about 9% of total drag at 10m/s.
+    float hull_drag = sq(speed) * 0.5f + fabsf(speed) * 0.5f;
     if (!is_positive(speed)) {
         hull_drag *= -1.0f;
     }
 
     // throttle force (for motor sailing)
-    // gives throttle force == hull drag at 10m/s
+    // gives throttle force == hull drag at ~9.5m/s
     float throttle_force = 0.0f;
     if (motor_connected) {
         if (skid_steering) {

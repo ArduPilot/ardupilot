@@ -78,7 +78,7 @@ for n = 1:length(wind_speed)
             force_fwd = (lift * sin_rot) - (drag * cos_rot);
                         
             % accel in body frame due acceleration from sail and deceleration from hull friction
-            hull_drag =  0.5 * boat_speed{n,m}(j)^2;
+            hull_drag =  0.5 * boat_speed{n,m}(j)^2 + 0.5 * abs(boat_speed{n,m}(j));
             thrust_range = force_fwd - hull_drag;
                              
             % angle of sail to boat 

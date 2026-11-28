@@ -5624,6 +5624,35 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.disarm_vehicle(force=True)
 
+    def MotorBoatCoastDown(self):
+        '''ensure a motorboat coasting with zero throttle comes to rest'''
+        # With purely quadratic hull drag speed decays like 1/t and a
+        # coasting hull takes over a minute to drop below 0.05m/s; the
+        # linear drag term brings it to rest in roughly 12 seconds.
+        model = "motorboat"
+        self.customise_SITL_commandline([],
+                                        model=model,
+                                        defaults_filepath=self.model_defaults_filepath(model))
+        self.set_parameters({
+            "SIM_TIDE_SPEED": 0,
+            "SIM_WIND_SPD": 0,
+            "SIM_WAVE_ENABLE": 0,
+        })
+
+        self.change_mode('MANUAL')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.set_rc(3, 2000)
+        self.wait_groundspeed(4, 100, timeout=60)
+        self.zero_throttle()
+
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(0, 0.05, timeout=30)
+        self.progress("Coasted to rest in %.1fs" % (self.get_sim_time() - tstart))
+
+        self.disarm_vehicle()
+
     def SlewRate(self):
         """Test Motor Slew Rate feature."""
         self.context_push()
@@ -8649,6 +8678,7 @@ return update()
             self.DataFlash,
             self.SkidSteer,
             self.MotorBoatSkidGuided,
+            self.MotorBoatCoastDown,
             self.PolyFence,
             self.SDPolyFence,
             self.PolyFenceAvoidance,
