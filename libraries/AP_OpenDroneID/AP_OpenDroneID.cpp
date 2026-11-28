@@ -467,9 +467,12 @@ void AP_OpenDroneID::send_location_message()
     // FIX we need to only set this if w have a GPS lock is 2D good enough for that?
     float timestamp = ODID_INV_TIMESTAMP;
     if (!got_bad_gps_fix) {
-        uint32_t time_week_ms = gps.time_week_ms();
-        timestamp = float(time_week_ms % (3600 * 1000)) * 0.001;
-        timestamp = create_location_timestamp(timestamp);   //make sure timestamp is within Remote ID limit
+        // UTC, as the timestamp is defined: time_week_ms() is GPS time, GPS_LEAPSECONDS_MILLIS ahead of UTC
+        const uint64_t utc_ms = gps.time_epoch_usec() / 1000ULL;
+        if (utc_ms != 0) {
+            timestamp = float(utc_ms % (3600 * 1000)) * 0.001;
+            timestamp = create_location_timestamp(timestamp);   //make sure timestamp is within Remote ID limit
+        }
     }
 
 
