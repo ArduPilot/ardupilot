@@ -266,7 +266,12 @@ def custom_flags_check(tgen):
     '''
     if not tgen.name.startswith("objs/"):
         return
+    # vehicle-dependent sources are in objs/<library>/<vehicle> (idx != 0);
+    # library names can contain '/' themselves (e.g. AP_ADSB/sagetech-sdk,
+    # modules/DroneCAN/libcanard/*.c), so only strip the vehicle
     libname = tgen.name[5:]
+    if tgen.idx != 0:
+        libname = libname.rsplit('/', 1)[0]
     # append_value() copies the list into this task generator's env first,
     # extend() would also change the list it shares with every other one
     if libname in tgen.env.AP_LIB_EXTRA_CXXFLAGS:
@@ -303,13 +308,13 @@ def gsoap_library_check(bld, tasks):
                 gsoap_tasks.append(bld.bldnode.find_or_declare(os.path.join('libraries', "AP_ONVIF", s)))
 
             if t.inputs[0] in gsoap_tasks:
-                t.env.CXXFLAGS += [
+                t.env.append_value('CXXFLAGS', [
                     '-Wno-shadow',
-                ]
+                ])
                 if 'clang++' not in t.env.COMPILER_CXX:
-                    t.env.CXXFLAGS += [
+                    t.env.append_value('CXXFLAGS', [
                         '-Wno-suggest-override',
-                    ]
+                    ])
 
 
 @feature('ap_library_object')
