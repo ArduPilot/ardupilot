@@ -15,7 +15,7 @@ one command per line:
   board NAME, firmware auto|PATH, bootloader auto|none|PATH,
   download-firmware VEHICLE stable|latest,
   cpu none|N, real-iomcu on|off, iomcu-force-update on|off,
-  uds on|off, usb on|off, dfu on|off, can on|off, can-base N,
+  uds on|off, usb on|off, dfu on|off, gdb on|off, can on|off, can-base N,
   ethernet off|INTERFACE,
   attach PORT DEVICE, detach PORT DEVICE,
   physics on|off, physics-model NAME,
@@ -764,6 +764,7 @@ class Launcher:
         self.uds = False
         self.usb = False
         self.dfu = False
+        self.gdb = False
         self.can = False
         self.can_base = 0
         self.ethernet = ''
@@ -834,6 +835,10 @@ class Launcher:
             raise ValueError('force IOMCU update requires real IOMCU')
         if self.dfu and not self.usb:
             raise ValueError('USB DFU requires USB')
+        if self.gdb and not sys.platform.startswith('linux'):
+            raise ValueError('GDB debugging is only supported on Linux')
+        if self.gdb and self.dfu:
+            raise ValueError('GDB cannot be combined with USB DFU')
         if self.ethernet and not Path('/sys/class/net', self.ethernet).exists():
             raise ValueError('no network interface %s' % self.ethernet)
 
@@ -871,6 +876,9 @@ class Launcher:
             command += ['--usb', '--usbip-port', str(self.args.usbip_port)]
         if self.dfu:
             command.append('--dfu')
+        if self.gdb:
+            command += ['--gdb', '--gdb-continue',
+                        '--gdb-port', str(self.args.gdb_port)]
         if self.can or any(attachment.get('bus') == 'can'
                            for attachment in self.attachments):
             command += ['--can', '--can-base', str(self.can_base)]
@@ -1116,6 +1124,9 @@ class Launcher:
             ports.append(self.args.uart_port)
         if self.usb:
             ports.append(self.args.usbip_port)
+        if self.gdb:
+            # the ChibiOS proxy and Renode's own GDB server
+            ports += [self.args.gdb_port, self.args.gdb_port + 1]
         if len(ports) != len(set(ports)):
             return 'launcher TCP ports must differ'
         for port in ports:
@@ -1451,6 +1462,7 @@ class Launcher:
             'uds': self.uds,
             'usb': self.usb_status,
             'dfu': self.dfu,
+            'gdb': self.gdb,
             'can': (self.can or any(attachment.get('bus') == 'can'
                                     for attachment in self.attachments)),
             'can_base': self.can_base,
@@ -1532,6 +1544,8 @@ def main():
     parser.add_argument('--monitor-port', type=int, default=12390)
     parser.add_argument('--uart-port', type=int, default=5762)
     parser.add_argument('--usbip-port', type=int, default=3240)
+    parser.add_argument('--gdb-port', type=int, default=3333,
+                        help='GDB port; Renode also uses the next port')
     parser.add_argument('--physics-binary',
                         help='standalone renode-physics executable')
     parser.add_argument('--physics-port', type=int, default=9002)
@@ -1690,6 +1704,18 @@ def main():
     ethernet.addItems(sorted(path.name for path in Path('/sys/class/net').iterdir()))
     ethernet.setEnabled(False)
     options_grid.addWidget(ethernet, 2, 2, 1, 2)
+
+    gdb_check = QCheckBox('GDB')
+    if sys.platform.startswith('linux'):
+        gdb_check.setToolTip(
+            'Run the firmware under gdb in an xterm. Interrupt with Ctrl-C to\n'
+            'set breakpoints; the physics stops while the firmware is halted.\n'
+            'Quitting gdb leaves the firmware running. The ELF needs debug\n'
+            'info, so build with ./waf configure --board BOARD -g')
+    else:
+        gdb_check.setEnabled(False)
+        gdb_check.setToolTip('GDB debugging is only supported on Linux')
+    options_grid.addWidget(gdb_check, 3, 0)
     target_layout.addWidget(options)
     target_layout.addStretch()
     tabs.addTab(target_tab, 'Target')
@@ -2674,6 +2700,7 @@ def main():
         launcher.uds = uds.isChecked()
         launcher.usb = usb.isChecked()
         launcher.dfu = dfu_check.isChecked()
+        launcher.gdb = gdb_check.isChecked()
         launcher.can = can.isChecked()
         launcher.can_base = can_base.value()
         port_by_id = {port['id']: port for port in config_ports}
@@ -2711,6 +2738,7 @@ def main():
                 'uds': launcher.uds,
                 'usb': launcher.usb,
                 'dfu': launcher.dfu,
+                'gdb': launcher.gdb,
                 'can': launcher.can,
                 'can_base': launcher.can_base,
                 'ethernet': launcher.ethernet or None,
@@ -2777,6 +2805,7 @@ def main():
 
     usb.toggled.connect(usb_changed)
     dfu_check.toggled.connect(dfu_changed)
+    gdb_check.toggled.connect(lambda _checked: sync_options())
     can.toggled.connect(can_base.setEnabled)
     can.toggled.connect(lambda _checked: sync_options())
     can_base.valueChanged.connect(lambda _value: sync_options())
@@ -3139,6 +3168,8 @@ def main():
             return set_checkbox(usb, value)
         if command == 'dfu':
             return set_checkbox(dfu_check, value)
+        if command == 'gdb':
+            return set_checkbox(gdb_check, value)
         if command == 'can':
             return set_checkbox(can, value)
         if command == 'rc':
@@ -3314,6 +3345,7 @@ def main():
         uds.setChecked(target.get('uds') is True)
         usb.setChecked(target.get('usb') is True)
         dfu_check.setChecked(target.get('dfu') is True)
+        gdb_check.setChecked(target.get('gdb') is True)
         can_base_value = target.get('can_base')
         if isinstance(can_base_value, int) and not isinstance(can_base_value, bool):
             can_base.setValue(can_base_value)
