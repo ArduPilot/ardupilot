@@ -1,0 +1,20 @@
+include ../sitl/hwdef.dat
+
+AUTOBUILD_TARGETS None
+
+# the compilers of the Android NDK, which must be on PATH
+env CC aarch64-linux-android28-clang
+env CXX aarch64-linux-android28-clang++
+env AR llvm-ar
+env NM llvm-nm
+env SIZE llvm-size
+
+# an Android app cannot rely on exec, so each vehicle is linked as a shared
+# object which the app loads and enters through AP_MAIN
+define AP_MAIN ardupilot_main
+env CFLAGS -fPIC
+env CXXFLAGS -fPIC
+env LINKFLAGS -shared -static-libstdc++ -Wl,-z,max-page-size=16384 -Wl,--no-undefined -Wl,--wrap,malloc
+env SONAME_PATTERN lib%s.so
+
+define AP_NETWORKING_ENABLED 0
