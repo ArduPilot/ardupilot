@@ -103,6 +103,20 @@ void DeviceBus::bus_thread(void *arg)
 #if CH_CFG_USE_HEAP == TRUE
 AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb, AP_HAL::Device *_hal_device)
 {
+    DeviceBus::callback_info *callback = NEW_NOTHROW DeviceBus::callback_info;
+    if (callback == nullptr) {
+        return nullptr;
+    }
+    callback->cb = cb;
+    callback->period_usec = period_usec;
+    callback->next_usec = AP_HAL::micros64() + period_usec;
+
+    // add to linked list of callbacks on thread before starting the
+    // thread, so its first pass sees the callback rather than sleeping
+    // for its 50ms maximum
+    callback->next = callbacks;
+    callbacks = callback;
+
     if (!thread_started) {
         thread_started = true;
 
@@ -136,17 +150,6 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
             AP_HAL::panic("Failed to create bus thread %s", name);
         }
     }
-    DeviceBus::callback_info *callback = NEW_NOTHROW DeviceBus::callback_info;
-    if (callback == nullptr) {
-        return nullptr;
-    }
-    callback->cb = cb;
-    callback->period_usec = period_usec;
-    callback->next_usec = AP_HAL::micros64() + period_usec;
-
-    // add to linked list of callbacks on thread
-    callback->next = callbacks;
-    callbacks = callback;
 
     return callback;
 }
