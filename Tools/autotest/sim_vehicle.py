@@ -1119,7 +1119,12 @@ def start_mavproxy(opts, stuff):
         cmd.extend(['--retries', '5'])
 
     if opts.mcast:
-        cmd.extend(["--master", "mcast:"])
+        mcast_if = os.environ.get('SITL_MULTICAST_IF_ADDR', '')
+        if mcast_if:
+            # join and send on the same interface as SITL
+            cmd.extend(["--master", "mcast:239.255.145.50:14550:" + mcast_if])
+        else:
+            cmd.extend(["--master", "mcast:"])
 
     # returns a valid IP of the host windows computer if we're WSL2.
     # This is run before the loop so it only runs once
@@ -1525,6 +1530,14 @@ group_sim.add_option("", "--mcast",
                      action="store_true",
                      default=False,
                      help="Use multicasting at default 239.255.145.50:14550")
+group_sim.add_option("", "--mcast-if",
+                     type='string',
+                     default=None,
+                     help="Address of the local interface for SITL's multicast traffic "
+                     "(--mcast, AP_Periph simulation state, multicast CAN) and for MAVProxy's "
+                     "--mcast link. Defaults to SITL_MULTICAST_IF_ADDR if set, else 127.0.0.1 "
+                     "so nothing leaves this machine; use \"\" to multicast on the interface "
+                     "of the default route, e.g. to reach a peripheral on another machine")
 group_sim.add_option("", "--udp",
                      action="store_true",
                      default=False,
@@ -1771,6 +1784,15 @@ if cmd_opts.sysid and cmd_opts.auto_sysid:
 if cmd_opts.unix_domain_socket and (cmd_opts.mcast or cmd_opts.udp):
     print("Cannot use unix domain sockets together with multicast or UDP")
     sys.exit(1)
+
+# keep SITL's multicast traffic, which SITL and AP_Periph pick up from the
+# environment, on loopback unless asked otherwise.  Without this it follows
+# the default route onto the LAN, where anyone on the network can see the
+# vehicle's MAVLink and send it commands
+if cmd_opts.mcast_if is not None:
+    os.environ['SITL_MULTICAST_IF_ADDR'] = cmd_opts.mcast_if
+else:
+    os.environ.setdefault('SITL_MULTICAST_IF_ADDR', '127.0.0.1')
 
 # magically determine vehicle type (if required):
 if cmd_opts.vehicle is None:
