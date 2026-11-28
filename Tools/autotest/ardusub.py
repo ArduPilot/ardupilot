@@ -1870,6 +1870,37 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
 
+    def GuidedAttitudeForwardLatch(self):
+        '''check forward stick in ALT_HOLD does not keep driving guided attitude control'''
+        self.dive(-5, mode='ALT_HOLD')
+        self.set_rc(Joystick.Forward, 1800)
+        self.wait_groundspeed(0.5, 5, minimum_duration=1, timeout=30)
+
+        q = mavextra.euler_to_quat([0, 0, self.assert_receive_message('ATTITUDE').yaw])
+
+        def send_attitude(*args):
+            self.mav.mav.set_attitude_target_send(
+                0,  # timestamp
+                self.sysid_thismav(), 1,  # target IDs
+                (mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+                 mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+                 mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE),
+                q,
+                0, 0, 0,  # (ignored) attitude rate targets
+                0.5  # thrust, hold depth
+            )
+
+        # send the first target with the mode change, so guided attitude
+        # control starts from the outputs ALT_HOLD left behind
+        self.send_cmd_do_set_mode('GUIDED')
+        send_attitude()
+        self.wait_mode('GUIDED')
+        self.set_rc(Joystick.Forward, 1500)
+
+        # nothing is driving the vehicle forward, so drag stops it
+        self.wait_groundspeed(0, 0.1, minimum_duration=5, timeout=60, called_function=send_attitude)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1922,6 +1953,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.IgnoreGPSDrift,
             self.GuidedPosVelAccel,
             self.GuidedAboveTerrain,
+            self.GuidedAttitudeForwardLatch,
         ])
 
         return ret
