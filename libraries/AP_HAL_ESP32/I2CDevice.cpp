@@ -103,33 +103,35 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         }
         result = true; //TODO check all
     } else {
-        i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-        if (send_len != 0 && send != nullptr) {
-            //tx with optional rx (after tx)
-            i2c_master_start(cmd);
-            i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_WRITE, true);
-            i2c_master_write(cmd, (uint8_t*)send, send_len, true);
-        }
-        if (recv_len != 0 && recv != nullptr) {
-            //rx only or rx after tx
-            //rx separated from tx by (re)start
-            i2c_master_start(cmd);
-            i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_READ, true);
-            i2c_master_read(cmd, (uint8_t *)recv, recv_len, I2C_MASTER_LAST_NACK);
-        }
-        i2c_master_stop(cmd);
-
         uint32_t timeout_ms = 1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock;
         timeout_ms = MAX(timeout_ms, _timeout_ms);
+        timeout_ms = MAX(timeout_ms, 20U);
+
         for (int i = 0; !result && i < _retries; i++) {
+            i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+            if (send_len != 0 && send != nullptr) {
+                //tx with optional rx (after tx)
+                i2c_master_start(cmd);
+                i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_WRITE, true);
+                i2c_master_write(cmd, (uint8_t*)send, send_len, true);
+            }
+            if (recv_len != 0 && recv != nullptr) {
+                //rx only or rx after tx
+                //rx separated from tx by (re)start
+                i2c_master_start(cmd);
+                i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_READ, true);
+                i2c_master_read(cmd, (uint8_t *)recv, recv_len, I2C_MASTER_LAST_NACK);
+            }
+            i2c_master_stop(cmd);
+
             result = (i2c_master_cmd_begin(bus.port, cmd, pdMS_TO_TICKS(timeout_ms)) == ESP_OK);
+            i2c_cmd_link_delete(cmd);
+
             if (!result) {
                 i2c_reset_tx_fifo(bus.port);
                 i2c_reset_rx_fifo(bus.port);
             }
         }
-
-        i2c_cmd_link_delete(cmd);
     }
 
     return result;
