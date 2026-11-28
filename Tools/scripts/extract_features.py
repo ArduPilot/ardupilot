@@ -290,6 +290,9 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED', 'GCS_MAVLINK::handle_command_get_home_position'),  # noqa
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
             ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
+            ('AP_MAVLINK_COMPONENT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_component_information'),
+            ('AP_LOGGER_MAVLINK_EVENTS_ENABLED', 'AP_Logger::handle_message_request_event'),
+            ('AP_LOGGER_MAVLINK_EVENTS_METADATA_ROMFS_ENABLED', 'GCS::romfs_events_metadata_crc'),
             ('AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', r'GCS_MAVLINK::send_rangefinder'),
             ('AP_MAVLINK_SIGNING_ENABLED', r'GCS_MAVLINK::load_signing_key'),
 

@@ -702,7 +702,18 @@ class Board:
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
         if bld.env.ROMFS_FILES:
+            self.generate_ROMFS_files(bld)
             self.embed_ROMFS_files(bld)
+
+    def generate_ROMFS_files(self, bld):
+        '''write the ROMFS files generated from the source tree'''
+        import events_metadata
+        for (name, path) in bld.env.ROMFS_FILES:
+            if name == events_metadata.ROMFS_NAME:
+                try:
+                    events_metadata.write_romfs_file(bld.srcnode.abspath(), path)
+                except events_metadata.EventsMetadataError as ex:
+                    bld.fatal("events metadata: %s" % ex)
 
     def build(self, bld):
         if bld.env.PICOLIBC:

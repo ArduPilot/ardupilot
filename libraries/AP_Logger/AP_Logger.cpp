@@ -882,6 +882,93 @@ bool AP_Logger::logging_started(void) const {
     return false;
 }
 
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+void AP_Logger::handle_message_request_event(GCS_MAVLINK &link, const mavlink_message_t &msg)
+{
+    mavlink_request_event_t packet;
+    mavlink_msg_request_event_decode(&msg, &packet);
+
+    // MAVLink routing only passes us requests for this system (or
+    // broadcast), but also passes requests for components it has no
+    // route to
+    if (packet.target_component != MAV_COMP_ID_ALL &&
+        packet.target_component != mavlink_system.compid) {
+        return;
+    }
+
+    WITH_SEMAPHORE(mavlink_event_interface_sem);
+
+    // every requested sequence number gets either an EVENT or a
+    // RESPONSE_EVENT_ERROR; a receiver waiting on an event we no
+    // longer hold will otherwise re-request it forever.  Sequence
+    // numbers wrap, so first_sequence may be larger than last_sequence
+    const uint16_t count = packet.last_sequence - packet.first_sequence;
+    for (uint32_t ofs=0; ofs<=count; ofs++) {
+        const uint16_t seqno = packet.first_sequence + ofs;
+        const MAVLinkEventInterfaceQueue *entry = find_mavlink_event_interface_queue_entry(seqno);
+        if (entry != nullptr) {
+            if (!HAVE_PAYLOAD_SPACE(link.get_chan(), EVENT)) {
+                return;
+            }
+            send_mavlink_event_interface_queue_entry(*entry, link);
+            continue;
+        }
+        if (!HAVE_PAYLOAD_SPACE(link.get_chan(), RESPONSE_EVENT_ERROR)) {
+            return;
+        }
+        const uint16_t oldest_available = oldest_mavlink_event_interface_seq_after(seqno);
+        mavlink_msg_response_event_error_send(
+            link.get_chan(),
+            msg.sysid,
+            msg.compid,
+            seqno,
+            oldest_available,
+            MAV_EVENT_ERROR_REASON_UNAVAILABLE
+            );
+        // nothing between seqno and oldest_available is available either
+        const uint16_t skip = oldest_available - seqno;
+        if (skip == 0 || skip > UINT16_MAX/2) {
+            // nothing newer than seqno is held
+            return;
+        }
+        ofs += skip - 1;
+    }
+}
+
+const AP_Logger::MAVLinkEventInterfaceQueue *AP_Logger::find_mavlink_event_interface_queue_entry(uint16_t seqno) const
+{
+    const uint8_t queue_count = queue_full ? ARRAY_SIZE(mavlink_event_interface_queue) : next_mavlink_event_interface_queue_entry;
+    for (uint8_t i=0; i<queue_count; i++) {
+        if (mavlink_event_interface_queue[i].seqno == seqno) {
+            return &mavlink_event_interface_queue[i];
+        }
+    }
+    return nullptr;
+}
+
+// returns the oldest sequence number still held which is newer than
+// seqno.  If none is held, returns the sequence number the next event
+// will be given
+uint16_t AP_Logger::oldest_mavlink_event_interface_seq_after(uint16_t seqno) const
+{
+    uint16_t ret = mavlink_event_interface_seq;
+    uint16_t ret_delta = UINT16_MAX;
+    const uint8_t queue_count = queue_full ? ARRAY_SIZE(mavlink_event_interface_queue) : next_mavlink_event_interface_queue_entry;
+    for (uint8_t i=0; i<queue_count; i++) {
+        const uint16_t delta = mavlink_event_interface_queue[i].seqno - seqno;
+        if (delta == 0 || delta > UINT16_MAX/2) {
+            // not newer than seqno
+            continue;
+        }
+        if (delta < ret_delta) {
+            ret_delta = delta;
+            ret = mavlink_event_interface_queue[i].seqno;
+        }
+    }
+    return ret;
+}
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+
 void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
@@ -897,12 +984,20 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         handle_log_message(link, msg);
         break;
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    case MAVLINK_MSG_ID_REQUEST_EVENT:
+        handle_message_request_event(link, msg);
+        break;
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
     }
 }
 
 void AP_Logger::periodic_tasks() {
 #ifndef HAL_BUILD_AP_PERIPH
     handle_log_send();
+#endif
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    send_pending_mavlink_events();
 #endif
     FOR_EACH_BACKEND(periodic_tasks());
 }
@@ -1527,9 +1622,191 @@ void AP_Logger::start_io_thread(void)
 
 #undef FOR_EACH_BACKEND
 
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+void AP_Logger::queue_entry_to_event_message(mavlink_event_t &packet, const MAVLinkEventInterfaceQueue &entry)
+{
+    // note reordering of packet fields here; see mavlink_msg_event.h
+    packet = {
+        entry.mavlink_event_id,  // event id (component metadata)
+        entry.time_boot_ms,
+        entry.seqno,
+        0,  // destination sysID
+        0,  // destination compid
+        entry.log_level,
+        { entry.args[0] }
+    };
+}
+
+void AP_Logger::send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry)
+{
+    // note reordering of packet fields here; see mavlink_msg_event.h
+    mavlink_event_t packet {};
+    queue_entry_to_event_message(packet, entry);
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_EVENT, (const char*)&packet);
+}
+
+void AP_Logger::send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry, GCS_MAVLINK &link)
+{
+    mavlink_event_t packet {};
+    queue_entry_to_event_message(packet, entry);
+    link.send_message(MAVLINK_MSG_ID_EVENT, (const char*)&packet);
+}
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+// the MAVLink event ids and the metadata describing them are
+// generated by Tools/ardupilotwaf/events_metadata.py, which must
+// agree with these:
+static constexpr uint32_t MAVLINK_EVENT_COMPONENT = 1U << 24;
+static constexpr uint32_t MAVLINK_EVENT_ERROR_BASE = 0x10000;
+
+uint8_t AP_Logger::mavlink_event_log_level(LogEvent id)
+{
+    switch (id) {
+    case LogEvent::PARACHUTE_RELEASED:
+    case LogEvent::MOTORS_EMERGENCY_STOPPED:
+    case LogEvent::ROTOR_SPEED_BELOW_CRITICAL:
+        return MAV_SEVERITY_CRITICAL;
+    case LogEvent::LOST_GPS:
+    case LogEvent::AUTOTUNE_FAILED:
+    case LogEvent::AUTOTUNE_REACHED_LIMIT:
+        return MAV_SEVERITY_WARNING;
+    case LogEvent::ARMED:
+    case LogEvent::DISARMED:
+    case LogEvent::AUTO_ARMED:
+    case LogEvent::LAND_COMPLETE:
+    case LogEvent::SET_HOME:
+    case LogEvent::AUTOTUNE_SUCCESS:
+    case LogEvent::AUTOTUNE_SAVEDGAINS:
+    case LogEvent::FENCE_ENABLE:
+    case LogEvent::FENCE_DISABLE:
+    case LogEvent::PARACHUTE_DISABLED:
+    case LogEvent::PARACHUTE_ENABLED:
+    case LogEvent::MOTORS_EMERGENCY_STOP_CLEARED:
+    case LogEvent::MOTORS_INTERLOCK_DISABLED:
+    case LogEvent::MOTORS_INTERLOCK_ENABLED:
+    case LogEvent::LAND_CANCELLED_BY_PILOT:
+    case LogEvent::GPS_PRIMARY_CHANGED:
+    case LogEvent::STANDBY_ENABLE:
+    case LogEvent::STANDBY_DISABLE:
+    case LogEvent::EK3_SOURCES_SET_TO_PRIMARY:
+    case LogEvent::EK3_SOURCES_SET_TO_SECONDARY:
+    case LogEvent::EK3_SOURCES_SET_TO_TERTIARY:
+    case LogEvent::AIRSPEED_PRIMARY_CHANGED:
+        return MAV_SEVERITY_NOTICE;
+    default:
+        return MAV_SEVERITY_INFO;
+    }
+}
+
+uint8_t AP_Logger::mavlink_event_log_level(LogErrorSubsystem sub_system, LogErrorCode error_code)
+{
+    // for these the error code is data rather than a LogErrorCode:
+    switch (sub_system) {
+    case LogErrorSubsystem::EKF_PRIMARY:
+        return MAV_SEVERITY_INFO;
+    case LogErrorSubsystem::FLIGHT_MODE:
+        return MAV_SEVERITY_WARNING;
+    default:
+        break;
+    }
+
+    // for every other subsystem zero means the error has been
+    // resolved or the failsafe has cleared
+    if (error_code == LogErrorCode::ERROR_RESOLVED) {
+        return MAV_SEVERITY_INFO;
+    }
+
+    switch (sub_system) {
+    case LogErrorSubsystem::FAILSAFE_RADIO:
+    case LogErrorSubsystem::FAILSAFE_BATT:
+    case LogErrorSubsystem::FAILSAFE_GPS:
+    case LogErrorSubsystem::FAILSAFE_GCS:
+    case LogErrorSubsystem::FAILSAFE_FENCE:
+    case LogErrorSubsystem::CRASH_CHECK:
+    case LogErrorSubsystem::FAILSAFE_EKFINAV:
+    case LogErrorSubsystem::CPU:
+    case LogErrorSubsystem::FAILSAFE_ADSB:
+    case LogErrorSubsystem::FAILSAFE_TERRAIN:
+    case LogErrorSubsystem::THRUST_LOSS_CHECK:
+    case LogErrorSubsystem::FAILSAFE_SENSORS:
+    case LogErrorSubsystem::FAILSAFE_LEAK:
+    case LogErrorSubsystem::FAILSAFE_VIBE:
+    case LogErrorSubsystem::INTERNAL_ERROR:
+    case LogErrorSubsystem::FAILSAFE_DEADRECKON:
+        return MAV_SEVERITY_CRITICAL;
+    default:
+        return MAV_SEVERITY_WARNING;
+    }
+}
+
+void AP_Logger::push_mavlink_event(uint32_t id, uint8_t log_level, uint8_t arg)
+{
+    // errors are written from the timer thread when the main loop
+    // stops, so never block here.  The event is still logged
+    if (!mavlink_event_interface_sem.take_nonblocking()) {
+        return;
+    }
+    const struct MAVLinkEventInterfaceQueue queue_entry {
+        id,
+        AP_HAL::millis(),
+        mavlink_event_interface_seq++,
+        // same level for logging (high nibble) and display (low nibble)
+        uint8_t((log_level << 4) | log_level),
+        { arg }
+    };
+    mavlink_event_interface_queue[next_mavlink_event_interface_queue_entry++] = queue_entry;
+    if (next_mavlink_event_interface_queue_entry >= ARRAY_SIZE(mavlink_event_interface_queue)) {
+        next_mavlink_event_interface_queue_entry = 0;
+        queue_full = true;
+    }
+    mavlink_event_interface_sem.give();
+
+    // other threads leave sending to periodic_tasks
+    if (hal.scheduler->in_main_thread()) {
+        send_pending_mavlink_events();
+    }
+}
+
+// send events which have been queued but not yet sent, in order
+void AP_Logger::send_pending_mavlink_events()
+{
+    WITH_SEMAPHORE(mavlink_event_interface_sem);
+    while (mavlink_event_interface_next_send_seq != mavlink_event_interface_seq) {
+        const MAVLinkEventInterfaceQueue *entry = find_mavlink_event_interface_queue_entry(mavlink_event_interface_next_send_seq);
+        // an event overwritten before it could be sent is skipped; a
+        // GCS requesting it gets RESPONSE_EVENT_ERROR
+        if (entry != nullptr) {
+            send_mavlink_event_interface_queue_entry(*entry);
+        }
+        mavlink_event_interface_next_send_seq++;
+    }
+}
+
+// tell a GCS the sequence number of the latest event so it can
+// request any it missed
+void AP_Logger::send_mavlink_current_event_sequence(GCS_MAVLINK &link)
+{
+    WITH_SEMAPHORE(mavlink_event_interface_sem);
+    // events still waiting to be sent are not counted, or a GCS
+    // would request them before they are sent.  Until the first
+    // event the reset flag tells a GCS our sequence has restarted
+    const bool have_events = queue_full || next_mavlink_event_interface_queue_entry != 0;
+    mavlink_msg_current_event_sequence_send(
+        link.get_chan(),
+        uint16_t(mavlink_event_interface_next_send_seq - 1),
+        have_events ? 0 : MAV_EVENT_CURRENT_SEQUENCE_FLAGS_RESET
+        );
+}
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+
 // Wrote an event packet
 void AP_Logger::Write_Event(LogEvent id)
 {
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    push_mavlink_event(MAVLINK_EVENT_COMPONENT | uint32_t(id), mavlink_event_log_level(id), 0);
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+
     const struct log_Event pkt{
         LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
         time_us  : AP_HAL::micros64(),
@@ -1542,6 +1819,12 @@ void AP_Logger::Write_Event(LogEvent id)
 void AP_Logger::Write_Error(LogErrorSubsystem sub_system,
                             LogErrorCode error_code)
 {
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    push_mavlink_event(MAVLINK_EVENT_COMPONENT | MAVLINK_EVENT_ERROR_BASE | uint32_t(sub_system),
+                       mavlink_event_log_level(sub_system, error_code),
+                       uint8_t(error_code));
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+
   const struct log_Error pkt{
       LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
       time_us       : AP_HAL::micros64(),

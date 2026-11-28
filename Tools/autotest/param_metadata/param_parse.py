@@ -22,6 +22,7 @@ from rstlatexpdfemit import RSTLATEXPDFEmit
 from xmlemit import XmlEmit
 
 from jsonemit import JSONEmit
+from mavlinkemit import MAVLinkEmit
 from mdemit import MDEmit
 from param import Library
 from param import Parameter
@@ -31,6 +32,7 @@ from param import known_param_fields
 from param import known_units
 from param import required_library_param_fields
 from param import required_param_fields
+from param_types import ParamTypes
 
 parser = ArgumentParser(description="Parse ArduPilot parameters.")
 parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
@@ -54,7 +56,7 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md'],
+                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md', 'mavlink'],
                     help="what output format to use")
 parser.add_argument("--git-sha",
                     dest='git_sha',
@@ -153,6 +155,9 @@ error_count = 0
 current_param = None
 current_file = None
 
+# parameter -> (file, offset, name in its table), used to find its type
+param_sources = {}
+
 
 def error(str_to_print):
     """Show errors."""
@@ -216,10 +221,8 @@ def process_vehicle(vehicle):
         if not any(lib.name == parsed_l.name for parsed_l in libraries):
             libraries.append(lib)
 
-    param_matches = []
-    param_matches = prog_param.findall(p_text)
-
-    for param_match in param_matches:
+    for m in prog_param.finditer(p_text):
+        param_match = m.groups('')
         (only_vehicles, param_name, field_text) = (param_match[0].strip(),
                                                    param_match[1].strip(),
                                                    param_match[2].strip())
@@ -231,6 +234,7 @@ def process_vehicle(vehicle):
             if vehicle.truename not in only_vehicles_list:
                 continue
         p = Parameter(vehicle.reference+":"+param_name, current_file)
+        param_sources[p] = (current_file, m.start(), param_name)
         debug(p.name + ' ')
         global current_param
         current_param = p.name
@@ -306,9 +310,10 @@ def process_library(vehicle, library, pathprefix=None):
             error("Path %s not found for library %s (fname=%s)" % (path, library.name, libraryfname))
             continue
 
-        param_matches = prog_param.findall(p_text)
+        param_matches = list(prog_param.finditer(p_text))
         debug("Found %u documented parameters" % len(param_matches))
-        for param_match in param_matches:
+        for m in param_matches:
+            param_match = m.groups('')
             (only_vehicles, param_name, field_text) = (param_match[0].strip(),
                                                        param_match[1].strip(),
                                                        param_match[2].strip())
@@ -419,6 +424,7 @@ def process_library(vehicle, library, pathprefix=None):
                 params_to_add = [p]
 
             for p in params_to_add:
+                param_sources[p] = (libraryfname, m.start(), param_name)
                 p.path = path # Add path. Later deleted - only used for duplicates
                 if library.check_duplicates and library.has_param(p.name):
                     error("Duplicate parameter %s in %s" % (p.name, library.name))
@@ -737,6 +743,7 @@ all_emitters = {
     'rst': RSTEmit,
     'rstlatexpdf': RSTLATEXPDFEmit,
     'md': MDEmit,
+    'mavlink': MAVLinkEmit,
 }
 
 try:
@@ -764,11 +771,17 @@ for emitter_name in emitters_to_use:
     emit.git_tag = args.git_tag
     emit.emit_legacy_params = args.emit_legacy_params
     if emit.emit_legacy_params is None:
-        if emitter_name in ('rst', 'rstlatexpdf'):
-            # do not emit legacy parameters to the Wiki
+        if emitter_name in ('rst', 'rstlatexpdf', 'mavlink'):
+            # do not emit legacy parameters to the Wiki, nor to GCSs
+            # which only want metadata for the parameters a vehicle has
             emit.emit_legacy_params = False
         else:
             emit.emit_legacy_params = True
+
+    if emitter_name == 'mavlink':
+        param_types = ParamTypes(apm_path)
+        for (p, (fname, offset, short_name)) in param_sources.items():
+            emit.param_types[p] = param_types.resolve(fname, offset, short_name)
 
     emit.emit(vehicle)
 

@@ -47,6 +47,22 @@
 
 #endif
 
+#ifndef AP_LOGGER_MAVLINK_EVENTS_ENABLED
+#define AP_LOGGER_MAVLINK_EVENTS_ENABLED HAL_LOGGING_ENABLED && HAL_GCS_ENABLED
+#endif
+
+// number of MAVLink events kept so a GCS can request them again
+#ifndef AP_LOGGER_MAVLINK_EVENTS_QUEUE_LENGTH
+#define AP_LOGGER_MAVLINK_EVENTS_QUEUE_LENGTH 5
+#endif
+
+// the MAVLink events metadata is embedded in ROMFS as events.json.xz.
+// The hwdef scripts decide whether to embed the file, from this
+// define's value in the hwdef or build options
+#ifndef AP_LOGGER_MAVLINK_EVENTS_METADATA_ROMFS_ENABLED
+#define AP_LOGGER_MAVLINK_EVENTS_METADATA_ROMFS_ENABLED AP_LOGGER_MAVLINK_EVENTS_ENABLED && AP_MAVLINK_COMPONENT_INFORMATION_ENABLED && AP_FILESYSTEM_ROMFS_ENABLED
+#endif
+
 #ifndef HAL_LOGGER_FILE_CONTENTS_ENABLED
 #define HAL_LOGGER_FILE_CONTENTS_ENABLED HAL_LOGGING_FILESYSTEM_ENABLED && !AP_FILESYSTEM_LITTLEFS_ENABLED
 #endif

@@ -22,86 +22,161 @@ class AP_Logger_Backend;
 
 // do not do anything here apart from add stuff; maintaining older
 // entries means log analysis is easier
+// the @ annotations on LogEvent, LogErrorSubsystem and LogErrorCode
+// generate the MAVLink events metadata; see
+// Tools/ardupilotwaf/events_metadata.py
 enum class LogEvent : uint8_t {
+    // @Message: Armed
     ARMED = 10,
+    // @Message: Disarmed
     DISARMED = 11,
+    // @Message: Auto-armed
+    // @Description: Armed and throttle raised, so autonomous takeoff is permitted
     AUTO_ARMED = 15,
+    // @Message: Landing possibly complete
     LAND_COMPLETE_MAYBE = 17,
+    // @Message: Landed
     LAND_COMPLETE = 18,
+    // @Message: GPS lost
     LOST_GPS = 19,
+    // @Message: Flip started
     FLIP_START = 21,
+    // @Message: Flip complete
     FLIP_END = 22,
+    // @Message: Home position set
     SET_HOME = 25,
+    // @Message: Simple mode on
     SET_SIMPLE_ON = 26,
+    // @Message: Simple mode off
     SET_SIMPLE_OFF = 27,
+    // @Message: No longer landed
     NOT_LANDED = 28,
+    // @Message: Super simple mode on
     SET_SUPERSIMPLE_ON = 29,
+    // @Message: Autotune started
     AUTOTUNE_INITIALISED = 30,
+    // @Message: Autotune stopped
     AUTOTUNE_OFF = 31,
+    // @Message: Autotune restarted
     AUTOTUNE_RESTART = 32,
+    // @Message: Autotune complete
     AUTOTUNE_SUCCESS = 33,
+    // @Message: Autotune failed
     AUTOTUNE_FAILED = 34,
+    // @Message: Autotune reached a gain limit
     AUTOTUNE_REACHED_LIMIT = 35,
+    // @Message: Autotune: pilot testing tuned gains
     AUTOTUNE_PILOT_TESTING = 36,
+    // @Message: Autotune gains saved
     AUTOTUNE_SAVEDGAINS = 37,
+    // @Message: Trim saved
     SAVE_TRIM = 38,
+    // @Message: Waypoint added to mission
     SAVEWP_ADD_WP = 39,
+    // @Message: Fence enabled
     FENCE_ENABLE = 41,
+    // @Message: Fence disabled
     FENCE_DISABLE = 42,
+    // @Message: Acro trainer off
     ACRO_TRAINER_OFF = 43,
+    // @Message: Acro trainer leveling
     ACRO_TRAINER_LEVELING = 44,
+    // @Message: Acro trainer leveling and limiting
     ACRO_TRAINER_LIMITED = 45,
+    // @Message: Gripper grabbed
     GRIPPER_GRAB = 46,
+    // @Message: Gripper released
     GRIPPER_RELEASE = 47,
+    // @Message: Parachute disabled
     PARACHUTE_DISABLED = 49,
+    // @Message: Parachute enabled
     PARACHUTE_ENABLED = 50,
+    // @Message: Parachute released
     PARACHUTE_RELEASED = 51,
+    // @Message: Landing gear deployed
     LANDING_GEAR_DEPLOYED = 52,
+    // @Message: Landing gear retracted
     LANDING_GEAR_RETRACTED = 53,
+    // @Message: Motors emergency stopped
     MOTORS_EMERGENCY_STOPPED = 54,
+    // @Message: Motor emergency stop cleared
     MOTORS_EMERGENCY_STOP_CLEARED = 55,
+    // @Message: Motor interlock disabled
     MOTORS_INTERLOCK_DISABLED = 56,
+    // @Message: Motor interlock enabled
     MOTORS_INTERLOCK_ENABLED = 57,
+    // @Message: Rotor runup complete
     ROTOR_RUNUP_COMPLETE = 58, // Heli only
+    // @Message: Rotor speed below critical
     ROTOR_SPEED_BELOW_CRITICAL = 59, // Heli only
+    // @Message: EKF altitude reset
     EKF_ALT_RESET = 60,
+    // @Message: Landing cancelled by pilot
     LAND_CANCELLED_BY_PILOT = 61,
+    // @Message: EKF yaw reset
     EKF_YAW_RESET = 62,
+    // @Message: ADS-B avoidance enabled
     AVOIDANCE_ADSB_ENABLE = 63,
+    // @Message: ADS-B avoidance disabled
     AVOIDANCE_ADSB_DISABLE = 64,
+    // @Message: Proximity avoidance enabled
     AVOIDANCE_PROXIMITY_ENABLE = 65,
+    // @Message: Proximity avoidance disabled
     AVOIDANCE_PROXIMITY_DISABLE = 66,
+    // @Message: Primary GPS changed
     GPS_PRIMARY_CHANGED = 67,
     // 68, 69, 70 were winch events
+    // @Message: ZigZag point A stored
     ZIGZAG_STORE_A = 71,
+    // @Message: ZigZag point B stored
     ZIGZAG_STORE_B = 72,
+    // @Message: Pilot repositioning during landing
     LAND_REPO_ACTIVE = 73,
+    // @Message: Standby enabled
     STANDBY_ENABLE = 74,
+    // @Message: Standby disabled
     STANDBY_DISABLE = 75,
 
     // Fence events
+    // @Message: Maximum altitude fence enabled
     FENCE_ALT_MAX_ENABLE = 76,
+    // @Message: Maximum altitude fence disabled
     FENCE_ALT_MAX_DISABLE = 77,
+    // @Message: Circle fence enabled
     FENCE_CIRCLE_ENABLE = 78,
+    // @Message: Circle fence disabled
     FENCE_CIRCLE_DISABLE = 79,
+    // @Message: Minimum altitude fence enabled
     FENCE_ALT_MIN_ENABLE = 80,
+    // @Message: Minimum altitude fence disabled
     FENCE_ALT_MIN_DISABLE = 81,
+    // @Message: Polygon fence enabled
     FENCE_POLYGON_ENABLE = 82,
+    // @Message: Polygon fence disabled
     FENCE_POLYGON_DISABLE = 83,
 
     // if the EKF's source input set is changed (e.g. via a switch or
     // a script), we log an event:
+    // @Message: EKF3 sources set to primary
     EK3_SOURCES_SET_TO_PRIMARY = 85,
+    // @Message: EKF3 sources set to secondary
     EK3_SOURCES_SET_TO_SECONDARY = 86,
+    // @Message: EKF3 sources set to tertiary
     EK3_SOURCES_SET_TO_TERTIARY = 87,
 
+    // @Message: Primary airspeed sensor changed
     AIRSPEED_PRIMARY_CHANGED = 90,
 
+    // @Message: Surfaced
     SURFACED = 163,
+    // @Message: Left the surface
     NOT_SURFACED = 164,
+    // @Message: On the bottom
     BOTTOMED = 165,
+    // @Message: Left the bottom
     NOT_BOTTOMED = 166,
 
+    // @Message: EKF compass offsets saved
     EKF_MAG_OFFSETS_SAVED = 167, // compass offsets learned by the EKF were saved on disarm
 };
 
@@ -112,36 +187,102 @@ enum class LogDataID : uint8_t {
 };
 
 enum class LogErrorSubsystem : uint8_t {
+    // @Message: Main loop: {1}
+    // @Codes: MAIN_INS_DELAY
     MAIN = 1,
+    // @Message: Radio: {1}
+    // @Codes: ERROR_RESOLVED, RADIO_LATE_FRAME
     RADIO = 2,
+    // @Message: Compass: {1}
+    // @Codes: ERROR_RESOLVED, FAILED_TO_INITIALISE, UNHEALTHY
     COMPASS = 3,
+    // @Message: Optical flow: {1}
+    // @Codes: ERROR_RESOLVED, FAILED_TO_INITIALISE, UNHEALTHY
     OPTFLOW = 4,   // not used
+    // @Message: Radio failsafe {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     FAILSAFE_RADIO = 5,
+    // @Message: Battery failsafe {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     FAILSAFE_BATT = 6,
+    // @Message: GPS failsafe {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     FAILSAFE_GPS = 7,   // not used
+    // @Message: GCS failsafe {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     FAILSAFE_GCS = 8,
+    // @Message: Fence breaches: {1}
+    // @Description: 0 when all breaches are cleared, otherwise a bitmask of the breached fences: 1:maximum altitude, 2:circle, 4:polygon, 8:minimum altitude
+    // @Argument: breaches
     FAILSAFE_FENCE = 9,
+    // @Message: Failed to change to mode {1}
+    // @Description: The argument is the vehicle-specific mode number
+    // @Argument: mode
     FLIGHT_MODE = 10,
+    // @Message: GPS: {1}
+    // @Codes: ERROR_RESOLVED, GPS_GLITCH
     GPS = 11,
+    // @Message: Crash check: {1}
+    // @Codes: CRASH_CHECK_CRASH, CRASH_CHECK_LOSS_OF_CONTROL
     CRASH_CHECK = 12,
+    // @Message: Flip: {1}
+    // @Codes: FLIP_ABANDONED
     FLIP = 13,
+    // @Message: Autotune: {1}
+    // @Codes: ERROR_RESOLVED, FAILED_TO_INITIALISE, UNHEALTHY
     AUTOTUNE = 14,  // not used
+    // @Message: Parachute: {1}
+    // @Codes: PARACHUTE_TOO_LOW, PARACHUTE_LANDED
     PARACHUTES = 15,
+    // @Message: EKF check: {1}
+    // @Codes: EKFCHECK_VARIANCE_CLEARED, EKFCHECK_BAD_VARIANCE
     EKFCHECK = 16,
+    // @Message: EKF failsafe {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     FAILSAFE_EKFINAV = 17,
+    // @Message: Barometer: {1}
+    // @Codes: ERROR_RESOLVED, BARO_GLITCH, UNHEALTHY
     BARO = 18,
+    // @Message: CPU failsafe {1}
+    // @Description: The main loop stopped running
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     CPU = 19,
+    // @Message: ADS-B failsafe action {1}
+    // @Description: 0 when resolved, otherwise the MAV_COLLISION_ACTION taken
+    // @Argument: action
     FAILSAFE_ADSB = 20,
+    // @Message: Terrain: {1}
+    // @Codes: MISSING_TERRAIN_DATA
     TERRAIN = 21,
+    // @Message: Navigation: {1}
+    // @Codes: FAILED_TO_SET_DESTINATION, RESTARTED_RTL, FAILED_CIRCLE_INIT, DEST_OUTSIDE_FENCE, RTL_MISSING_RNGFND
     NAVIGATION = 22,
+    // @Message: Terrain failsafe {1}
+    // @Codes: ERROR_RESOLVED, FAILSAFE_OCCURRED
     FAILSAFE_TERRAIN = 23,
+    // @Message: EKF primary changed to core {1}
+    // @Argument: core
     EKF_PRIMARY = 24,
+    // @Message: Thrust loss {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     THRUST_LOSS_CHECK = 25,
+    // @Message: Sensor failsafe: {1}
+    // @Codes: ERROR_RESOLVED, BAD_DEPTH
     FAILSAFE_SENSORS = 26,
+    // @Message: Leak failsafe {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     FAILSAFE_LEAK = 27,
+    // @Message: Pilot input failsafe {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     PILOT_INPUT = 28,
+    // @Message: Vibration failsafe {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     FAILSAFE_VIBE = 29,
+    // @Message: Internal errors {1}
+    // @Codes: INTERNAL_ERRORS_DETECTED
     INTERNAL_ERROR = 30,
+    // @Message: Dead reckoning failsafe {1}
+    // @Codes: FAILSAFE_RESOLVED, FAILSAFE_OCCURRED
     FAILSAFE_DEADRECKON = 31
 };
 
@@ -149,42 +290,66 @@ enum class LogErrorSubsystem : uint8_t {
 // very little in the way of typesafety
 enum class LogErrorCode : uint8_t {
 // general error codes
+    // @Message: resolved
     ERROR_RESOLVED  = 0,
+    // @Message: failed to initialise
     FAILED_TO_INITIALISE = 1,
+    // @Message: unhealthy
     UNHEALTHY = 4,
 // subsystem specific error codes -- radio
+    // @Message: late frame
     RADIO_LATE_FRAME = 2,
 // subsystem specific error codes -- failsafe_thr, batt, gps
+    // @Message: resolved
     FAILSAFE_RESOLVED = 0,
+    // @Message: triggered
     FAILSAFE_OCCURRED = 1,
 // subsystem specific error codes -- main
+    // @Message: INS delay
     MAIN_INS_DELAY = 1,
 // subsystem specific error codes -- crash checker
+    // @Message: crash detected
     CRASH_CHECK_CRASH = 1,
+    // @Message: loss of control
     CRASH_CHECK_LOSS_OF_CONTROL = 2,
 // subsystem specific error codes -- flip
+    // @Message: abandoned
     FLIP_ABANDONED = 2,
 // subsystem specific error codes -- terrain
+    // @Message: missing terrain data
     MISSING_TERRAIN_DATA = 2,
 // subsystem specific error codes -- navigation
+    // @Message: failed to set destination
     FAILED_TO_SET_DESTINATION = 2,
+    // @Message: RTL restarted
     RESTARTED_RTL = 3,
+    // @Message: failed to start circle
     FAILED_CIRCLE_INIT = 4,
+    // @Message: destination outside fence
     DEST_OUTSIDE_FENCE = 5,
+    // @Message: RTL missing rangefinder
     RTL_MISSING_RNGFND = 6,
 // subsystem specific error codes -- internal_error
+    // @Message: detected
     INTERNAL_ERRORS_DETECTED = 1,
 
 // parachute failed to deploy because of low altitude or landed
+    // @Message: too low to deploy
     PARACHUTE_TOO_LOW = 2,
+    // @Message: landed, not deployed
     PARACHUTE_LANDED = 3,
 // EKF check definitions
+    // @Message: bad variance
     EKFCHECK_BAD_VARIANCE = 2,
+    // @Message: variance cleared
     EKFCHECK_VARIANCE_CLEARED = 0,
 // Baro specific error codes
+    // @Message: glitch
     BARO_GLITCH = 2,
+    // @Message: bad depth
     BAD_DEPTH = 3, // sub-only
 // GPS specific error codes
+    // @Message: glitch
     GPS_GLITCH = 2,
 };
 
@@ -321,6 +486,10 @@ public:
 #endif
 
     void handle_mavlink_msg(class GCS_MAVLINK &, const mavlink_message_t &msg);
+
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    void send_mavlink_current_event_sequence(class GCS_MAVLINK &link);
+#endif
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
@@ -462,6 +631,35 @@ private:
         IN_RC_FAILSAFE =  1U<<1,  // true if the system is current in RC failsafe
         RC_PROTOCOL_FAILSAFE =  1U<<2,  // true if the RC Protocol library is indicating the RC receiver is indicating failsafe via its protocol
     };
+
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    struct MAVLinkEventInterfaceQueue {
+        uint32_t mavlink_event_id;
+        uint32_t time_boot_ms;
+        uint16_t seqno;
+        uint8_t log_level;
+        uint8_t args[1];  // uint8_t[40] in the mavlink message
+    } mavlink_event_interface_queue[AP_LOGGER_MAVLINK_EVENTS_QUEUE_LENGTH];
+    static_assert(AP_LOGGER_MAVLINK_EVENTS_QUEUE_LENGTH > 0 && AP_LOGGER_MAVLINK_EVENTS_QUEUE_LENGTH <= UINT8_MAX,
+                  "queue is indexed by uint8_t");
+    uint8_t next_mavlink_event_interface_queue_entry;
+    bool queue_full;
+    uint16_t mavlink_event_interface_seq;
+    // events may be written from threads other than the main thread,
+    // but are only sent from the main thread
+    HAL_Semaphore mavlink_event_interface_sem;
+    uint16_t mavlink_event_interface_next_send_seq;
+    void push_mavlink_event(uint32_t id, uint8_t log_level, uint8_t arg);
+    void send_pending_mavlink_events();
+    static uint8_t mavlink_event_log_level(LogEvent id);
+    static uint8_t mavlink_event_log_level(LogErrorSubsystem sub_system, LogErrorCode error_code);
+    void queue_entry_to_event_message(mavlink_event_t &packet, const MAVLinkEventInterfaceQueue &entry);
+    void send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry);
+    void send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry, GCS_MAVLINK &link);
+    void handle_message_request_event(GCS_MAVLINK &link, const mavlink_message_t &msg);
+    const MAVLinkEventInterfaceQueue *find_mavlink_event_interface_queue_entry(uint16_t seqno) const;
+    uint16_t oldest_mavlink_event_interface_seq_after(uint16_t seqno) const;
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
 
     /*
      * support for dynamic Write; user-supplies name, format,

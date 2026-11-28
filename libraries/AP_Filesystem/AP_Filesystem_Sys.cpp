@@ -25,6 +25,10 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS_config.h>
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+#include <GCS_MAVLink/GCS.h>
+#endif
 #include <AP_Common/ExpandingString.h>
 
 #ifndef AP_CRASHDUMP_FLASH_ENABLED
@@ -44,6 +48,9 @@ static const SysFileList sysfs_file_list[] = {
     {"memory.txt"},
     {"uarts.txt"},
     {"timers.txt"},
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    {"general_metadata.json"},
+#endif
 #if HAL_NUM_CAN_IFACES > 0
     {"can0_stats.txt"},
     {"can1_stats.txt"},
@@ -123,6 +130,11 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
     if (strcmp(fname, "timers.txt") == 0) {
         hal.util->timer_info(*r.str);
     }
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    if (strcmp(fname, "general_metadata.json") == 0) {
+        gcs().general_metadata(*r.str);
+    }
+#endif
 #if HAL_NUM_CAN_IFACES > 0
     int8_t can_stats_num = -1;
     if (strcmp(fname, "can0_stats.txt") == 0) {
@@ -307,6 +319,19 @@ int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
 #if AP_CRASHDUMP_FLASH_ENABLED
     } else if (strcmp(pathname_noslash, "crash_dump.bin") == 0) {
         stbuf->st_size = hal.util->last_crash_dump_size();
+#endif
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    } else if (strcmp(pathname_noslash, "general_metadata.json") == 0) {
+        // GCSs fetching component metadata fail the download if
+        // it is shorter than this size. The file is small, so
+        // generate it to find its size
+        ExpandingString str;
+        gcs().general_metadata(str);
+        if (str.has_failed_allocation()) {
+            errno = ENOMEM;
+            return -1;
+        }
+        stbuf->st_size = str.get_length();
 #endif
     } else {
         stbuf->st_size = 100000;

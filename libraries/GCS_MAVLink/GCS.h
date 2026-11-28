@@ -33,6 +33,8 @@
 
 #include "ap_message.h"
 
+class ExpandingString;
+
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
 #ifndef HAL_GCS_ALLOW_PARAM_SET_DEFAULT
@@ -448,6 +450,10 @@ public:
 
     void send_flight_information();
 #endif
+
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    void send_component_information() const;
+#endif  // AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
 
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
@@ -1287,6 +1293,12 @@ public:
     void setup_console();
     void setup_uarts();
 
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    // fill in the general metadata file, @SYS/general_metadata.json
+    void general_metadata(ExpandingString &str) const;
+    uint32_t general_metadata_crc() const { return _general_metadata_crc; }
+#endif  // AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+
     enum class Option {
       GCS_SYSID_ENFORCE = (1U << 0),
     };
@@ -1468,6 +1480,23 @@ private:
     // GCS::update_send is called so we don't starve later links of
     // time in which they are permitted to send messages.
     uint8_t first_backend_to_send;
+
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    // find the component metadata files and calculate the CRCs we
+    // advertise for them
+    void setup_component_metadata();
+    uint32_t _general_metadata_crc;
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    struct {
+        const char *uri;  // nullptr if no events metadata was found
+        uint32_t crc;
+    } events_metadata;
+#if AP_LOGGER_MAVLINK_EVENTS_METADATA_ROMFS_ENABLED
+    // not inlined so extract_features.py can see it
+    static bool romfs_events_metadata_crc(uint32_t &crc) NOINLINE;
+#endif
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+#endif  // AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
 
 };
 

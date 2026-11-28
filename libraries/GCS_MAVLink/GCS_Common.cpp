@@ -1230,6 +1230,12 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
         { MAVLINK_MSG_ID_UTM_GLOBAL_POSITION, MSG_UTM_GLOBAL_POSITION},
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+        { MAVLINK_MSG_ID_COMPONENT_INFORMATION, MSG_COMPONENT_INFORMATION},
+#endif  // AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+        { MAVLINK_MSG_ID_CURRENT_EVENT_SEQUENCE, MSG_CURRENT_EVENT_SEQUENCE},
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -2878,6 +2884,10 @@ bool GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
 
 void GCS::setup_uarts()
 {
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    setup_component_metadata();
+#endif
+
 #if AP_FRSKY_TELEM_ENABLED
     if (frsky == nullptr) {
         frsky = NEW_NOTHROW AP_Frsky_Telem();
@@ -4373,6 +4383,9 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_LOG_ERASE:
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    case MAVLINK_MSG_ID_REQUEST_EVENT:
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
         AP::logger().handle_mavlink_msg(*this, msg);
         break;
 #endif
@@ -6685,6 +6698,24 @@ void GCS_MAVLINK::available_modes_changed()
     set_ap_message_interval(MSG_AVAILABLE_MODES_MONITOR, 5000);
 }
 
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+void GCS_MAVLINK::send_component_information() const
+{
+    // the mavlink send function copies the full field length:
+    static const char general_metadata_url[sizeof(mavlink_component_information_t::general_metadata_uri)] = "mftp://@SYS/general_metadata.json";
+    static const char peripherals_metadata_url[sizeof(mavlink_component_information_t::peripherals_metadata_uri)] {};
+
+    mavlink_msg_component_information_send(
+        chan,
+        AP_HAL::millis(),
+        gcs().general_metadata_crc(),
+        general_metadata_url,
+        0,  // -1?
+        peripherals_metadata_url
+        );
+}
+#endif  // AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -7090,6 +7121,20 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     }
 #endif
 
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    case MSG_COMPONENT_INFORMATION:
+        CHECK_PAYLOAD_SIZE(COMPONENT_INFORMATION);
+        send_component_information();
+        break;
+#endif  // AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    case MSG_CURRENT_EVENT_SEQUENCE:
+        CHECK_PAYLOAD_SIZE(CURRENT_EVENT_SEQUENCE);
+        AP::logger().send_mavlink_current_event_sequence(*this);
+        break;
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+
 #if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
     case MSG_UAVIONIX_ADSB_OUT_STATUS:
         CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
@@ -7382,6 +7427,9 @@ void GCS_MAVLINK::initialise_message_intervals_from_streamrates()
             initialise_message_intervals_for_stream(all_stream_entries[i].stream_id);
         }
         set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+        set_mavlink_message_id_interval(MAVLINK_MSG_ID_CURRENT_EVENT_SEQUENCE, 1000);
+#endif
     } else {
         set_mavlink_message_id_interval(MAVLINK_MSG_ID_HIGH_LATENCY2, 5000);
     }
@@ -7391,6 +7439,9 @@ void GCS_MAVLINK::initialise_message_intervals_from_streamrates()
         initialise_message_intervals_for_stream(all_stream_entries[i].stream_id);
     }
     set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    set_mavlink_message_id_interval(MAVLINK_MSG_ID_CURRENT_EVENT_SEQUENCE, 1000);
+#endif
 #endif
 }
 
@@ -7425,6 +7476,14 @@ bool GCS_MAVLINK::get_default_interval_for_ap_message(const ap_message id, uint1
         interval = 0;
         return true;
     }
+
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    if (id == MSG_CURRENT_EVENT_SEQUENCE) {
+        // not "streamed"; sent regularly so GCSs notice missed events
+        interval = 1000;
+        return true;
+    }
+#endif
 
     // find which stream this ap_message is in
     for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {

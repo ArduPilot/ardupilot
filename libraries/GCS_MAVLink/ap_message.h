@@ -9,6 +9,7 @@
 #include "GCS_config.h"
 
 #include <AP_AHRS/AP_AHRS_config.h>
+#include <AP_Logger/AP_Logger_config.h>
 #include <AP_Terrain/AP_Terrain_config.h>
 
 enum ap_message : uint8_t {
@@ -116,5 +117,11 @@ enum ap_message : uint8_t {
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
     MSG_UTM_GLOBAL_POSITION            = 101,
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    MSG_COMPONENT_INFORMATION,
+#endif  // AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    MSG_CURRENT_EVENT_SEQUENCE,
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };

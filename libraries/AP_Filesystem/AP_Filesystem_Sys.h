@@ -51,6 +51,7 @@ private:
         uint32_t file_ofs;
         ExpandingString *str;
     } file[max_open_file];
+
 };
 
 #endif  // AP_FILESYSTEM_SYS_ENABLED
