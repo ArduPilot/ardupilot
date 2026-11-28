@@ -93,7 +93,6 @@ void AR_WPNav_OA::update(float dt)
                 // this should never happen.  this means the path planner has returned success but has returned an invalid planner
                 INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                 _oa_active = false;
-                stop_vehicle = true;
                 return;
 
             case AP_OAPathPlanner::OAPathPlannerUsed::Dijkstras:
