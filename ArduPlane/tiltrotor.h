@@ -130,6 +130,8 @@ private:
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
 
+    float get_bicopter_adjusted_throttle() const;
+
     Tiltrotor_Transition* transition;
 
 };
