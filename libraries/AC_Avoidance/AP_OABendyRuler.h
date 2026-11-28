@@ -32,6 +32,10 @@ public:
     // bendy_type is set to the type of BendyRuler used
     bool update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, OABendyType &bendy_type, bool proximity_only);
 
+    // returns how far from the edge of every polygon or circle fence a destination must be
+    // for BendyRuler to fly straight to it, given OA_MARGIN_MAX of margin_max
+    static float get_destination_fence_clearance_m(float margin_max);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -40,7 +44,7 @@ private:
     OABendyType get_type() const;
 
     // search for path in XY direction
-    bool search_xy_path(const Location& current_loc, const Location& destination, float ground_course_deg, Location &destination_new, float lookahead_step_1_dist, float lookahead_step_2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only);
+    bool search_xy_path(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, float ground_course_deg, Location &destination_new, float lookahead_step_1_dist, float lookahead_step_2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only);
 
     // search for path in the Vertical directions
     bool search_vertical_path(const Location &current_loc, const Location &destination, Location &destination_new, float lookahead_step1_dist, float lookahead_step2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only);
@@ -59,13 +63,28 @@ private:
     // on success returns true and updates margin
     bool calc_margin_from_alt_fence(const Location &start, const Location &end, float &margin) const;
 
-    // calculate minimum distance between a path and all inclusion and exclusion polygons
+    // calculate minimum distance between a path and all inclusion and exclusion polygons,
+    // except the exclusion polygon with index skip_exclusion_index (if any)
     // on success returns true and updates margin
-    bool calc_margin_from_inclusion_and_exclusion_polygons(const Location &start, const Location &end, float &margin) const;
+    bool calc_margin_from_inclusion_and_exclusion_polygons(const Location &start, const Location &end, float &margin, int16_t skip_exclusion_index = -1) const;
 
-    // calculate minimum distance between a path and all inclusion and exclusion circles
+    // calculate minimum distance between a path and all inclusion and exclusion circles,
+    // except the exclusion circle with index skip_exclusion_index (if any)
     // on success returns true and updates margin
-    bool calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin) const;
+    bool calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin, int16_t skip_exclusion_index = -1) const;
+
+    // if current_loc is inside an exclusion polygon or circle, find the point outside it closest to
+    // where the vehicle will be OA_BENDYRULER_EXIT_PREDICT_TIME ahead at ground_speed_vec, placed the
+    // fence margin plus OA_MARGIN_MAX beyond its edge, that clears every fence and whose route from
+    // there crosses no fence or obstacle other than the zone being left
+    // returns true and updates exit_loc if such a point was found
+    bool calc_exclusion_zone_exit(const Location &current_loc, const Vector2f &ground_speed_vec, Location &exit_loc) const;
+
+    // returns true if the exit at candidate_NE, an offset in cm from the EKF origin, clears every fence,
+    // and the route to it from start_loc (at start_NE) crosses no fence or obstacle other than the
+    // exclusion polygon or circle being left, given by its index (-1 for neither)
+    // candidate_loc is set to the exit's location
+    bool exclusion_zone_exit_clear(const Location &start_loc, const Vector2f &start_NE, const Vector2f &candidate_NE, int16_t polygon_index, int16_t circle_index, Location &candidate_loc) const;
 
     // calculate minimum distance between a path and proximity sensor obstacles
     // on success returns true and updates margin
