@@ -146,7 +146,7 @@ public:
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
+    // No reset is performed (and false is returned) unless on the ground with baro or GPS as the height source
     bool resetHeightDatum(void);
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
@@ -1009,6 +1009,7 @@ private:
 
     // Range finder
     ftype baroHgtOffset;                    // offset applied when when switching to use of Baro height
+    bool baroHgtOffsetNeedsInit;            // true when a datum reset has left baroHgtOffset and meaHgtAtTakeOff to be taken from the next baro sample
     ftype rngOnGnd;                         // Expected range finder reading in metres when vehicle is on ground
     uint32_t lastRngMeasTime_ms;            // Timestamp of last range measurement
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
