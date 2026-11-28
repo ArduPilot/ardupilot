@@ -43,8 +43,8 @@ public:
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
-#ifdef HAL_PWM_ALARM
-    bool toneAlarm_init() override;
+#ifdef HAL_ESP32_TONEALARM_PIN
+    bool toneAlarm_init(uint8_t types) override;
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 #endif
 
@@ -55,14 +55,8 @@ public:
     void thread_info(ExpandingString &str) override;
 
 private:
-#ifdef HAL_PWM_ALARM
-    struct ToneAlarmPwmGroup {
-        pwmchannel_t chan;
-        PWMConfig pwm_cfg;
-        PWMDriver* pwm_drv;
-    };
-
-    static ToneAlarmPwmGroup _toneAlarm_pwm_group;
+#ifdef HAL_ESP32_TONEALARM_PIN
+    bool _toneAlarm_initialized {false};
 #endif
 
     /*
