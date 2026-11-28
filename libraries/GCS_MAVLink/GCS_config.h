@@ -36,6 +36,11 @@
 // removed.  It has signficant deficiencies vs MAV_CMD_DO_SET_CURRENT.
 // The command was added to the spec in January 2019 and to MAVLink in
 // ArduPilot in 4.1.x
+// CODE_REMOVAL
+// ArduPilot 4.8 warns if the message is received
+// ArduPilot 4.9 warns if the message is received
+// ArduPilot 4.10 compiles the code out
+// ArduPilot 4.11 removes the code entirely
 #ifndef AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
 #define AP_MAVLINK_MISSION_SET_CURRENT_ENABLED AP_MISSION_ENABLED
 #endif
