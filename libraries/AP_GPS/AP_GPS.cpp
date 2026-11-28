@@ -502,10 +502,13 @@ uint64_t AP_GPS::last_message_epoch_usec(uint8_t instance) const
   send some more initialisation string bytes if there is room in the
   UART transmit buffer
  */
-void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
+void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size,
+                             const char *_next_blob, uint16_t next_size)
 {
     initblob_state[instance].blob = _blob;
     initblob_state[instance].remaining = size;
+    initblob_state[instance].next_blob = _next_blob;
+    initblob_state[instance].next_remaining = next_size;
 }
 
 /*
@@ -518,10 +521,19 @@ void AP_GPS::send_blob_start(uint8_t instance)
     const auto type = params[instance].type;
 
 #if AP_GPS_UBLOX_ENABLED
+    // the PUBX baud rate sentence names the receiver port to change,
+    // so it has to match the port we are connected to
+    const bool ublox_uart2 = params[instance].com_port == 2;
+
     if (type == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
         // enables NAV_SOL at rate 1 as well as setting 115200 baud
         static const char blob[] = UBLOX_SET_BINARY_115200;
-        send_blob_start(instance, blob, sizeof(blob));
+        static const char blob_uart2[] = UBLOX_SET_BINARY_115200_UART2;
+        if (ublox_uart2) {
+            send_blob_start(instance, blob_uart2, sizeof(blob_uart2));
+        } else {
+            send_blob_start(instance, blob, sizeof(blob));
+        }
         return;
     }
 #endif // AP_GPS_UBLOX_ENABLED
@@ -536,7 +548,12 @@ void AP_GPS::send_blob_start(uint8_t instance)
         // link to the flight controller.  This blob also enables
         // NAV_SOL at rate 1
         static const char blob[] = UBLOX_SET_BINARY_460800;
-        send_blob_start(instance, blob, sizeof(blob));
+        static const char blob_uart2[] = UBLOX_SET_BINARY_460800_UART2;
+        if (ublox_uart2) {
+            send_blob_start(instance, blob_uart2, sizeof(blob_uart2));
+        } else {
+            send_blob_start(instance, blob, sizeof(blob));
+        }
         return;
     }
 #endif
@@ -566,6 +583,19 @@ void AP_GPS::send_blob_start(uint8_t instance)
         // don't understand:
         blob = _initialisation_blob;
         blob_size = sizeof(_initialisation_blob);
+#if AP_GPS_UBLOX_ENABLED
+        if (ublox_uart2) {
+            // the combined blob starts with the UART1 u-blox
+            // sentence; send the UART2 one in its place, then the rest
+            static const char ublox_uart2_blob[] = UBLOX_SET_BINARY_230400_UART2;
+            static_assert(sizeof(ublox_uart2_blob) == sizeof(UBLOX_SET_BINARY_230400),
+                          "u-blox UART1 and UART2 blobs must be the same length");
+            const uint16_t ublox_len = sizeof(ublox_uart2_blob) - 1;
+            send_blob_start(instance, ublox_uart2_blob, ublox_len,
+                            blob + ublox_len, blob_size - ublox_len);
+            return;
+        }
+#endif // AP_GPS_UBLOX_ENABLED
         break;
     }
 
@@ -594,6 +624,15 @@ void AP_GPS::send_blob_update(uint8_t instance)
     const size_t written = _port[instance]->write((const uint8_t*)initblob_state[instance].blob, n);
     initblob_state[instance].blob += written;
     initblob_state[instance].remaining -= written;
+
+    // move on to the next blob straight away, so remaining only
+    // reaches zero once everything has been sent
+    if (initblob_state[instance].remaining == 0) {
+        initblob_state[instance].blob = initblob_state[instance].next_blob;
+        initblob_state[instance].remaining = initblob_state[instance].next_remaining;
+        initblob_state[instance].next_blob = nullptr;
+        initblob_state[instance].next_remaining = 0;
+    }
 }
 
 /*
