@@ -47,7 +47,7 @@ JitterCorrection::JitterCorrection(uint16_t _max_lag_ms, uint16_t _convergence_l
 
   Return a value in microseconds since boot in the local time domain
  */
-uint64_t JitterCorrection::correct_offboard_timestamp_usec(uint64_t offboard_usec, uint64_t local_usec)
+uint64_t JitterCorrection::correct_offboard_timestamp_usec(uint64_t offboard_usec, uint64_t local_usec, bool local_exact)
 {
     int64_t diff_us = int64_t(local_usec) - int64_t(offboard_usec);
 
@@ -58,6 +58,7 @@ uint64_t JitterCorrection::correct_offboard_timestamp_usec(uint64_t offboard_use
         // future. We know that isn't possible, so we adjust down the
         // correction value
         link_offset_usec = diff_us;
+        link_offset_exact = local_exact;
         initialised = true;
     }
 
@@ -68,20 +69,25 @@ uint64_t JitterCorrection::correct_offboard_timestamp_usec(uint64_t offboard_use
         // to assume the message had maximum lag
         estimate_us = local_usec - (max_lag_ms*1000U);
         link_offset_usec = estimate_us - offboard_usec;
+        link_offset_exact = false;
     }
+    estimate_exact = link_offset_exact;
 
     if (min_sample_counter == 0) {
         min_sample_us = diff_us;
+        min_sample_exact = local_exact;
     }
     min_sample_counter++;
     if (diff_us < min_sample_us) {
         min_sample_us = diff_us;
+        min_sample_exact = local_exact;
     }
     if (min_sample_counter == convergence_loops) {
         // we have the requested number of samples of the transport
         // lag for convergence. To account for long term clock drift
         // we set the diff we will use in future to this value
         link_offset_usec = min_sample_us;
+        link_offset_exact = min_sample_exact;
         min_sample_counter = 0;
     }
     

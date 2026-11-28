@@ -33,7 +33,6 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_RTC/AP_RTC.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -401,22 +400,6 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 //     (unsigned)cached.sbg.utc.hour,
                 //     (unsigned)cached.sbg.utc.minute,
                 //     (unsigned)cached.sbg.utc.second);
-
-#if AP_RTC_ENABLED
-                {
-                    const uint32_t utc_epoch_sec = AP::rtc().date_fields_to_clock_s(
-                        cached.sbg.utc.year,
-                        cached.sbg.utc.month - 1,
-                        cached.sbg.utc.day,
-                        cached.sbg.utc.hour,
-                        cached.sbg.utc.minute,
-                        cached.sbg.utc.second);
-
-                    const uint64_t utc_epoch_usec = ((uint64_t)utc_epoch_sec) * 1E6 + (cached.sbg.utc.nanoSecond * 1E-3);
-                    AP::rtc().set_utc_usec(utc_epoch_usec, AP_RTC::SOURCE_GPS);
-
-                }
-#endif // AP_RTC_ENABLED
 
                 cached.sensors.gps_data.ms_tow = cached.sbg.utc.gpsTimeOfWeek;
                 cached.sensors.gps_data.gps_week = make_gps_week(&cached.sbg.utc);

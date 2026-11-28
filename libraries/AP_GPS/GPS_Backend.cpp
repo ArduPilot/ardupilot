@@ -243,10 +243,12 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // get the time the packet arrived on the UART
         uint64_t uart_us;
+        bool from_pps = false;
         if (_last_pps_time_us != 0 && (state.status >= AP_GPS_FixType::FIX_2D)) {
             // pps is only reliable when we have some sort of GPS fix
             uart_us = _last_pps_time_us;
             _last_pps_time_us = 0;
+            from_pps = true;
         } else if (port) {
             uart_us = port->receive_time_constraint_us(msg_length);
         } else {
@@ -287,7 +289,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         _pseudo_itow += dt_ms * 1000U;
 
         // use msg arrival time, and correct for jitter
-        uint64_t local_us = jitter_correction.correct_offboard_timestamp_usec(_pseudo_itow, uart_us);
+        uint64_t local_us = jitter_correction.correct_offboard_timestamp_usec(_pseudo_itow, uart_us, from_pps);
         state.last_corrected_gps_time_us = local_us;
         state.corrected_timestamp_updated = true;
 

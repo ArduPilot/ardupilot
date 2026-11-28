@@ -388,20 +388,29 @@ TEST(AP_RTC, set_utc_usec_priority)
     ASSERT_TRUE(AP::rtc().get_utc_usec(now));
     EXPECT_LT(now, t2);
 
-    // moving time backwards must be rejected, even from the same
-    // source:
+    // while armed, moving time backwards must be rejected, even from
+    // the same source:
+    hal.util->set_soft_armed(true);
     AP::rtc().set_utc_usec(t1 - 3600*1000000ULL, AP_RTC::SOURCE_GPS);
     ASSERT_TRUE(AP::rtc().get_utc_usec(now));
     EXPECT_GE(now, t1);
+    hal.util->set_soft_armed(false);
 
-    // while armed, even same-source updates must be rejected...
+    // while disarmed, the GPS steps a large error out in either direction:
+    AP::rtc().set_utc_usec(t1 - 3600*1000000ULL, AP_RTC::SOURCE_GPS);
+    ASSERT_TRUE(AP::rtc().get_utc_usec(now));
+    EXPECT_LT(now, t1);
+    EXPECT_NEAR(0, double(int64_t(now - (t1 - 3600*1000000ULL)))/1000, clock_slack_ms);
+
+    // while armed, a same-source time is only slewed towards, never
+    // stepped to...
     const uint64_t t3 = day_time_to_utc_usec(next_test_day(), 12, 0, 0, 0);
     hal.util->set_soft_armed(true);
     AP::rtc().set_utc_usec(t3, AP_RTC::SOURCE_GPS);
     ASSERT_TRUE(AP::rtc().get_utc_usec(now));
     EXPECT_LT(now, t3);
 
-    // ... and accepted once disarmed again:
+    // ... and stepped to once disarmed again:
     hal.util->set_soft_armed(false);
     AP::rtc().set_utc_usec(t3, AP_RTC::SOURCE_GPS);
     ASSERT_TRUE(AP::rtc().get_utc_usec(now));
@@ -432,6 +441,303 @@ TEST(AP_RTC, get_date_and_time_utc)
     EXPECT_EQ(34, min);
     EXPECT_EQ(56, sec);
     EXPECT_NEAR(250, ms, clock_slack_ms);
+}
+
+/*
+  The tests below drive the clock at synthetic local times, later than
+  any real time used above, so they must stay at the end of the suite.
+ */
+
+// a fresh synthetic local time base, later than any returned before.
+// Each base is also within one day of the last, so start_sim() always steps forward
+static uint64_t next_local_base_us()
+{
+    static uint64_t base_us = AP_HAL::micros64() + 1000000000ULL;
+    base_us += 2000000000ULL;  // less than the one day next_test_day() advances
+    return base_us;
+}
+
+// deterministic +-1ms GPS time noise
+static int64_t gps_noise_us(uint32_t i)
+{
+    return int64_t((i * 7919U) % 2001U) - 1000;
+}
+
+struct ClockSim {
+    uint64_t local0_us;
+    uint64_t utc0_us;
+    double crystal_error;   // local clock rate error, e.g. 50e-6 runs fast
+    uint64_t local_at(double t_s) const { return local0_us + uint64_t(t_s * (1.0 + crystal_error) * 1.0e6); }
+    uint64_t utc_at(double t_s) const { return utc0_us + uint64_t(t_s * 1.0e6); }
+};
+
+// step the clock to a fresh day at a fresh local time base
+static ClockSim start_sim(double crystal_error)
+{
+    ClockSim sim {
+        next_local_base_us(),
+        day_time_to_utc_usec(next_test_day(), 12, 0, 0, 0),
+        crystal_error,
+    };
+    AP::rtc().set_utc_usec_at(sim.utc0_us, AP_RTC::SOURCE_GPS, sim.local0_us);
+    return sim;
+}
+
+// feed 5Hz noisy GPS times from t0_s to t1_s, checking the clock never
+// runs backwards; returns the clock error at t1_s in seconds
+static double feed_gps(const ClockSim &sim, double t0_s, double t1_s, int64_t gps_offset_us=0)
+{
+    uint64_t last_utc = 0;
+    uint32_t i = 0;
+    for (double t = t0_s; t <= t1_s; t += 0.2, i++) {
+        const uint64_t local_us = sim.local_at(t);
+        uint64_t before;
+        EXPECT_TRUE(AP::rtc().get_utc_usec_at(local_us, before));
+        AP::rtc().set_utc_usec_at(sim.utc_at(t) + gps_offset_us + gps_noise_us(i), AP_RTC::SOURCE_GPS, local_us);
+        uint64_t after, mid;
+        EXPECT_TRUE(AP::rtc().get_utc_usec_at(local_us, after));
+        EXPECT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(t + 0.1), mid));
+        // never backwards, and no jump at an update:
+        EXPECT_GE(before, last_utc);
+        EXPECT_EQ(before, after);
+        EXPECT_GT(mid, after);
+        last_utc = mid;
+    }
+    uint64_t now;
+    EXPECT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(t1_s), now));
+    return (int64_t(now) - int64_t(sim.utc_at(t1_s))) * 1.0e-6;
+}
+
+// a fast or slow crystal is slewed out without stepping, armed or disarmed
+TEST(AP_RTC, slew_follows_drifting_gps)
+{
+    for (const double crystal_error : { 50.0e-6, -50.0e-6, 20.0e-6, -20.0e-6 }) {
+        for (const bool armed : { false, true }) {
+            SCOPED_TRACE(crystal_error * 1e6);
+            SCOPED_TRACE(armed);
+            const ClockSim sim = start_sim(crystal_error);
+            hal.util->set_soft_armed(armed);
+            const double err_s = feed_gps(sim, 0.2, 900.0);
+            EXPECT_NEAR(0.0, err_s, 0.001);
+            EXPECT_TRUE(AP::rtc().gps_locked_at(sim.local_at(900.0)));
+            hal.util->set_soft_armed(false);
+        }
+    }
+}
+
+// a small forward error while disarmed is slewed, not stepped
+TEST(AP_RTC, small_forward_error_slews)
+{
+    const ClockSim sim = start_sim(0.0);
+    feed_gps(sim, 0.2, 300.0);
+    uint64_t before, after;
+    const uint64_t local_us = sim.local_at(300.2);
+    ASSERT_TRUE(AP::rtc().get_utc_usec_at(local_us, before));
+    AP::rtc().set_utc_usec_at(sim.utc_at(300.2) + 20000, AP_RTC::SOURCE_GPS, local_us);
+    ASSERT_TRUE(AP::rtc().get_utc_usec_at(local_us, after));
+    EXPECT_EQ(before, after);
+    // and is removed by slewing:
+    EXPECT_NEAR(0.0, feed_gps(sim, 300.4, 900.0, 20000) - 0.02, 0.002);
+}
+
+// a large forward error steps while disarmed, but only slews while armed
+TEST(AP_RTC, large_forward_error_steps_only_disarmed)
+{
+    const ClockSim sim = start_sim(0.0);
+    feed_gps(sim, 0.2, 60.0);
+
+    hal.util->set_soft_armed(true);
+    uint64_t now;
+    AP::rtc().set_utc_usec_at(sim.utc_at(60.2) + 1000000, AP_RTC::SOURCE_GPS, sim.local_at(60.2));
+    ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(60.2), now));
+    EXPECT_NEAR(0.0, (int64_t(now) - int64_t(sim.utc_at(60.2))) * 1.0e-6, 0.005);
+    EXPECT_FALSE(AP::rtc().gps_locked_at(sim.local_at(60.2)));
+
+    hal.util->set_soft_armed(false);
+    AP::rtc().set_utc_usec_at(sim.utc_at(60.4) + 1000000, AP_RTC::SOURCE_GPS, sim.local_at(60.4));
+    ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(60.4), now));
+    EXPECT_EQ(sim.utc_at(60.4) + 1000000, now);
+}
+
+// while armed, a GPS time behind the clock is slewed to at the limited rate, never stepped back
+TEST(AP_RTC, never_steps_back_armed)
+{
+    const ClockSim sim = start_sim(0.0);
+    feed_gps(sim, 0.2, 60.0);
+    hal.util->set_soft_armed(true);
+
+    uint64_t start, end;
+    ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(60.0), start));
+    // GPS time now one second behind: feed_gps checks the clock never runs backwards
+    feed_gps(sim, 60.2, 160.0, -1000000);
+    ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(160.0), end));
+    // the clock slowed by at most the rate limit
+    EXPECT_GE(double(end - start), 100.0e6 * (1.0 - 500.0e-6) - 1);
+    EXPECT_LT(double(end - start), 100.0e6);
+    EXPECT_FALSE(AP::rtc().gps_locked_at(sim.local_at(160.0)));
+    hal.util->set_soft_armed(false);
+}
+
+// while disarmed, a GPS time well behind the clock is stepped back to
+TEST(AP_RTC, disarmed_steps_back_to_gps)
+{
+    const ClockSim sim = start_sim(0.0);
+    feed_gps(sim, 0.2, 60.0);
+    const uint64_t gps_utc = sim.utc_at(60.2) - 1000000;
+    AP::rtc().set_utc_usec_at(gps_utc, AP_RTC::SOURCE_GPS, sim.local_at(60.2));
+    uint64_t now;
+    ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(60.2), now));
+    EXPECT_EQ(gps_utc, now);
+}
+
+// a clock set ahead by a worse source is stepped back to GPS time while disarmed
+TEST(AP_RTC, gps_replaces_time_ahead_while_disarmed)
+{
+    // a separate RTC, as the shared one has already been set by the GPS.  It is
+    // allocated with NEW_NOTHROW so it starts zeroed, like the static one
+    AP_RTC *fresh = NEW_NOTHROW AP_RTC;
+    ASSERT_NE(nullptr, fresh);
+    fresh->allowed_types.set((1U << AP_RTC::SOURCE_GPS) | (1U << AP_RTC::SOURCE_HW));
+    const uint64_t local_us = next_local_base_us();
+    const uint64_t gps_utc = day_time_to_utc_usec(next_test_day(), 12, 0, 0, 0);
+    fresh->set_utc_usec_at(gps_utc + 10000000, AP_RTC::SOURCE_HW, local_us);
+    ASSERT_EQ(AP_RTC::SOURCE_HW, fresh->get_source_type());
+    fresh->set_utc_usec_at(gps_utc, AP_RTC::SOURCE_GPS, local_us);
+    EXPECT_EQ(AP_RTC::SOURCE_GPS, fresh->get_source_type());
+    uint64_t now;
+    ASSERT_TRUE(fresh->get_utc_usec_at(local_us, now));
+    EXPECT_EQ(gps_utc, now);
+    delete fresh;
+}
+
+// without GPS the lock is held for two minutes, however long the clock had followed GPS
+TEST(AP_RTC, lock_held_two_minutes)
+{
+    for (const double crystal_error : { 50.0e-6, -50.0e-6 }) {
+        for (const double train_s : { 3.0, 20.0, 100.0, 900.0 }) {
+            SCOPED_TRACE(crystal_error * 1e6);
+            SCOPED_TRACE(train_s);
+            const ClockSim sim = start_sim(crystal_error);
+            feed_gps(sim, 0.2, train_s);
+            ASSERT_TRUE(AP::rtc().gps_locked_at(sim.local_at(train_s)));
+            const double last_locked_s = train_s + 119.5;
+            EXPECT_TRUE(AP::rtc().gps_locked_at(sim.local_at(last_locked_s)));
+            EXPECT_FALSE(AP::rtc().gps_locked_at(sim.local_at(train_s + 120.5)));
+            uint64_t now;
+            ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(last_locked_s), now));
+            EXPECT_NEAR(0.0, (int64_t(now) - int64_t(sim.utc_at(last_locked_s))) * 1.0e-3, 10.0);
+        }
+    }
+}
+
+// an expired lock does not return with the first GPS sample after an outage
+TEST(AP_RTC, expired_lock_gained_again)
+{
+    for (const double train_s : { 3.0, 20.0, 100.0 }) {
+        for (const double outage_s : { 300.0, 600.0, 900.0 }) {
+            SCOPED_TRACE(train_s);
+            SCOPED_TRACE(outage_s);
+            const ClockSim sim = start_sim(50.0e-6);
+            feed_gps(sim, 0.2, train_s);
+            ASSERT_TRUE(AP::rtc().gps_locked_at(sim.local_at(train_s)));
+
+            const double return_s = train_s + outage_s;
+            feed_gps(sim, return_s, return_s);
+            EXPECT_FALSE(AP::rtc().gps_locked_at(sim.local_at(return_s)));
+
+            // it is gained once the error is slewed out, and can then be held
+            const double lost_s = return_s + 300.0;
+            feed_gps(sim, return_s + 0.2, lost_s);
+            ASSERT_TRUE(AP::rtc().gps_locked_at(sim.local_at(lost_s)));
+            uint64_t now;
+            ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(lost_s + 119.5), now));
+            EXPECT_NEAR(0.0, (int64_t(now) - int64_t(sim.utc_at(lost_s + 119.5))) * 1.0e-3, 10.0);
+        }
+    }
+}
+
+// slewing out an offset must not change the rate the clock runs at without GPS
+TEST(AP_RTC, slew_leaves_no_rate_error)
+{
+    for (const int64_t offset_us : { 80000, -80000 }) {
+        SCOPED_TRACE(offset_us);
+        const ClockSim sim = start_sim(0.0);
+        feed_gps(sim, 0.2, 600.0);
+        hal.util->set_soft_armed(true);
+        feed_gps(sim, 600.2, 800.0, offset_us);
+        hal.util->set_soft_armed(false);
+        ASSERT_TRUE(AP::rtc().gps_locked_at(sim.local_at(800.0)));
+        uint64_t now;
+        ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(919.5), now));
+        EXPECT_NEAR(0.0, (int64_t(now) - int64_t(sim.utc_at(919.5) + offset_us)) * 1.0e-3, 5.0);
+    }
+}
+
+// GPS lost straight after an offset leaves no lock that can drift beyond the tolerance
+TEST(AP_RTC, gps_lost_after_offset)
+{
+    for (const double crystal_error : { 50.0e-6, -50.0e-6 }) {
+        for (const int64_t offset_us : { 11000, 16000, 25000, 45000 }) {
+            for (const uint8_t num_samples : { 1, 3, 10 }) {
+                SCOPED_TRACE(crystal_error * 1e6);
+                SCOPED_TRACE(offset_us);
+                SCOPED_TRACE(int(num_samples));
+                const ClockSim sim = start_sim(crystal_error);
+                feed_gps(sim, 0.2, 60.0);
+                const double lost_s = 60.2 + (num_samples - 1) * 0.2;
+                feed_gps(sim, 60.2, lost_s + 0.01, offset_us);
+                const double end_s = lost_s + 119.5;
+                if (!AP::rtc().gps_locked_at(sim.local_at(end_s))) {
+                    continue;
+                }
+                uint64_t now;
+                ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(end_s), now));
+                EXPECT_NEAR(0.0, (int64_t(now) - int64_t(sim.utc_at(end_s) + offset_us)) * 1.0e-3, AP_RTC_REMOTE_CLOCK_TOLERANCE_MS);
+            }
+        }
+    }
+}
+
+// short bursts of GPS can't carry a lock along while the drift between them accumulates
+TEST(AP_RTC, intermittent_gps_within_tolerance)
+{
+    for (const double crystal_error : { 50.0e-6, -50.0e-6 }) {
+        for (const uint8_t num_samples : { 1, 5, 15 }) {
+            SCOPED_TRACE(crystal_error * 1e6);
+            SCOPED_TRACE(int(num_samples));
+            const ClockSim sim = start_sim(crystal_error);
+            feed_gps(sim, 0.2, 60.0);
+            hal.util->set_soft_armed(true);     // so the drift can only be slewed out
+            double t = 60.0;
+            for (uint8_t i=0; i<10; i++) {
+                t += 119.0;
+                const double lost_s = t + (num_samples - 1) * 0.2;
+                feed_gps(sim, t, lost_s + 0.01);
+                t = lost_s;
+                const double end_s = t + 119.0;
+                if (!AP::rtc().gps_locked_at(sim.local_at(end_s))) {
+                    continue;
+                }
+                uint64_t now;
+                ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(end_s), now));
+                EXPECT_NEAR(0.0, (int64_t(now) - int64_t(sim.utc_at(end_s))) * 1.0e-3, AP_RTC_REMOTE_CLOCK_TOLERANCE_MS);
+            }
+            hal.util->set_soft_armed(false);
+        }
+    }
+}
+
+// the lock is gained below 2 ms of error but only lost above 12 ms
+TEST(AP_RTC, lock_hysteresis)
+{
+    for (const int64_t jump_us : { 10000, 25000 }) {
+        SCOPED_TRACE(jump_us);
+        const ClockSim sim = start_sim(0.0);
+        feed_gps(sim, 0.2, 300.0);
+        ASSERT_TRUE(AP::rtc().gps_locked_at(sim.local_at(300.0)));
+        feed_gps(sim, 300.2, 310.0, jump_us);
+        EXPECT_EQ(jump_us < 12000, AP::rtc().gps_locked_at(sim.local_at(310.0)));
+    }
 }
 
 AP_GTEST_MAIN()

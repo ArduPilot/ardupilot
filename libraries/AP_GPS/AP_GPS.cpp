@@ -995,10 +995,22 @@ void AP_GPS::update_instance(uint8_t instance)
 #endif
 
 #if AP_RTC_ENABLED
-    if (state[instance].status >= AP_GPS_FixType::FIX_3D) {
-        const uint64_t now = time_epoch_usec(instance);
-        if (now != 0) {
-            AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
+    // the RTC follows one GPS, once per message, so it sees one receiver's time bias
+    if (result && (instance == rtc_instance) && (state[instance].status >= AP_GPS_FixType::FIX_3D)) {
+        const uint64_t fix_time_usec = time_epoch_usec(instance);
+        if (fix_time_usec != 0) {
+            // the fix's time is given to when its message arrived, but it was measured
+            // the receiver's lag earlier, unless it is given to the PPS edge.  get_lag()
+            // always provides a lag, returning false when it is a default guess
+            float lag_s = 0;
+            if (!drivers[instance]->corrected_time_from_pps()) {
+                UNUSED_RESULT(get_lag(instance, lag_s));
+            }
+            uint64_t gps_utc_usec = fix_time_usec + uint64_t(lag_s * 1.0e6f);
+#if GPS_MAX_RECEIVERS > 1
+            gps_utc_usec += get_rtc_correction(instance, gps_utc_usec);
+#endif
+            AP::rtc().set_utc_usec(gps_utc_usec, AP_RTC::SOURCE_GPS);
         }
     }
 #endif
@@ -1075,6 +1087,10 @@ void AP_GPS::update(void)
         }
     }
 
+#if AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
+    update_rtc_instance();
+#endif
+
 #if GPS_MAX_RECEIVERS > 1
 #if HAL_LOGGING_ENABLED
     const uint8_t old_primary = primary_instance;
@@ -1093,6 +1109,84 @@ void AP_GPS::update(void)
     AP_Notify::flags.gps_num_sats = state[primary_instance].num_sats;
 #endif
 }
+
+#if AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
+// choose the GPS that sets the RTC: the lowest latency one with a 3D fix and the
+// GPS week.  It is kept unless it loses either or another is clearly lower, so the
+// RTC doesn't follow receivers with different time biases in turn
+void AP_GPS::update_rtc_instance()
+{
+    // the corrections last until disarm, with or without GPS at the time
+    if (!hal.util->get_soft_armed()) {
+        rtc_corrected_mask = 0;
+    }
+
+    // a receiver without the week, such as GPS_INPUT without time, can't set the RTC
+    const auto can_set_rtc = [this](uint8_t i) {
+        return (state[i].status >= AP_GPS_FixType::FIX_3D) && (state[i].time_week != 0);
+    };
+
+    // get_lag() always provides a lag, returning false when it is a default guess
+    float current_lag_s;
+    UNUSED_RESULT(get_lag(rtc_instance, current_lag_s));
+    const bool current_ok = can_set_rtc(rtc_instance);
+
+    uint8_t best = rtc_instance;
+    float best_lag_s = current_ok ? (current_lag_s - 0.02f) : FLT_MAX;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if ((i == rtc_instance) || !can_set_rtc(i)) {
+            continue;
+        }
+        float lag_s;
+        UNUSED_RESULT(get_lag(i, lag_s));
+        if (lag_s < best_lag_s) {
+            best = i;
+            best_lag_s = lag_s;
+        }
+    }
+    rtc_instance = best;
+}
+
+// returns the correction to a GPS time that keeps the RTC continuous through a
+// change of receiver while armed.  A receiver keeps the correction it was first
+// given, so changing back and forth doesn't accumulate error
+int32_t AP_GPS::get_rtc_correction(uint8_t instance, uint64_t gps_utc_usec)
+{
+    const bool changed = (instance != rtc_fed_instance);
+    rtc_fed_instance = instance;
+
+    if (!hal.util->get_soft_armed()) {
+        return 0;
+    }
+
+    const uint8_t mask = 1U << instance;
+    if ((rtc_corrected_mask & mask) != 0) {
+        return rtc_correction_us[instance];
+    }
+
+    int32_t correction_us = 0;
+    if (changed) {
+        // receivers can differ by as much as the largest GPS lag
+        const int64_t max_correction_us = 250000;
+        uint64_t rtc_utc_usec;
+        bool continuous = false;
+        if (AP::rtc().gps_locked() && AP::rtc().get_utc_usec(rtc_utc_usec)) {
+            const int64_t diff_us = int64_t(rtc_utc_usec - gps_utc_usec);
+            if ((diff_us >= -max_correction_us) && (diff_us <= max_correction_us)) {
+                correction_us = diff_us;
+                continuous = true;
+            }
+        }
+        if (!continuous) {
+            // the RTC will slew to this receiver, so the others' corrections no longer apply
+            rtc_corrected_mask = 0;
+        }
+    }
+    rtc_correction_us[instance] = correction_us;
+    rtc_corrected_mask |= mask;
+    return correction_us;
+}
+#endif  // AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
 
 #if GPS_MAX_RECEIVERS > 1
 uint8_t AP_GPS::fix_type_priority(AP_GPS_FixType status)

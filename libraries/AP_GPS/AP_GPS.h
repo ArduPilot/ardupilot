@@ -693,6 +693,18 @@ private:
 
     /// primary GPS instance
     uint8_t primary_instance;
+    /// GPS instance that sets the RTC
+    uint8_t rtc_instance;
+#if GPS_MAX_RECEIVERS > 1
+    void update_rtc_instance();
+    int32_t get_rtc_correction(uint8_t instance, uint64_t gps_utc_usec);
+    /// corrections keeping the RTC continuous through receiver changes while armed
+    int32_t rtc_correction_us[GPS_MAX_RECEIVERS];
+    /// bitmask of receivers with a correction
+    uint8_t rtc_corrected_mask;
+    /// GPS instance that last set the RTC
+    uint8_t rtc_fed_instance;
+#endif
 
     /// number of GPS instances present
     uint8_t num_instances;
