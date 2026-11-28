@@ -400,6 +400,10 @@ public:
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
         TRANSMITTER_TUNING2 = 220, // use another transmitter knob or slider for in-flight tuning
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
+        LATERAL_THR =        221,  // RC throttle command for sideways movement
+        WALKING_ROLL =       222, // walking robot roll input
+        WALKING_PITCH =      223, // walking robot pitch input
+        FORWARD_THR =        225, // RC throttle command for forward movement
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
@@ -609,6 +613,14 @@ public:
     // constructor
     RC_Channels(void);
 
+    // set defaults for roll/pitch/yaw/throttle control channels.
+    // Called *before* init!
+    virtual void set_control_channel_defaults();
+
+    // set the default option for a control channel; used by
+    // set_control_channel_defaults() and the vehicle overrides of it
+    void set_control_channel_default(uint8_t chan, RC_Channel::AUX_FUNC func);
+
     __INITFUNC__ void init(void);
 
     // get singleton instance
@@ -644,6 +656,7 @@ public:
     uint16_t get_override_mask() const;
 
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
+    const class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option) const;
     bool duplicate_options_exist();
 
     void init_aux_all();
@@ -773,9 +786,33 @@ public:
     RC_Channel &get_lateral_channel();
 
     bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
+    void convert_rcmap_parameters(uint32_t param_key);
+
+    // one-time parameter conversions recorded in RC_CONVERSION
+    enum class Conversion : uint8_t {
+        RCMAP           = 1U << 0,  // RCMAP_ parameters to RCn_OPTION
+        WALKING_OPTIONS = 1U << 1,  // Rover walking roll/pitch to their own options
+    };
+    bool conversion_done(Conversion c) const { return _conversion & uint8_t(c); }
+    void mark_conversion_done(Conversion c);
+
+    // convert option parameter from old to new
+    void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
 
     // returns true when pilot input should clear an active MAVLink override; vehicles override to define which axes count
     virtual bool has_pilot_input_for_override_clear();
+
+    // returns true if the vehicle needs an RC channel for this
+    // control input; the pre-arm checks require one to provide it
+    virtual bool control_input_required(RC_Channel::AUX_FUNC func) const;
+
+    // name of a control input the vehicle uses but no RC channel
+    // provides, or nullptr
+    const char *missing_control_channel() const;
+
+    // name of a control input whose RCn_OPTION has moved since it was
+    // bound at boot, or nullptr; a reboot is needed to pick it up
+    const char *changed_control_channel() const;
 
 protected:
 
@@ -789,6 +826,9 @@ protected:
 
     // returns true if throttle moved beyond deadzone since override start
     bool throttle_moved_since_override_start() const;
+
+    // set each channel's number; this is what makes ch() work
+    void init_channel_numbers();
 
 private:
     static RC_Channels *_singleton;
@@ -805,6 +845,12 @@ private:
     AP_UInt32 _options;
     AP_UInt32 _protocols;
     AP_Float _fs_timeout;
+
+    AP_Int8 _conversion;
+
+    // channels whose RCn_OPTION was stored as DO_NOTHING before the
+    // RCMAP_ conversion; only populated while that conversion runs
+    Bitmask<NUM_RC_CHANNELS> _conversion_stale_do_nothing;
 
     // set to true if we see overrides or other RC input
     bool _has_ever_seen_rc_input;
@@ -827,8 +873,36 @@ private:
     void set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwitchPos pos);
 #endif
 
-    const RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
-    RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number);
+    const RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const;
+    RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func);
+
+    // control inputs are bound to their RC channels when the vehicle
+    // first asks for one, at boot.  A later RCn_OPTION change does not
+    // move them; a pre-arm check asks for a reboot instead, so the
+    // arming checks and the flight code can't disagree on a channel.
+    // Vehicles take their channel pointers once, so an input with no
+    // channel at boot stays unbound until reboot
+    struct ControlBinding {
+        RC_Channel::AUX_FUNC func;
+        const char *name;
+        RC_Channel *channel;
+    };
+    ControlBinding control_bindings[6] {
+        { RC_Channel::AUX_FUNC::ROLL,        "Roll" },
+        { RC_Channel::AUX_FUNC::PITCH,       "Pitch" },
+        { RC_Channel::AUX_FUNC::THROTTLE,    "Throttle" },
+        { RC_Channel::AUX_FUNC::YAW,         "Yaw" },
+        { RC_Channel::AUX_FUNC::FORWARD_THR, "Forward" },
+        { RC_Channel::AUX_FUNC::LATERAL_THR, "Lateral" },
+    };
+    bool control_channels_bound;
+    void bind_control_channels();
+    ControlBinding *control_binding(RC_Channel::AUX_FUNC func);
+    const ControlBinding *control_binding(RC_Channel::AUX_FUNC func) const;
+
+    // the channel returned for a control input no RC channel provides;
+    // it reads as neutral
+    static RC_Channel &dummy_channel();
 
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;

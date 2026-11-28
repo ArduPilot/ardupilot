@@ -11,7 +11,7 @@ import os
 
 
 # Parameter groups disabled at compile time (Vehicle-specific)
-sub_blacklist = ['AVOID_', 'CIRCLE_', 'FLOW', 'MIS_', 'PRX', 'RALLY_', 'RCMAP_', 'RPM', 'TERRAIN_', 'WP_']
+sub_blacklist = ['AVOID_', 'CIRCLE_', 'FLOW', 'MIS_', 'PRX', 'RALLY_', 'RPM', 'TERRAIN_', 'WP_']
 
 # Parameter groups with redundant information (ie RCn_, SERVOn_)
 # We can keep the documentation concise by only documenting these once

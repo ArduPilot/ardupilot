@@ -14,6 +14,7 @@ import shutil
 import statistics
 import struct
 import sys
+import tempfile
 import time
 
 from pymavlink import mavextra
@@ -87,8 +88,9 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
     def is_rover(self):
         return True
 
-    def get_stick_arming_channel(self):
-        return int(self.get_parameter("RCMAP_ROLL"))
+    def rc_option_value_for_arming_channel(self):
+        # Rover uses the "roll" channel for arming
+        return 201
 
     ##########################################################
     #   TESTS DRIVE
@@ -565,6 +567,46 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def drive_rtl_mission_max_distance_from_home(self):
         '''maximum distance allowed from home at end'''
         return 6.5
+
+    def AuxFunctionOnUnusedControlChannel(self):
+        '''aux functions on control channels Rover doesn't use do not stop arming'''
+        self.context_push()
+        # a pistol-grip setup: throttle on 2, aux functions on 3 and 4
+        self.set_parameters({
+            "RC2_OPTION": 203,
+            "RC3_OPTION": 28,
+            "RC4_OPTION": 34,
+        })
+        # the second boot catches an input first asked for on arming
+        for i in range(2):
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def ControlOptionsInDefaultsFile(self):
+        '''control input options in a defaults file are not converted as old walking options'''
+        defaults_file = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        # steering on RC2
+        defaults_file.write("RC1_OPTION 0\nRC2_OPTION 201\n")
+        defaults_file.close()
+        # wipe so the conversions run as on a fresh install
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath(self.default_frame()) + [defaults_file.name],
+            wipe=True,
+        )
+        self.assert_parameter_value("RC1_OPTION", 0)
+        self.assert_parameter_value("RC2_OPTION", 201)
+        self.change_mode('MANUAL')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(2, 2000)
+        self.wait_servo_channel_value(1, 1800, comparator=operator.gt)
+        self.set_rc(2, 1500)
+        self.disarm_vehicle()
 
     def DriveRTL(self, timeout=120):
         '''Drive an RTL Mission'''
@@ -8602,6 +8644,8 @@ return update()
             self.MAVProxy_SetModeUsingMode,
             self.ModeSwitch,
             self.AuxModeSwitch,
+            self.AuxFunctionOnUnusedControlChannel,
+            self.ControlOptionsInDefaultsFile,
             self.DriveRTL,
             self.SmartRTL,
             self.DriveSquare,
