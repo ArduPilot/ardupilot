@@ -232,6 +232,9 @@ void LR_MsgHandler_RBRH::process_message(uint8_t *msgbytes)
 void LR_MsgHandler_RBRI::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RBRI, msgbytes);
+    if (f.length < 3 + offsetof(log_RBRI, _end)) {
+        msg.use = true;
+    }
     AP::dal().handle_message(msg);
 }
 

@@ -274,6 +274,32 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_THST_FILT", 26, AP_Baro, _thst_filt_cutoff, 1.0f),
 #endif  // AP_BARO_THST_COMP_ENABLED
+
+    // @Param: 1_USE
+    // @DisplayName: Baro 1 Use
+    // @Description: Enable or disable this barometer instance for EKF and primary altitude estimation while keeping logging active.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("1_USE", 27, AP_Baro, sensors[0].use, 1),
+
+#if BARO_MAX_INSTANCES > 1
+    // @Param: 2_USE
+    // @DisplayName: Baro 2 Use
+    // @Description: Enable or disable this barometer instance for EKF and primary altitude estimation while keeping logging active.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("2_USE", 28, AP_Baro, sensors[1].use, 1),
+#endif
+
+#if BARO_MAX_INSTANCES > 2
+    // @Param: 3_USE
+    // @DisplayName: Baro 3 Use
+    // @Description: Enable or disable this barometer instance for EKF and primary altitude estimation while keeping logging active.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("3_USE", 29, AP_Baro, sensors[2].use, 1),
+#endif
+
     AP_GROUPEND
 };
 
@@ -337,7 +363,7 @@ void AP_Baro::calibrate(bool save)
                 AP_BoardConfig::config_error("Baro: unable to calibrate");
             }
             hal.scheduler->delay(10);
-        } while (!healthy());
+        } while (!_has_healthy_sensor());
         hal.scheduler->delay(100);
     }
 
@@ -353,7 +379,7 @@ void AP_Baro::calibrate(bool save)
             if (AP_HAL::millis() - tstart > 500) {
                 AP_BoardConfig::config_error("Baro: unable to calibrate");
             }
-        } while (!healthy());
+        } while (!_has_healthy_sensor());
         for (uint8_t i=0; i<_num_sensors; i++) {
             if (healthy(i)) {
                 sum_pressure[i] += sensors[i].pressure;
@@ -938,12 +964,12 @@ void AP_Baro::update(void)
     }
 
     // choose primary sensor
-    if (_primary_baro >= 0 && _primary_baro < _num_sensors && healthy(_primary_baro)) {
+    if (_primary_baro >= 0 && _primary_baro < _num_sensors && healthy(_primary_baro) && use(_primary_baro)) {
         _primary = _primary_baro;
     } else {
         _primary = 0;
         for (uint8_t i=0; i<_num_sensors; i++) {
-            if (healthy(i)) {
+            if (healthy(i) && use(i)) {
                 _primary = i;
                 break;
             }
@@ -993,6 +1019,19 @@ bool AP_Baro::healthy(uint8_t instance) const {
     return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated;
 }
 #endif
+
+/*
+  check if any physical sensor is healthy (independent of EKF use flag)
+ */
+bool AP_Baro::_has_healthy_sensor(void) const
+{
+    for (uint8_t i = 0; i < _num_sensors; i++) {
+        if (healthy(i)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 /*
   update field elevation value
@@ -1087,12 +1126,16 @@ uint8_t AP_Baro::register_sensor(void)
  */
 bool AP_Baro::all_healthy(void) const
 {
-     for (uint8_t i=0; i<_num_sensors; i++) {
-         if (!healthy(i)) {
-             return false;
-         }
-     }
-     return _num_sensors > 0;
+    uint8_t count = 0;
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        if (use(i)) {
+            count++;
+            if (!healthy(i)) {
+                return false;
+            }
+        }
+    }
+    return count > 0;
 }
 
 // set a pressure correction from AP_TempCalibration
