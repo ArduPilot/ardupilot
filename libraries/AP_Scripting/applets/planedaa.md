@@ -51,7 +51,7 @@ To confirm a binary has it, `Tools/scripts/extract_features.py <binary>` lists
 | ----------- | ------- | ------- |
 | `SCR_ENABLE` | `1` | Enable Lua scripting (reboot required). |
 | `SCR_VM_I_COUNT` | `1000000` | **Increase from the default.** `planedaa.lua` is large and the per-loop instruction budget must be raised or the VM will fault. The applet warns at startup below `150000`; every autotest uses `1000000` (see below for why that costs nothing to set generously). |
-| `SCR_HEAP_SIZE` | `262144` | **Increase from the default** (200 kB on SITL/Linux, 100 kB on most flight-controller boards). `planedaa.lua` and its modules (`daacore`/`daageo`/`daaltr`/`daaobs`) need more heap than that to load and run; without raising it the script fails to load with an out-of-memory error. |
+| `SCR_HEAP_SIZE` | `278528` | **Increase from the default** (200 kB on SITL/Linux, 100 kB on most flight-controller boards). `planedaa.lua` and its modules (`daacore`/`daageo`/`daaltr`/`daaobs`) need more heap than that to load and run; without raising it the script fails to load with an out-of-memory error. |
 
 An out-of-memory failure here is easy to misdiagnose as a corrupt or missing file.
 The modules `require()` each other in sequence (`daageo` → `daaobs` → `daacore` →
@@ -501,12 +501,15 @@ test with the `AVD_WCLR_XY` well-clear radius, and inside that radius it is alwa
 treated as a conflict (a missing or uncertain velocity therefore always errs
 toward avoiding — safer first).
 
-This CPA decision is re-made from the obstacle's **current** geometry every
-update cycle, with no hold, so a manoeuvring or unpredictable drone is always
-tracked on fresh data. Near a marginal crossing that can cost a few extra heading
-reversals; this is deliberate — the heading is slew-rate limited (`DAA_SLEW_DPS`)
-so the motion stays bounded, and responsiveness is preferred over a smoother but
-laggier committed path.
+The CPA decision uses fresh contact data each cycle. Before clearing a detour for
+an active contact, DAA also projects closest approach on the course back to the
+navigation target, within `DAA_DETECT_M`. It retains avoidance if that course
+would bring it back within the contact's standoff and aircraft traffic margin.
+If the sweep briefly misses the aircraft, DAA checks the rejoin against its last
+fix for up to one second, provided the fix itself is no more than one second old.
+If an AUTO waypoint lies inside an active contact's effective standoff, Plane may
+advance the mission after crossing the waypoint's finish line while still flying
+the detour, without passing close to the waypoint.
 
 `DAA_SIDE_HOLD` commits to whichever side of a moving obstacle is actually being
 flown at the start of an episode — not, on that first commit, a "pass behind the
