@@ -352,6 +352,7 @@ struct PACKED log_POWR {
     uint16_t flags;
     uint16_t accumulated_flags;
     uint8_t safety_and_arm;
+    uint32_t mcu_supply_dips;
 };
 
 struct PACKED log_MCU {
@@ -898,6 +899,7 @@ struct PACKED log_VER {
 // @Field: AccFlags: Accumulated System power flags; all flags which have ever been set
 // @FieldBitmaskEnum: AccFlags: AP_HAL::AnalogIn::PowerStatusFlag
 // @Field: Safety: Hardware Safety Switch status
+// @Field: VDip: Number of times the MCU supply was seen below the brownout warning threshold (about 2.8V) since boot
 
 // @LoggerMessage: MCU
 // @Description: MCU voltage and temprature monitering
@@ -1183,7 +1185,7 @@ LOG_STRUCTURE_FROM_BARO \
 LOG_STRUCTURE_FROM_CANMANAGER \
 LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
+      "POWR","QffHHBI","TimeUS,Vcc,VServo,Flags,AccFlags,Safety,VDip", "svv----", "F00----", true }, \
     { LOG_MCU_MSG, sizeof(log_MCU), \
       "MCU","Qffff","TimeUS,MTemp,MVolt,MVmin,MVmax", "sOvvv", "F0000", true }, \
 LOG_STRUCTURE_FROM_MISSION \
