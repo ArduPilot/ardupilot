@@ -21,6 +21,7 @@
 #include "HAL_ChibiOS_Class.h"
 #include "Scheduler.h"
 #include "hwdef/common/flash.h"
+#include "hwdef/common/usbcfg.h"
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <stdio.h>
 
@@ -418,23 +419,39 @@ bool Storage::_flash_erase_sector(uint8_t sector)
 #if AP_FLASH_STORAGE_DOUBLE_PAGE
     sector *= 2;
 #endif
-    // erasing a page can take long enough that USB may not initialise properly if it happens
-    // while the host is connecting. Only do a flash erase if we have been up for more than 4s
+#if HAL_USE_SERIAL_USB == TRUE
+    // A sector erase masks USB interrupts. Detach during the erase if the host is still enumerating.
+    USBDriver *const usbp = serusbcfg1.usbp;
+    bool reconnect_usb = false;
+    if (!hal.scheduler->is_system_initialized()) {
+        chSysLock();
+        reconnect_usb = usbp->state >= USB_READY && usbp->configuration == 0;
+        if (reconnect_usb) {
+            usbDisconnectBus(usbp);
+        }
+        chSysUnlock();
+    }
+#endif
+    bool erased = false;
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         // a sector erase stops the whole MCU so set up a long expected delay
         EXPECT_DELAY_MS(1000);
 #if AP_FLASH_STORAGE_DOUBLE_PAGE
-        if (hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1)) {
-            return true;
-        }
+        erased = hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1);
 #else
-        if (hal.flash->erasepage(_flash_page+sector)) {
-            return true;
-        }
+        erased = hal.flash->erasepage(_flash_page+sector);
 #endif
+        if (erased) {
+            break;
+        }
         hal.scheduler->delay(1);
     }
-    return false;
+#if HAL_USE_SERIAL_USB == TRUE
+    if (reconnect_usb) {
+        usbConnectBus(usbp);
+    }
+#endif
+    return erased;
 #else
     return false;
 #endif
