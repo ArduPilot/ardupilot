@@ -1375,6 +1375,9 @@ protected:
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
+#if AP_AHRS_ENABLED
+    bool ahrs_seen_initialised;  // true once SYS_STATUS has seen the AHRS initialised
+#endif  // AP_AHRS_ENABLED
     virtual void update_vehicle_sensor_status_flags() {}
 
     static const struct AP_Param::GroupInfo *_chan_var_info[MAVLINK_COMM_NUM_BUFFERS];

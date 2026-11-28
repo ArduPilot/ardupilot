@@ -70,11 +70,6 @@ void AP_AHRS_NavEKF2::update()
 
 void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
 {
-    const auto now_ms = AP_HAL::millis();
-
-    // initialisation complete some time after ekf has started
-    results.initialised = (started && (now_ms - start_time_ms > 20000));
-
     results.healthy = started && EKF2.healthy();
 
     const AP_InertialSensor &_ins = AP::ins();
@@ -209,6 +204,10 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
      */
     EKF2.getFilterStatus(results.filter_status);
     results.filter_status_valid = true;
+
+    // initialised once the primary core's attitude, including yaw
+    // where yaw is needed, has aligned:
+    results.initialised = started && results.filter_status.flags.attitude;
 
     EKF2.getFilterFaults(results.filter_faults);
 
