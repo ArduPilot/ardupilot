@@ -29,6 +29,7 @@ void ModeStabilize::run()
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
         attitude_control->reset_yaw_target_and_rate();
+        attitude_control->reset_target_while_landed();
         attitude_control->reset_rate_controller_I_terms();
         pilot_desired_throttle = 0.0f;
         break;
@@ -36,6 +37,10 @@ void ModeStabilize::run()
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
         attitude_control->reset_yaw_target_and_rate();
+        // GROUND_IDLE is also reached in flight with the throttle at zero
+        if (copter.ap.land_complete) {
+            attitude_control->reset_target_while_landed();
+        }
         attitude_control->reset_rate_controller_I_terms_smoothly();
         pilot_desired_throttle = 0.0f;
         break;
