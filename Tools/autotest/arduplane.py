@@ -997,6 +997,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         timeout = 15
         self.wait_airspeed(initial_speed-1, initial_speed+1, minimum_duration=5, timeout=timeout)
 
+        min_groundspeed = self.get_parameter("MIN_GROUNDSPEED")
+
         self.start_subtest("Setting groundspeed")
         for new_target_groundspeed in initial_speed + 5, initial_speed + 2:
             run_cmd_method(
@@ -1012,6 +1014,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.delay_sim_time(5, reason="wind to take effect")
             self.wait_groundspeed(new_target_groundspeed-2, new_target_groundspeed+2, timeout=40, minimum_duration=5)
             self.set_parameter("SIM_WIND_SPD", 0)
+
+        # -1 is no change
+        run_cmd_method(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            p1=1, # groundspeed
+            p2=-1,
+            p3=-1, # throttle / no change
+            p4=0, # absolute values
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.assert_parameter_value("MIN_GROUNDSPEED", initial_speed + 2)
 
         # clear target groundspeed
         run_cmd_method(
@@ -1056,15 +1069,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # cancel minimum groundspeed:
         run_cmd_method(
             mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
-            p1=0, # groundspeed
+            p1=1, # groundspeed
+            p2=5,
+            p3=0, # throttle / no change
+            p4=0, # absolute values
+        )
+        run_cmd_method(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            p1=1, # groundspeed
             p2=-2,  # return to default
             p3=0, # throttle / no change
             p4=0, # absolute values
         )
+        self.assert_parameter_value("MIN_GROUNDSPEED", min_groundspeed)
         # cancel airspeed:
         run_cmd_method(
             mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
-            p1=1, # airspeed
+            p1=0, # airspeed
             p2=-2,  # return to default
             p3=0, # throttle / no change
             p4=0, # absolute values

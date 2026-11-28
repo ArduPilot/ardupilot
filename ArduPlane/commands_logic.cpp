@@ -998,9 +998,17 @@ bool Plane::do_change_speed(SPEED_TYPE speedtype, float speed_target_ms, float t
         }
         break;
     case SPEED_TYPE_GROUNDSPEED:
-        gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
-        aparm.min_groundspeed.set(speed_target_ms);
-        return true;
+        if (is_equal(speed_target_ms, -2.0f)) {
+            // return to the configured MIN_GROUNDSPEED
+            aparm.min_groundspeed.load();
+            return true;
+        }
+        if (!is_negative(speed_target_ms)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
+            aparm.min_groundspeed.set(speed_target_ms);
+            return true;
+        }
+        break;
 
     case SPEED_TYPE_CLIMB_SPEED:
     case SPEED_TYPE_DESCENT_SPEED:
