@@ -78,9 +78,11 @@ void NavEKF3_core::controlMagYawReset()
         // diving 0.5m is reasonable for both open water and pools
         finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) > EKF3_MAG_FINAL_RESET_ALT_SUB;
 #else
-        // check that we have reached a height where ground magnetic interference effects are insignificant
-        // and can perform a final reset of the yaw and field states
-        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -EKF3_MAG_FINAL_RESET_ALT;
+        // check that we are flying and have moved far enough above or below the takeoff height
+        // (e.g. dropped from a structure) for its magnetic interference to be insignificant and
+        // can perform a final reset of the yaw and field states. inFlight is needed because the
+        // reset is only latched as final when in flight, and a descent does not set it straight away
+        finalResetRequest = inFlight && fabsF(stateStruct.position.z - posDownAtTakeoff) > EKF3_MAG_FINAL_RESET_ALT;
 #endif
 
         // check for increasing height
