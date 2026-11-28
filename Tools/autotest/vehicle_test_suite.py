@@ -3533,10 +3533,10 @@ class TestSuite(abc.ABC):
         spawning the associated AP_Periph companion (if the frame
         defines `periph_board`) wired up for automatic cleanup.
 
-        Reads `configure_args`, `periph_board`, `periph_extra_args` and
-        `periph_params_filename` from pysim/vehicleinfo.json. Snapshots
-        the current SITL binary via context_backup_file() so it is
-        restored on context_pop(), then:
+        Reads `configure_args`, `default_params_filename`, `periph_board`,
+        `periph_extra_args` and `periph_params_filename` from
+        pysim/vehicleinfo.json. Snapshots the current SITL binary via
+        context_backup_file() so it is restored on context_pop(), then:
 
           - rebuilds both binaries via util.build_SITL_frame();
           - if the frame has a periph_board, allocates a TCP port via
@@ -3556,6 +3556,8 @@ class TestSuite(abc.ABC):
             vehicleinfo_key = self.vehicleinfo_key()
 
         self.context_backup_file(self.binary)
+        # a restored binary looks up to date to waf; remove it to force a relink
+        os.unlink(self.binary)
         # build with the suite's own options (--debug, --num-aux-imus,
         # ...) so the frame binary matches the one under test, and so
         # the rebuild can reuse the objects already built that way
@@ -3583,7 +3585,14 @@ class TestSuite(abc.ABC):
             if periph_port is not None:
                 customisations = [c.replace('{port}', str(periph_port))
                                   for c in customisations]
-            self.customise_SITL_commandline(customisations)
+            defaults_filepath = None
+            if 'default_params_filename' in frame_opts:
+                defaults_filepath = self.model_defaults_filepath(
+                    frame, vehicleinfo_key=vehicleinfo_key)
+            self.customise_SITL_commandline(
+                customisations,
+                defaults_filepath=defaults_filepath,
+            )
 
         if periph_port is not None:
             topdir = util.topdir()
@@ -7256,6 +7265,7 @@ class TestSuite(abc.ABC):
         '''register a pexpect.spawn periph subprocess so it is terminated
         on context_pop(). Mirrors context_backup_file() for child
         processes (used by restart_SITL_frame()).'''
+        self.expect_list_add(child)
         self.context_get().periph_children.append(child)
 
     def context_collect(self, msg_type):
@@ -7512,6 +7522,8 @@ class TestSuite(abc.ABC):
         # binary - the running periph may otherwise reconnect to the
         # restarted SITL via its still-open TCP socket
         for child in reversed(dead.periph_children):
+            if child in self.expect_list:
+                self.expect_list_remove(child)
             try:
                 child.terminate(force=True)
             except pexpect.ExceptionPexpect:

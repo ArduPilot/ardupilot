@@ -630,6 +630,20 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("UART_LOSS", 42, SIM,  uart_byte_loss_pct, 0),
 
+    // @Param: UART_LOSS_P
+    // @DisplayName: UART byte loss port
+    // @Description: Selects the serial port for simulated byte loss, or all serial ports when set to -1. When a port is selected the lost byte is taken from the middle of each write instead of the end
+    // @Range: -1 9
+    // @User: Advanced
+    AP_GROUPINFO("UART_LOSS_P", 43, SIM, uart_byte_loss_port, -1),
+
+    // @Param: PPP_STALL_P
+    // @DisplayName: PPP stall port
+    // @Description: Selects a serial port whose PPP link stops passing received data to the network stack, simulating a stalled network stack. Only used when PPP software flow control is enabled. Set to -1 to disable
+    // @Range: -1 9
+    // @User: Advanced
+    AP_GROUPINFO("PPP_STALL_P", 44, SIM, ppp_stall_port, -1),
+
     // @Group: ARSPD_
     // @Path: ./SITL_Airspeed.cpp
     AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, AirspeedParm),

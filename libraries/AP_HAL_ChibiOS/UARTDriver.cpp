@@ -872,6 +872,9 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     }
 
     while (n > 0) {
+        if (_transmit_stopped.load(std::memory_order_relaxed)) {
+            return;
+        }
         if (flow_control_enabled(_flow_control) &&
             acts_line != 0 &&
             palReadLine(acts_line)) {
@@ -1003,6 +1006,10 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
  */
 void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
 {
+    if (_transmit_stopped.load(std::memory_order_relaxed)) {
+        return;
+    }
+
     WITH_SEMAPHORE(_write_mutex);
 
     ByteBuffer::IoVec vec[2];
@@ -1074,7 +1081,8 @@ void UARTDriver::write_pending_bytes(void)
     }
 
     // handle AUTO flow control mode
-    if (_flow_control == FLOW_CONTROL_AUTO) {
+    if (_flow_control == FLOW_CONTROL_AUTO &&
+        !_transmit_stopped.load(std::memory_order_relaxed)) {
         if (_first_write_started_us == 0) {
             _first_write_started_us = AP_HAL::micros();
             _total_written = 0;
@@ -1434,6 +1442,21 @@ __RAMFUNC__ void UARTDriver::update_rts_line(void)
         _rts_is_active = true;
         palClearLine(arts_line);
     }
+}
+
+/*
+  Pause transmission without discarding bytes already in the write buffer.
+ */
+bool UARTDriver::stop_transmit(bool stop)
+{
+    const bool changed =
+        _transmit_stopped.exchange(stop, std::memory_order_relaxed) != stop;
+
+    if (changed && !stop && uart_thread_ctx != nullptr) {
+        // Resume promptly instead of waiting for the next 1kHz timer tick.
+        chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
+    }
+    return true;
 }
 
 /*

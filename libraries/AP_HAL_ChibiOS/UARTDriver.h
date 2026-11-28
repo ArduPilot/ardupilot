@@ -22,6 +22,7 @@
 #include "shared_dma.h"
 #include "Semaphores.h"
 #include "USB_Debug.h"
+#include <atomic>
 
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
@@ -89,6 +90,7 @@ public:
     bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
 
     enum flow_control get_flow_control(void) override { return _flow_control; }
+    bool stop_transmit(bool stop) override;
 
     // allow for low latency writes
     bool set_unbuffered_writes(bool on) override;
@@ -219,6 +221,7 @@ private:
 
     // handling of flow control
     enum flow_control _flow_control = FLOW_CONTROL_DISABLE;
+    std::atomic<bool> _transmit_stopped;
     bool _rts_is_active;
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
