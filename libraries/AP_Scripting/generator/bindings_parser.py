@@ -124,7 +124,11 @@ def parse_method(tokens, bindings, obj):
         else:
             tokens.error(f'Method {name} already exists for {obj.name} (declared on {existing.line})')
         return
-    if any(alias.lua_name == name for alias in obj.aliases):
+    alias = next((alias for alias in obj.aliases if alias.lua_name == name), None)
+    if alias:
+        if alias.kind == 'alias' and tokens.require('alias modifier') == 'deprecate':
+            alias.deprecate = tokens.remainder('deprecate string')
+            return
         tokens.error(f'alias {name} already exists for {obj.name}')
 
     method = Method(name, tokens.line, parse_type(tokens, bindings))

@@ -54,13 +54,13 @@ void ModeCircle::run()
 
     // process pilot inputs
     // get pilot's desired yaw rate
-    target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz() * 4500.0f);
     if (!is_zero(target_yaw_rate)) {
         sub.circle_pilot_yaw_override = true;
     }
 
     // get pilot desired climb rate
-    target_climb_rate = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    target_climb_rate = sub.get_pilot_desired_climb_rate(channel_throttle->norm_input_dz());
 
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -80,9 +80,9 @@ void ModeCircle::run()
 
     // call attitude controller
     if (sub.circle_pilot_yaw_override) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_yaw_rate);
     } else {
-        attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw_cd(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, sub.circle_nav.get_yaw_cd(), true);
     }
 
     // update altitude target and call position controller

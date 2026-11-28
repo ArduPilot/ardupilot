@@ -7,7 +7,7 @@ void ModeManual::update()
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitch_in_expo(false));
     output_rudder_and_steering(plane.rudder_in_expo(false));
 
-    const float throttle = plane.get_throttle_input(true);
+    const float throttle = plane.get_throttle_input_norm(true) * 100.0f;
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 
     plane.nav_roll_cd = ahrs.roll_sensor;

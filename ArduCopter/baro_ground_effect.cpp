@@ -18,7 +18,7 @@ void Copter::update_ground_effect_detector(void)
     }
     gndeff.set_pilot_demanding_slow_horizontal(pilot_slow_horizontal);
 
-    const bool throttle_up = flightmode->has_manual_throttle() && channel_throttle->get_control_in() > 0;
+    const bool throttle_up = flightmode->has_manual_throttle() && channel_throttle->norm_input_dz() > 0.0f;
     gndeff.update(motors->armed(), ap.land_complete, throttle_up);
 }
 #endif  // AP_GROUNDEFFECT_ENABLED
