@@ -166,41 +166,76 @@ uint16_t AP_RCProtocol_CRSF::get_link_rate(ProtocolType protocol) const {
 // process a byte provided by a uart from rc stack
 void AP_RCProtocol_CRSF::process_byte(uint8_t byte, uint32_t baudrate)
 {
+    process_bytes(&byte, 1, baudrate);
+}
+
+// process a block of bytes provided by a uart from rc stack
+void AP_RCProtocol_CRSF::process_bytes(const uint8_t *bytes, uint16_t count, uint32_t baudrate)
+{
     // reject RC data if we have been configured for standalone mode
     if ((baudrate != CRSF_BAUDRATE && baudrate != CRSF_BAUDRATE_1MBIT && baudrate != CRSF_BAUDRATE_2MBIT) || _uart) {
         return;
     }
-    _process_byte(byte);
+    parse_bytes(bytes, count);
 }
 
-// process a byte provided by a uart
-void AP_RCProtocol_CRSF::_process_byte(uint8_t byte)
+/*
+  parse a block of bytes provided by a uart into frames, copying a frame's
+  header and then, once check_frame() would accept it, the rest of the
+  frame in one go rather than checking the frame at every byte
+ */
+void AP_RCProtocol_CRSF::parse_bytes(const uint8_t *bytes, uint16_t count)
 {
-    //debug("process_byte(0x%x)", byte);
+    // one time for the block, as its bytes were read together
     const uint32_t now = AP_HAL::micros();
 
-    // extra check for overflow, should never happen since it will have been handled in check_frame()
-    if (_frame_ofs >= sizeof(_frame)) {
-        _frame_ofs = 0;
-    }
+    while (count > 0) {
+        // extra check for overflow, should never happen since it will have been handled in check_frame()
+        if (_frame_ofs >= sizeof(_frame)) {
+            _frame_ofs = 0;
+        }
 
-    // check for long frame gaps
-    // we took too long decoding, start again - the RX will only send complete frames so this is unlikely to fail,
-    // however thread scheduling can introduce longer delays even when the data has been received
-    if (_frame_ofs > 0 && (now - _start_frame_time_us) > CRSF_FRAME_TIMEOUT_US) {
-        _frame_ofs = 0;
-    }
+        // check for long frame gaps
+        // we took too long decoding, start again - the RX will only send complete frames so this is unlikely to fail,
+        // however thread scheduling can introduce longer delays even when the data has been received
+        if (_frame_ofs > 0 && (now - _start_frame_time_us) > CRSF_FRAME_TIMEOUT_US) {
+            _frame_ofs = 0;
+        }
 
-    // start of a new frame
-    if (_frame_ofs == 0) {
-        _start_frame_time_us = now;
+        // start of a new frame
+        if (_frame_ofs == 0) {
+            _start_frame_time_us = now;
+        }
+
+        // copy up to the end of the header, then up to the end of the frame a
+        // valid header gives; otherwise a byte at a time, as before, while
+        // resyncing or with a complete frame already in the buffer
+        uint16_t len = 1;
+        if (_frame_ofs < CRSF_HEADER_TYPE_LEN) {
+            len = CRSF_HEADER_TYPE_LEN - _frame_ofs;
+        } else if (frame_header_valid() && _frame.length + CRSF_HEADER_LEN > _frame_ofs) {
+            len = _frame.length + CRSF_HEADER_LEN - _frame_ofs;
+        }
+        len = MIN(len, uint16_t(sizeof(_frame) - _frame_ofs));
+        len = MIN(len, count);
+        memcpy(&_frame_bytes[_frame_ofs], bytes, len);
+        _frame_ofs += len;
+        bytes += len;
+        count -= len;
+
+        if (!check_frame(now)) {
+            skip_to_next_frame(now);
+        }
     }
-    
-    _frame_bytes[_frame_ofs++] = byte;
-    
-    if (!check_frame(now)) {
-        skip_to_next_frame(now);
-    }
+}
+
+// return true if the buffered header could start a frame for us: our
+// address and a length in range. Only meaningful once the header is buffered
+bool AP_RCProtocol_CRSF::frame_header_valid() const
+{
+    return _frame.device_address == AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER &&
+           _frame.length >= CRSF_FRAME_LENGTH_MIN &&
+           _frame.length <= CRSF_FRAME_PAYLOAD_MAX;
 }
 
 // check if a frame is valid. Return false if the frame is definitely
@@ -217,18 +252,7 @@ bool AP_RCProtocol_CRSF::check_frame(uint32_t timestamp_us)
         return true;
     }
 
-    if (_frame.device_address != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
-        return false;
-    }
-
-    // check validity of the length byte if we have received it
-    if (_frame_ofs >= CRSF_HEADER_TYPE_LEN &&
-        _frame.length > CRSF_FRAME_PAYLOAD_MAX) {
-        return false;
-    }
-
-    if (_frame.length < CRSF_FRAME_LENGTH_MIN) {
-        // invalid short frame
+    if (!frame_header_valid()) {
         return false;
     }
 
@@ -308,11 +332,14 @@ void AP_RCProtocol_CRSF::update(void)
         }
         uint32_t n = _uart->available();
         n = MIN(n, 255U);
-        for (uint8_t i = 0; i < n; i++) {
-            int16_t b = _uart->read();
-            if (b >= 0) {
-                _process_byte(uint8_t(b));
+        uint8_t block[CRSF_FRAMELEN_MAX];
+        while (n > 0) {
+            const ssize_t nread = _uart->read(block, MIN(n, sizeof(block)));
+            if (nread <= 0) {
+                break;
             }
+            parse_bytes(block, static_cast<uint16_t>(nread));
+            n -= static_cast<uint32_t>(nread);
         }
     }
 

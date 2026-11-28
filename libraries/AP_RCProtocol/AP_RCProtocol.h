@@ -284,6 +284,10 @@ public:
 private:
     void check_added_uart(void);
 
+    // hand a block of bytes read from the added UART to the detected protocol's backend,
+    // which check_added_uart() has found takes blocks
+    void process_bytes(const uint8_t *bytes, uint16_t count, uint32_t baudrate);
+
     // return true if a specific protocol is enabled
     bool protocol_enabled(enum rcprotocol_t protocol) const;
 

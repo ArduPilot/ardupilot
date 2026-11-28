@@ -41,6 +41,9 @@ public:
     AP_RCProtocol_CRSF(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_CRSF();
     void process_byte(uint8_t byte, uint32_t baudrate) override;
+    // CRSF times no reply from the bytes still unread in the UART, so it can take them a block at a time
+    bool takes_byte_blocks() const override { return true; }
+    void process_bytes(const uint8_t *bytes, uint16_t count, uint32_t baudrate) override;
     void process_handshake(uint32_t baudrate) override;
     void update(void) override;
 #if HAL_CRSF_TELEM_ENABLED
@@ -212,7 +215,10 @@ private:
 
     static AP_RCProtocol_CRSF* _singleton;
 
-    void _process_byte(uint8_t byte);
+    // parse count bytes into frames, a header then a frame at a time
+    void parse_bytes(const uint8_t *bytes, uint16_t count);
+    // true if the buffered header has our address and a length in range
+    bool frame_header_valid() const;
     bool check_frame(uint32_t timestamp_us);
     void skip_to_next_frame(uint32_t timestamp_us);
     bool decode_crsf_packet();
