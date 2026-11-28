@@ -355,7 +355,9 @@ class check_elf_symbols(Task.Task):
         check_blacklist = (self.env.SYMBOLS_BLACKLIST and self.env.vehicle_binary and
                            not self.env.ALLOW_NONFLIGHT_SYMBOLS and not self.env.SIM_ENABLED)
         check_picolibc = self.env.PICOLIBC and self.env.TOOLCHAIN != 'emscripten'
-        if not (check_cxx or check_malloc or check_blacklist or check_picolibc):
+        # C++17 over-aligned new is not zero-filled by AP_Common/c++.cpp
+        check_aligned_new = self.env.vehicle_binary and self.env.TOOLCHAIN != 'emscripten'
+        if not (check_cxx or check_malloc or check_blacklist or check_picolibc or check_aligned_new):
             return
 
         nmout = subprocess.check_output(self.env.NM + ['-C', elfpath], text=True)
@@ -474,6 +476,8 @@ class check_elf_symbols(Task.Task):
                               'operator new[](unsigned long)',
                               'operator new(unsigned int)',
                               'operator new(unsigned long)']
+        if check_aligned_new:
+            cxx_blacklist.append('std::align_val_t')
         # Prefix/substring matching covers every __throw helper supplied by
         # current or future libstdc++ versions.
         for symbol in cxx_blacklist:
