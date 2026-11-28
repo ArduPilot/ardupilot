@@ -115,23 +115,17 @@ public:
         bool have_velocity;
 
         uint32_t last_location_update_us;
+        uint32_t last_velocity_update_us;
     } state;
 
     // accessors for AP_AHRS
     bool enabled() const;
     bool healthy(void) const;
     bool initialised(void) const;
-    bool get_quaternion(Quaternion &quat);
     bool get_origin(Location &loc);
     bool set_origin(const Location &loc);
-    bool get_location(Location &loc);
-    Vector2f get_groundspeed_vector();
-    bool get_velocity_NED(Vector3f &vel);
-    bool get_speed_down(float &speedD);
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
     void get_filter_status(nav_filter_status &status) const;
-    bool get_gyro(Vector3f &gyro);
-    bool get_accel(Vector3f &accel);
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
 
     // update backend

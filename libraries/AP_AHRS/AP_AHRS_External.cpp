@@ -41,55 +41,100 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.active_airspeed_index = primary_airspeed_index();
 #endif  // AP_AIRSPEED_ENABLED
 
-    results.attitude_valid = extahrs.get_quaternion(results.quaternion);
-    results.derive_attitude_from_quaternion();
+    auto &state = extahrs.state;
+    uint32_t velocity_update_us;
+    {
+        // read the external AHRS state under a single lock so that
+        // the attitude, velocity and position published here all
+        // come from the same update of that state
+        WITH_SEMAPHORE(state.sem);
 
-    results.gyro_drift.zero();
-    if (!extahrs.get_gyro(results.gyro_estimate)) {
+        // time of the most recent external velocity sample, used
+        // below to feed the wind estimator once per new sample:
+        velocity_update_us = state.last_velocity_update_us;
+
+        results.attitude_valid = state.have_quaternion;
+        if (state.have_quaternion) {
+            results.quaternion = state.quat;
+        }
+        results.derive_attitude_from_quaternion();
+
+        const bool have_imu = extahrs.has_sensor(AP_ExternalAHRS::AvailableSensor::IMU);
+
+        results.gyro_drift.zero();
+        if (have_imu) {
+            results.gyro_estimate = state.gyro;
+        } else {
 #if AP_INERTIALSENSOR_ENABLED
-        results.gyro_estimate = _ins.get_gyro();
+            results.gyro_estimate = _ins.get_gyro();
 #endif  // AP_INERTIALSENSOR_ENABLED
-    }
+        }
 
-    Vector3f accel;
-    if (!extahrs.get_accel(accel)) {
+        Vector3f accel;
+        if (have_imu) {
+            accel = state.accel;
+        } else {
 #if AP_INERTIALSENSOR_ENABLED
-        accel = _ins.get_accel();
+            accel = _ins.get_accel();
 #endif  // AP_INERTIALSENSOR_ENABLED
-    }
+        }
 
-    /*
-     * acceleration estimates
-     */
-    // results.accel_bias = {} - External does not estimate accel bias
-    const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
-    results.accel_ef = accel_ef;
+        /*
+         * acceleration estimates
+         */
+        // results.accel_bias = {} - External does not estimate accel bias
+        const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
+        results.accel_ef = accel_ef;
 
-    results.velocity_NED_valid = AP::externalAHRS().get_velocity_NED(results.velocity_NED);
-    // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    results.vert_pos_rate_D_valid = AP::externalAHRS().get_speed_down(results.vert_pos_rate_D);
+        if (state.have_velocity) {
+            results.velocity_NED = state.velocity;
+            results.velocity_NED_valid = true;
+            // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
+            // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
+            results.vert_pos_rate_D = state.velocity.z;
+            results.vert_pos_rate_D_valid = true;
+        }
 
-    // ground velocity estimate in meters/second, in North/East order
-    results.velocity_NE = AP::externalAHRS().get_groundspeed_vector();
+        // ground velocity estimate in meters/second, in North/East order
+        results.velocity_NE = state.velocity.xy();
 
-    /*
-     * position estimates
-     */
-    results.location_valid = AP::externalAHRS().get_location(results.location);
+        /*
+         * position estimates
+         */
+        if (state.have_location) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            if (!state.location.initialised()) {
+                AP_HAL::panic("Uninitialized location in AP_ExternalAHRS.");
+            }
+#endif
+            results.location = state.location;
+            if (state.last_location_update_us != 0 &&
+                state.have_velocity) {
+                // extrapolate position based on velocity to cope with slow backends
+                const float dt = (AP_HAL::micros() - state.last_location_update_us)*1.0e-6;
+                if (dt < 1) {
+                    // only extrapolate for 1s max
+                    Vector3p ofs = state.velocity.topostype();
+                    ofs *= dt;
+                    results.location.offset(ofs);
+                }
+            }
+            results.location_valid = true;
+        }
 
-    // origin-relative functions
-    results.provides_common_origin = true;
+        // origin-relative functions
+        results.provides_common_origin = true;
 
-    // origin-relative position:
-    Location orgn;
-    if (extahrs.get_origin(orgn) &&
-        results.location_valid) {
-        const Vector3p posNED = orgn.get_distance_NED_postype(results.location);
-        results.position_NE = posNED.xy();
-        results.position_NE_valid = true;
-        results.position_D = posNED.z;
-        results.position_D_valid = true;
+        // origin-relative position:
+        Location orgn;
+        if (extahrs.get_origin(orgn) &&
+            results.location_valid) {
+            const Vector3p posNED = orgn.get_distance_NED_postype(results.location);
+            results.position_NE = posNED.xy();
+            results.position_NE_valid = true;
+            results.position_D = posNED.z;
+            results.position_D_valid = true;
+        }
     }
 
     // hagl is not supplied:
@@ -99,9 +144,45 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * air data estimates
      */
-    // wind estimate is not supplied:
-    // results.wind = {};
-    // results.wind_valid = false;
+    // feed the wind-triangle estimator once per new velocity sample,
+    // read above under the same lock as its timestamp.  Keying on the
+    // velocity's own timestamp means a stalled velocity stream stops
+    // wind estimation rather than repeatedly fusing a stale velocity;
+    // the attitude may come from a neighbouring packet on devices
+    // which deliver attitude and velocity separately, a skew bounded
+    // by one packet interval, which the slow wind filter tolerates.
+    // ExternalAHRS can produce solutions faster than the estimator's
+    // safe rate, but estimate_wind rate-limits internally.
+    // estimate_wind requires a valid attitude, and the results are
+    // populated even when it is not.  Also require a healthy source:
+    // the state holds the last attitude received, so a source
+    // whose attitude has stopped while its velocity keeps arriving
+    // would otherwise fuse fresh velocity against a frozen heading:
+    if (results.healthy &&
+        results.attitude_valid &&
+        results.velocity_NED_valid &&
+        velocity_update_us != _last_wind_sample_us) {
+        _last_wind_sample_us = velocity_update_us;
+        // estimate_wind wants the fuselage forward direction: the
+        // body forward axis as a unit vector in NED:
+        estimate_wind(results.velocity_NED, results.dcm_matrix.colx());
+    }
+
+    // the estimate is only meaningful while wind estimation is
+    // enabled, and only exists once the estimator has actually
+    // produced one.  Invalidate it while the external source is
+    // unhealthy, and once the velocity that feeds it has stalled: a
+    // merely-old estimate from a healthy, still-updating source stays
+    // valid - a stale wind is still useful, for example when
+    // dead-reckoning - but a frozen velocity stream on a source that
+    // still reports healthy must not keep publishing an arbitrarily old
+    // wind as valid:
+    results.wind = _wind;
+    const uint32_t velocity_age_us = AP_HAL::micros() - velocity_update_us;
+    results.wind_valid = (AP::ahrs().get_wind_estimation_enabled() &&
+                          _have_wind_estimate &&
+                          results.healthy &&
+                          velocity_age_us < 5U * 1000U * 1000U);  // 5s
 
     /*
      * Sensor-related information
