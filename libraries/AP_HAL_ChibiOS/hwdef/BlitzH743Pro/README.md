@@ -50,10 +50,6 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured on the (UART2_RX/UART2_TX) pins which forms part of the DJI connector. It supports all serial RC protocols.
 
-## OSD Support
-
-The BLITZ H7 Pro supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The BLITZ H7 Pro has 13 PWM outputs. The pads for motor output M1-M4 are in one ESC connector and M5-M8 in the second ESC connector. The remaining outputs are on the pads on the daughterboard. The first 8 outputs support bi-directional DShot and DShot, as well as all PWM types. Outputs 9-10 support DShot, as well as all PWM types and outputs 11-12 only support PWM.
@@ -75,18 +71,6 @@ Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot.
 
-## Video Power Control
-
-The 12V video power can be turned off/on  using GPIO 81 which is already assigned by default to RELAY2.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
-
-## Camera Switch
-
-The camera output can be switched using GPIO 82 which is already assigned by default to RELAY3.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
-
-## RSSI
-
-Analog RSSI pin is "4"
-
 ## Battery Monitoring
 
 The board has a builtin voltage sensor and a current sensor input tied to its 4 in 1 ESC current sensor. The voltage sensor can handle up to 6S
@@ -101,6 +85,22 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## OSD Support
+
+The BLITZ H7 Pro supports OSD using OSD_TYPE 1 (MAX7456 driver).
+
+## Video Power Control
+
+The 12V video power can be turned off/on  using GPIO 81 which is already assigned by default to RELAY2.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
+
+## Camera Switch
+
+The camera output can be switched using GPIO 82 which is already assigned by default to RELAY3.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
+
+## RSSI
+
+Analog RSSI pin is "4"
 
 ## Compass
 

@@ -45,24 +45,6 @@ The default RC input is configured on the UART3 (RX3/SBUS). All unidirectional s
 - FPort requires connection to TX3. Set `SERIAL3_OPTIONS` = 7
 - CRSF/ELRS  requires both TX3 and RX3  and provides telemetry automatically.
 
-## OSD Support
-
-Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultaneously, DisplayPort OSD is available on the HD VTX connector (SERIAL8).
-
-## VTX Support
-
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort.
-A second VTX port is available for analog VTX. Simultaneous operation of a digital VTX and Analog VTX is possible. However, HD VTX and analog video connects both pinout SERIAL8 (default protocol MSP DisplayPort), so this UART should be set to the appropriate function.
-Be careful with these connectors power pins (10v/VBATT), do not connect this to a peripheral requiring 5v.
-
-## VTX Power Control
-
-GPIO 83 controls the VTX BEC output to pins marked "10V" and is included on the HD VTX and Analog VTX ports. Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY2 is configured to control this pin and sets the GPIO high.
-
-## CAMERA Switch
-
-GPIO 84 controls the camera switch. Setting this GPIO high will output the CAM1 stream, setting this low will output the CAM2 stream. By default RELAY3 is configured to control this pin and sets the GPIO low.
-
 ## PWM Output
 
 The AEDROXH7 supports up to 9 PWM (8 + LED) outputs. The pads for motor output
@@ -91,6 +73,24 @@ The default battery parameters are:
 - `BATT_CURR_PIN` = 11 (CURR pin)
 - `BATT_VOLT_MULT` = 11.0
 - `BATT_AMP_PERVLT` = 40
+
+## OSD Support
+
+Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultaneously, DisplayPort OSD is available on the HD VTX connector (SERIAL8).
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort.
+A second VTX port is available for analog VTX. Simultaneous operation of a digital VTX and Analog VTX is possible. However, HD VTX and analog video connects both pinout SERIAL8 (default protocol MSP DisplayPort), so this UART should be set to the appropriate function.
+Be careful with these connectors power pins (10v/VBATT), do not connect this to a peripheral requiring 5v.
+
+## VTX Power Control
+
+GPIO 83 controls the VTX BEC output to pins marked "10V" and is included on the HD VTX and Analog VTX ports. Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY2 is configured to control this pin and sets the GPIO high.
+
+## CAMERA Switch
+
+GPIO 84 controls the camera switch. Setting this GPIO high will output the CAM1 stream, setting this low will output the CAM2 stream. By default RELAY3 is configured to control this pin and sets the GPIO low.
 
 ## Compass
 

@@ -37,21 +37,6 @@ The default RC input is configured on the UART2_RX inverted from the SBUS pin.  
 - CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
 - SRXL2 requires a connection to TX2 and automatically provides telemetry. Set [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) to "4".
 
-## FrSky Telemetry
-
-FrSky Telemetry can be supported using the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT
-
-- SERIAL1_PROTOCOL 10
-- SERIAL1_OPTIONS 7
-
-## OSD Support
-
-The BROTHERHOBBYH743 supports using its internal OSD (MAX7456 driver). Simultaneous DisplayPort OSD operation  is also pre-configured on SERIAL 6. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
-
-## VTX Support
-
-The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 12v so be careful not to connect incorrectly.
-
 ## PWM Output
 
 The BROTHERHOBBYH743 supports up to 13 PWM outputs.
@@ -80,6 +65,21 @@ The default battery parameters are:
 - [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11
 - [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11
 - [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 40.2
+
+## FrSky Telemetry
+
+FrSky Telemetry can be supported using the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT
+
+- SERIAL1_PROTOCOL 10
+- SERIAL1_OPTIONS 7
+
+## OSD Support
+
+The BROTHERHOBBYH743 supports using its internal OSD (MAX7456 driver). Simultaneous DisplayPort OSD operation  is also pre-configured on SERIAL 6. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
+
+## VTX Support
+
+The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 12v so be careful not to connect incorrectly.
 
 ## RSSI
 

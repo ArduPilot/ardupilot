@@ -4,14 +4,26 @@ The [F4BY flight controller shop](https://f4by.com/en/?order/our_product).
 
 The instructions are available here: [F4BY mcu upgrade instructions](https://f4by.com/en/?doc/fc_f4by_v2.1.5)
 
+## Features
+
+- Full Ardupilot features support (exclude LUA Script)
+
+
+
+
+
+
+
+<!-- TODO: add Pinout content -->
+<!-- TODO: add UART Mapping content -->
+<!-- TODO: add RC Input content -->
+<!-- TODO: add PWM Output content -->
+<!-- TODO: add Battery Monitoring content -->
+
 ## Howto
 
 for self upgrage old fc:
 replace old MCU STM32F407VGT (1MB Flash) with STM32F427VET rev3 or above (2MB Flash)
-
-## Features
-
-- Full Ardupilot features support (exclude LUA Script)
 
 ## Loading Firmware
 

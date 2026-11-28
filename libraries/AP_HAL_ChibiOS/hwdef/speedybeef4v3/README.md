@@ -36,22 +36,6 @@ RC input is configured on the R2 (UART2_RX) pin for most RC unidirectional proto
 For Fport, a bi-directional inverter will be required. See [ArduPilot FPort documentation](https://ardupilot.org/plane/docs/common-connecting-sport-fport.html)
 For CRSF/ELRS/SRXL2 connection of the receiver to T2 will also be required.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the Tx pin of any UART including SERIAL2/UART2. You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL3).
-
-- SERIAL3_PROTOCOL 10
-- SERIAL3_OPTIONS 7
-
-## OSD Support
-
-The SpeedyBee F405 v3 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
-## VTX Support
-
-The JST-GH-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
-this to a peripheral requiring 5v.
-
 ## PWM Output
 
 The SpeedyBee F405 v3 supports up to 9 PWM outputs. The pads for motor output
@@ -81,6 +65,22 @@ The default battery parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 11.2
 - BATT_AMP_PERVLT 52.7 (will need to be adjusted for whichever current sensor is attached)
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the Tx pin of any UART including SERIAL2/UART2. You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL3).
+
+- SERIAL3_PROTOCOL 10
+- SERIAL3_OPTIONS 7
+
+## OSD Support
+
+The SpeedyBee F405 v3 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+
+## VTX Support
+
+The JST-GH-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
+this to a peripheral requiring 5v.
 
 ## Compass
 

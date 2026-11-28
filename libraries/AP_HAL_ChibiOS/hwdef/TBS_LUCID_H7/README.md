@@ -48,18 +48,6 @@ RX6 and TX6 and set RSSI_TYPE also to 3.
 
 If SBUS is used on HD VTX connector (DJI TX), then SERIAL1_PROTOCOl should be set to "23" and SERIAL6_PROTOCOL changed to something else.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit).
-You need to set the following parameters to enable support for FrSky S.PORT:
-
-- SERIAL1_PROTOCOL 10
-- SERIAL1_OPTIONS 7
-
-## OSD Support
-
-The TBS LUCID H7 supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
-
 ## PWM Output
 
 The TBS LUCID H7 supports up to 13 PWM or DShot outputs. The pads for motor output
@@ -100,6 +88,18 @@ Pads for a second analog battery monitor are provided. To use:
 - BATT2_CURR_PIN 7
 - BATT2_VOLT_MULT 11.0
 - BATT2_AMP_PERVLT as required
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit).
+You need to set the following parameters to enable support for FrSky S.PORT:
+
+- SERIAL1_PROTOCOL 10
+- SERIAL1_OPTIONS 7
+
+## OSD Support
+
+The TBS LUCID H7 supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
 
 ## Analog RSSI and AIRSPEED inputs
 

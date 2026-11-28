@@ -57,10 +57,6 @@ RC input is configured on UART6. It supports all RC protocols except PPM, FPort,
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/plane/docs/common-rc-systems.html#common-rc-systems) for details.
 
-## OSD Support
-
-The SpeedyBee F405 AIO supports OSD using [OSD_TYPE](https://ardupilot.org/copter/docs/parameters.html#osd-type-osd-type) =  1 (MAX7456 driver). The defaults are also setup to allow DJI Goggle OSD support on UART3. Both the internal analog OSD and the DisplayPort OSD can be used simultaneously by setting [OSD_TYPE2](https://ardupilot.org/copter/docs/parameters.html#osd-type2-osd-type-2)= 5
-
 ## PWM Output
 
 The SpeedyBee F405 AIO supports up to 5 PWM outputs. The pads for motor output ESC1 to ESC4 on the above diagram are the first 4 outputs.All 5 outputs support DShot.
@@ -89,6 +85,10 @@ The correct battery setting parameters are:
 - BATT_AMP_PERVLT 39.4
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## OSD Support
+
+The SpeedyBee F405 AIO supports OSD using [OSD_TYPE](https://ardupilot.org/copter/docs/parameters.html#osd-type-osd-type) =  1 (MAX7456 driver). The defaults are also setup to allow DJI Goggle OSD support on UART3. Both the internal analog OSD and the DisplayPort OSD can be used simultaneously by setting [OSD_TYPE2](https://ardupilot.org/copter/docs/parameters.html#osd-type2-osd-type-2)= 5
 
 ## Compass
 

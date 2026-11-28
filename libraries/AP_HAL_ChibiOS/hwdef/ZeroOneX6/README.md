@@ -102,6 +102,11 @@ The 8 FMU PWM outputs are in 4 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
+## Battery Monitoring
+
+The X6 flight controller has two six-pin power connectors, supporting CAN interface power supply.
+These are set by default in the firmware and shouldn't need to be adjusted.
+
 ## GPIOs
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s SERVOx_FUNCTION to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
@@ -117,11 +122,6 @@ All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you 
 | M7 | 107 | MainOut7 | | M15 | 56 | |
 | M8 | 108 | MainOut8 | | M16 | 57 | BB Blue GPIO pin 3 |
 | | | | | FCU CAP | 58 | |
-
-## Battery Monitoring
-
-The X6 flight controller has two six-pin power connectors, supporting CAN interface power supply.
-These are set by default in the firmware and shouldn't need to be adjusted.
 
 ## Compass
 

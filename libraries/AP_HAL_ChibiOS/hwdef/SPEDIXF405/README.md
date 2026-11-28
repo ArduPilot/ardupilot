@@ -42,10 +42,6 @@ RX3 and TX3 and set RSSI_TYPE also to 3.
 The SBUS pad comprises a hardware inverter connected to USART2_RX. If you wish to use SBUS then set SERIAL3_PROTOCOL to something
 other than RCIN and set SERIAL2_PROTOCL to RCIN.
 
-## OSD Support
-
-Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultaneously, DisplayPort OSD is available on the HD VTX connector.
-
 ## PWM Output
 
 The SPEDIX F405 supports up to 9 PWM outputs. The pads for motor output
@@ -75,6 +71,10 @@ The correct battery setting parameters are:
 - [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11 (CURR pin)
 - [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11.0
 - [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 50
+
+## OSD Support
+
+Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultaneously, DisplayPort OSD is available on the HD VTX connector.
 
 ## Compass
 

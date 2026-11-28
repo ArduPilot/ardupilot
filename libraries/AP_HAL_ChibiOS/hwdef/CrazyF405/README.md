@@ -36,10 +36,6 @@ To disable the onboard ELRS module and use an external RC on TX2/RX2, desolder t
 
 ![CrazyF405HD ELRS Pinout](CrazyF405_external_elrs.jpg)
 
-## OSD Support
-
-The CrazyF405HDAIO is optimized for Digital HD FPV and does not require the analog OSD chip (MAX7456); OSD data is transmitted via MSP to the digital VTX.
-
 ## PWM Output
 
 The CrazyF405HD AIO has 4 PWM outputs internally connected to its 4-in-1 ESC. The pads for motor output are M1 to M4 on the board. All 4 outputs support DShot, as well as all PWM types. The default configuration is for DShot using the already installed BlueJay firmware.
@@ -58,6 +54,10 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## OSD Support
+
+The CrazyF405HDAIO is optimized for Digital HD FPV and does not require the analog OSD chip (MAX7456); OSD data is transmitted via MSP to the digital VTX.
 
 ## Compass
 

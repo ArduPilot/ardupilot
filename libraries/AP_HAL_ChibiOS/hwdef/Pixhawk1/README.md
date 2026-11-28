@@ -43,6 +43,48 @@ The GPS2/spare port (labelled serial5) has two UARTs on one 6 pin
 connector. The spare port was originally used as a debug console, but
 debug is now on USB, so this port is free for any UART protocol.
 
+## RC Input
+
+RC input is configured on the RCIN pin, at one end of the servo rail,
+marked PPM in the above diagram. This pin supports all RC
+protocols. In addition there is a dedicated Spektrum satellite port
+which supports software power control, allowing for binding of
+Spektrum satellite receivers.
+
+## PWM Output
+
+The Pixhawk1 supports up to 14 PWM outputs. First first 8 outputs (labelled
+"MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
+outputs support all PWM output formats. DShot can be enabled on them by
+setting [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to 1
+and rebooting, which loads the DShot firmware onto the IO controller.
+Doing so disables PPM, DSM, iBus, SUMD, SRXL and ST24 input on the IO controller's RC input pin. SBUS and FPort on that pin, and DSM receivers on the DSM port, continue to work.
+
+The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxiliary"
+outputs. These are directly attached to the STM32F427 and support all
+PWM protocols as well as DShot.
+
+The 8 main PWM outputs are in 3 groups:
+
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
+
+The 6 auxiliary PWM outputs are in 2 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
+
+Channels within the same group need to use the same output rate. If
+any channel in a group uses DShot then all channels in the group need
+to use DShot.
+
+## Battery Monitoring
+
+The board has a dedicated power monitor port on a 6 pin DF13
+connector. The correct battery setting parameters are dependent on the
+type of power brick which is connected.
+
 ## Connectors
 
 The original Pixhawk1 uses DF13 connectors, and has 14 ports
@@ -146,48 +188,6 @@ The original Pixhawk1 uses DF13 connectors, and has 14 ports
 | 1 (red) | VCC | +3.3V |
 | 2 (blk) | !IO_LED_SAFETY | GND |
 | 3 (blk) | SAFETY | GND |
-
-## RC Input
-
-RC input is configured on the RCIN pin, at one end of the servo rail,
-marked PPM in the above diagram. This pin supports all RC
-protocols. In addition there is a dedicated Spektrum satellite port
-which supports software power control, allowing for binding of
-Spektrum satellite receivers.
-
-## PWM Output
-
-The Pixhawk1 supports up to 14 PWM outputs. First first 8 outputs (labelled
-"MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
-outputs support all PWM output formats. DShot can be enabled on them by
-setting [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to 1
-and rebooting, which loads the DShot firmware onto the IO controller.
-Doing so disables PPM, DSM, iBus, SUMD, SRXL and ST24 input on the IO controller's RC input pin. SBUS and FPort on that pin, and DSM receivers on the DSM port, continue to work.
-
-The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxiliary"
-outputs. These are directly attached to the STM32F427 and support all
-PWM protocols as well as DShot.
-
-The 8 main PWM outputs are in 3 groups:
-
-- PWM 1 and 2 in group1
-- PWM 3 and 4 in group2
-- PWM 5, 6, 7 and 8 in group3
-
-The 6 auxiliary PWM outputs are in 2 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5 and 6 in group2
-
-Channels within the same group need to use the same output rate. If
-any channel in a group uses DShot then all channels in the group need
-to use DShot.
-
-## Battery Monitoring
-
-The board has a dedicated power monitor port on a 6 pin DF13
-connector. The correct battery setting parameters are dependent on the
-type of power brick which is connected.
 
 ## Compass
 

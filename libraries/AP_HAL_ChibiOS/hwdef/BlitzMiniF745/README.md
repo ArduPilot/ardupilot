@@ -38,10 +38,6 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured on the (UART2_RX/UART2_TX). It supports all serial RC protocols.
 
-## OSD Support
-
-The BLITZ Mini F745 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The BLITZ Mini F745 has 5 PWM outputs. The motor outputs M1-M4 are in the ESC connector housing. All 5 outputs support DShot and the first four outputs support bi-directional DShot as well as all PWM types. Output 5 is the "LED" pin and is configured for serial LED by default.
@@ -69,6 +65,10 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## OSD Support
+
+The BLITZ Mini F745 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

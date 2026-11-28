@@ -35,22 +35,6 @@ For Fport, a bi-directional inverter will be required. See [ArduPilot FPort docu
 
 SBUS is supported. When using an SBUS receiver, the SBUS jumper pad on the flight controller must be soldered. The signal uses hardware inversion and is connected to USART6_RX. SBUS is available on both a dedicated solder pad and the DJI HD connector.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART6. You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL3).
-
-- SERIAL3_PROTOCOL 10
-- SERIAL3_OPTIONS 7
-
-## OSD Support
-
-The SpeedyBee F405 v5 supports OSD using [OSD_TYPE](https://ardupilot.org/copter/docs/parameters.html#osd-type-osd-type) = 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation is also pre-configured via UART3. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
-
-## VTX Support
-
-The JST-GH-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
-this to a peripheral requiring 5v.
-
 ## PWM Output
 
 The SpeedyBee F405 v5 supports up to 7 PWM outputs. The pads for motor output
@@ -81,6 +65,22 @@ The default battery parameters are:
 - BATT_CURR_PIN = 15
 - BATT_VOLT_MULT = 11.2
 - BATT_AMP_PERVLT = 1
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART6. You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL3).
+
+- SERIAL3_PROTOCOL 10
+- SERIAL3_OPTIONS 7
+
+## OSD Support
+
+The SpeedyBee F405 v5 supports OSD using [OSD_TYPE](https://ardupilot.org/copter/docs/parameters.html#osd-type-osd-type) = 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation is also pre-configured via UART3. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
+
+## VTX Support
+
+The JST-GH-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
+this to a peripheral requiring 5v.
 
 ## RSSI
 
