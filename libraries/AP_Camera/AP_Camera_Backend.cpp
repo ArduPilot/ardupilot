@@ -188,6 +188,12 @@ void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, 
 // send camera feedback message to GCS
 void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
 {
+    // the camera may report its own captures (e.g. CAMERA_IMAGE_CAPTURED),
+    // in which case a CAMERA_FEEDBACK from us shows up as a duplicate
+    if (option_is_enabled(Option::NoCameraFeedbackMsg)) {
+        return;
+    }
+
     int32_t altitude = 0;
     if (camera_feedback.location.initialised() && !camera_feedback.location.get_alt_cm(Location::AltFrame::ABSOLUTE, altitude)) {
         // completely ignore this failure!  this is a shouldn't-happen
