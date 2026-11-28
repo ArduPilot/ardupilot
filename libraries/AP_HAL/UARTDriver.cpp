@@ -154,6 +154,14 @@ bool AP_HAL::UARTDriver::discard_input()
     return _discard_input();
 }
 
+uint16_t AP_HAL::UARTDriver::discard_bytes(uint16_t n)
+{
+    if (lock_read_key != 0) {
+        return 0;
+    }
+    return BetterStream::discard_bytes(n);
+}
+
 /*
   changing the line settings restarts the UART on some boards, which
   would lose data for the user of a locked port, so they are only
