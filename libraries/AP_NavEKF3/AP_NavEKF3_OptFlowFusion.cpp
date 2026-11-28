@@ -718,6 +718,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
             flowWithheld_ms = 0;
+            flowPassTimeAxis_ms[obsIndex] = imuSampleTime_ms;
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;
