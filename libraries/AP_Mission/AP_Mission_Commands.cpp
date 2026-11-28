@@ -55,6 +55,10 @@ bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd
         // Log_Write_Event(DATA_GRIPPER_GRAB);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper Grabbed");
         return true;
+    case GRIPPER_ACTION_HOLD:
+        gripper.hold();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper Holding");
+        return true;
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Unhandled gripper case");

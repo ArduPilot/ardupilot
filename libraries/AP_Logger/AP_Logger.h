@@ -53,6 +53,8 @@ enum class LogEvent : uint8_t {
     ACRO_TRAINER_LIMITED = 45,
     GRIPPER_GRAB = 46,
     GRIPPER_RELEASE = 47,
+    // 48 was DATA_EPM_NEUTRAL, logged by Copter 2013-2016
+    GRIPPER_HOLD = 48,
     PARACHUTE_DISABLED = 49,
     PARACHUTE_ENABLED = 50,
     PARACHUTE_RELEASED = 51,
