@@ -18,6 +18,7 @@
 
 #include <AP_GPS/AP_GPS_NMEA.h>
 #include <AP_GPS/AP_GPS_Blended.h>
+#include <AP_Math/crc.h>
 #include <memory>
 #include <string>
 
@@ -56,6 +57,17 @@ public:
     {
         return AP_GPS_NMEA::_GPS_SENTENCE_GGA - AP_GPS_NMEA::_GPS_SENTENCE_RMC + gga_term;
     }
+    // feed a Unicore sentence body, adding '#', the CRC32 and line ending
+    static void feed_unicore(AP_GPS_NMEA &nmea, const std::string &body)
+    {
+        char tail[16];
+        snprintf(tail, sizeof(tail), "*%08x\r\n", (unsigned)crc_crc32(0, (const uint8_t *)body.data(), body.length()));
+        const std::string s = "#" + body + tail;
+        for (char c : s) {
+            nmea._decode(c);
+        }
+    }
+    static void expect_agrica(AP_GPS_NMEA &nmea, bool v) { nmea._expect_agrica = v; }
     static std::string phd_bytes(const AP_GPS_NMEA &nmea) { return std::string((const char *)&nmea._phd, sizeof(nmea._phd)); }
     static std::string ksxt_bytes(const AP_GPS_NMEA &nmea) { return std::string((const char *)&nmea._ksxt, sizeof(nmea._ksxt)); }
 #if AP_GPS_NMEA_UNICORE_ENABLED
@@ -312,5 +324,152 @@ TEST(AP_GPS_NMEA, term_number_does_not_wrap)
     AP_GPS_NMEA_Test::feed(nmea, body, false);
     EXPECT_TRUE(AP_GPS_NMEA_Test::is_rmc(nmea));
 }
+
+static const char *GGA_OK = "GPGGA,083433.00,3957.4902,N,11618.7777,E,1,10,1.2,0049.49,M,0.0,M,,";
+static const char *RMC_OK = "GPRMC,083433.00,A,3957.4902,N,11618.7777,E,0.11,133.18,161021,,";
+static const int32_t LAT_OK = 399581700;   // 39 deg 57.4902 min
+static const int32_t LNG_OK = 1163129616;  // 116 deg 18.7777 min
+
+TEST(AP_GPS_NMEA, parse_decimal_100_overlong_fields_saturate)
+{
+    AP_GPS_NMEA_Test test;
+
+    /* strtol() saturates on these; the *100 must not wrap */
+    ASSERT_EQ(INT32_MAX, test.parse_decimal_100("99999999999999999999"));
+    ASSERT_EQ(INT32_MIN, test.parse_decimal_100("-99999999999999999999"));
+    /* fractional digits must not push a just-in-range value over the edge */
+    ASSERT_EQ(INT32_MAX, test.parse_decimal_100("21474836.9"));
+    ASSERT_EQ(INT32_MIN, test.parse_decimal_100("-21474836.9"));
+    /* normal values unchanged */
+    ASSERT_EQ(2147483500, test.parse_decimal_100("21474835"));
+}
+
+TEST(AP_GPS_NMEA, valid_position_is_published)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    AP_GPS_NMEA_Test::feed(nmea, GGA_OK);
+    EXPECT_EQ(LAT_OK, state.location.lat);
+    EXPECT_EQ(LNG_OK, state.location.lng);
+    EXPECT_EQ(AP_GPS_FixType::FIX_3D, state.status);
+}
+
+TEST(AP_GPS_NMEA, impossible_latitude_discards_sentence)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    /* five integer degree digits: wrapped the uint8_t accumulator and
+       overflowed degrees*1e7, publishing -196.8 degrees */
+    AP_GPS_NMEA_Test::feed(nmea, "GPGGA,083433.00,99999.0000,N,11618.7777,E,1,10,1.2,0049.49,M,0.0,M,,");
+    EXPECT_EQ(0, state.location.lat);
+    EXPECT_EQ(0, state.location.lng);
+    EXPECT_EQ(AP_GPS_FixType::NO_GPS, state.status);  // nothing published
+
+    /* minutes >= 60 */
+    AP_GPS_NMEA_Test::feed(nmea, "GPGGA,083433.00,3960.0000,N,11618.7777,E,1,10,1.2,0049.49,M,0.0,M,,");
+    EXPECT_EQ(0, state.location.lat);
+
+    /* more than 180 degrees of longitude */
+    AP_GPS_NMEA_Test::feed(nmea, "GPGGA,083433.00,3957.4902,N,18118.7777,E,1,10,1.2,0049.49,M,0.0,M,,");
+    EXPECT_EQ(0, state.location.lng);
+
+    /* a good sentence afterwards is still accepted */
+    AP_GPS_NMEA_Test::feed(nmea, GGA_OK);
+    EXPECT_EQ(LAT_OK, state.location.lat);
+}
+
+TEST(AP_GPS_NMEA, impossible_time_discards_sentence)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    AP_GPS_NMEA_Test::feed(nmea, GGA_OK);           // 3D fix so RMC's make_gps_time() runs
+    /* 9999999.00 is not a UTC time; *10 overflowed int32 and set a GPS week */
+    AP_GPS_NMEA_Test::feed(nmea, "GPRMC,9999999.00,A,3957.4902,N,11618.7777,E,0.11,133.18,161021,,");
+    EXPECT_EQ(0, state.time_week);
+    EXPECT_EQ(0U, state.time_week_ms);
+
+    /* the rejected time must not linger: an RMC with an empty time field
+       afterwards used to multiply the stale 9999999.00 and overflow */
+    AP_GPS_NMEA_Test::feed(nmea, "GPRMC,,A,3957.4902,N,11618.7777,E,0.11,133.18,161021,,");
+    EXPECT_EQ(2179, state.time_week);
+    EXPECT_EQ(549291000U, state.time_week_ms);   // the last valid time (GGA_OK), not 9999999.00
+
+    /* month 99 in the date field */
+    AP_GPS_NMEA_Test::feed(nmea, "GPRMC,083433.00,A,3957.4902,N,11618.7777,E,0.11,133.18,169921,,");
+    EXPECT_EQ(2179, state.time_week);
+
+    /* a good RMC still sets the time */
+    AP_GPS_NMEA_Test::feed(nmea, RMC_OK);
+    EXPECT_EQ(2179, state.time_week);
+}
+
+TEST(AP_GPS_NMEA, overlong_speed_saturates_instead_of_wrapping)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    /* _parse_decimal_100() clamps to INT32_MAX; *514 then wrapped to -514
+       and published 0 m/s. Saturation is the documented clamp behaviour. */
+    AP_GPS_NMEA_Test::feed(nmea, "GPVTG,133.18,T,120.79,M,99999999,N,0.20,K,A");
+    EXPECT_NEAR(float(int32_t((int64_t(INT32_MAX) * 514) / 1000)) * 0.01f,
+                state.ground_speed, 1.0f);
+}
+
+// a KSXT body with the given longitude and latitude fields
+static std::string ksxt_body(const char *lng, const char *lat)
+{
+    return std::string("KSXT,20211016083433.00,") + lng + "," + lat +
+           ",49.4911,223.57,-11.32,330.19,0.024,,1,3,28,27,,,,-0.012,0.021,0.020,,";
+}
+
+TEST(AP_GPS_NMEA, ksxt_rejects_non_finite_and_out_of_range_position)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+
+    AP_GPS_NMEA_Test::feed(nmea, ksxt_body("116.31296102", "nan"));
+    EXPECT_EQ(0, state.location.lat);
+    EXPECT_FALSE(state.have_gps_yaw);
+
+    AP_GPS_NMEA_Test::feed(nmea, ksxt_body("116.31296102", "1e300"));
+    EXPECT_EQ(0, state.location.lat);
+
+    AP_GPS_NMEA_Test::feed(nmea, ksxt_body("181.0", "39.95817066"));
+    EXPECT_EQ(0, state.location.lng);
+
+    AP_GPS_NMEA_Test::feed(nmea, ksxt_body("116.31296102", "39.95817066"));
+    EXPECT_EQ(399581706, state.location.lat);
+    EXPECT_EQ(1163129610, state.location.lng);
+    EXPECT_TRUE(state.have_gps_yaw);
+}
+
+#if AP_GPS_NMEA_UNICORE_ENABLED
+// an AGRICA body with the given latitude field
+static std::string agrica_body(const char *lat)
+{
+    return std::string("AGRICA,82,GPS,FINE,2237,176366400,0,0,18,15;GNSS,232,22,11,22,0,59,8,1,5,8,12,0,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,296.4656,-26.5685,0.0000,0.005,0.000,0.000,-0.005,0.044,0.032,0.038,") +
+           lat + ",149.13181842030,609.1494,-4471799.0368,2672944.7758,-3668288.9857,1.3923,1.5128,3.2272,2.3026,2.1633,2.1586,0.00000000000,0.00000000000,0.0000,0.00000000000,0.00000000000,0.0000,176366400,0.000,66.175285,18.972784,0.000000,0.000000,5,0,0,0";
+}
+
+TEST(AP_GPS_NMEA, agrica_rejects_non_finite_position)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    AP_GPS_NMEA_Test::expect_agrica(nmea, true);
+
+    AP_GPS_NMEA_Test::feed_unicore(nmea, agrica_body("nan"));
+    EXPECT_EQ(0, state.location.lat);
+    EXPECT_FALSE(state.have_vertical_velocity);
+
+    AP_GPS_NMEA_Test::feed_unicore(nmea, agrica_body("-35.33142715815"));
+    EXPECT_EQ(-353314271, state.location.lat);
+    EXPECT_TRUE(state.have_vertical_velocity);
+}
+#endif
 
 AP_GTEST_MAIN()
