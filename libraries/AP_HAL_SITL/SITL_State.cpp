@@ -141,6 +141,9 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
         if (hal.scheduler->in_main_thread() ||
             Scheduler::from(hal.scheduler)->semaphore_wait_hack_required()) {
             _fdm_input_step();
+            if (hal.scheduler->in_main_thread()) {
+                update_sleep_speedup();
+            }
         } else {
 #ifdef CYGWIN_BUILD
             if (speedup > 2 && hal.util->get_soft_armed()) {
@@ -158,11 +161,21 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
                 }
             }
 #endif
-            // most devices can't sleep for 10us - so this is also
-            // essentially a yield.  At 30x speedup a 10us wall-clock
-            // sleep here can equate to your thread sleeping for 300us
-            // of simulated time
-            usleep(10);
+            // sleep for most of the remaining wait rather than polling
+            const uint64_t now_usec = AP_HAL::micros64();
+            if (now_usec >= wait_time_usec) {
+                break;
+            }
+            // updated by the main thread each step, so a SIM_SPEEDUP change is
+            // seen promptly; the sleep is also capped for that reason
+            const float sleep_speedup = _sleep_speedup.load(std::memory_order_relaxed);
+            if (!is_positive(sleep_speedup)) {
+                usleep(10);
+                continue;
+            }
+            const uint64_t wall_usec = (wait_time_usec - now_usec) / sleep_speedup;
+            // usleep() overshoots by the timer slack, so stop short and poll the rest
+            usleep(wall_usec > 200 ? MIN(wall_usec - 100, 10000U) : 10);
         }
     }
     // check the outbound TCP queue size.  If it is too long then
@@ -182,6 +195,37 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             usleep(1000);
         }
     }
+}
+
+/*
+  set the speedup that other threads use to size their sleeps. Backends
+  clocked by an external simulator can run faster than SIM_SPEEDUP, so
+  the measured rate of simulated time is used when it is higher
+ */
+void SITL_State::update_sleep_speedup(void)
+{
+    const uint64_t wall_ms = wall_millis();
+    const uint64_t sim_us = AP_HAL::micros64();
+    if (sim_us < _speedup_sim_us) {
+        // simulated time went backwards, start a new measurement
+        _speedup_wall_ms = 0;
+        _measured_speedup = 0;
+    }
+    const uint64_t dt_ms = wall_ms - _speedup_wall_ms;
+    if (dt_ms >= 100) {
+        if (_speedup_wall_ms != 0) {
+            _measured_speedup = (sim_us - _speedup_sim_us) * 0.001f / dt_ms;
+        }
+        _speedup_wall_ms = wall_ms;
+        _speedup_sim_us = sim_us;
+    }
+    // poll until the rate is known, and always if the model does not
+    // sync to wall clock time
+    float speedup = 0;
+    if (sitl_model->get_use_time_sync() && is_positive(_measured_speedup)) {
+        speedup = MAX(MAX(sitl_model->get_speedup(), _measured_speedup), 1.0f);
+    }
+    _sleep_speedup.store(speedup, std::memory_order_relaxed);
 }
 
 /*

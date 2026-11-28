@@ -73,7 +73,7 @@ public:
         "none:9",
     };
 
-    uint8_t get_instance() const { return _instance; }
+    uint16_t get_instance() const { return _instance; }
 
     bool run_in_maintenance_mode() const { return _maintenance; }
 
@@ -84,7 +84,7 @@ private:
 
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
-    uint8_t _instance;
+    uint16_t _instance;
     bool _maintenance;
 
     // simulated GPS devices

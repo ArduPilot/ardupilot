@@ -496,7 +496,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             HALSITL::UARTDriver::_console = true;
             break;
         case 'I': {
-            _instance = atoi(gopt.optarg);
+            // the highest default port, IRLOCK_PORT + 10 * instance, must fit
+            const int instance = atoi(gopt.optarg);
+            if (instance < 0 || instance > (UINT16_MAX - IRLOCK_PORT) / 10) {
+                printf("ERROR: instance must be between 0 and %d\n", (UINT16_MAX - IRLOCK_PORT) / 10);
+                exit(1);
+            }
+            _instance = instance;
             if (_base_port == BASE_PORT) {
                 _base_port += _instance * 10;
             }

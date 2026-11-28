@@ -29,11 +29,34 @@ uint64_t HALSITL::Util::get_hw_rtc() const
 }
 
 /*
+  add the instance to the first two characters of an id of length len
+  in a buffer of size bytes, padding if needed, so each instance differs
+ */
+static void add_instance_to_id(char *cbuf, uint8_t &len, uint8_t size, uint16_t instance)
+{
+    if (size == 0) {
+        return;
+    }
+    if (len >= size) {
+        len = size - 1;
+    }
+    while (len < 2 && len + 2 < size) {
+        cbuf[len++] = '-';
+    }
+    cbuf[len] = '\0';
+    cbuf[0] += instance & 0xFF;
+    if (len > 1) {
+        cbuf[1] += instance >> 8;
+    }
+}
+
+/*
   get a (hopefully unique) machine ID
  */
 bool HALSITL::Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 {
     char *cbuf = (char *)buf;
+    const uint8_t size = len;
 
     // try first to use machine-id file. Most systems will have this
     const char *paths[] = { "/etc/machine-id", "/var/lib/dbus/machine-id" };
@@ -58,20 +81,18 @@ bool HALSITL::Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
             *p = 0;
         }
         len = strnlen(cbuf, len);
-        buf[0] += sitlState->get_instance();
+        add_instance_to_id(cbuf, len, size, sitlState->get_instance());
         return true;
     }
 
     // fallback to hostname
-    if (gethostname(cbuf, len) != 0) {
+    if (gethostname(cbuf, size) != 0) {
         // use a default name so this always succeeds. Without it we can't
         // implement some features (such as UAVCAN)
-        snprintf(cbuf, len, "sitl-unknown-%d", sitlState->get_instance());
-    } else {
-        // To ensure separate ids for each instance
-        cbuf[0] += sitlState->get_instance();
+        snprintf(cbuf, size, "sitl-unknown");
     }
-    len = strnlen(cbuf, len);
+    len = strnlen(cbuf, size);
+    add_instance_to_id(cbuf, len, size, sitlState->get_instance());
     return true;
 }
 

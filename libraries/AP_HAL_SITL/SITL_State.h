@@ -12,6 +12,7 @@
 #else
 
 #include <netinet/in.h>
+#include <atomic>
 
 class HAL_SITL;
 
@@ -52,7 +53,7 @@ public:
                                 Location &loc,
                                 float &yaw_degrees);
     
-    uint8_t get_instance() const { return _instance; }
+    uint16_t get_instance() const { return _instance; }
 
 private:
     void _parse_command_line(int argc, char * const argv[]);
@@ -85,8 +86,15 @@ private:
 
     void wait_clock(uint64_t wait_time_usec);
 
+    // speedup for sleeps in other threads, set by the main thread; 0 means poll
+    void update_sleep_speedup(void);
+    uint64_t _speedup_wall_ms;
+    uint64_t _speedup_sim_us;
+    float _measured_speedup;
+    std::atomic<float> _sleep_speedup{0.0f};
+
     // internal state
-    uint8_t _instance;
+    uint16_t _instance;
     uint16_t _base_port;
     pid_t _parent_pid;
     uint32_t _update_count;

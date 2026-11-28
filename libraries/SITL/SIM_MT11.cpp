@@ -25,7 +25,7 @@ namespace SITL {
 
 class MT11_RTSPServer {
 public:
-    MT11_RTSPServer(uint8_t sitl_instance, uint8_t camera_instance) :
+    MT11_RTSPServer(uint16_t sitl_instance, uint8_t camera_instance) :
         _instance(camera_instance),
         _port(8554U + sitl_instance * 10U + camera_instance)
     {

@@ -40,7 +40,7 @@ public:
     }
     bool get_wipe_storage() const { return wipe_storage; }
 
-    uint8_t get_instance() const;
+    uint16_t get_instance() const;
 
 #if defined(HAL_BUILD_AP_PERIPH)
     bool run_in_maintenance_mode() const;

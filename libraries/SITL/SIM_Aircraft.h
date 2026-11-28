@@ -61,6 +61,8 @@ public:
      */
     void set_speedup(float speedup);
     float get_speedup() const { return target_speedup; }
+    // false when an external simulator drives the clock
+    bool get_use_time_sync() const { return use_time_sync; }
 
     /* return a monotonic wall clock time in microseconds */
     uint64_t get_wall_time_us(void) const;
@@ -68,7 +70,7 @@ public:
     /*
       set instance number
      */
-    void set_instance(uint8_t _instance) {
+    void set_instance(uint16_t _instance) {
         instance = _instance;
         // register at 0 whatever our instance number is: there is only
         // ever one Aircraft in a SITL process, and _instance is the -I
@@ -79,7 +81,7 @@ public:
         // sim_arming_pos.lua example does - silently did nothing.
         instances[0] = this;
     }
-    uint8_t get_instance() const { return instance; }
+    uint16_t get_instance() const { return instance; }
 
     /*
       set directory for additional files such as aircraft models
@@ -296,7 +298,7 @@ protected:
     float achieved_rate_hz;  // achieved speedup rate
     int64_t sleep_debt_us;
     uint32_t last_frame_count;
-    uint8_t instance;
+    uint16_t instance;
     const char *autotest_dir;
     bool use_time_sync = true;
     float last_speedup = -1.0f;
