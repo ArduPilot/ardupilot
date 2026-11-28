@@ -1555,6 +1555,13 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_SUBGROUPINFO(imu_tcal[4], "IMUT5_", 59, SIM, AP_InertialSensor_TCal),
 #endif
 #endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
+
+    // @Param: IMU_CLK_PPM
+    // @DisplayName: IMU clock error
+    // @Description: Error of the simulated IMUs' sample clock, in parts per million. Negative values make the IMUs sample slower than their nominal rate.
+    // @User: Advanced
+    AP_GROUPINFO("IMU_CLK_PPM",   53, SIM, imu_clock_ppm, 0),
+
     AP_GROUPEND
 };
 

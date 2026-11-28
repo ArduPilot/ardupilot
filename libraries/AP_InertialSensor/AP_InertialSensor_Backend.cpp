@@ -76,7 +76,8 @@ bool AP_InertialSensor_Backend::sensors_converging() const
   sensor may vary slightly from the system clock. This slowly adjusts
   the rate to the observed rate
 */
-void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz) const
+void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz,
+                                                    AP_InertialSensor::RateConvergence *convergence) const
 {
     uint32_t now = AP_HAL::micros();
     if (start_us == 0) {
@@ -84,7 +85,16 @@ void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &s
         start_us = now;
     } else {
         count++;
-        if (now - start_us > 1000000UL) {
+        if (convergence != nullptr && convergence->windows == 0 && now - start_us > 1000000UL) {
+            /*
+              the first window starts at the first sample read, but the
+              rest of that read is the sensor's queued backlog, so its
+              count is high: skip it
+             */
+            convergence->windows = 1;
+            count = 0;
+            start_us = now;
+        } else if (now - start_us > 1000000UL) {
             float observed_rate_hz = count * 1.0e6f / (now - start_us);
 #if 0
             printf("IMU RATE: %.1f should be %.1f\n", observed_rate_hz, rate_hz);
@@ -99,6 +109,24 @@ void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &s
                 lower_limit = 0.5f;
             }
             observed_rate_hz = constrain_float(observed_rate_hz, rate_hz*lower_limit, rate_hz*upper_limit);
+            if (convergence != nullptr) {
+                /*
+                  the mean of the innovation is the error left in the
+                  estimate.  Consecutive windows share a boundary, so
+                  the timing jitter at each boundary cancels and the
+                  filtered innovation's noise falls with the filter
+                  constant rather than its square root
+                 */
+                const float innovation = observed_rate_hz / rate_hz - 1.0f;
+                if (convergence->windows == 1) {
+                    convergence->innovation = innovation;
+                } else {
+                    convergence->innovation += 0.1f * (innovation - convergence->innovation);
+                }
+                if (convergence->windows < UINT8_MAX) {
+                    convergence->windows++;
+                }
+            }
             rate_hz = filter_constant * rate_hz + (1-filter_constant) * observed_rate_hz;
             count = 0;
             start_us = now;
@@ -298,7 +326,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     float dt;
 
     _update_sensor_rate(_imu._sample_gyro_count[instance], _imu._sample_gyro_start_us[instance],
-                        _imu._gyro_raw_sample_rates[instance]);
+                        _imu._gyro_raw_sample_rates[instance], &_imu._gyro_rate_convergence[instance]);
 
     uint64_t last_sample_us = _imu._gyro_last_sample_us[instance];
 
@@ -400,7 +428,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
     float dt;
 
     _update_sensor_rate(_imu._sample_gyro_count[instance], _imu._sample_gyro_start_us[instance],
-                        _imu._gyro_raw_sample_rates[instance]);
+                        _imu._gyro_raw_sample_rates[instance], &_imu._gyro_rate_convergence[instance]);
 
     uint64_t last_sample_us = _imu._gyro_last_sample_us[instance];
 
