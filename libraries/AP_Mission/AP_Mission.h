@@ -821,6 +821,13 @@ public:
     void set_log_start_mission_item_bit(uint32_t bit) { log_start_mission_item_bit = bit; }
 #endif
 
+    /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
+    ///     returns true if found, false if not found
+    ///     stops and returns false if it hits another navigation command before it finds the first do or conditional command
+    ///     accounts for do_jump commands, following them on a private copy of the jump counters so the running
+    ///     mission's num_times_run is never changed (advance_current_nav_cmd is responsible for that)
+    bool get_next_do_cmd(uint16_t start_index, Mission_Command& cmd);
+
 private:
     static AP_Mission *_singleton;
 
@@ -894,13 +901,6 @@ private:
     ///     A look-ahead on a private cursor is not taking the jumps it follows, so it does not
     ///     report them to the GCS either
     bool get_next_cmd(uint16_t &scan_index, Mission_Command& cmd, jump_tracking_array_t &jump_state);
-
-    /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
-    ///     returns true if found, false if not found
-    ///     stops and returns false if it hits another navigation command before it finds the first do or conditional command
-    ///     accounts for do_jump commands, following them on a private copy of the jump counters so the running
-    ///     mission's num_times_run is never changed (advance_current_nav_cmd is responsible for that)
-    bool get_next_do_cmd(uint16_t start_index, Mission_Command& cmd);
 
     ///
     /// jump handling methods

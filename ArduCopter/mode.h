@@ -822,6 +822,10 @@ private:
         uint32_t panorama_start_ms; // time the radius-0 panorama started
         float panorama_rate_rads;   // yaw rate the radius-0 panorama was commanded at
     } circle;
+
+    // method to process do_change_speed before we calculate SCurve:
+    void do_change_speed_lookahead(uint16_t index);
+
 };
 #endif  // MODE_AUTO_ENABLED
 

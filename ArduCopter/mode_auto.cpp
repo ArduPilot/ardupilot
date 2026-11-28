@@ -1604,6 +1604,8 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
         return;
     }
 
+    do_change_speed_lookahead(cmd.index+1);
+
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
@@ -1619,6 +1621,21 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
         copter.failsafe_terrain_on_event();
         return;
     }
+}
+
+// if a DO_CHANGE_SPEED is found then process it immediately.  This
+// prevents the vehicle creating an accel segment before it processes
+// the command.
+void ModeAuto::do_change_speed_lookahead(uint16_t index)
+{
+    AP_Mission::Mission_Command cmd;
+    if (!mission.get_next_do_cmd(index, cmd)) {
+        return;
+    }
+    if (cmd.id != MAV_CMD_DO_CHANGE_SPEED) {
+        return;
+    }
+    do_change_speed(cmd);
 }
 
 // checks the next mission command and adds it as a destination if necessary
@@ -2020,6 +2037,7 @@ void ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
 // Do (Now) commands
 /********************************************************************************/
 
+// note that we extract a lot of this same information in segment_speed
 void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
