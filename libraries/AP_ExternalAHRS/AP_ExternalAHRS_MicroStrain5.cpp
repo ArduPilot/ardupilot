@@ -124,11 +124,10 @@ void AP_ExternalAHRS_MicroStrain5::post_imu() const
     }
 
     {
-        AP_ExternalAHRS::ins_data_message_t ins {
-            accel: imu_data.accel,
-            gyro: imu_data.gyro,
-            temperature: -300
-        };
+        AP_ExternalAHRS::ins_data_message_t ins;
+        ins.accel = imu_data.accel;
+        ins.gyro = imu_data.gyro;
+        ins.temperature= -300;
         AP::ins().handle_external(ins);
     }
 

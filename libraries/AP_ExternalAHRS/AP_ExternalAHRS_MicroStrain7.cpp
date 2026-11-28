@@ -152,13 +152,11 @@ void AP_ExternalAHRS_MicroStrain7::post_imu() const
     }
 
     {
-        // *INDENT-OFF*
-        AP_ExternalAHRS::ins_data_message_t ins {
-            accel: imu_data.accel,
-            gyro: imu_data.gyro,
-            temperature: -300
-        };
-        // *INDENT-ON*
+        AP_ExternalAHRS::ins_data_message_t ins;
+        ins.accel = imu_data.accel;
+        ins.gyro = imu_data.gyro;
+        ins.temperature= -300;
+        ins.TempCalibration = AP_ExternalAHRS::TempCal::IsTempCalibrated;
         AP::ins().handle_external(ins);
     }
 
