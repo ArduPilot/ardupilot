@@ -13791,6 +13791,84 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def RateThreadPrimaryGyroDt(self):
+        """Check the rate thread dt follows the gyro feeding it as the EKF primary changes."""
+        # SITL's IMU0 samples at 1 kHz and IMU1 at 760 Hz
+        self.set_parameters({
+            "FSTRATE_ENABLE": 3,
+            "FSTRATE_DIV": 1,
+            "EK3_PRIMARY": 1,
+            "EK3_OPTIONS": 2,       # manual lane switching, so EK3_PRIMARY switches lanes in flight
+            "INS_RAW_LOG_OPT": 5,   # every post-filter sample of the primary gyro
+            "LOG_FILE_RATEMAX": 0,  # GYR is rate limited otherwise
+        })
+        self.reboot_sitl()
+
+        self.takeoff(5, mode="ALT_HOLD")
+        self.delay_sim_time(15, "hover on IMU1")
+        self.context_collect("STATUSTEXT")
+        self.set_parameter("EK3_PRIMARY", 0)
+        self.wait_statustext("EKF3 primary changed:0", check_context=True)
+        self.delay_sim_time(15, "hover on IMU0")
+        self.context_clear_collection("STATUSTEXT")
+        self.set_parameter("EK3_PRIMARY", 1)
+        self.wait_statustext("EKF3 primary changed:1", check_context=True)
+        self.delay_sim_time(15, "hover on IMU1")
+        self.land_and_disarm()
+
+        # split the armed log by EKF primary, skipping the first second after each change
+        dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
+        segments = []
+        armed = False
+        primary = None
+        primary_since_us = 0
+        prev_gyr = None
+        while True:
+            m = dfreader.recv_match(type=['ARM', 'GYR', 'RTDT', 'XKF4'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'ARM':
+                armed = m.ArmState == 1
+                primary = None
+                continue
+            if mtype == 'XKF4':
+                if armed and m.C == 0 and m.PI != primary:
+                    primary = m.PI
+                    primary_since_us = m.TimeUS
+                    segments.append({"primary": primary, "dt": [], "dtAvg": [], "gyr": []})
+                continue
+            if primary is None or m.TimeUS - primary_since_us < 1e6:
+                prev_gyr = None
+                continue
+            seg = segments[-1]
+            if mtype == 'GYR':
+                if prev_gyr is not None and prev_gyr.I == m.I == primary:
+                    seg["gyr"].append((m.SampleUS - prev_gyr.SampleUS) * 1.0e-6)
+                prev_gyr = m
+                continue
+            seg["dt"].append(m.dt)
+            seg["dtAvg"].append(m.dtAvg)
+
+        segments = [x for x in segments if len(x["dt"]) >= 50 and len(x["gyr"]) >= 1000]
+        if [x["primary"] for x in segments] != [1, 0, 1]:
+            raise NotAchievedException("Unexpected EKF primary sequence %s" % [x["primary"] for x in segments])
+        failures = []
+        for seg in segments:
+            measured = sum(seg["dt"]) / len(seg["dt"])
+            assumed = sum(seg["dtAvg"]) / len(seg["dtAvg"])
+            gyro = sum(seg["gyr"]) / len(seg["gyr"])
+            self.progress("primary %u: %u RTDT, measured dt %.3f ms, assumed dt %.3f ms, gyro dt %.3f ms" %
+                          (seg["primary"], len(seg["dt"]), measured * 1000, assumed * 1000, gyro * 1000))
+            if abs(measured - assumed) > 0.1 * measured or abs(gyro - assumed) > 0.02 * gyro:
+                failures.append(seg["primary"])
+        if failures:
+            raise NotAchievedException("Rate thread dt wrong with primary %s" % failures)
+
+        # the rates were set up again for the 760 Hz gyro after the in-flight switch
+        if self.statustext_in_collections("rate set to 760Hz") is None:
+            raise NotAchievedException("Rate thread rates not updated after the primary change")
+
     def RateThreadPostFilterGyroLog(self):
         """Check post-filter gyro logging records every sample while the rate thread decimates."""
         self.set_parameters({
@@ -22485,6 +22563,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.DynamicRpmNotchesRateThread,
             self.ESCTelemLogRate,
             self.RateThreadPostFilterGyroLog,
+            self.RateThreadPrimaryGyroDt,
             self.DynamicRpmNotchesESCMask,
             self.WPYawBehaviour1RTL,
             self.AHRSSwitchBackendPositionNEReset,

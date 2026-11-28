@@ -152,7 +152,7 @@
 
 uint8_t Copter::calc_gyro_decimation(uint8_t gyro_decimation, uint16_t rate_hz)
 {
-    return MAX(uint8_t(DIV_ROUND_INT(ins.get_raw_gyro_rate_hz() / gyro_decimation, rate_hz)), 1U);
+    return MAX(uint8_t(DIV_ROUND_INT(ins.get_rate_loop_gyro_rate_hz() / gyro_decimation, rate_hz)), 1U);
 }
 
 static inline bool run_decimated_callback(uint8_t decimation_rate, uint8_t& decimation_count)
@@ -167,7 +167,7 @@ static inline bool run_decimated_callback(uint8_t decimation_rate, uint8_t& deci
 void Copter::rate_controller_thread()
 {
     uint8_t target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
-                                                     DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
+                                                     DIV_ROUND_INT(ins.get_rate_loop_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
     uint8_t rate_decimation = target_rate_decimation;
 
     // set up the decimation rates
@@ -234,6 +234,17 @@ void Copter::rate_controller_thread()
             continue;
         }
 
+        // the gyro feeding the rate loop follows the AHRS primary, which can move in flight
+        // to an IMU with a different sample rate. keep the rate loop rate as close as possible
+        // to what it was and redo everything that depends on the gyro rate
+        const uint16_t gyro_rate_hz = ins.get_rate_loop_gyro_rate_hz();
+        if (ins.get_rate_loop_gyro_instance() != rates.gyro_instance) {
+            const uint16_t prev_gyro_rate_hz = MAX(ins.get_raw_gyro_rate_hz(rates.gyro_instance), 1U);
+            rate_decimation = constrain_int16(DIV_ROUND_INT(uint32_t(rate_decimation) * gyro_rate_hz, prev_gyro_rate_hz), 1,
+                                              DIV_ROUND_INT(gyro_rate_hz, AP::scheduler().get_loop_rate_hz()));
+            rate_controller_set_rates(rate_decimation, rates, false);
+        }
+
         // set up rate thread requirements
         if (!using_rate_thread) {
             enable_fast_rate_loop(rate_decimation, rates);
@@ -252,7 +263,7 @@ void Copter::rate_controller_thread()
 #endif
 
         // we must use multiples of the actual sensor rate
-        const float sensor_dt = 1.0f * rate_decimation / ins.get_raw_gyro_rate_hz();
+        const float sensor_dt = 1.0f * rate_decimation / gyro_rate_hz;
         const uint32_t now_us = AP_HAL::micros();
         const uint32_t dt_us = now_us - last_run_us;
         const float dt = dt_us * 1.0e-6;
@@ -362,7 +373,7 @@ void Copter::rate_controller_thread()
 
         // make sure we have the latest target rate
         target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
-                                                 DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
+                                                 DIV_ROUND_INT(gyro_rate_hz, AP::scheduler().get_loop_rate_hz()));
         if (now_ms - last_notch_sample_ms >= 1000 || !was_using_rate_thread) {
             // update the PID notch sample rate at 1Hz if we are
             // enabled at runtime
@@ -395,14 +406,14 @@ void Copter::rate_controller_thread()
                 || (get_fast_rate_type() == FastRateType::FAST_RATE_FIXED_ARMED && !motors->armed())
                 || target_rate_decimation > rate_decimation)) {
             last_rate_check_ms = now_ms;
-            const uint32_t att_rate = ins.get_raw_gyro_rate_hz()/rate_decimation;
+            const uint32_t att_rate = gyro_rate_hz/rate_decimation;
             if (running_slow > 5 || AP::scheduler().get_extra_loop_us() > 0
 #if HAL_LOGGING_ENABLED
                 || AP::logger().in_log_download()
 #endif
                 || target_rate_decimation > rate_decimation) {
                 const uint8_t new_rate_decimation = MAX(rate_decimation + 1, target_rate_decimation);
-                const uint32_t new_attitude_rate = ins.get_raw_gyro_rate_hz() / new_rate_decimation;
+                const uint32_t new_attitude_rate = gyro_rate_hz / new_rate_decimation;
                 if (new_attitude_rate > AP::scheduler().get_filtered_loop_rate_hz()) {
                     rate_decimation = new_rate_decimation;
                     rate_controller_set_rates(rate_decimation, rates, true);
@@ -461,7 +472,8 @@ void Copter::rate_controller_filter_update()
 */
 void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high)
 {
-    const uint32_t attitude_rate = ins.get_raw_gyro_rate_hz() / rate_decimation;
+    rates.gyro_instance = ins.get_rate_loop_gyro_instance();
+    const uint32_t attitude_rate = ins.get_raw_gyro_rate_hz(rates.gyro_instance) / rate_decimation;
     attitude_control->set_notch_sample_rate(attitude_rate);
     hal.rcout->set_dshot_rate(SRV_Channels::get_dshot_rate(), attitude_rate);
     motors->set_dt_s(1.0f / attitude_rate);
@@ -477,7 +489,7 @@ void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRa
     rates.medium_logging_rate = calc_gyro_decimation(rate_decimation, 10);   // 10Hz
 #endif
     rates.main_loop_rate = calc_gyro_decimation(rate_decimation, AP::scheduler().get_filtered_loop_rate_hz());
-    rates.filter_rate = calc_gyro_decimation(rate_decimation, ins.get_raw_gyro_rate_hz() / 2);
+    rates.filter_rate = calc_gyro_decimation(rate_decimation, ins.get_rate_loop_gyro_rate_hz() / 2);
 }
 
 // enable the fast rate thread using the provided decimation rate and record the new output rates

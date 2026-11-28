@@ -746,6 +746,7 @@ private:
         uint8_t medium_logging_rate;
         uint8_t filter_rate;
         uint8_t main_loop_rate;
+        uint8_t gyro_instance;  // gyro feeding the rate loop when the rates were set
     };
 
     uint8_t calc_gyro_decimation(uint8_t gyro_decimation, uint16_t rate_hz);
