@@ -32,13 +32,14 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
       target EKF state prediction rate. Non-IMU data coming in faster is downsampled.
      */
 
-    // Calculate the expected EKF time step
-    if (dal.ins().get_loop_rate_hz() > 0) {
-        dtEkfAvg = 1.0f / dal.ins().get_loop_rate_hz();
-        dtEkfAvg = MAX(dtEkfAvg,EKF_TARGET_DT);
-    } else {
+    // Calculate the expected EKF time step. readIMUData() steps once the accumulated IMU time is within half
+    // an IMU sample of EKF_TARGET_DT, so the step is the nearest whole number of IMU samples (rounding ties down)
+    const uint32_t loop_rate_hz = dal.ins().get_loop_rate_hz();
+    if (loop_rate_hz == 0) {
         return false;
     }
+    const uint32_t imuSamplesPerStep = MAX((EKF_TARGET_DT_MS * loop_rate_hz + 499U) / 1000U, 1U);
+    dtEkfAvg = ftype(imuSamplesPerStep) / ftype(loop_rate_hz);
 
     // find the maximum time delay for all potential sensors
     uint16_t maxTimeDelay_ms = MAX(frontend->_hgtDelay_ms ,
@@ -90,7 +91,9 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
 #endif
 
     // calculate the IMU buffer length required to accommodate the maximum delay with some allowance for jitter
-    imu_buffer_length = (maxTimeDelay_ms / (uint16_t)(EKF_TARGET_DT_MS)) + 1;
+    // use the expected EKF time step if it is shorter than EKF_TARGET_DT, otherwise the buffer will not span the delay
+    // (both step lengths are scaled by loop_rate_hz to keep this in integer maths)
+    imu_buffer_length = (maxTimeDelay_ms * loop_rate_hz) / MIN(imuSamplesPerStep * 1000U, EKF_TARGET_DT_MS * loop_rate_hz) + 1;
 
     // set the observation buffer length to handle the minimum time of arrival between observations in combination
     // with the worst case delay from current time to ekf fusion time
