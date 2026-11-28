@@ -564,6 +564,17 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     #error "AP_BATT_MONITOR_MAX_INSTANCES too large, reset_remaining_mask() will cause an assert above 16"
 #endif
 
+#if HAL_GCS_ENABLED
+    // @Param: _CURR_SMOOTH
+    // @DisplayName: Battery current telemetry smoothing time constant
+    // @Description: Low-pass filter time constant in seconds for the current reported for all batteries in the MAVLink BATTERY_STATUS and SYS_STATUS messages. Set to 0 to report instantaneous current. This applies only to telemetry.
+    // @Units: s
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_CURR_SMOOTH", 57, AP_BattMonitor, _gcs_current_smooth_sec, 0),
+#endif
+
     AP_GROUPEND
 };
 

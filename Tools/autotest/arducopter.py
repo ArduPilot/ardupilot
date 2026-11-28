@@ -22500,6 +22500,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_SetHome,
             self.HomeCircleInclusionFence_Avoidance_SetHome,
             self.BatteryInternalUseOnly,
+            self.BatteryCurrentSmoothing,
             self.CommonOriginExternalAHRS,
             self.CommonOriginExternalAHRSReceives,
             self.AHRSExternalNoAttitudeAirspeedIndex,
@@ -24893,6 +24894,47 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.assert_received_message_field_values('BATTERY_STATUS', {
                 "id": 1
             })
+
+    def BatteryCurrentSmoothing(self):
+        '''check the configurable step response of MAVLink battery current'''
+        self.set_parameters({
+            "BATT_MONITOR": 4,  # analog voltage and current
+            "BATT_AMP_PERVLT": 17,
+            "BATT_AMP_OFFSET": 0,
+        })
+        self.reboot_sitl()
+        self.assert_parameter_value("BATT_CURR_SMOOTH", 0)
+
+        messages = (("BATTERY_STATUS", 0), ("SYS_STATUS", None))
+        try:
+            for message, _ in messages:
+                self.set_message_rate_hz(message, 10)
+
+            # With the motors stopped, a -1 V offset produces a 17 A step.
+            self.set_parameter("BATT_AMP_OFFSET", -1)
+            for message, instance in messages:
+                self.wait_message_field_values(message, {"current_battery": 1700},
+                                               instance=instance, epsilon=20, timeout=2)
+
+            time_constant = 10
+            self.set_parameter("BATT_CURR_SMOOTH", time_constant)
+            self.delay_sim_time(0.5, reason="seed the filter at 17 A")
+            start = self.get_sim_time()
+            self.set_parameter("BATT_AMP_OFFSET", 0)
+            self.delay_sim_time(time_constant, reason="observe the filtered step after one time constant")
+            for message, instance in messages:
+                status = self.assert_receive_message(message, instance=instance)
+                elapsed = self.get_sim_time_cached() - start
+                expected = 1700 * math.exp(-elapsed / time_constant)
+                self.assert_message_field_values(status, {"current_battery": expected}, epsilon=80)
+
+            self.set_parameter("BATT_CURR_SMOOTH", 0)
+            for message, instance in messages:
+                self.wait_message_field_values(message, {"current_battery": 0},
+                                               instance=instance, epsilon=20, timeout=2)
+        finally:
+            for message, _ in messages:
+                self.set_message_rate_hz(message, 0)
 
     def MAV_CMD_MISSION_START_p1_p2(self):
         '''make sure we deny MAV_CMD_MISSION_START if either p1 or p2 non-zero'''
