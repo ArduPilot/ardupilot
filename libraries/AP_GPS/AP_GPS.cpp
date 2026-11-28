@@ -690,9 +690,20 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         if (dstate->probe_baud == 0) {
             dstate->probe_baud = port->get_baud_rate();
         } else {
-            dstate->current_baud++;
-            if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
-                dstate->current_baud = 0;
+            // the next rate in the cycle which GPSn_PROBE_BAUDS asks
+            // for; its bits are in ascending order of baud rate
+            static const uint8_t probe_bauds_bit[] = { 1, 5, 0, 2, 3, 4, 6, 7 };
+            static_assert(ARRAY_SIZE(probe_bauds_bit) == ARRAY_SIZE(_baudrates), "probe_bauds_bit must match _baudrates");
+            const uint16_t probe_bauds = params[instance].probe_bauds;
+            for (uint8_t i=0; i<ARRAY_SIZE(_baudrates); i++) {
+                dstate->current_baud++;
+                if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
+                    dstate->current_baud = 0;
+                }
+                if (probe_bauds == 0 ||
+                    (probe_bauds & (1U<<probe_bauds_bit[dstate->current_baud]))) {
+                    break;
+                }
             }
             dstate->probe_baud = _baudrates[dstate->current_baud];
         }
