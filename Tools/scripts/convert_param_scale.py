@@ -282,7 +282,7 @@ def apply_renames(lines: List[Line], renames: Dict[str, Rename], sig_digits: int
                   path: str = '') -> List[Change]:
     '''Rename (and rescale) the parameters listed in renames, in place in lines.
 
-    Lines whose new name already exists in the file are left untouched with a warning.
+    Lines renamed to a different name that already exists are left untouched with a warning.
     '''
     present = {line.name for line in lines if line.name is not None}
     changes = []
@@ -290,7 +290,7 @@ def apply_renames(lines: List[Line], renames: Dict[str, Rename], sig_digits: int
         if not isinstance(line, ParamLine) or line.name not in renames:
             continue
         rename = renames[line.name]
-        if rename.new in present:
+        if rename.new != line.name and rename.new in present:
             logging.warning("%s: line %u: %s not converted, %s already present", path, i + 1, line.name, rename.new)
             continue
         new_line = line.replace(name=rename.new, value=convert_value(line, rename, sig_digits), ptype=rename.new_type)
