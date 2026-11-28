@@ -1,0 +1,7 @@
+# Rover parameters for models/buggy.gltf, applied on top of
+# Tools/autotest/default_params/rover.parm
+ATC_STR_RAT_FF  0.4
+
+# Rover's 50Hz control loop needs the gyro only 1.8x ahead of it, so
+# 100Hz of physics is the floor.
+SIM_RATE_HZ 100

@@ -14,12 +14,14 @@ import atexit
 import binascii
 import datetime
 import errno
+import glob
 import math
 import optparse
 import os
 import os.path
 import re
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
@@ -27,6 +29,7 @@ import tempfile
 import textwrap
 import time
 
+from pysim import godot as godot_physics
 from pysim import util
 from pysim import vehicleinfo
 
@@ -1508,6 +1511,13 @@ group_sim.add_option("", "--model",
                      type='string',
                      default=None,
                      help="Override simulation model to use")
+group_sim.add_option("", "--godot",
+                     action='store_true',
+                     default=False,
+                     help="take the vehicle physics from the Godot and Jolt backend in "
+                     "libraries/SITL_Godot, shown in its own window; the "
+                     "frame then only chooses the default parameters. Needs Godot 4.4 "
+                     "or later on the PATH or in $GODOT")
 group_sim.add_option("", "--use-dir",
                      type='string',
                      default=None,
@@ -1840,6 +1850,55 @@ else:
 if cmd_opts.instance == 0:
     kill_tasks()
 
+if cmd_opts.godot:
+    if cmd_opts.model is not None:
+        print("--godot sets the model; do not also give --model")
+        sys.exit(1)
+    godot_model = godot_physics.model_for(cmd_opts.vehicle, cmd_opts.frame)
+    if godot_model is None:
+        print("No Godot model for %s frame %s; there are for frames: %s" %
+              (cmd_opts.vehicle, cmd_opts.frame, ", ".join(godot_physics.frames_for(cmd_opts.vehicle)) or "none"))
+        sys.exit(1)
+    frame_infos["model"] = godot_physics.SITL_MODEL
+    frame_infos.pop("frame", None)  # or start_vehicle gives SITL the frame's own physics
+    # SITL looks up a frame's default parameters by model name, which for
+    # JSON matches no frame, so add them explicitly ahead of any others
+    frame_defaults = frame_infos.get("default_params_filename", [])
+    if not isinstance(frame_defaults, list):
+        frame_defaults = [frame_defaults]
+    cmd_opts.add_param_file = ([os.path.join(autotest_dir, p) for p in frame_defaults] +
+                               [godot_physics.params_filepath(godot_model)] +
+                               (cmd_opts.add_param_file or []))
+    # the backend places its ground imagery around home
+    godot_home = None
+    if cmd_opts.custom_location:
+        godot_home = ",".join(cmd_opts.custom_location.split(",")[0:2])
+    elif cmd_opts.location:
+        godot_home = ",".join(str(x) for x in find_location_by_name(cmd_opts.location)[0:2])
+    # contiguous instances up to the backend's limit of 5 share one world
+    # and can collide; otherwise each instance gets its own world
+    shared = (1 < len(instances) <= 5 and
+              list(instances) == list(range(instances[0], instances[0] + len(instances))))
+    if shared and not cmd_opts.auto_sysid:
+        progress("Hint: add --auto-sysid so MAVProxy can address each vehicle "
+                 "('vehicle 2' switches)")
+    groups = [list(instances)] if shared else [[i] for i in instances]
+    for group in groups:
+        logfile = os.path.join(tempfile.gettempdir(), "godot-sitl-%u.log" % group[0])
+        progress("Starting Godot physics backend for instance%s %s, logging to %s" %
+                 ("s" if len(group) > 1 else "", ",".join(str(i) for i in group), logfile))
+        backend = godot_physics.Backend(logfile, instance=group[0], headless=False)
+        try:
+            backend.start([godot_model] * len(group),
+                          godot_physics.reversed_servos_for(cmd_opts.vehicle, cmd_opts.frame),
+                          home=godot_home,
+                          launcher=godot_physics.launcher_for(cmd_opts.vehicle, cmd_opts.frame),
+                          water=godot_physics.water_for(cmd_opts.vehicle, cmd_opts.frame),
+                          wind=godot_physics.wind_for(cmd_opts.vehicle, cmd_opts.frame))
+        except (FileNotFoundError, RuntimeError) as e:
+            print(e)
+            sys.exit(1)
+
 if cmd_opts.tracker:
     start_antenna_tracker(cmd_opts)
 
@@ -1898,6 +1957,25 @@ else:
                 raise
         finally:
             instance_dir.append(i_dir)
+
+
+def clear_godot_lua():
+    '''a model's lua companion left in scripts/ would run under any SITL
+    started there later, Godot or not: the hexapod's gait drives servos 1-18'''
+    for i_dir in instance_dir:
+        for stale in glob.glob(os.path.join(i_dir, "scripts", "godot_*.lua")):
+            os.unlink(stale)
+
+
+if cmd_opts.godot:
+    clear_godot_lua()
+    atexit.register(clear_godot_lua)
+    if godot_physics.lua_filepath(godot_model) is not None:
+        # what the model's parameters cannot set, such as the hexapod's gait
+        for i_dir in instance_dir:
+            os.makedirs(os.path.join(i_dir, "scripts"), exist_ok=True)
+            shutil.copy(godot_physics.lua_filepath(godot_model),
+                        os.path.join(i_dir, "scripts", "godot_%s.lua" % godot_model))
 
 if True:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild

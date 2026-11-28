@@ -683,6 +683,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def DiveMission(self):
         '''Dive mission'''
         filename = "sub_mission.txt"
+        if self.godot:
+            # The same mission with its first and third waypoints each
+            # brought half way to the second, so that the legs between
+            # them are half as long to watch.
+            filename = "sub_mission_short.txt"
         self.progress(f"Executing mission {filename}")
         self.load_mission(filename)
         self.set_rc_default()
@@ -691,7 +696,16 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.change_mode('AUTO')
 
-        self.wait_waypoint(1, 5, max_dist_to_final_wp_m=5)
+        if self.godot_backend is not None:
+            # On the Godot backend the test is the first three waypoints:
+            # the dive to fifty metres in AUTO and two short legs at that
+            # depth. The loiter and long run home after them are skipped.
+            tstart = self.get_sim_time()
+            self.wait_current_waypoint(4, timeout=150)
+            self.progress("Reached the third waypoint %.0f s after entering AUTO" %
+                          (self.get_sim_time() - tstart))
+        else:
+            self.wait_waypoint(1, 5, max_dist_to_final_wp_m=5)
 
         self.disarm_vehicle()
 

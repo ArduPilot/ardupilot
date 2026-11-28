@@ -544,6 +544,43 @@ void JSON::recv_fdm(const struct sitl_input &input)
     last_timestamp_s = state.timestamp_s;
     frame_counter++;
 
+    if (use_time_sync && !state.no_lockstep) { // pace to the achieved speedup
+        const uint64_t wall_us = get_wall_time_us();
+        if (!is_equal(target_speedup, speedup_last_set)) { // SITL changed the speedup
+            speedup_wanted = target_speedup;
+        }
+        if (speedup_check_wall_us == 0) {
+            speedup_check_wall_us = wall_us;
+            speedup_check_sim_us = time_now_us;
+            speedup_settle_us = wall_us + 5000000ULL; // ignore the backend starting
+        } else if (wall_us - speedup_check_wall_us > 2000000ULL) {
+            const float achieved = (time_now_us - speedup_check_sim_us) / float(wall_us - speedup_check_wall_us);
+            if (wall_us > speedup_settle_us && time_now_us > speedup_check_sim_us) { // held physics is not slow
+                if (achieved < target_speedup * 0.9f) {
+                    speedup_short++; // only a sustained shortfall counts
+                    if (speedup_short >= 3) {
+                        target_speedup = MAX(achieved, 0.1f); // zero would divide by zero
+                        if (speedup_short == 3) {
+                            printf("JSON: cannot hold %.1fx, backing off to %.1fx\n", speedup_wanted, target_speedup);
+                        }
+                    }
+                } else {
+                    speedup_short = 0;
+                    if (target_speedup < speedup_wanted) {
+                        target_speedup = MIN(speedup_wanted, target_speedup * 1.5f); // keeping up: take back
+                    }
+                }
+            }
+            if (wall_us - speedup_report_us > 10000000ULL) {
+                printf("JSON: rate %.2fx real time (asked %.1fx)\n", achieved, speedup_wanted);
+                speedup_report_us = wall_us;
+            }
+            speedup_check_wall_us = wall_us;
+            speedup_check_sim_us = time_now_us;
+        }
+        speedup_last_set = target_speedup;
+    }
+
 #if 0
 
     float roll, pitch, yaw;

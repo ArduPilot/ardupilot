@@ -1,0 +1,92 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {"shapes": [{"type": "box", "box": {"size": [0.338, 0.254, 0.457]}}]},
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.5, "dynamicFriction": 0.4, "restitution": 0.1}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "sub",
+   "translation": [0, 0, 0],
+   "children": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 10.5, "inertiaDiagonal": [0.478, 0.565, 0.313], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"chassis": {"style": "sub", "size": [0.338, 0.254, 0.457]}, "water": {"level": 0.0, "density": 1000.0}}
+   }
+  },
+  {"name": "hull", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {
+   "name": "thruster_1",
+   "translation": [-0.14, 0.0, 0.17],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 1, "maxThrust": 40.0, "bidirectional": true, "thrustExpo": 0.2, "timeConstant": 0.15, "torqueRatio": 0.01, "diameter": 0.076, "direction": "ccw"}}
+   },
+   "rotation": [0.27059805, -0.65328148, 0.65328148, 0.27059805]
+  },
+  {
+   "name": "thruster_2",
+   "translation": [0.14, 0.0, 0.17],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 2, "maxThrust": 40.0, "bidirectional": true, "thrustExpo": 0.2, "timeConstant": 0.15, "torqueRatio": 0.01, "diameter": 0.076, "direction": "cw"}}
+   },
+   "rotation": [0.27059805, 0.65328148, -0.65328148, 0.27059805]
+  },
+  {
+   "name": "thruster_3",
+   "translation": [-0.14, 0.0, -0.17],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 3, "maxThrust": 40.0, "bidirectional": true, "thrustExpo": 0.2, "timeConstant": 0.15, "torqueRatio": 0.01, "diameter": 0.076, "direction": "cw"}}
+   },
+   "rotation": [0.65328148, -0.27059805, 0.27059805, 0.65328148]
+  },
+  {
+   "name": "thruster_4",
+   "translation": [0.14, 0.0, -0.17],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 4, "maxThrust": 40.0, "bidirectional": true, "thrustExpo": 0.2, "timeConstant": 0.15, "torqueRatio": 0.01, "diameter": 0.076, "direction": "ccw"}}
+   },
+   "rotation": [0.65328148, 0.27059805, -0.27059805, 0.65328148]
+  },
+  {
+   "name": "thruster_5",
+   "translation": [-0.12, 0.0762, 0.0],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 5, "maxThrust": 40.0, "bidirectional": true, "thrustExpo": 0.2, "timeConstant": 0.15, "torqueRatio": 0.01, "diameter": 0.076, "direction": "ccw"}}
+   },
+   "rotation": [1.0, 0.0, 0.0, 0.0]
+  },
+  {
+   "name": "thruster_6",
+   "translation": [0.12, 0.0762, 0.0],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 6, "maxThrust": 40.0, "bidirectional": true, "thrustExpo": 0.2, "timeConstant": 0.15, "torqueRatio": 0.01, "diameter": 0.076, "direction": "cw"}}
+   },
+   "rotation": [1.0, 0.0, 0.0, 0.0]
+  },
+  {"name": "hull_buoyancy", "translation": [0, 0.04, 0], "extensions": {"ARDUPILOT_sitl": {"floater": {"fluid": "water", "volume": 0.01055, "height": 0.254}}}},
+  {
+   "name": "hull_drag_fore",
+   "translation": [0.0, 0.0, 0.1828],
+   "extensions": {"ARDUPILOT_sitl": {"floater": {"fluid": "water", "volume": 0.0, "height": 0.254, "dragArea": [0.02612, 0.04248, 0.01932], "damping": 3.0}}}
+  },
+  {
+   "name": "hull_drag_aft",
+   "translation": [0.0, 0.0, -0.1828],
+   "extensions": {"ARDUPILOT_sitl": {"floater": {"fluid": "water", "volume": 0.0, "height": 0.254, "dragArea": [0.02612, 0.04248, 0.01932], "damping": 3.0}}}
+  },
+  {
+   "name": "hull_drag_port",
+   "translation": [0.1352, 0.0, 0.0],
+   "extensions": {"ARDUPILOT_sitl": {"floater": {"fluid": "water", "volume": 0.0, "height": 0.254, "dragArea": [0.02612, 0.04248, 0.01932], "damping": 3.0}}}
+  },
+  {
+   "name": "hull_drag_stbd",
+   "translation": [-0.1352, 0.0, 0.0],
+   "extensions": {"ARDUPILOT_sitl": {"floater": {"fluid": "water", "volume": 0.0, "height": 0.254, "dragArea": [0.02612, 0.04248, 0.01932], "damping": 3.0}}}
+  }
+ ]
+}

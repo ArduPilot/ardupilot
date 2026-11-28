@@ -1,0 +1,69 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {
+   "shapes": [
+    {"type": "box", "box": {"size": [0.3, 0.06, 0.3]}},
+    {"type": "box", "box": {"size": [0.05, 0.5, 0.05]}},
+    {"type": "box", "box": {"size": [0.4, 0.4, 0.04]}},
+    {"type": "box", "box": {"size": [0.02, 0.02, 0.25]}}
+   ]
+  },
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 1.0, "dynamicFriction": 0.9, "restitution": 0.0}], "physicsJoints": [{}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0, 5, 2]}],
+ "nodes": [
+  {
+   "name": "tracker",
+   "translation": [0, 0.56, 0],
+   "children": [6, 7, 8],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 0.5, "inertiaDiagonal": [0.006733, 0.006733, 0.013333], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.9, 0.9, 0.92]}}
+   },
+   "rotation": [-0.25881905, 0.0, 0.0, 0.96592583]
+  },
+  {"name": "base_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {
+   "name": "base",
+   "translation": [0, 0.03, 0],
+   "children": [1],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 20.0, "inertiaDiagonal": [0.156, 0.3, 0.156], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.16, 0.17, 0.2]}}
+   }
+  },
+  {"name": "post_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {
+   "name": "yaw",
+   "translation": [0, -0.25, 0],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 2, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 1, "angleMin": -1.0, "angleMax": 1.0, "maxRate": 120.0, "maxTorque": 5.0, "continuous": true}}
+   },
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  },
+  {
+   "name": "post",
+   "translation": [0, 0.31, 0],
+   "children": [3, 4],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 0.5, "inertiaDiagonal": [0.010521, 0.000208, 0.010521], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.55, 0.57, 0.6]}}
+   }
+  },
+  {"name": "dish_panel", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {"name": "dish_feed", "translation": [0, 0, 0.125], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}}},
+  {
+   "name": "pitch",
+   "translation": [0, 0, 0],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 5, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 2, "angleMin": -0.0, "angleMax": -90.0, "maxRate": 30.0, "maxTorque": 5.0, "builtAngle": -30.0}}
+   }
+  }
+ ]
+}

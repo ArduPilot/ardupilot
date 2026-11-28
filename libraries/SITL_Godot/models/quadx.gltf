@@ -1,0 +1,124 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {
+   "shapes": [
+    {"type": "box", "box": {"size": [0.12, 0.05, 0.16]}},
+    {"type": "box", "box": {"size": [0.34, 0.015, 0.02]}},
+    {"type": "cylinder", "cylinder": {"height": 0.12, "radiusTop": 0.006, "radiusBottom": 0.006}},
+    {"type": "sphere", "sphere": {"radius": 0.012}}
+   ]
+  },
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.9, "dynamicFriction": 0.8, "restitution": 0.05}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "quadx",
+   "translation": [0, 0.135, 0],
+   "children": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 1.5, "inertiaDiagonal": [0.015, 0.028, 0.015], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"drag": {"area": [0.05, 0.08, 0.05]}, "chassis": {"style": "multirotor", "size": [0.16, 0.07, 0.16]}}
+   }
+  },
+  {"name": "frame", "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {"name": "arm_fr_bl", "rotation": [0, 0.38268343, 0, 0.92387953], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {"name": "arm_fl_br", "rotation": [0, -0.38268343, 0, 0.92387953], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {"name": "leg_fl", "translation": [0.08, -0.06, 0.08], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {"name": "foot_fl", "translation": [0.08, -0.12, 0.08], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}}},
+  {"name": "leg_fr", "translation": [-0.08, -0.06, 0.08], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {"name": "foot_fr", "translation": [-0.08, -0.12, 0.08], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}}},
+  {"name": "leg_bl", "translation": [0.08, -0.06, -0.08], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {"name": "foot_bl", "translation": [0.08, -0.12, -0.08], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}}},
+  {"name": "leg_br", "translation": [-0.08, -0.06, -0.08], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {"name": "foot_br", "translation": [-0.08, -0.12, -0.08], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}}},
+  {
+   "name": "motor1",
+   "translation": [-0.12, 0.025, 0.12],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {
+      "servo": 1,
+      "pwmMin": 1000,
+      "pwmMax": 2000,
+      "maxThrust": 9.8,
+      "thrustExpo": 0.65,
+      "torqueRatio": 0.016,
+      "direction": "ccw",
+      "timeConstant": 0.03,
+      "diameter": 0.254,
+      "pitchSpeed": 20.0,
+      "inplaneDrag": 0.02
+     }
+    }
+   }
+  },
+  {
+   "name": "motor2",
+   "translation": [0.12, 0.025, -0.12],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {
+      "servo": 2,
+      "pwmMin": 1000,
+      "pwmMax": 2000,
+      "maxThrust": 9.8,
+      "thrustExpo": 0.65,
+      "torqueRatio": 0.016,
+      "direction": "ccw",
+      "timeConstant": 0.03,
+      "diameter": 0.254,
+      "pitchSpeed": 20.0,
+      "inplaneDrag": 0.02
+     }
+    }
+   }
+  },
+  {
+   "name": "motor3",
+   "translation": [0.12, 0.025, 0.12],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {
+      "servo": 3,
+      "pwmMin": 1000,
+      "pwmMax": 2000,
+      "maxThrust": 9.8,
+      "thrustExpo": 0.65,
+      "torqueRatio": 0.016,
+      "direction": "cw",
+      "timeConstant": 0.03,
+      "diameter": 0.254,
+      "pitchSpeed": 20.0,
+      "inplaneDrag": 0.02
+     }
+    }
+   }
+  },
+  {
+   "name": "motor4",
+   "translation": [-0.12, 0.025, -0.12],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {
+      "servo": 4,
+      "pwmMin": 1000,
+      "pwmMax": 2000,
+      "maxThrust": 9.8,
+      "thrustExpo": 0.65,
+      "torqueRatio": 0.016,
+      "direction": "cw",
+      "timeConstant": 0.03,
+      "diameter": 0.254,
+      "pitchSpeed": 20.0,
+      "inplaneDrag": 0.02
+     }
+    }
+   }
+  }
+ ]
+}

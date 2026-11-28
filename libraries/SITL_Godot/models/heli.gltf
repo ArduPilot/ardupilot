@@ -1,0 +1,77 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {
+   "shapes": [
+    {"type": "box", "box": {"size": [0.2, 0.25, 0.55]}},
+    {"type": "box", "box": {"size": [0.04, 0.04, 0.7]}},
+    {"type": "box", "box": {"size": [0.03, 0.03, 0.6]}},
+    {"type": "box", "box": {"size": [0.03, 0.03, 0.6]}},
+    {"type": "box", "box": {"size": [0.01, 0.2, 0.12]}}
+   ]
+  },
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.6, "dynamicFriction": 0.5, "restitution": 0.05}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "heli",
+   "translation": [0, 0.34, 0],
+   "children": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 4.54, "inertiaDiagonal": [0.35, 0.25, 0.12], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"drag": {"area": [0.1, 0.12, 0.05]}, "chassis": {"style": "helicopter", "size": [0.2, 0.25, 0.55]}}
+   }
+  },
+  {"name": "fuselage", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {"name": "tail_boom", "translation": [0, 0.08, -0.55], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {"name": "skid_left", "translation": [0.15, -0.32, 0.05], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {"name": "skid_right", "translation": [-0.15, -0.32, 0.05], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}}},
+  {"name": "fin_box", "translation": [0, 0.1, -0.88], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 4}, "physicsMaterial": 0}}}},
+  {
+   "name": "main_rotor",
+   "translation": [0, 0.3, 0],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "heliRotor": {
+      "swashServo1": 1,
+      "swashServo2": 2,
+      "swashServo3": 3,
+      "rscServo": 8,
+      "collectiveMin": -25,
+      "collectiveMax": 25,
+      "cyclicScale": 10,
+      "nominalRpm": 1500,
+      "spoolTime": 5,
+      "thrustScale": 9.0,
+      "torqueRatio": 0.035,
+      "hubStiffness": 18,
+      "flapTimeConstant": 0.04,
+      "direction": "cw",
+      "diameter": 1.4
+     }
+    }
+   }
+  },
+  {
+   "name": "tail_rotor",
+   "translation": [0.06, 0.1, -0.85],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {"servo": 4, "bidirectional": true, "maxThrust": 8.0, "thrustExpo": 0.2, "torqueRatio": 0.0, "direction": "ccw", "timeConstant": 0.02, "diameter": 0.22, "pitchSpeed": 0.0}
+    }
+   },
+   "rotation": [0.0, 0.0, -0.70710678, 0.70710678]
+  },
+  {"name": "stabiliser", "translation": [0, 0.12, -0.75], "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.16, "chord": 0.1, "cd0": 0.01, "stallAngle": 20}}}},
+  {
+   "name": "fin",
+   "translation": [0, 0.2, -0.85],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.18, "chord": 0.1, "cd0": 0.01, "stallAngle": 20}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  }
+ ]
+}

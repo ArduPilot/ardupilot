@@ -74,6 +74,14 @@ private:
     double base_timestamp_s;
     uint64_t base_time_us;
 
+    uint64_t speedup_check_wall_us = 0; // window measuring achieved speedup
+    uint64_t speedup_check_sim_us = 0;
+    uint64_t speedup_settle_us = 0;
+    uint64_t speedup_report_us = 0;
+    uint8_t speedup_short = 0;
+    float speedup_wanted = 0;
+    float speedup_last_set = 0;
+
     void output_servos(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
 
