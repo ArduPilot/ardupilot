@@ -352,8 +352,8 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         break;
     }
     const auto loc = gps.location(instance);
-    msg.latitude = loc.lat * 1E-7;
-    msg.longitude = loc.lng * 1E-7;
+    msg.latitude = (double)loc.lat / 1.0E7;
+    msg.longitude = (double)loc.lng / 1.0E7;
 
     int32_t alt_cm;
     if (!loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
@@ -662,8 +662,8 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
 
     Location loc;
     if (ahrs.get_location(loc)) {
-        msg.pose.position.latitude = loc.lat * 1E-7;
-        msg.pose.position.longitude = loc.lng * 1E-7;
+        msg.pose.position.latitude = (double)loc.lat / 1.0E7;
+        msg.pose.position.longitude = (double)loc.lng / 1.0E7;
         // TODO this is assumed to be absolute frame in WGS-84 as per the GeoPose message definition in ROS.
         // Use loc.get_alt_frame() to convert if necessary.
         msg.pose.position.altitude = loc.alt * 0.01; // Transform from cm to m
@@ -782,8 +782,8 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
     // LLA is WGS-84 geodetic coordinate.
     // Altitude converted from cm to m.
     if (ahrs.get_origin(ekf_origin)) {
-        msg.position.latitude = ekf_origin.lat * 1E-7;
-        msg.position.longitude = ekf_origin.lng * 1E-7;
+        msg.position.latitude = (double)ekf_origin.lat / 1.0E7;
+        msg.position.longitude = (double)ekf_origin.lng / 1.0E7;
         msg.position.altitude = ekf_origin.alt * 0.01;
     }
 }
