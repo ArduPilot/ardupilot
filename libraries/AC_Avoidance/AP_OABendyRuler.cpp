@@ -39,6 +39,18 @@ const float OA_BENDYRULER_LOW_SPEED_SQUARED = (0.2f * 0.2f);    // when ground c
 
 #define VERTICAL_ENABLED APM_BUILD_COPTER_OR_HELI
 
+// distance step2 checks past step1's location.  This is the step2
+// lookahead, raised to OA_BENDYRULER_LOOKAHEAD_STEP2_MIN, but no
+// further than the destination unless the lookahead itself had to
+// be raised
+static float step2_distance(float lookahead_step2_dist, float dist_to_dest)
+{
+    if (lookahead_step2_dist < OA_BENDYRULER_LOOKAHEAD_STEP2_MIN) {
+        return OA_BENDYRULER_LOOKAHEAD_STEP2_MIN;
+    }
+    return MIN(lookahead_step2_dist, dist_to_dest);
+}
+
 const AP_Param::GroupInfo AP_OABendyRuler::var_info[] = {
 
     // @Param: LOOKAHEAD
@@ -191,7 +203,7 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
                 // perform second stage test in three directions looking for obstacles
                 const float test_bearings[] { 0.0f, 45.0f, -45.0f };
                 const float bearing_to_dest2 = test_loc.get_bearing_to(destination) * 0.01f;
-                float distance2 = constrain_float(lookahead_step2_dist, OA_BENDYRULER_LOOKAHEAD_STEP2_MIN, test_loc.get_distance(destination));
+                const float distance2 = step2_distance(lookahead_step2_dist, test_loc.get_distance(destination));
                 for (uint8_t j = 0; j < ARRAY_SIZE(test_bearings); j++) {
                     float bearing_test2 = wrap_180(bearing_to_dest2 + test_bearings[j]);
                     Location test_loc2 = test_loc;
@@ -291,7 +303,7 @@ bool AP_OABendyRuler::search_vertical_path(const Location &current_loc, const Lo
                 } else { 
                     bearing_to_dest2 = test_loc.get_bearing_to(destination) * 0.01f;
                 }
-                float distance2 = constrain_float(lookahead_step2_dist, OA_BENDYRULER_LOOKAHEAD_STEP2_MIN, test_loc.get_distance(destination));
+                const float distance2 = step2_distance(lookahead_step2_dist, test_loc.get_distance(destination));
 
                 for (uint8_t j = 0; j < ARRAY_SIZE(test_pitch_step2); j++) {
                     float bearing_test2 = wrap_180(test_pitch_step2[j]);
