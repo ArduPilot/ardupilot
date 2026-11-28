@@ -88,6 +88,7 @@ static const eventmask_t EVT_PWM_START  = EVENT_MASK(12);
 // EVT_PWM_SYNTHETIC_SEND  = 13
 static const eventmask_t EVT_PWM_SEND_NEXT  = EVENT_MASK(14);
 static const eventmask_t EVT_LED_SEND  = EVENT_MASK(15);
+// EVT_ONESHOT_TRIGGER  = 17
 
 // #pragma GCC optimize("Og")
 
@@ -159,6 +160,7 @@ void RCOutput::init()
 #endif
     chMtxObjectInit(&trigger_mutex);
     chVTObjectInit(&_dshot_rate_timer);
+    chVTObjectInit(&oneshot_trigger_timer);
     // setup default output rate of 50Hz
     set_freq(0xFFFF ^ ((1U<<chan_offset)-1), 50);
 
@@ -242,7 +244,7 @@ void RCOutput::rcout_thread()
     // dshot is quite sensitive to timing, it's important to output pulses as
     // regularly as possible at the correct bitrate
     while (true) {
-        const auto mask = chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND);
+        const auto mask = chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND | EVT_ONESHOT_TRIGGER);
         const bool have_pwm_event = (mask & (EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND)) != 0;
         // start the clock
         last_thread_run_us = rcout_micros();
@@ -275,6 +277,10 @@ void RCOutput::rcout_thread()
             }
         }
 
+        if ((mask & EVT_ONESHOT_TRIGGER) && !in_soft_serial()) {
+            start_group_pulses_after_timer();
+        }
+
         // process any pending RC output requests
         timer_tick(cycle_start_us, timeout_period_us);
 #if RCOU_DSHOT_TIMING_DEBUG
@@ -300,6 +306,18 @@ __RAMFUNC__ void RCOutput::dshot_update_tick(virtual_timer_t* vt, void* p)
         chVTSetI(&rcout->_dshot_rate_timer, chTimeUS2I(rcout->_dshot_period_us), dshot_update_tick, p);
     }
     chEvtSignalI(rcout->rcout_thread_ctx, EVT_PWM_SYNTHETIC_SEND);
+    chSysUnlockFromISR();
+}
+
+/*
+  the oneshot pulses a push did not wait for, and the gap after them, are
+  over: wake the rcout thread to start that push's pulses
+ */
+__RAMFUNC__ void RCOutput::oneshot_trigger_tick(virtual_timer_t* vt, void* p)
+{
+    chSysLockFromISR();
+    RCOutput* rcout = (RCOutput*)p;
+    chEvtSignalI(rcout->rcout_thread_ctx, EVT_ONESHOT_TRIGGER);
     chSysUnlockFromISR();
 }
 
@@ -777,8 +795,11 @@ void RCOutput::push_local(void)
 
     uint16_t widest_pulse = 0;
     uint8_t need_trigger = 0;
+    bool oneshot_trigger_needed = false;
 
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
+    // another thread's trigger must not start pulses between two channels' writes
+    chMtxLock(&trigger_mutex);
     for (auto &group : pwm_group_list) {
         if (in_soft_serial()) {
             continue;
@@ -845,6 +866,9 @@ void RCOutput::push_local(void)
                     if (period_us > 0 || is_dshot_protocol(group.current_mode)) {
                         const uint8_t i = &group - pwm_group_list;
                         need_trigger |= (1U<<i);
+                        if (!is_dshot_protocol(group.current_mode)) {
+                            oneshot_trigger_needed = true;
+                        }
                     }
                 }
             }
@@ -856,14 +880,36 @@ void RCOutput::push_local(void)
     }
 
     trigger_groupmask = need_trigger;
+    pushed_widest_pulse = widest_pulse + 50;
 
+    rcout_timer_t waited_for_trigger_us = 0;
+    uint16_t wait_us = 0;
     if (trigger_groupmask) {
-        trigger_groups();
+        const rcout_timer_t now = rcout_micros();
+        if (!pulse_separation_pending(now)) {
+            start_group_pulses();
+        } else if (oneshot_trigger_needed && force_trigger && rcout_thread_ctx != nullptr) {
+            // while force_trigger is set, as it is while the fast rate loop drives the outputs, a push
+            // does not wait for the last oneshot pulses: a timer starts its pulses once those and the
+            // gap after them are over
+            set_oneshot_trigger_timer(now);
+        } else {
+            waited_for_trigger_us = last_pulse_trigger_us;
+            wait_us = AP_HAL::timeout_remaining(last_pulse_trigger_us, now, trigger_widest_pulse);
+        }
     }
+    chMtxUnlock(&trigger_mutex);
 
-    // set trigger_widest_pulse trigger_groups() so the wait inside
-    // trigger_groups() gets the previous pulse's width, not this ones
-    trigger_widest_pulse = widest_pulse + 50;
+    if (wait_us > 0) {
+        // guarantee minimum pulse separation, sleeping without trigger_mutex so that a push
+        // from another thread is not held up. Pulses started meanwhile carry this push's widths
+        hal.scheduler->delay_microseconds(wait_us);
+        chMtxLock(&trigger_mutex);
+        if (last_pulse_trigger_us == waited_for_trigger_us) {
+            start_group_pulses();
+        }
+        chMtxUnlock(&trigger_mutex);
+    }
 }
 
 uint16_t RCOutput::read(uint8_t chan)
@@ -1455,21 +1501,58 @@ bool RCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
 }
 
 /*
-  trigger output groups for oneshot or dshot modes
+  trigger output groups for oneshot or dshot modes again, with the widths
+  last pushed. If the pulses last triggered are still going out, a push
+  started them since timer_tick() looked, so start none
  */
 void RCOutput::trigger_groups()
 {
-    if (!chMtxTryLock(&trigger_mutex)) {
-        return;
+    chMtxLock(&trigger_mutex);
+    if (!pulse_separation_pending(rcout_micros())) {
+        start_group_pulses();
     }
+    chMtxUnlock(&trigger_mutex);
+}
 
-    rcout_timer_t now = rcout_micros();
+/*
+  set oneshot_trigger_timer for when the pulses going out, and the gap
+  after them, are over, noting the trigger that started them. Called with
+  trigger_mutex held while they are still going out
+ */
+void RCOutput::set_oneshot_trigger_timer(rcout_timer_t now)
+{
+    oneshot_timer_trigger_us = last_pulse_trigger_us;
+    const uint16_t remaining_us = AP_HAL::timeout_remaining(last_pulse_trigger_us, now, trigger_widest_pulse);
+    chVTSet(&oneshot_trigger_timer, chTimeUS2I(remaining_us), oneshot_trigger_tick, this);
+}
 
-    if (!AP_HAL::timeout_expired(last_pulse_trigger_us, now, trigger_widest_pulse)) {
-        // guarantee minimum pulse separation
-        hal.scheduler->delay_microseconds(AP_HAL::timeout_remaining(last_pulse_trigger_us, now, trigger_widest_pulse));
+/*
+  called by the rcout thread when oneshot_trigger_timer expires: start the
+  pulses of the push that set it. If a trigger has started pulses since,
+  they carry that push's widths, so start none; if the timer expired before
+  the pulses it was set for and their gap were over, set it again
+ */
+void RCOutput::start_group_pulses_after_timer()
+{
+    chMtxLock(&trigger_mutex);
+    if (last_pulse_trigger_us == oneshot_timer_trigger_us) {
+        const rcout_timer_t now = rcout_micros();
+        if (pulse_separation_pending(now)) {
+            set_oneshot_trigger_timer(now);
+        } else {
+            start_group_pulses();
+        }
     }
+    chMtxUnlock(&trigger_mutex);
+}
 
+/*
+  start the pulses of the groups in trigger_groupmask. Called with
+  trigger_mutex held, once the pulses last triggered and the gap after them
+  are over
+ */
+void RCOutput::start_group_pulses()
+{
     osalSysLock();
     for (auto &group : pwm_group_list) {
         if (soft_serial_waiting()) {
@@ -1501,8 +1584,7 @@ void RCOutput::trigger_groups()
       to guarantee at least a 50us gap between pulses
     */
     last_pulse_trigger_us = rcout_micros();
-
-    chMtxUnlock(&trigger_mutex);
+    trigger_widest_pulse = pushed_widest_pulse;
 }
 
 /*
