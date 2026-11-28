@@ -17,13 +17,16 @@ args = parser.parse_args()
 data = open(args.file,'rb').read()
 last_name = ""
 
-magic = 0x671b
+MAGIC_STANDARD = 0x671b
+MAGIC_WITH_DEFAULTS = 0x671c
 
 # header of 6 bytes
-magic2,num_params,total_params = struct.unpack("<HHH", data[0:6])
-if magic != magic2:
-    print("Bad magic 0x%x expected 0x%x" % (magic2, magic))
+magic,num_params,total_params = struct.unpack("<HHH", data[0:6])
+if magic not in (MAGIC_STANDARD, MAGIC_WITH_DEFAULTS):
+    print("Bad magic 0x%x expected 0x%x or 0x%x" % (magic, MAGIC_STANDARD, MAGIC_WITH_DEFAULTS))
     sys.exit(1)
+
+with_defaults = (magic == MAGIC_WITH_DEFAULTS)
 
 data = data[6:]
 
@@ -69,8 +72,15 @@ while True:
     last_name = name
     data = data[2+name_len+type_len:]
     v, = struct.unpack("<" + type_format, vdata)
+
     count += 1
-    print("%-16s %f" % (name, float(v)))
+    if with_defaults and (flags & 1):
+        def_data = data[:type_len]
+        data = data[type_len:]
+        def_v, = struct.unpack("<" + type_format, def_data)
+        print("%-16s %f (default %f)" % (name, float(v), float(def_v)))
+    else:
+        print("%-16s %f" % (name, float(v)))
 
 if count != num_params or count > total_params:
     print("Error: Got %u params expected %u/%u" % (count, num_params, total_params))
