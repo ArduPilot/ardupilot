@@ -135,7 +135,7 @@ void AP_RCProtocol_GHST::_process_byte(uint32_t timestamp_us, uint8_t byte)
         _frame_ofs = 0;
     }
 
-    // overflow check
+    // overflow check, should never happen since it will have been handled in check_frame()
     if (_frame_ofs >= GHST_FRAMELEN_MAX) {
         _frame_ofs = 0;
     }
@@ -147,61 +147,92 @@ void AP_RCProtocol_GHST::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
     add_to_buffer(_frame_ofs++, byte);
 
+    if (!check_frame(timestamp_us)) {
+        skip_to_next_frame(timestamp_us);
+    }
+}
+
+// check if a frame is valid. Return false if the frame is definitely
+// invalid. Return true if we need more bytes
+bool AP_RCProtocol_GHST::check_frame(uint32_t timestamp_us)
+{
     // need a header to get the length
     if (_frame_ofs < GHST_HEADER_TYPE_LEN) {
-        return;
+        return true;
     }
 
     if (_frame.device_address != DeviceAddress::GHST_ADDRESS_FLIGHT_CONTROLLER) {
-        return;
+        return false;
     }
 
-    // parse the length
-    if (_frame_ofs == GHST_HEADER_TYPE_LEN) {
-        _frame_crc = crc8_dvb_s2(0, _frame.type);
-        // check for garbage frame
-        if (_frame.length > GHST_FRAME_PAYLOAD_MAX) {
-            _frame_ofs = 0;
-        }
-        return;
+    // check for garbage frame, we subtract 2 below
+    if (_frame.length > GHST_FRAME_PAYLOAD_MAX || _frame.length < 2) {
+        return false;
     }
 
-    // update crc
+    // RC and link statistics frames always carry a full RadioFrame. A shorter
+    // one can only be a false header found while resynchronising, and decoding
+    // it would read channels its CRC does not cover
+    const bool rc_frame_type = (_frame.type >= GHST_UL_RC_CHANS_HS4_5TO8 && _frame.type <= GHST_UL_RC_CHANS_RSSI) ||
+                               (_frame.type >= GHST_UL_RC_CHANS_HS4_12_5TO8 && _frame.type <= GHST_UL_RC_CHANS_12_RSSI);
+    if (rc_frame_type && _frame.length != sizeof(RadioFrame) + 2) {
+        return false;
+    }
+
+    // more bytes to come
     if (_frame_ofs < _frame.length + GHST_HEADER_LEN) {
-        _frame_crc = crc8_dvb_s2(_frame_crc, byte);
+        return true;
     }
 
-    // overflow check
-    if (_frame_ofs > _frame.length + GHST_HEADER_LEN) {
-        _frame_ofs = 0;
-        return;
+    log_data(AP_RCProtocol::GHST, timestamp_us, (const uint8_t*)&_frame, _frame.length + GHST_HEADER_LEN);
+
+    // bad CRC (payload start is +1 from frame start, so need to subtract that from frame length to get index)
+    const uint8_t crc = crc8_dvb_s2_update(0, &_frame.type, _frame.length - 1);
+    if (crc != _frame.payload[_frame.length - 2]) {
+        return false;
     }
 
-    if (_frame.length < 2) {
-        // invalid length, we subtract 2 below
-        _frame_ofs = 0;
-        return;
+    _last_frame_time_us = _last_rx_frame_time_us = timestamp_us;
+    // decode here
+    if (decode_ghost_packet()) {
+        _last_tx_frame_time_us = timestamp_us;  // we have received a frame from the transmitter
+        add_input(MAX_CHANNELS, _channels, false, _link_status.rssi, _link_status.link_quality);
     }
-    
-    // decode whatever we got and expect
-    if (_frame_ofs == _frame.length + GHST_HEADER_LEN) {
-        log_data(AP_RCProtocol::GHST, timestamp_us, (const uint8_t*)&_frame, _frame_ofs - GHST_HEADER_LEN);
 
-        // we consumed the partial frame, reset
-        _frame_ofs = 0;
+    // we consumed the frame, keep any bytes received after it
+    const uint8_t len = _frame.length + GHST_HEADER_LEN;
+    _frame_ofs -= len;
+    if (_frame_ofs > 0) {
+        memmove(&_frame, ((const uint8_t *)&_frame) + len, _frame_ofs);
+    }
 
-        // bad CRC (payload start is +1 from frame start, so need to subtract that from frame length to get index)
-        if (_frame_crc != _frame.payload[_frame.length - 2]) {
+    return true;
+}
+
+// discard the start of a bad frame and resynchronise on the next
+// possible frame header in the bytes already received
+void AP_RCProtocol_GHST::skip_to_next_frame(uint32_t timestamp_us)
+{
+    do {
+        if (_frame_ofs <= 1) {
+            _frame_ofs = 0;
             return;
         }
 
-        _last_frame_time_us = _last_rx_frame_time_us = timestamp_us;
-        // decode here
-        if (decode_ghost_packet()) {
-            _last_tx_frame_time_us = timestamp_us;  // we have received a frame from the transmitter
-            add_input(MAX_CHANNELS, _channels, false, _link_status.rssi, _link_status.link_quality);
+        const uint8_t *frame_bytes = (const uint8_t *)&_frame;
+        const uint8_t *new_header = (const uint8_t *)memchr(&frame_bytes[1], DeviceAddress::GHST_ADDRESS_FLIGHT_CONTROLLER, _frame_ofs - 1);
+        if (new_header == nullptr) {
+            _frame_ofs = 0;
+            return;
         }
-    }
+
+        _frame_ofs -= (new_header - frame_bytes);
+        memmove(&_frame, new_header, _frame_ofs);
+
+        _start_frame_time_us = timestamp_us;
+
+        // we could now have a good frame, or another bad one
+    } while (!check_frame(timestamp_us));
 }
 
 void AP_RCProtocol_GHST::update(void)
