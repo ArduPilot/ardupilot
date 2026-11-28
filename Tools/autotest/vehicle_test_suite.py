@@ -16710,10 +16710,11 @@ switch value'''
         if ex is not None:
             raise ex
 
-    def crsf_parameter_menu_check(self, script=None):
+    def crsf_parameter_menu_check(self, script=None, model=None):
         '''read every CRSF parameter menu field and check each is in a folder
-        that lists it.  Returns the fields, a function to send a request
-        and wait for the reply, and the CRSF connection'''
+        that lists it, with SITL running model if given.  Returns the
+        fields, a function to send a request and wait for the reply, and
+        the CRSF connection'''
         if script is not None:
             self.install_example_script_context(script)
             self.set_parameter("SCR_ENABLE", 1)
@@ -16724,7 +16725,7 @@ switch value'''
         port = self.spare_network_port()
         self.customise_SITL_commandline([
             "--serial5=tcp:%u" % port # serial5 reads from to localhost port
-        ])
+        ], model=model)
         crsf = CRSF(("127.0.0.1", port))
         crsf.connect()
 
@@ -16804,6 +16805,15 @@ switch value'''
                 if child not in fields:
                     raise NotAchievedException("field %u lists %u, beyond the %u fields" % (field_id, child, field_count))
         return (fields, request, crsf)
+
+    def crsf_command_press(self, request, field, payload):
+        '''write payload to the CRSF command item field, using request
+        from crsf_parameter_menu_check, and return the status and info
+        the item replies with'''
+        entry = bytes(request(CRSF.FRAMETYPE_PARAMETER_WRITE, [field] + list(payload), CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                              lambda p: p[2] == field, "write to field %u" % field)[5:])
+        status_at = entry.index(0, 1) + 1
+        return (entry[status_at], entry[status_at+2:entry.index(0, status_at+2)])
 
     def crsf_field_named(self, fields, name, parent=None):
         '''return the number of the CRSF menu field called name, in the folder

@@ -18005,6 +18005,238 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def CRSFCalibrateCompassProgress(self):
+        '''Test crsf-calibrate shows a compass calibration's progress and result over CRSF'''
+        (START, CONFIRM, CANCEL, POLL) = (1, 4, 5, 6)
+        (READY, PROGRESS, CONFIRMATION_NEEDED) = (0, 2, 3)
+        self.install_script_module_context(self.script_modules_source_path("crsf_helper.lua"), "crsf_helper.lua")
+        self.install_applet_script_context("crsf-calibrate.lua")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "FS_THR_ENABLE": 0,    # RC frames stop between menu requests
+        })
+        # SITL's calibration model turns the vehicle through a series of
+        # poses while servo 5 is between 1200 and 1300
+        (fields, request, crsf) = self.crsf_parameter_menu_check(model="calibration")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=5, p2=1250)
+        field = self.crsf_field_named(fields, "Calibrate Compass", parent="Calibrate")
+
+        def press(action):
+            '''send action to Calibrate Compass, returning its status and info'''
+            return self.crsf_command_press(request, field, [action])
+
+        def shown_pct(result):
+            '''return the percent a progress reply shows'''
+            match = re.match(rb"Calibrating (\d+)%$", result[1])
+            if result[0] != PROGRESS or match is None:
+                raise NotAchievedException("Expected progress, got %s" % str(result))
+            return int(match.group(1))
+
+        self.start_subtest("Backing out of the progress popup cancels the calibration")
+        if shown_pct(press(START)) != 0:
+            raise NotAchievedException("Execute did not start at 0%")
+        while shown_pct(press(POLL)) < 5:
+            pass
+        result = press(CANCEL)
+        if result != (READY, b"Execute"):
+            raise NotAchievedException("Backing out showed %s" % str(result))
+        self.wait_statustext("Compass calibration cancelled", check_context=True)
+
+        self.start_subtest("The calibration's progress is shown until it saves")
+        if shown_pct(press(START)) != 0:
+            raise NotAchievedException("Execute after cancelling did not start at 0%")
+        # poll while the progress popup is up, as a transmitter does; each
+        # poll's RC frames keep the CRSF link up.  The calibration finishes
+        # in about 50s; allow two runs through the calibration model's 18
+        # poses of 6s each
+        timeout = 2 * 18 * 6
+        shown = [0]
+        pressed_again = False
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Calibration did not finish, shown %s" % shown[-5:])
+            result = press(POLL)
+            if result[0] != PROGRESS:
+                break
+            pct = shown_pct(result)
+            if not pressed_again and pct >= 20:
+                # Execute while it runs carries it on
+                pct = shown_pct(press(START))
+                pressed_again = True
+            if pct < shown[-1]:
+                raise NotAchievedException("Progress went back from %u%% to %u%%" % (shown[-1], pct))
+            if pct != shown[-1]:
+                shown.append(pct)
+        self.progress("Progress shown: %s" % shown)
+        if not any(33 < pct < 99 for pct in shown):
+            raise NotAchievedException("Progress never shown in step two: %s" % shown)
+        if result != (CONFIRMATION_NEEDED, b"Saved, reboot to fly"):
+            raise NotAchievedException("Calibration ended showing %s" % str(result))
+        self.wait_statustext("Compass calibration saved, reboot to fly", check_context=True)
+
+        # the result stays up until acknowledged
+        result = press(POLL)
+        if result != (CONFIRMATION_NEEDED, b"Saved, reboot to fly"):
+            raise NotAchievedException("Result not kept, showed %s" % str(result))
+        result = press(CONFIRM)
+        if result != (READY, b"Execute"):
+            raise NotAchievedException("OK showed %s" % str(result))
+
+        m = self.assert_receive_message('MAG_CAL_REPORT', condition='MAG_CAL_REPORT.compass_id==0', timeout=10)
+        if m.cal_status != mavutil.mavlink.MAG_CAL_SUCCESS or not m.autosaved:
+            raise NotAchievedException("Compass 0 not saved: %s" % str(m))
+
+    def CRSFParameterMenuHelper(self):
+        '''Test crsf_helper menus answer as fast armed, survive bad writes and errors, and report calibrations'''
+        CRSF = vehicle_test_suite.CRSF
+        (START, CONFIRM, POLL) = (1, 4, 6)
+        self.install_script_module_context(self.script_modules_source_path("crsf_helper.lua"), "crsf_helper.lua")
+        self.install_applet_script_context("crsf-calibrate.lua")
+        self.install_script_content_context("crsf-helper-menu.lua", """
+local crsf_helper = require('crsf_helper')
+local status = {type = 'INFO', name = "Status", info = "ok"}
+return crsf_helper.register_menu({name = "Helper", items = {
+    {type = 'SELECTION', name = "Sel", options = {"A", "B", "C"}, default = 1,
+     callback = function(v) gcs:send_text(6, "Sel " .. v) end},
+    {type = 'NUMBER', name = "Num", min = 0, max = 10, default = 5, dpoint = 1, step = 1,
+     callback = function(v) gcs:send_text(6, string.format("Num %.1f", v)) end},
+    status,
+    -- with no info the Status entry cannot be packed, so reading it raises
+    {type = 'COMMAND', name = "Break", callback = function() status.info = nil return 0, "Execute" end},
+    {type = 'COMMAND', name = "Mend", callback = function() status.info = "ok" return 0, "Execute" end},
+}})
+""")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "FS_THR_ENABLE": 0,    # RC frames stop between menu requests
+        })
+        (fields, request, crsf) = self.crsf_parameter_menu_check()
+
+        def read(menu, name):
+            '''return the entry of a menu item, from its type byte on'''
+            field = self.crsf_field_named(fields, name, parent=menu)
+            p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                        lambda p: p[2] == field, "read of %s" % name)
+            return bytes(p[5:])
+
+        def write(menu, name, payload):
+            '''write to a menu item, returning the reply frame'''
+            field = self.crsf_field_named(fields, name, parent=menu)
+            return bytes(request(CRSF.FRAMETYPE_PARAMETER_WRITE, [field] + list(payload), CRSF.FRAMETYPE_PARAMETER_WRITE,
+                                 lambda p: p[2] == field, "write to %s" % name))
+
+        def press(menu, name, payload=(START,)):
+            '''press a command, returning its status and info'''
+            return self.crsf_command_press(request, self.crsf_field_named(fields, name, parent=menu), payload)
+
+        def calibrate(name):
+            '''press a calibration, poll until it shows its result, and
+            acknowledge it, returning the result'''
+            result = press("Calibrate", name)
+            if result != (2, b"Calibrating"):
+                raise NotAchievedException("%s showed %s" % (name, str(result)))
+            tstart = self.get_sim_time_cached()
+            while result[0] == 2:
+                if self.get_sim_time_cached() - tstart > 30:
+                    raise NotAchievedException("%s did not finish" % name)
+                result = press("Calibrate", name, payload=(POLL,))
+            if press("Calibrate", name, payload=(CONFIRM,)) != (0, b"Execute"):
+                raise NotAchievedException("%s not acknowledged" % name)
+            return result
+
+        def selection(entry):
+            options_end = entry.index(0, entry.index(0, 1) + 1)
+            return entry[options_end + 1]
+
+        def number(entry):
+            name_end = entry.index(0, 1)
+            return struct.unpack(">i", entry[name_end+1:name_end+5])[0]
+
+        def info(entry):
+            name_end = entry.index(0, 1)
+            return entry[name_end+1:entry.index(0, name_end+1)]
+
+        # a selection index past the options is refused, and the item keeps its state
+        write("Helper", "Sel", [9])
+        if selection(read("Helper", "Sel")) != 0:
+            raise NotAchievedException("Out of range selection taken")
+        write("Helper", "Sel", [2])
+        self.wait_statustext("Sel C", check_context=True)
+
+        # numbers are int32, held to the item's range, and a short write is ignored
+        # a non-command write is answered with the item's value after the 3-byte header
+        if write("Helper", "Num", struct.pack(">i", 200))[3:] != struct.pack(">i", 100):
+            raise NotAchievedException("Num write not answered with 10.0 as int32")
+        self.wait_statustext("Num 10.0", check_context=True)
+        write("Helper", "Num", [0, 0])
+        if number(read("Helper", "Num")) != 100:
+            raise NotAchievedException("Num did not read back clamped to 10.0")
+
+        # none of the writes above raised in the helper
+        if any("CRSF menu error" in m.text for m in self.context_collection('STATUSTEXT')):
+            raise NotAchievedException("Menu error before the deliberate one")
+
+        # an error handling a read still answers it, and later answers line up
+        press("Helper", "Break")
+        status = read("Helper", "Status")
+        if status[0] != CRSF.FIELD_INFO or info(status) != b"ok":
+            raise NotAchievedException("Status read not answered with its stored entry")
+        self.wait_statustext("CRSF menu error", check_context=True)
+        if selection(read("Helper", "Sel")) != 2:
+            raise NotAchievedException("Read after an error answered wrongly")
+        press("Helper", "Mend")
+        if info(read("Helper", "Status")) != b"ok":
+            raise NotAchievedException("Status not restored")
+        # an item with no write handling is still answered
+        write("Helper", "Status", [1])
+
+        # an empty write is answered with the item's state
+        if press("Calibrate", "Forcecal Compass", payload=[]) != (0, b"Execute"):
+            raise NotAchievedException("Empty write not answered with the command's state")
+        if calibrate("Forcecal Accels") != (3, b"Accels force calibrated"):
+            raise NotAchievedException("Forcecal Accels did not succeed")
+        self.wait_statustext("Accels force calibrated", check_context=True)
+
+        def read_latencies():
+            '''sim seconds for each read of the Helper items, three times
+            over, once the helper has dropped to its idle rate'''
+            tstart = self.get_sim_time_cached()
+            while self.get_sim_time_cached() - tstart < 2:
+                # the root is answered without the script, keeping the link up
+                request(CRSF.FRAMETYPE_PARAMETER_READ, [0, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                        lambda p: p[2] == 0, "root")
+            latencies = []
+            for name in ["Sel", "Num", "Status", "Break", "Mend"] * 3:
+                tstart = self.get_sim_time_cached()
+                read("Helper", name)
+                latencies.append(self.get_sim_time_cached() - tstart)
+            return sorted(latencies)
+
+        disarmed = read_latencies()
+        # GUIDED holds the vehicle on the ground whatever the throttle stick says
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        armed = read_latencies()
+        disarmed_s = disarmed[len(disarmed) // 2]
+        armed_s = armed[len(armed) // 2]
+        self.progress("Median read %.3fs disarmed, %.3fs armed" % (disarmed_s, armed_s))
+        # reads are timed in 0.02s steps of sim time; the old 100ms armed poll
+        # put the armed median 0.06s above the disarmed one, and now the two
+        # are within 0.002s, so allow one step of noise and no more
+        if armed_s - disarmed_s > 0.03:
+            raise NotAchievedException("Menu slower armed (%.3fs) than disarmed (%.3fs)" % (armed_s, disarmed_s))
+
+        # the calibration is refused armed, and the menu says so
+        if calibrate("Calibrate Gyros") != (3, b"Gyro cal failed"):
+            raise NotAchievedException("Armed gyro cal not shown as failed")
+        self.wait_statustext("Gyro cal failed", check_context=True)
+        if press("Calibrate", "Calibrate Compass") != (0, b"Failed"):
+            raise NotAchievedException("Armed compass cal not shown as failed")
+        self.wait_statustext("Disarm to allow compass calibration", check_context=True)
+        self.disarm_vehicle(force=True)
+
     def GSF(self):
         '''test the Gaussian Sum filter'''
         self.context_push()
@@ -26835,6 +27067,191 @@ return update()
             if reply.get_payload().ljust(10, b'\0')[8] != (255 if wide else target):
                 raise NotAchievedException("Incorrect Lua payload target")
 
+    def ScriptingCommandIntCalibration(self):
+        '''Test calibrations and arming a script runs with gcs:run_command_int complete'''
+        # A calibration run on the scripting thread with the scheduler lock
+        # held stops the main thread, and with it SITL's clock. SITL has no
+        # stuck-loop monitor, so this shows the lock is no longer held, not
+        # the main_loop_stuck a board raises.
+        self.install_script_content_context("calibrate.lua", """
+local MAV_CMD_COMPONENT_ARM_DISARM = 400
+local MAV_CMD_PREFLIGHT_CALIBRATION = 241
+local MAV_RESULT_IN_PROGRESS = 5
+local commands = {
+    {"arm", MAV_CMD_COMPONENT_ARM_DISARM, {p1 = 1}},
+    -- its result is left untaken, and must not be given for the next one
+    {"untaken gyro", MAV_CMD_PREFLIGHT_CALIBRATION, {p1 = 1}},
+    {"gyro", MAV_CMD_PREFLIGHT_CALIBRATION, {p1 = 1}},
+    {"simple accel", MAV_CMD_PREFLIGHT_CALIBRATION, {x = 4}},
+    {"trim", MAV_CMD_PREFLIGHT_CALIBRATION, {x = 2}},
+}
+local index = 0
+local polls = nil
+
+local function update()
+    if polls == nil then
+        local c = commands[index + 1]
+        if c == nil then
+            return
+        end
+        if c[2] == MAV_CMD_COMPONENT_ARM_DISARM and not arming:pre_arm_checks() then
+            return update, 1000
+        end
+        index = index + 1
+        local result = gcs:run_command_int(c[2], c[3])
+        if result ~= MAV_RESULT_IN_PROGRESS then
+            gcs:send_text(6, string.format("%s started %d", c[1], result))
+            return
+        end
+        if c[1] == "untaken gyro" then
+            return update, 3000
+        end
+        -- the untaken result of an earlier run is not given for this one
+        local stale = gcs:command_int_result(c[2])
+        if stale ~= nil then
+            gcs:send_text(6, string.format("%s stale %d", c[1], stale))
+            return
+        end
+        polls = 0
+        return update, 10
+    end
+    local c = commands[index]
+    local result = gcs:command_int_result(c[2])
+    if result == nil then
+        polls = polls + 1
+        return update, 10
+    end
+    -- a result is given once
+    local again = gcs:command_int_result(c[2])
+    local text = string.format("%s %d after %d polls, %s", c[1], result, polls, tostring(again))
+    if c[2] == MAV_CMD_COMPONENT_ARM_DISARM then
+        -- a disarm runs at once
+        text = text .. string.format(", disarm %d", gcs:run_command_int(MAV_CMD_COMPONENT_ARM_DISARM, {p1 = 0}))
+    end
+    gcs:send_text(6, text)
+    polls = nil
+    -- an accel cal is refused within 5s of the last
+    return update, 6000
+end
+-- give the vehicle time to boot before checking it can arm
+return update, 5000
+""")
+        self.set_parameter("SCR_ENABLE", 1)
+        # the calibrations save these themselves
+        self.context_preserve_parameters(
+            ["AHRS_TRIM_%s" % axis for axis in "XYZ"] +
+            ["INS_%s%s%s_%s" % (sensor, instance, kind, axis)
+             for (sensor, kind) in (("ACC", "OFFS"), ("ACC", "SCAL"), ("GYR", "OFFS"))
+             for instance in ("", "2", "3")
+             for axis in "XYZ"] +
+            ["INS_%s%u_CALTEMP" % (sensor, instance) for sensor in ("ACC", "GYR") for instance in (1, 2, 3)])
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        # the timeouts are wall-clock, as a script holding the scheduler
+        # lock stops SITL's clock
+        m = self.wait_statustext(r"arm (started|stale|\d+ after)", regex=True, check_context=True, timeout=60,
+                                 wallclock_timeout=True)
+        match = re.match(r"arm (\d+) after \d+ polls, nil, disarm (\d+)$", m.text)
+        if match is None:
+            raise NotAchievedException("arm: %s" % m.text)
+        if int(match.group(1)) != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+            raise NotAchievedException("arm result %s" % match.group(1))
+        if int(match.group(2)) != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+            raise NotAchievedException("disarm result %s" % match.group(2))
+
+        for cal in "gyro", "simple accel", "trim":
+            m = self.wait_statustext(r"%s (started|stale|\d+ after)" % cal, regex=True, check_context=True, timeout=30,
+                                     wallclock_timeout=True)
+            match = re.match(r"%s (\d+) after (\d+) polls, nil$" % cal, m.text)
+            if match is None:
+                raise NotAchievedException("%s cal: %s" % (cal, m.text))
+            (result, polls) = (int(match.group(1)), int(match.group(2)))
+            if result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+                raise NotAchievedException("%s cal result %u" % (cal, result))
+            # the script runs on while the main thread calibrates the gyros
+            if cal == "gyro" and polls == 0:
+                raise NotAchievedException("No polls while the gyros calibrated")
+
+    def ScriptingCompassCalState(self):
+        '''Test compass:get_cal_state() reports a compass calibration's progress'''
+        self.install_script_content_context("magcal-state.lua", """
+local MAV_CMD_DO_START_MAG_CAL = 42424
+local MAV_RESULT_ACCEPTED = 0
+local MAG_CAL_SUCCESS = 4
+local started = false
+
+local function update()
+    if not started then
+        -- there is no calibrator until a calibration starts
+        local status = compass:get_cal_state(0)
+        gcs:send_text(6, string.format("magcal before %s", tostring(status)))
+        -- every compass, no autosave
+        if gcs:run_command_int(MAV_CMD_DO_START_MAG_CAL, {}) ~= MAV_RESULT_ACCEPTED then
+            gcs:send_text(6, "magcal start failed")
+            return
+        end
+        started = true
+        return update, 500
+    end
+    local status, pct = compass:get_cal_state(0)
+    gcs:send_text(6, string.format("magcal %d %.0f", status, pct))
+    if status >= MAG_CAL_SUCCESS then
+        return
+    end
+    return update, 500
+end
+return update, 5000
+""")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+        })
+        self.context_collect('STATUSTEXT')
+        # SITL's calibration model turns the vehicle through a series of
+        # poses while servo 5 is between 1200 and 1300
+        self.customise_SITL_commandline(["-M", "calibration"])
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=5, p2=1250)
+
+        self.wait_statustext("magcal before nil", check_context=True)
+        # the calibration finishes in about 50s; allow two runs through
+        # the calibration model's 18 poses of 6s each
+        timeout = 2 * 18 * 6
+        running_pct = {
+            mavutil.mavlink.MAG_CAL_RUNNING_STEP_ONE: [],
+            mavutil.mavlink.MAG_CAL_RUNNING_STEP_TWO: [],
+        }
+        last_pct = 0
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Calibration did not finish, last %u%%" % last_pct)
+            m = self.assert_receive_message('STATUSTEXT', timeout=10)
+            if m.text == "magcal start failed":
+                raise NotAchievedException("Calibration did not start")
+            match = re.match(r"magcal (\d+) (\d+)$", m.text)
+            if match is None:
+                continue
+            (status, pct) = (int(match.group(1)), int(match.group(2)))
+            if pct < last_pct:
+                raise NotAchievedException("Progress went back from %u%% to %u%%" % (last_pct, pct))
+            last_pct = pct
+            if status == mavutil.mavlink.MAG_CAL_SUCCESS:
+                break
+            if status in running_pct:
+                running_pct[status].append(pct)
+            elif status != mavutil.mavlink.MAG_CAL_WAITING_TO_START:
+                raise NotAchievedException("Calibration status %u at %u%%" % (status, pct))
+        if last_pct != 100:
+            raise NotAchievedException("Calibration succeeded at %u%%" % last_pct)
+        # step one runs to 33%, step two from there to 99%
+        for (status, low, high) in ((mavutil.mavlink.MAG_CAL_RUNNING_STEP_ONE, 0, 34),
+                                    (mavutil.mavlink.MAG_CAL_RUNNING_STEP_TWO, 33, 99)):
+            seen = running_pct[status]
+            if not any(low < pct < high for pct in seen):
+                raise NotAchievedException("No progress between %u%% and %u%% in status %u: %s" % (low, high, status, seen))
+        self.progress("Calibration succeeded after %.0fs, step two from %u%%" %
+                      (self.get_sim_time_cached() - tstart, running_pct[mavutil.mavlink.MAG_CAL_RUNNING_STEP_TWO][0]))
+
     def LuaParamLockdown(self):
         '''test param-lockdown.lua applet'''
         self.set_parameters({
@@ -27503,6 +27920,8 @@ return update, 1000
             self.mission_NAV_LOITER_TURNS_direction,
             self.LuaMAVLinkTarget,
             self.LuaParamLockdown,
+            self.ScriptingCommandIntCalibration,
+            self.ScriptingCompassCalState,
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             self.CRSF,
@@ -27510,6 +27929,8 @@ return update, 1000
             self.SerialPassthroughRCIN,
             self.CRSFParameterMenu,
             self.CRSFParameterMenuScripted,
+            self.CRSFParameterMenuHelper,
+            self.CRSFCalibrateCompassProgress,
             self.CRSFParameterMenuUnusedSlot,
             self.CRSFParameterMenuChunks,
             self.CRSFParameterMenuLongCommandReply,
