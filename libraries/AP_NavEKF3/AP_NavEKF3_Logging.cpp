@@ -264,13 +264,13 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
         return;
     }
 
-    if (!statesInitialised || rngBcn.N == 0 || rngBcn.fusionReport == nullptr) {
+    if (!statesInitialised || rngBcn.N == 0 || rngBcn.numFusionReports == 0) {
         return;
     }
 
     // Ensure that beacons are not skipped due to calling this function at a rate lower than the updates
     if (rngBcn.fuseDataReportIndex >= rngBcn.N ||
-        rngBcn.fuseDataReportIndex > rngBcn.numFusionReports) {
+        rngBcn.fuseDataReportIndex >= rngBcn.numFusionReports) {
         rngBcn.fuseDataReportIndex = 0;
     }
 

@@ -835,6 +835,7 @@ private:
     Vector3F velDotNED;             // rate of change of velocity in NED frame
     Vector3F velDotNEDfilt;         // low pass filtered velDotNED
     uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
+    uint32_t firstInitTime_ms;      // first time InitialiseFilterBootstrap() was called (msec)
     bool tasDataToFuse;             // true when new airspeed data is waiting to be fused
     uint32_t lastBaroReceived_ms;   // time last time we received baro height data
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared

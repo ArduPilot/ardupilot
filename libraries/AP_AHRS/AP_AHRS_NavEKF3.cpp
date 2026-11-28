@@ -33,12 +33,6 @@ bool AP_AHRS_NavEKF3::start()
     }
 #endif
 
-    // wait 1 second for DCM to output a valid tilt error estimate
-    // FIXME: work out whether this is still required!
-    if (now_ms - start_time_ms <= 1000) {
-        return false;
-    }
-
     // try to start the filter:
     return EKF3.InitialiseFilter();
 }
