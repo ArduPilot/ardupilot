@@ -12,9 +12,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifdef WITH_SITL_OSD
-
 #include "Display_SITL.h"
+
+#if AP_NOTIFY_DISPLAY_SITL_ENABLED
+
+#ifdef WITH_SITL_OSD
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Notify/AP_Notify.h>
@@ -157,3 +159,5 @@ void Display_SITL::clear_screen()
 }
 
 #endif // WITH_SITL_OSD
+
+#endif // AP_NOTIFY_DISPLAY_SITL_ENABLED

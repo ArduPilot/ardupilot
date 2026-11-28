@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_DISPLAY_SSD1306_ENABLED
+
 #include "Display.h"
 #include "Display_Backend.h"
 
@@ -37,3 +41,5 @@ private:
     uint8_t _displaybuffer[SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE];
     bool _need_hw_update;
 };
+
+#endif // AP_NOTIFY_DISPLAY_SSD1306_ENABLED
