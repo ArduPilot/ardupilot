@@ -22,6 +22,8 @@
 
 #define VTX_MAX_CHANNELS 8
 #define VTX_MAX_POWER_LEVELS 10
+// attempts at a frequency the VTX does not take before giving up on it
+#define VTX_MAX_FREQUENCY_ATTEMPTS 10
 
 class AP_VideoTX {
 public:
@@ -102,8 +104,34 @@ public:
     void set_configured_frequency_mhz(uint16_t freq) { _frequency_mhz.set_and_save_ifchanged(freq); }
     uint16_t get_frequency_mhz() const { return _current_frequency; }
     uint16_t get_configured_frequency_mhz() const { return _frequency_mhz; }
-    bool update_frequency() const { return _defaults_set && _frequency_mhz != _current_frequency; }
+    bool update_frequency() const { return _defaults_set && _frequency_mhz != _current_frequency && !configured_rejected(); }
     void update_configured_frequency();
+    // the VTX has not taken the configured frequency after repeated
+    // attempts: warn once and stop asking for it until the configuration
+    // changes, so that other changes can go out. The parameters are left
+    // alone, so a reboot tries again
+    void frequency_rejected(uint8_t band, uint8_t channel, uint16_t freq, bool warn=true);
+    // the configured band, channel and frequency are the ones the VTX refused
+    bool configured_rejected() const;
+    // the VTX is not on the configured band, channel or frequency
+    bool update_tuning() const;
+    // true if VTX_FREQ still holds the frequency the VTX did not take but the
+    // band or channel has been changed since, so they are what is wanted now
+    bool rejected_frequency_superseded() const {
+        return _rejected && _frequency_mhz == _rejected_frequency && (_band != _rejected_band || _channel != _rejected_channel);
+    }
+    // once the configuration has moved off what the VTX refused, forget the
+    // refusal, so that selecting it again is tried and warned about again.
+    // A VTX unlocked since it refused may take what it would not when locked
+    void update_rejected() {
+        if (!_rejected) {
+            return;
+        }
+        const bool unlocked = (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0;
+        if ((unlocked && !_rejected_unlocked) || (!configured_rejected() && !rejected_frequency_superseded())) {
+            _rejected = false;
+        }
+    }
     // get / set power level
     void set_power_mw(uint16_t power);
     void set_power_level(uint8_t level, PowerActive active=PowerActive::Active);
@@ -152,13 +180,13 @@ public:
     void set_configured_band(uint8_t band) { _band.set_and_save_ifchanged(band); }
     uint8_t get_configured_band() const { return _band; }
     uint8_t get_band() const { return _current_band; }
-    bool update_band() const { return _defaults_set && _band != _current_band; }
+    bool update_band() const { return _defaults_set && _band != _current_band && !configured_rejected(); }
     // get / set the frequency channel
     void set_channel(uint8_t channel) { _current_channel = channel; }
     void set_configured_channel(uint8_t channel) { _channel.set_and_save_ifchanged(channel); }
     uint8_t get_configured_channel() const { return _channel; }
     uint8_t get_channel() const { return _current_channel; }
-    bool update_channel() const { return _defaults_set && _channel != _current_channel; }
+    bool update_channel() const { return _defaults_set && _channel != _current_channel && !configured_rejected(); }
     void update_configured_channel_and_band();
     // get / set vtx option
     void set_options(uint16_t options) { _current_options = options; }
@@ -174,6 +202,12 @@ public:
     bool get_configured_pitmode() const { return _options.get() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE); }
     bool get_pitmode() const { return _current_options & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE); }
     bool update_options() const;
+    // the unlock option is set and the VTX reports that it is locked
+    bool update_unlock() const;
+    // the VTX has stayed locked after repeated attempts: warn once and stop
+    // asking until the unlock option is set again, so that other changes
+    // can go out
+    void unlock_rejected();
     // get / set whether the vtx is enabled
     void set_enabled(bool enabled);
     bool get_enabled() const { return _enabled; }
@@ -235,6 +269,15 @@ private:
     bool _initialized;
     // when defaults have been configured
     bool _defaults_set;
+    // the configuration the VTX did not take, see frequency_rejected()
+    bool _rejected;
+    uint8_t _rejected_band;
+    uint8_t _rejected_channel;
+    uint16_t _rejected_frequency;
+    // the VTX was unlocked when it refused
+    bool _rejected_unlocked;
+    // the VTX did not unlock, see unlock_rejected()
+    bool _unlock_rejected;
     // true when configuration have been applied successfully to the VTX
     bool _configuration_finished;
 

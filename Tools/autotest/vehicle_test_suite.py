@@ -496,6 +496,258 @@ class Telem(object):
         return self.update_read()
 
 
+class SimulatedVTX(Telem):
+    """A VTX on one of SITL's serial ports. It answers from its own thread,
+    as a VTX's replies are due within a fraction of a second, and records
+    the commands it is sent."""
+
+    def __init__(self, destination_address, progress_function=None):
+        super().__init__(destination_address, progress_function=progress_function)
+        self.lock = threading.Lock()
+        self.behaviour = set()
+        self.commands = []
+        self.running = True
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.thread.start()
+
+    def progress_tag(self):
+        return "VTX"
+
+    def run(self):
+        while self.running:
+            self.update()
+            time.sleep(0.002)
+
+    def close(self):
+        self.running = False
+        self.thread.join(timeout=2)
+        if self.port is not None:
+            self.port.close()
+
+    def set_behaviour(self, *names):
+        """how the VTX misbehaves, see the subclasses. No names is a VTX
+        that does as it is asked"""
+        with self.lock:
+            self.behaviour = set(names)
+
+    def record(self, name, value):
+        self.commands.append((time.time(), name, value))
+
+    def count(self, name, since=0):
+        """commands of this name received, optionally since a wallclock time"""
+        with self.lock:
+            return len([c for c in self.commands if c[1] == name and c[0] >= since])
+
+    def update_read(self):
+        self.buffer += self.do_read()
+        with self.lock:
+            self.parse_buffer()
+
+
+class SmartAudioVTX(SimulatedVTX):
+    """A SmartAudio 2.0 VTX. Behaviours: silent (answers nothing),
+    refuse_freq and refuse_channel (answers, but stays where it is),
+    corrupt (answers with a bad checksum), no_settings (answers
+    everything but a request for its settings), locked (stays where it
+    is until it is unlocked, by a mode command or by setting unlocked as
+    the button on a VTX does) and refuse_unlock (ignores the unlock in a
+    mode command)."""
+
+    # the settings reply's command for SmartAudio 2.0
+    SETTINGS_REPLY = 0x09
+
+    CMD_GET_SETTINGS = 0x03
+    CMD_SET_POWER = 0x05
+    CMD_SET_CHANNEL = 0x07
+    CMD_SET_FREQUENCY = 0x09
+    CMD_SET_MODE = 0x0B
+    NAMES = {
+        CMD_GET_SETTINGS: "GET_SETTINGS",
+        CMD_SET_POWER: "SET_POWER",
+        CMD_SET_CHANNEL: "SET_CHANNEL",
+        CMD_SET_FREQUENCY: "SET_FREQUENCY",
+        CMD_SET_MODE: "SET_MODE",
+    }
+    # the frequencies a VTX's own channel indices select
+    BANDS = [
+        [5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725],
+        [5733, 5752, 5771, 5790, 5809, 5828, 5847, 5866],
+        [5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945],
+        [5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880],
+        [5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917],
+    ]
+
+    def __init__(self, destination_address, progress_function=None):
+        self.frequency = 5732
+        self.channel = 4 * 8 + 2
+        self.power = 0
+        # bit 0 is set while the VTX is on a user frequency
+        self.mode = 0
+        self.unlocked = False
+        super().__init__(destination_address, progress_function=progress_function)
+
+    @staticmethod
+    def crc8(data):
+        crc = 0
+        for b in data:
+            crc ^= b
+            for _ in range(8):
+                crc = ((crc << 1) ^ 0xD5) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+        return crc
+
+    def reply(self, command, payload):
+        body = bytes([command, len(payload) + 1]) + bytes(payload)
+        crc = self.crc8(body)
+        if "corrupt" in self.behaviour:
+            crc ^= 0x5A
+        self.do_write(bytes([0xAA, 0x55]) + body + bytes([crc]))
+
+    def parse_buffer(self):
+        while True:
+            start = self.buffer.find(b"\xAA\x55")
+            if start < 0:
+                self.buffer = self.buffer[-1:]
+                return
+            if len(self.buffer) < start + 4:
+                return
+            command = self.buffer[start + 2]
+            end = start + 4 + self.buffer[start + 3] + 1
+            if len(self.buffer) < end:
+                return
+            frame = self.buffer[start:end]
+            self.buffer = self.buffer[end:]
+            if self.crc8(frame[:-1]) == frame[-1]:
+                self.handle(command, frame[4:-1])
+
+    def settings(self):
+        # bit 4 is set once the VTX is unlocked
+        mode = self.mode | (0x10 if self.unlocked else 0)
+        return [self.channel, self.power, mode, self.frequency >> 8, self.frequency & 0xFF]
+
+    def set_power(self, value):
+        """takes a power command's value and returns the value for its reply"""
+        self.power = value
+        return self.power
+
+    def handle(self, command, payload):
+        value = int.from_bytes(payload, "big") if payload else None
+        self.record(self.NAMES.get(command, hex(command)), value)
+        if "silent" in self.behaviour:
+            return
+        locked = "locked" in self.behaviour and not self.unlocked
+        if command == self.CMD_GET_SETTINGS:
+            if "no_settings" not in self.behaviour:
+                self.reply(self.SETTINGS_REPLY, self.settings())
+        elif command == self.CMD_SET_POWER:
+            self.reply(0x02, [self.set_power(payload[0]), 0x01])
+        elif command == self.CMD_SET_CHANNEL:
+            if "refuse_channel" not in self.behaviour and not locked:
+                self.channel = payload[0]
+                self.mode &= ~0x01
+                if self.channel < 40:
+                    self.frequency = self.BANDS[self.channel // 8][self.channel % 8]
+            self.reply(0x03, [self.channel, 0x01])
+        elif command == self.CMD_SET_FREQUENCY:
+            if "refuse_freq" not in self.behaviour and not locked and not value & 0xC000:
+                self.frequency = value
+                self.mode |= 0x01
+            self.reply(0x04, [self.frequency >> 8, self.frequency & 0xFF, 0x01])
+        elif command == self.CMD_SET_MODE:
+            # bit 3 unlocks the VTX and without it the VTX is locked
+            if "refuse_unlock" not in self.behaviour:
+                self.unlocked = bool(payload[0] & 0x08)
+            self.reply(0x05, [payload[0], 0x01])
+
+
+class SmartAudio21VTX(SmartAudioVTX):
+    """A SmartAudio 2.1 VTX, as TBS's newer VTXs are: it is given its power
+    in dBm and lists the levels it has in its settings reply."""
+
+    SETTINGS_REPLY = 0x11
+    # 0, 25, 100 and 400mW
+    POWER_LEVELS_DBM = [0, 14, 20, 26]
+
+    def __init__(self, destination_address, progress_function=None):
+        self.power_dbm = 14
+        super().__init__(destination_address, progress_function=progress_function)
+
+    def settings(self):
+        return (super().settings() +
+                [self.power_dbm, len(self.POWER_LEVELS_DBM) - 1] + self.POWER_LEVELS_DBM)
+
+    def set_power(self, value):
+        dbm = value & 0x7F
+        if value & 0x80 and dbm in self.POWER_LEVELS_DBM:
+            self.power_dbm = dbm
+        return self.power_dbm
+
+
+class TrampVTX(SimulatedVTX):
+    """An IRC Tramp VTX. Behaviours: silent (answers nothing), echo (returns
+    what it is sent, as a link wired without half duplex does), refuse_freq,
+    refuse_power and refuse_pit (ignores that command), and misreport_power
+    (takes the power but reports the nearest of the standard Tramp levels
+    below it, as some VTXs do)."""
+
+    STANDARD_POWERS = [25, 100, 200, 400, 600]
+
+    def __init__(self, destination_address, progress_function=None, freq_max=6000):
+        self.frequency = 5732
+        self.freq_max = freq_max
+        self.power = 25
+        # the power it reports having been set to, if not the real one
+        self.reported_power = None
+        self.pitmode = False
+        super().__init__(destination_address, progress_function=progress_function)
+
+    def reply(self, code, fields):
+        frame = bytearray(16)
+        frame[0] = 0x0F
+        frame[1] = ord(code)
+        for offset, value in fields:
+            frame[offset] = value & 0xFF
+            frame[offset + 1] = (value >> 8) & 0xFF
+        frame[14] = sum(frame[1:14]) & 0xFF
+        self.do_write(bytes(frame))
+
+    def parse_buffer(self):
+        while len(self.buffer) >= 16:
+            if self.buffer[0] != 0x0F:
+                self.buffer = self.buffer[1:]
+                continue
+            frame = self.buffer[:16]
+            self.buffer = self.buffer[16:]
+            if "echo" in self.behaviour:
+                self.do_write(bytes(frame))
+            if sum(frame[1:14]) & 0xFF == frame[14]:
+                self.handle(chr(frame[1]), frame[2] | (frame[3] << 8))
+
+    def handle(self, code, value):
+        if code in "FPI":
+            self.record(code, value)
+        if "silent" in self.behaviour:
+            return
+        if code == 'r':
+            # frequency range and maximum power
+            self.reply('r', [(2, 5000), (4, self.freq_max), (6, 1000)])
+        elif code == 'v':
+            reported = self.power if self.reported_power is None else self.reported_power
+            self.reply('v', [(2, self.frequency), (4, reported), (6, (1 if self.pitmode else 0) << 8),
+                             (8, 0 if self.pitmode else self.power)])
+        elif code == 's':
+            self.reply('s', [(6, 40)])
+        elif code == 'F' and "refuse_freq" not in self.behaviour:
+            self.frequency = value
+        elif code == 'P' and "refuse_power" not in self.behaviour:
+            self.power = value
+            self.reported_power = None
+            if "misreport_power" in self.behaviour:
+                self.reported_power = max([p for p in self.STANDARD_POWERS if p <= value] or [25])
+        elif code == 'I' and "refuse_pit" not in self.behaviour:
+            # 0 puts the VTX in pit mode, 1 takes it out
+            self.pitmode = value == 0
+
+
 class IBusMessage(object):
     def checksum_bytes(self, out):
         checksum = 0xFFFF
