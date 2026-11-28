@@ -5,7 +5,7 @@ void GCS_Tracker::request_datastream_position(const uint32_t _sysid, const uint8
 {
     for (uint8_t i=0; i < num_gcs(); i++) {
             // request position
-            if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, DATA_STREAM)) {
+            if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, REQUEST_DATA_STREAM)) {
                 mavlink_msg_request_data_stream_send(
                     (mavlink_channel_t)i,
                     _sysid,
@@ -21,7 +21,7 @@ void GCS_Tracker::request_datastream_airpressure(const uint32_t _sysid, const ui
 {
     for (uint8_t i=0; i < num_gcs(); i++) {
             // request air pressure
-            if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, DATA_STREAM)) {
+            if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, REQUEST_DATA_STREAM)) {
                 mavlink_msg_request_data_stream_send(
                     (mavlink_channel_t)i,
                     _sysid,
