@@ -7536,6 +7536,91 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_statustext("Mission: unable to set current to %u" % seq, check_context=True)
         self.context_stop_collecting('STATUSTEXT')
 
+    def MISSION_CURRENT_broadcast_to_all_links(self):
+        '''The MAVLink Mission Protocol requires a successful set-current to
+        be announced by broadcasting MISSION_CURRENT, and requires
+        current-item broadcasts as the mission progresses.  The notification
+        must reach every connected MAVLink link independently of periodic
+        streaming, so periodic MISSION_CURRENT is disabled on both links for
+        this test.'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        # bring up a second, independent MAVLink link
+        self.set_parameter("SERIAL1_PROTOCOL", 2)
+        self.reboot_sitl()
+        mav2 = mavutil.mavlink_connection(
+            self.sitl_serial_endpoint(1),
+            robust_parsing=True,
+            source_system=254,
+            source_component=190,
+        )
+        try:
+            mission_current_id = mavutil.mavlink.MAVLINK_MSG_ID_MISSION_CURRENT
+            for mav in (self.mav, mav2):
+                self.set_message_rate_hz(mission_current_id, -1, mav=mav)
+
+            # establish a known current item, then flush both links so any
+            # MISSION_CURRENT received below is operation-triggered
+            self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=1)
+            self.drain_mav(mav=self.mav)
+            self.drain_mav(mav=mav2)
+            self.assert_not_receive_message('MISSION_CURRENT', mav=mav2, timeout=2)
+
+            self.start_subtest("DO_SET_MISSION_CURRENT from link1 notifies link2")
+            self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=2)
+            m = self.assert_receive_message('MISSION_CURRENT', mav=mav2, timeout=5)
+            if m.seq != 2:
+                raise NotAchievedException("link2 got seq=%u expected 2" % m.seq)
+            self.drain_mav(mav=self.mav)
+            self.drain_mav(mav=mav2)
+
+            self.start_subtest("DO_SET_MISSION_CURRENT from link2 notifies link1")
+            mav2.mav.command_long_send(
+                1,
+                1,
+                mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
+                0,  # confirmation
+                3,  # param1: sequence number
+                0, 0, 0, 0, 0, 0)
+            m = self.assert_receive_message('MISSION_CURRENT', mav=self.mav, timeout=5)
+            if m.seq != 3:
+                raise NotAchievedException("link1 got seq=%u expected 3" % m.seq)
+            self.drain_mav(mav=self.mav)
+            self.drain_mav(mav=mav2)
+
+            self.start_subtest("legacy MISSION_SET_CURRENT from link2 notifies link1")
+            mav2.mav.mission_set_current_send(1, 1, 2)
+            m = self.assert_receive_message('MISSION_CURRENT', mav=self.mav, timeout=5)
+            if m.seq != 2:
+                raise NotAchievedException("link1 got seq=%u expected 2" % m.seq)
+
+            self.start_subtest("auto mission advancement notifies link2")
+            # allow arming in AUTO (see existing AUTO mission regression tests)
+            self.set_parameter("AUTO_OPTIONS", 3)
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            # rewind the mission to its first item and reset the mission
+            # state machine so the vehicle can arm in AUTO
+            self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=0, reset=1)
+            self.arm_vehicle()
+            self.drain_mav(mav=mav2)
+            # mission is takeoff(1), waypoint(2), waypoint(3), RTL(4); watch
+            # for an event-driven MISSION_CURRENT on link2 while the mission
+            # advances
+            self.wait_waypoint(2, 3, timeout=300)
+            m = mav2.recv_match(type='MISSION_CURRENT', blocking=True, timeout=5)
+            if m is None:
+                raise NotAchievedException("link2 received no MISSION_CURRENT during mission advancement")
+
+            self.wait_disarmed()
+        finally:
+            mav2.close()
+
     def MAV_CMD_DO_SET_MISSION_CURRENT_no_nav_command(self):
         '''Test setting the current command in a mission whose loop holds no nav command'''
 
@@ -22749,6 +22834,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.CirclePilotRadiusZero,
             self.MissionIndexValidity,
             self.MAV_CMD_DO_SET_MISSION_CURRENT_no_nav_command,
+            self.MISSION_CURRENT_broadcast_to_all_links,
             self.MissionUnstartableNavCommandLoop,
             self.RPLidarA2,
             self.MAV_CMD_NAV_TAKEOFF_no_location,
