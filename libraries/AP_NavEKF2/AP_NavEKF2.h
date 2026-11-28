@@ -351,6 +351,17 @@ private:
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
     AP_UInt8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
     AP_UInt8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
+
+    // bits for _originHgtMode
+    enum class OriginHgtOption {
+        CorrectWhenUsingBaro        = (1U<<0),
+        CorrectWhenUsingRangefinder = (1U<<1),
+        ApplyToLocalPosition        = (1U<<2),
+    };
+    bool origin_hgt_option_is_set(OriginHgtOption mode) const {
+        return (uint8_t(mode) & _originHgtMode) != 0;
+    }
+
     AP_Int8 _flowUse;               // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz

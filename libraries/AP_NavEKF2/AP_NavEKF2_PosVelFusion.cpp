@@ -1029,8 +1029,8 @@ void NavEKF2_core::selectHeightForFusion()
     // combined local NED position height and origin height remains consistent with the GPS altitude
     // This also enables the GPS height to be used as a backup height source
     if (gpsDataToFuse &&
-            (((frontend->_originHgtMode & (1 << 0)) && (activeHgtSource == HGT_SOURCE_BARO)) ||
-            ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == HGT_SOURCE_RNG)))
+            ((frontend->origin_hgt_option_is_set(NavEKF2::OriginHgtOption::CorrectWhenUsingBaro) && (activeHgtSource == HGT_SOURCE_BARO)) ||
+            (frontend->origin_hgt_option_is_set(NavEKF2::OriginHgtOption::CorrectWhenUsingRangefinder) && (activeHgtSource == HGT_SOURCE_RNG)))
             ) {
         correctEkfOriginHeight();
     }

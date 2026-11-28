@@ -451,7 +451,8 @@ void NavEKF3_core::setAidingMode()
             // this reduces the time required for the baro noise filter to settle before the filtered baro data can be used
             meaHgtAtTakeOff = baroDataDelayed.hgt - baroHgtOffset;
             if (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO &&
-                (frontend->_originHgtMode & (1 << 0)) && (frontend->_originHgtMode & (1 << 2))) {
+                frontend->origin_hgt_option_is_set(NavEKF3::OriginHgtOption::CorrectWhenUsingBaro) &&
+                frontend->origin_hgt_option_is_set(NavEKF3::OriginHgtOption::ApplyToLocalPosition)) {
                 // baro height is fused with the EKF origin height correction applied to the measurement
                 meaHgtAtTakeOff += (ftype)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
             }
