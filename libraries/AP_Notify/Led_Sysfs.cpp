@@ -22,7 +22,7 @@
 
 Led_Sysfs::Led_Sysfs(const char *red, const char *green, const char *blue,
                     uint8_t off_brightness, uint8_t low_brightness, uint8_t medium_brightness, uint8_t high_brightness):
-    RGBLed(off_brightness, high_brightness, medium_brightness, low_brightness),
+    RGBLed(off_brightness, high_brightness, medium_brightness, low_brightness, true),
     red_led(red),
     green_led(green),
     blue_led(blue)
