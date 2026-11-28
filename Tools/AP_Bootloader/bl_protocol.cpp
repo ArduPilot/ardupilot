@@ -308,7 +308,25 @@ jump_to_app()
     
     led_set(LED_OFF);
 
-    // resetting the clocks is needed for loading NuttX
+    // resetting the clocks is needed for loading NuttX. rccDisable*()
+    // also clears the sleep mode clock enables (LPENR/SMENR), which
+    // stops the application's peripheral clocks on every WFI unless it
+    // sets them again, so restore those afterwards
+#if defined(STM32H7)
+#define SLEEP_CLOCK_ENABLES &RCC_C1->APB1LLPENR, &RCC_C1->APB1HLPENR, &RCC_C1->APB2LPENR
+#elif defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
+#define SLEEP_CLOCK_ENABLES &RCC->APB1SMENR1, &RCC->APB1SMENR2, &RCC->APB2SMENR
+#elif defined(STM32F4) || defined(STM32F7)
+#define SLEEP_CLOCK_ENABLES &RCC->APB1LPENR, &RCC->APB2LPENR
+#endif
+#ifdef SLEEP_CLOCK_ENABLES
+    volatile uint32_t *const sleep_en[] { SLEEP_CLOCK_ENABLES };
+    uint32_t sleep_en_saved[ARRAY_SIZE(sleep_en)];
+    for (uint8_t i = 0; i < ARRAY_SIZE(sleep_en); i++) {
+        sleep_en_saved[i] = *sleep_en[i];
+    }
+#endif
+
 #if defined(STM32H7)
     rccDisableAPB1L(~0);
     rccDisableAPB1H(~0);
@@ -325,6 +343,11 @@ jump_to_app()
     rccDisableAPB1(~0);
 #endif
     rccDisableAPB2(~0);
+#ifdef SLEEP_CLOCK_ENABLES
+    for (uint8_t i = 0; i < ARRAY_SIZE(sleep_en); i++) {
+        *sleep_en[i] = sleep_en_saved[i];
+    }
+#endif
 #if HAL_USE_SERIAL_USB == TRUE
 #if !STM32_OTG2_IS_OTG1
     rccResetOTG_FS();
