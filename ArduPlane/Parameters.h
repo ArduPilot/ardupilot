@@ -591,6 +591,9 @@ public:
     AP_Int16 rangefinder_land_engage_dist_m;
 #endif
 
+    // which failsafes drive the per-servo failsafe positions (SERVOn_FSPWM)
+    AP_Int16 fs_servo_mask;
+
 #if AP_PLANE_SYSTEMID_ENABLED
     AP_SystemID systemid;
 #endif

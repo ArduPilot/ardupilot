@@ -171,6 +171,17 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
 
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    // only these vehicles drive the failsafe positions (FS_SERVO_MASK)
+    // @Param{Copter,Plane,Rover,Sub}: FSPWM
+    // @DisplayName: Servo failsafe PWM position
+    // @Description: PWM value this output is driven to while armed and a failsafe selected by FS_SERVO_MASK is active, returning to its normal output when the failsafe clears. 0 disables the failsafe position for this output. Values from 1 to 499 are treated as 500. Motor, throttle, control surface, steering, tilt, sail, attitude controller (roll, pitch, thrust, yaw), ignition and parachute release outputs are never moved, and nothing is moved while disarmed. PiccoloCAN servos sharing a function all use the first such output's value.
+    // @Units: PWM
+    // @Range: 0 2500
+    // @User: Standard
+    AP_GROUPINFO("FSPWM",  6, SRV_Channel, servo_fs_pwm, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -320,6 +331,62 @@ bool SRV_Channel::is_motor(SRV_Channel::Function function)
             (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12) ||
             (function >= SRV_Channel::k_motor13 && function <= SRV_Channel::k_motor32));
 }
+
+#ifndef HAL_BUILD_AP_PERIPH
+// the failsafe position replaces the commanded value only on the way out (see
+// get_output_pwm()), so output_pwm keeps the commanded value and the output
+// returns to it when the failsafe clears, including channels set directly with
+// set_output_pwm() that are not recomputed each loop. Outputs that control
+// the vehicle are never posed: the failsafe flight mode needs them, and E-stop
+// must always take precedence. Nothing is posed while disarmed.
+bool SRV_Channel::failsafe_pwm_applies(void) const
+{
+    return SRV_Channels::get_failsafe_active() &&
+           servo_fs_pwm > 0 &&
+           valid_function() &&
+           !failsafe_pwm_excluded(get_function()) &&
+           hal.util->get_soft_armed();
+}
+
+// motors, throttle, control surfaces, steering, tilt, sails and attitude
+// controller outputs, and engine ignition and parachute release, which their
+// own safety logic controls
+bool SRV_Channel::failsafe_pwm_excluded(SRV_Channel::Function function)
+{
+    if (should_e_stop(function) || is_control_surface(function)) {
+        return true;
+    }
+    switch (function) {
+    case Function::k_steering:
+    case Function::k_motor_tilt:
+    case Function::k_tiltMotorRear:
+    case Function::k_tiltMotorRearLeft:
+    case Function::k_tiltMotorRearRight:
+    case Function::k_tiltMotorLeft:
+    case Function::k_tiltMotorRight:
+    case Function::k_mainsail_sheet:
+    case Function::k_wingsail_elevator:
+    case Function::k_mast_rotation:
+    case Function::k_roll_out:
+    case Function::k_pitch_out:
+    case Function::k_thrust_out:
+    case Function::k_yaw_out:
+    case Function::k_ignition:
+    case Function::k_parachute_release:
+        return true;
+    default:
+        return false;
+    }
+}
+
+uint16_t SRV_Channel::get_output_pwm(void) const
+{
+    if (failsafe_pwm_applies()) {
+        return constrain_int16(servo_fs_pwm.get(), 500, 2500);
+    }
+    return output_pwm;
+}
+#endif  // HAL_BUILD_AP_PERIPH
 
 // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
 bool SRV_Channel::should_e_stop(SRV_Channel::Function function)

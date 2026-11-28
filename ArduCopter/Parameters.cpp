@@ -1192,6 +1192,13 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_SUBGROUPPTR(mode_flip_ptr, "FLIP_", 23, ParametersG2, ModeFlip),
 #endif
 
+    // @Param: FS_SERVO_MASK
+    // @DisplayName: Servo failsafe trigger mask
+    // @Description: Selects which failsafe conditions drive the per-output failsafe positions (SERVOn_FSPWM). While armed and any selected failsafe is active, each output with a non-zero SERVOn_FSPWM is driven to that PWM, returning to its normal output when the failsafe clears. Outputs that control the vehicle, and ignition and parachute release, are never moved (see SERVOn_FSPWM). Set to 0 to disable the failsafe positions entirely.
+    // @Bitmask: 0:Radio,1:Battery,2:GCS,3:EKF,4:Terrain,5:ADSB,6:DeadReckon
+    // @User: Standard
+    AP_GROUPINFO("FS_SERVO_MASK", 25, ParametersG2, fs_servo_mask, 7),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
