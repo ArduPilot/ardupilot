@@ -350,27 +350,6 @@ void abort(void)
 }
 #endif // AP_SIM_ENABLED
 
-#if defined(HAL_BOOTLOADER_BUILD) && HAL_ENABLE_DFU_BOOT
-void __entry_hook(void);
-void __entry_hook()
-{
-    // read the persistent data
-    AP_HAL::Util::PersistentData pd;
-    stm32_watchdog_load((uint32_t *)&pd, (sizeof(pd)+3)/4);
-    if (pd.boot_to_dfu) {
-        pd.boot_to_dfu = false;
-        stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
-#if defined(STM32H7)
-        const uint32_t *app_base = (const uint32_t *)(0x1FF09800); 
-#else
-        const uint32_t *app_base = (const uint32_t *)(0x1FFF0000);
-#endif
-        __set_MSP(*app_base);
-        ((void (*)())*(&app_base[1]))();
-        while(true);
-    }
-}
-#endif
 
 uint32_t chibios_rand_generate()
 {
