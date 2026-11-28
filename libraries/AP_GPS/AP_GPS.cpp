@@ -176,8 +176,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: _RAW_DATA
     // @DisplayName: Raw data logging
-    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into logger; on Septentrio this will log on the equipment's SD card and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
-    // @Values: 0:Ignore,1:Always log,2:Stop logging when disarmed (SBF only),5:Only log every five samples (uBlox only)
+    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into logger; on Septentrio and Trimble GSOF this will log on the equipment's internal storage and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
+    // @Values: 0:Ignore,1:Always log,2:Stop logging when disarmed (SBF and GSOF only),5:Only log every five samples (uBlox only)
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("_RAW_DATA", 9, AP_GPS, _raw_data, 0),
