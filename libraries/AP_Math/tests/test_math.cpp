@@ -696,6 +696,28 @@ TEST(MathTest, FIXEDWINGTURNRATE)
     EXPECT_NEAR(56.187965393066406f, fixedwing_turn_rate(45, 10.0f), accuracy);
 }
 
+TEST(MathTest, TwosComplement)
+{
+    EXPECT_EQ(127, get_twos_complement(0x7F, 8));
+    EXPECT_EQ(-128, get_twos_complement(0x80, 8));
+    EXPECT_EQ(-1, get_twos_complement(0xFF, 8));
+    EXPECT_EQ(-2048, get_twos_complement(0x800, 12));
+    EXPECT_EQ(2047, get_twos_complement(0x7FF, 12));
+    EXPECT_EQ(-524288, get_twos_complement(0x80000, 20));
+    EXPECT_EQ(-1, get_twos_complement(1, 1));
+    EXPECT_EQ(0, get_twos_complement(0, 1));
+    // bits above 'length' are ignored
+    EXPECT_EQ(-1, get_twos_complement(0x1FF, 8));
+    EXPECT_EQ(5, get_twos_complement(0xFFFFFF05, 8));
+    // lengths that used to be undefined behaviour
+    EXPECT_EQ(0, get_twos_complement(0x1234, 0));
+    EXPECT_EQ(-1, get_twos_complement(0x7FFFFFFF, 31));
+    EXPECT_EQ(0x3FFFFFFF, get_twos_complement(0x3FFFFFFF, 31));
+    EXPECT_EQ(-1, get_twos_complement(0xFFFFFFFF, 32));
+    EXPECT_EQ(INT32_MIN, get_twos_complement(0x80000000, 32));
+    EXPECT_EQ(0x7FFFFFFF, get_twos_complement(0x7FFFFFFF, 32));
+}
+
 TEST(CRCTest, parity)
 {
     EXPECT_EQ(parity(0b1), 1);

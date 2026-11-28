@@ -588,8 +588,15 @@ double uint64_to_double_le(const uint64_t& value)
  */
 int32_t get_twos_complement(uint32_t raw, uint8_t length)
 {
-    if (raw & ((int)1 << (length - 1))) {
-        return ((int32_t)raw) - ((int32_t)1 << length);
+    if (length == 0) {
+        return 0;
     }
-    return raw;
+    if (length >= 32) {
+        return int32_t(raw);
+    }
+    // only the low 'length' bits are the value
+    raw &= (1U << length) - 1U;
+    // sign-extend in unsigned arithmetic, so no shift or subtraction can overflow
+    const uint32_t sign_bit = 1U << (length - 1U);
+    return int32_t((raw ^ sign_bit) - sign_bit);
 }
