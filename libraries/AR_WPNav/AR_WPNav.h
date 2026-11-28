@@ -41,7 +41,9 @@ public:
 
     // set desired location and (optionally) next_destination
     // next_destination should be provided if known to allow smooth cornering
-    virtual bool set_desired_location(const Location &destination, Location next_destination = Location()) WARN_IF_UNUSED;
+    // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+    // next_arc_rad specifies the same for the following segment (0 if straight or unknown)
+    virtual bool set_desired_location(const Location &destination, Location next_destination = Location(), float arc_rad = 0.0f, float next_arc_rad = 0.0f) WARN_IF_UNUSED;
 
     // set desired location to a reasonable stopping point, return true on success
     bool set_desired_location_to_stopping_location()  WARN_IF_UNUSED;
@@ -66,6 +68,16 @@ public:
 
     // get current destination. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     const Location &get_destination() const { return _destination; }
+
+    // get current origin. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
+    const Location &get_origin() const { return _origin; }
+
+    // returns the angle of the arc from origin to dest that remains to
+    // be driven from the vehicle's stopping point, measured about the
+    // arc's centre.  Returns zero if it cannot be determined or the
+    // vehicle is no longer on the arc, and if the stopping point is
+    // past the destination along the arc
+    float get_remaining_arc_angle_rad(const Location& origin, const Location& dest, float arc_rad);
 
     // for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing_cd() const { return _wp_bearing_cd; }
@@ -124,8 +136,32 @@ protected:
     void update_steering_and_speed(const Location &current_loc, float dt);
 
     // calculate the crosstrack error
-    // value is negative when the vehicle is on the path's left side
+    // value is positive when the vehicle is on the path's left side
     float calc_crosstrack_error(const Location& current_loc) const;
+
+    // calculate the centre (in meters relative to origin) and radius of
+    // the circle followed by an arc segment from origin to dest sweeping
+    // arc_rad (positive clockwise, negative counter-clockwise).
+    // returns false if the segment is effectively straight, either
+    // because the chord has no length or the arc angle is under a degree
+    bool calc_arc_geometry(const Location& origin, const Location& dest, float arc_rad, Vector2f& center_NE, float& radius_m) const;
+
+    // as get_remaining_arc_angle_rad but measured from an arbitrary
+    // location instead of the vehicle's stopping point.  Returns
+    // false if the remaining angle cannot be determined or the
+    // location is no longer on the arc
+    bool get_remaining_arc_angle_rad_from(const Location& origin, const Location& dest, float arc_rad, const Location& from_loc, float& remaining_rad) const;
+
+    // re-plan the current leg as an arc from the vehicle's current
+    // location to the destination, sweeping the part of the original
+    // arc that remains.  Returns false if the remaining angle cannot
+    // be determined
+    bool replan_arc_this_leg();
+
+    // bearing in centidegrees of the arc's tangent at its start
+    // (at_start true) or at its end.  Falls back to the straight line
+    // bearing from origin to dest if the segment is not an arc
+    float arc_tangent_bearing_cd(const Location& origin, const Location& dest, float arc_rad, bool at_start) const;
 
     // calculate yaw change at next waypoint in degrees
     // returns zero if the angle cannot be calculated because some points are on top of others
@@ -165,6 +201,8 @@ protected:
     SCurve _scurve_next_leg;        // next scurve trajectory used to blend with current scurve trajectory
     bool _fast_waypoint;            // true if vehicle will stop at the next waypoint
     bool _pivot_at_next_wp;         // true if vehicle should pivot at next waypoint
+    float _arc_rad;                 // arc angle (in radians) of the current leg, zero for straight legs
+    float _next_arc_rad;            // arc angle (in radians) of the next leg, zero for straight legs
     bool _overspeed_enabled;        // if true scurve's position target will speedup to catch vehicles travelling faster than WP_SPEED
     float _track_scalar_dt;         // time scaler to ensure scurve target doesn't get too far ahead of vehicle
 
@@ -196,7 +234,7 @@ protected:
     float _desired_lat_accel;       // desired lateral acceleration (for reporting only)
     float _desired_heading_cd;      // desired heading (back towards line between origin and destination)
     float _wp_bearing_cd;           // heading to waypoint in centi-degrees
-    float _cross_track_error;       // meters, negative when vehicle is on path's left side
+    float _cross_track_error;       // meters, positive when vehicle is on path's left side
 
     // variables for reporting
     float _distance_to_destination; // straight-line distance from vehicle to final destination in meters

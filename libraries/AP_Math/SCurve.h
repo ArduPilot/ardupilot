@@ -93,6 +93,9 @@ public:
     // time has reached the end of the sequence
     bool finished() const WARN_IF_UNUSED;
 
+    // true once the segment's target has started moving along the track
+    bool has_started() const WARN_IF_UNUSED { return !is_zero(get_time_elapsed()); }
+
     // return the vector from the origin to the destination
     // (for an arc segment this is the chord between the endpoints, not the path flown)
     const Vector3f& get_origin_to_destination() const WARN_IF_UNUSED { return seg_delta; };

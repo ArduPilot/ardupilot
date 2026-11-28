@@ -13,6 +13,13 @@ bool ModeAuto::_enter()
     // initialise waypoint navigation library
     g2.wp_nav.init();
 
+    // an interrupted arc record only survives if the mission resumes
+    // with that arc still the current command; a mission restart
+    // (MIS_RESTART) or reset (e.g. on disarm) makes it meaningless
+    if (!mission.is_resume() || mission.get_current_nav_index() != arc_resume_index) {
+        arc_resume_valid = false;
+    }
+
     // other initialisation
     auto_triggered = false;
 
@@ -307,10 +314,12 @@ bool ModeAuto::get_desired_location(Location& destination) const
 }
 
 // set desired location to drive to
-bool ModeAuto::set_desired_location(const Location &destination, Location next_destination)
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+// next_arc_rad specifies the same for the following segment (0 if straight or unknown)
+bool ModeAuto::set_desired_location(const Location &destination, Location next_destination, float arc_rad, float next_arc_rad)
 {
     // call parent
-    if (!Mode::set_desired_location(destination, next_destination)) {
+    if (!Mode::set_desired_location(destination, next_destination, arc_rad, next_arc_rad)) {
         return false;
     }
 
@@ -512,8 +521,16 @@ void ModeAuto::send_guided_position_target()
 /********************************************************************************/
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
+    // starting a different navigation command ends an interrupted
+    // arc's execution; do and condition commands run alongside the
+    // navigation command and leave it untouched
+    if (AP_Mission::is_nav_cmd(cmd) && cmd.index != arc_resume_index) {
+        arc_resume_valid = false;
+    }
+
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
+    case MAV_CMD_NAV_ARC_WAYPOINT:  // Navigate to Waypoint along an arc
         return do_nav_wp(cmd, false);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
@@ -661,7 +678,14 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:
-        return verify_nav_wp(cmd);
+    case MAV_CMD_NAV_ARC_WAYPOINT: {
+        const bool reached = verify_nav_wp(cmd);
+        if (reached && cmd.index == arc_resume_index) {
+            // a completed arc execution cannot be resumed
+            arc_resume_valid = false;
+        }
+        return reached;
+    }
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
@@ -733,8 +757,33 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     Location cmdloc = cmd.content.location;
     cmdloc.sanitize(rover.current_loc);
 
-    // delayed stored in p1 in seconds
-    loiter_duration = ((int16_t) cmd.p1 < 0) ? 0 : cmd.p1;
+    const float cmd_arc_rad = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) ? cmd.get_arc_angle_rad() : 0.0f;
+    float arc_rad = cmd_arc_rad;
+
+    // an arc command that was interrupted before completion is being
+    // started again: resume with the angle remaining from the
+    // vehicle's stopping point instead of the full angle, which would
+    // re-plan the arc on a much smaller circle.  Explicitly
+    // re-selecting the arc (MISSION_SET_CURRENT, stopped or running,
+    // including re-selecting it after a mission reset) is
+    // indistinguishable from a resume here, so it also applies the
+    // remaining angle
+    bool arc_resumed = false;
+    if (!is_zero(cmd_arc_rad) && arc_resume_valid && arc_resume_index == cmd.index &&
+        arc_resume_dest.same_latlon_as(cmdloc) && is_equal(arc_resume_rad, cmd_arc_rad)) {
+        arc_rad = g2.wp_nav.get_remaining_arc_angle_rad(arc_resume_origin, cmdloc, cmd_arc_rad);
+        // the full angle back means the arc had not been entered
+        // yet and is treated as a fresh start (see
+        // get_remaining_arc_angle_rad), so the execution is
+        // recorded below like any other fresh start.  Zero means
+        // the arc is complete or its remaining angle could not be
+        // determined; either way the arc is resumed as a straight
+        // leg to the destination
+        arc_resumed = !is_equal(arc_rad, cmd_arc_rad);
+    }
+
+    // delay stored in p1 in seconds; an arc waypoint's p1 holds the arc angle instead, so it never loiters
+    loiter_duration = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT || (int16_t)cmd.p1 < 0) ? 0 : (uint16_t)cmd.p1;
     loiter_start_time = 0;
     if (loiter_duration > 0) {
         always_stop_at_destination = true;
@@ -744,16 +793,27 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     AP_Mission::Mission_Command next_cmd;
     if (always_stop_at_destination || !mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
         // single destination
-        if (!set_desired_location(cmdloc)) {
+        if (!set_desired_location(cmdloc, Location(), arc_rad)) {
             return false;
         }
     } else {
         // retrieve and sanitize next destination location
         Location next_cmdloc = next_cmd.content.location;
         next_cmdloc.sanitize(cmdloc);
-        if (!set_desired_location(cmdloc, next_cmdloc)) {
+        const float next_arc_rad = (next_cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) ? next_cmd.get_arc_angle_rad() : 0.0f;
+        if (!set_desired_location(cmdloc, next_cmdloc, arc_rad, next_arc_rad)) {
             return false;
         }
+    }
+
+    // remember a fresh arc execution so that an interruption of it can
+    // be resumed with the remaining angle
+    if (!is_zero(cmd_arc_rad) && !arc_resumed) {
+        arc_resume_valid = true;
+        arc_resume_index = cmd.index;
+        arc_resume_origin = g2.wp_nav.get_origin();
+        arc_resume_dest = cmdloc;
+        arc_resume_rad = cmd_arc_rad;
     }
 
     // just starting so we haven't previously reached the waypoint
