@@ -63,10 +63,16 @@ void Copter::fence_check()
 
             // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
             // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
-            if (ap.land_complete || (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & AC_FENCE_TYPE_ALT_MAX)== 0))){
+            if (ap.land_complete || (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & (AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_ALT_MIN))== 0))){
                 arming.disarm(AP_Arming::Method::FENCEBREACH);
 
             } else {
+
+                // a manual mode at zero throttle clears auto_armed, which would hold the new mode at ground idle
+                // but if the pilot has stopped the motors (interlock or e-stop) the new mode cannot fly
+                if (motors->get_interlock()) {
+                    set_auto_armed(true);
+                }
 
                 // if more than 100m outside the fence just force a land
                 if (fence.get_breach_distance(fence_breaches.new_breaches) > AC_FENCE_GIVE_UP_DISTANCE) {
