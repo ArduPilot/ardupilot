@@ -14,6 +14,9 @@ if [[ $SHELL == *"zsh"* ]]; then
 elif [[ $SHELL == *"bash"* ]]; then
     AP_COMPLETION_SCR="completion.bash"
     SHELL_LOGIN=".bash_profile"
+elif [[ $SHELL == *"fish"* ]]; then
+    AP_COMPLETION_SCR="completion.fish"
+    SHELL_LOGIN=".config/fish/config.fish"
 else
     echo "Unsupported shell"
     exit 1
