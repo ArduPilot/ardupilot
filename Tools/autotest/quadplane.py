@@ -1152,6 +1152,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         return {
             "FRSkyPassThrough": "Currently failing",
             "ConfigErrorLoop": "failing because RC values not settable",
+            "ShipLandingEarlyQRTL": "lands off the deck with Q_OPTIONS bit 16 set, issue #35394",
         }
 
     def BootInAUTO(self):
@@ -2265,6 +2266,115 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # we are not at the home location - reboot so the next test starts there
         self.set_parameter("SIM_SHIP_ENABLE", 0)
         self.reboot_sitl()
+
+    def ship_landing_early_qrtl(self, disable_approach):
+        '''fly away from the ship, enter QRTL about 1km out and return
+        the distance from the ship once disarmed'''
+        self.set_rc(3, 1000)
+        self.reboot_sitl(check_position=False)
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SHIP_ENABLE" : 1,
+            "SIM_SPEEDUP" : 10,
+            })
+
+        self.scripting_restart()
+        self.wait_text("ShipLanding: loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+
+        # reproduce the timing from the issue: the ship sails some
+        # way round its circle, the mission is placed relative to
+        # where the ship then is (the takeoff item carries that
+        # position), and the vehicle arms a little later
+        self.delay_sim_time(73, reason="let the ship move before planning")
+        self.upload_simple_relloc_mission(self.get_location(), [
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0.01, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 900, 300, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 900, 1200, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.delay_sim_time(21, reason="let the ship move before arming")
+
+        self.change_mode("AUTO")
+        self.arm_vehicle()
+        self.set_rc(3, 1250)
+        self.wait_mode("RTL", timeout=300)
+
+        # we are now about 1km from the ship
+        self.delay_sim_time(8, reason="get about 1km into the RTL")
+        if disable_approach:
+            self.set_parameter("Q_OPTIONS", int(self.get_parameter("Q_OPTIONS")) | (1 << 16))
+        self.change_mode("QRTL")
+
+        self.wait_text("Land complete", check_context=True, timeout=600)
+        self.wait_disarmed(timeout=120)
+
+        tstart = self.get_sim_time_cached()
+        ship_gpi = None
+        vehicle_gpi = None
+        while ship_gpi is None or vehicle_gpi is None:
+            if self.get_sim_time_cached() - tstart > 5:
+                raise NotAchievedException("Did not get GPI for ship")
+            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+            if gpi.get_srcSystem() == 17:
+                ship_gpi = gpi
+            elif gpi.get_srcSystem() == 1:
+                vehicle_gpi = gpi
+        self.context_pop()
+
+        return self.get_distance_int(vehicle_gpi, ship_gpi)
+
+    def ShipLandingEarlyQRTL(self):
+        '''ship landing with QRTL entered far from the ship'''
+        # fly from the location the issue was reported from
+        self.customise_SITL_commandline(["--home", "47.4007054,19.2000272,120.09,354"])
+        self.install_applet_script_context("plane_ship_landing.lua")
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SIM_SHIP_ENABLE": 1,
+            "SIM_SHIP_SPEED": 4,
+            "SIM_SHIP_PSIZE": 3000,
+            "SIM_SHIP_DSIZE": 10,
+            "Q_WP_SPD": 7.0,
+            "Q_P_NE_POS_P": 0.25,
+            "Q_P_NE_VEL_D": 0.25,
+            "Q_P_NE_VEL_I": 0.25,
+            "Q_P_NE_VEL_P": 1.0,
+            "Q_RTL_MODE": 0,
+            "Q_RTL_ALT": 50,
+            "Q_ASSIST_ALT": 35,
+            "RTL_ALTITUDE": 100,
+            "RTL_RADIUS": 100,
+            "WP_LOITER_RAD": 100,
+            "FOLL_ENABLE": 1,
+            "FOLL_SYSID": 17,
+            "FOLL_OFS_TYPE": 1,
+            "SIM_TERRAIN" : 0,
+            "TERRAIN_ENABLE" : 0,
+        })
+
+        max_distance = 1.2
+        distances = {}
+        try:
+            for disable_approach in False, True:
+                self.start_subtest(f"QRTL entered far out, {disable_approach=}")
+                distances[disable_approach] = self.ship_landing_early_qrtl(disable_approach)
+                self.progress(f"{disable_approach=} distance={distances[disable_approach]:.2f}m")
+        finally:
+            # restart at the normal home, off the ship, so the reboot
+            # done when the test's context is popped finds the vehicle
+            # where it expects
+            self.set_parameter("SIM_SHIP_ENABLE", 0)
+            self.customise_SITL_commandline([])
+
+        for disable_approach, distance in distances.items():
+            if distance > max_distance:
+                raise NotAchievedException(
+                    f"Did not land within {max_distance}m of ship {disable_approach=} {distance=:.2f}")
 
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''
@@ -4723,6 +4833,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.ShipLanding,
+            self.ShipLandingEarlyQRTL,
             Test(self.MotorTest, kwargs={  # tests motors 4 and 2
                 "mot1_servo_chan": 8,  # quad-x second motor cw from f-r
                 "mot4_servo_chan": 6,  # quad-x third motor cw from f-r
