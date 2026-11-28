@@ -34,6 +34,8 @@ TEST(control, InvSqrtControllerIsActuallyInverse)
         // { 5, 0.1, 1, 0.4, 1 },  // twice-the-dt
         { 0, 0.1, 1, 0.2, 0 },  // zero-error means zero response
         { 0, 0, 0, 0, 0 },  // slightly corner-case-ish....
+        { 2, 0, 1, 0, 2 },  // zero P: pure sqrt response
+        { -2, 0, 1, 0, -2 },  // zero P: negative error must invert to a negative error
     };
 
     // iterate through all tests, calling sqrt_controller, and
@@ -57,6 +59,17 @@ TEST(control, InvSqrtControllerIsActuallyInverse)
                             )
         );
     }
+}
+
+TEST(control, InvSqrtControllerTinyOutputKeepsSign)
+{
+    // with D_max / p below FLT_EPSILON, a positive output smaller than
+    // FLT_EPSILON is in the sqrt region and must give a positive error
+    const float p = 1e7;
+    const float D_max = 1;
+    const float output = 1.1e-7;
+    EXPECT_GT(inv_sqrt_controller(output, p, D_max), 0);
+    EXPECT_LT(inv_sqrt_controller(-output, p, D_max), 0);
 }
 
 int hal;
