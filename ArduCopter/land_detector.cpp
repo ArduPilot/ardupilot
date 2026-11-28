@@ -11,6 +11,9 @@
 // counter to verify landings
 static uint32_t land_detector_count = 0;
 
+// counter to verify a take-off the flight mode has not detected
+static uint8_t takeoff_missed_count = 0;
+
 // run land and crash detectors
 // called at MAIN_LOOP_RATE
 void Copter::update_land_and_crash_detectors()
@@ -60,10 +63,14 @@ void Copter::update_land_detector()
         if (!flightmode->is_taking_off() && motors->get_takeoff_collective() && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
 #else
         // if throttle output is high then clear landing flag
-        if (!flightmode->is_taking_off() &&                            // flight mode has not detected a takeoff
+        const bool takeoff_missed =
+            !flightmode->is_taking_off() &&                            // flight mode has not detected a takeoff
             !motors->limit.throttle_lower &&                           // desired throttle output is above the minimum
             motors->get_throttle_out() > get_non_takeoff_throttle() && // actual throttle output is above the non-takeoff threshold
-            motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {   // motors have spooled up
+            motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED;    // motors have spooled up
+        // the rate thread can output to the motors after the flight mode has run, so give the mode one loop to see it
+        takeoff_missed_count = takeoff_missed ? takeoff_missed_count + 1 : 0;
+        if (takeoff_missed_count > 1) {
             // this should never happen because take-off should be detected at the flight mode level
             // this here to highlight there is a bug or missing take-off detection
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -214,6 +221,7 @@ void Copter::set_land_complete(bool b)
         return;
 
     land_detector_count = 0;
+    takeoff_missed_count = 0;
 
 #if HAL_LOGGING_ENABLED
     if(b){
