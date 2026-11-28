@@ -175,6 +175,7 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
         if (copter.flightmode->mode_number() == mode) {
             rc().reset_mode_switch();
         }
+        copter.failsafe_ekf_restore_cancel(mode);
     }
 }
 
