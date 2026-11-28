@@ -105,6 +105,11 @@ public:
         return available() && assisted_flight;
     }
 
+    // are the VTOL motors holding the vehicle up while waiting for airspeed?
+    bool in_airspeed_wait(void) const {
+        return in_assisted_flight() && transition->in_airspeed_wait();
+    }
+
     // abort landing, only valid when in a VTOL landing descent
     bool abort_landing(void);
 

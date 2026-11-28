@@ -1420,6 +1420,98 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed(timeout=200)
 
+    def GlideFailsafeInVTOL(self):
+        '''a Glide failsafe action in VTOL flight changes to QLAND'''
+        self.set_parameters({
+            "Q_GUIDED_MODE": 1,
+            "FS_SHORT_ACTN": 0,  # no short failsafe action in GUIDED
+            "FS_LONG_ACTN": 2,   # glide
+        })
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=30)
+        self.wait_altitude(28, 32, relative=True)
+
+        loc = self.offset_location_ne(self.home_position_as_location(), 20, 20)
+        loc.set_alt_m(30, AltFrame.ABOVE_HOME)
+
+        def hover_in_guided():
+            self.change_mode('GUIDED')
+            self.send_do_reposition(loc)
+            self.wait_location(loc, timeout=120, height_accuracy=2)
+
+        hover_in_guided()
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("Long failsafe with FS_LONG_ACTN=2 in VTOL GUIDED")
+        self.set_parameter("SIM_RC_FAIL", 1)  # no pulses
+        self.wait_statustext("RC Long Failsafe On: switched to QLand", check_context=True)
+        self.assert_mode('QLAND')
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_statustext("RC Long Failsafe Cleared", check_context=True)
+
+        self.start_subtest("Short failsafe with FS_SHORT_ACTN=2 in VTOL GUIDED")
+        hover_in_guided()
+        self.set_parameter("FS_SHORT_ACTN", 2)  # glide
+        self.set_parameter("SIM_RC_FAIL", 1)  # no pulses
+        self.wait_statustext("RC Short Failsafe: switched to QLand", check_context=True)
+        self.assert_mode('QLAND')
+        # keep the failsafe until landed, recovery would restore GUIDED
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("SIM_RC_FAIL", 0)
+
+    def GlideAssistQLand(self):
+        '''VTOL assist holding a hover in GLIDE changes to QLAND'''
+        self.takeoff(80, mode="QHOVER", timeout=120)
+        self.set_rc(3, 1800)
+        self.change_mode("FBWA")
+        thr_min_pwm = self.get_parameter("Q_M_PWM_MIN")
+        self.progress("Waiting for transition to complete")
+        self.wait_servo_channel_value(5, thr_min_pwm, timeout=30, comparator=operator.eq)
+        self.delay_sim_time(5, reason="motors to stop after transition")
+        self.wait_servo_channel_value(5, thr_min_pwm, timeout=30, comparator=operator.eq)
+
+        q_assist_speed = self.get_parameter("Q_ASSIST_SPEED")
+        self.set_parameters({
+            "Q_ASSIST_SPEED": -1,
+            "RC9_OPTION": 82,  # Q_ASSIST: low disables, mid enables, high forces
+        })
+        self.set_rc(9, 1500)
+        self.change_mode(27)  # Glide, need pymavlink support to use text name
+
+        self.start_subtest("Brief assist above AIRSPEED_MIN: GLIDE stays in GLIDE")
+        self.set_rc(9, 2000)
+        self.wait_servo_channel_value(5, 1100, timeout=5, comparator=operator.gt)
+        self.delay_sim_time(1, reason="brief forced assist")
+        self.set_rc(9, 1500)
+        airspeed = self.assert_receive_message('VFR_HUD').airspeed
+        airspeed_min = self.get_parameter("AIRSPEED_MIN")
+        self.progress("Airspeed %.1f at end of assist" % airspeed)
+        if airspeed < airspeed_min + 3:
+            raise NotAchievedException("Airspeed %.1f too low for this test" % airspeed)
+        self.wait_servo_channel_value(5, thr_min_pwm, timeout=15, comparator=operator.eq)
+        self.assert_mode(27)
+
+        self.start_subtest("No assist: GLIDE stays in GLIDE")
+        self.delay_sim_time(10, reason="glide below Q_ASSIST_SPEED")
+        self.assert_mode(27)
+        self.wait_servo_channel_value(5, thr_min_pwm, timeout=1, comparator=operator.eq)
+
+        self.start_subtest("Speed assist holding a hover in GLIDE changes to QLAND")
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("Q_ASSIST_SPEED", q_assist_speed)
+        self.wait_servo_channel_value(5, 1100, timeout=10, comparator=operator.gt)
+        tstart = self.get_sim_time()
+        self.wait_mode('QLAND', timeout=10)
+        self.wait_statustext("Glide: VTOL assist holding hover", check_context=True)
+        delay = self.get_sim_time() - tstart
+        if delay < 2.5:
+            raise NotAchievedException("Changed to QLAND after %.1fs of assist" % delay)
+
+        self.set_rc(3, 1000)
+        self.wait_disarmed(timeout=200)
+
     def LoiterAltQLand(self):
         '''test loitering and qland with terrain involved'''
         self.LoiterAltQLand_Terrain(
@@ -4714,6 +4806,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownload,
             self.QRTLGradualAltDescent,
             self.QAssist,
+            self.GlideFailsafeInVTOL,
+            self.GlideAssistQLand,
             self.CopterTailsitter,
             self.ICEngine,
             self.ICEngineMission,

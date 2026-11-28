@@ -18,6 +18,20 @@ bool Plane::failsafe_in_landing_sequence() const
     return false;
 }
 
+// change to GLIDE for a failsafe. A quadplane in VTOL flight changes
+// to QLAND instead, as GLIDE has no forward throttle to complete the
+// transition to fixed wing flight.  Intended only for use in failsafe code.
+void Plane::failsafe_set_glide_mode(ModeReason reason)
+{
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_mode()) {
+        IGNORE_RETURN(set_mode(mode_qland, reason));
+        return;
+    }
+#endif
+    IGNORE_RETURN(set_mode(mode_glide, reason));
+}
+
 void Plane::rc_failsafe_short_on_event()
 {
     // This is how to handle a short loss of control signal failsafe.
@@ -36,7 +50,7 @@ void Plane::rc_failsafe_short_on_event()
     case Mode::Number::GLIDE:
         // emergency landing switch overrides normal action to allow out of range landing
         if (plane.emergency_landing || (g.fs_action_short == FS_ACTION_SHORT_GLIDE)) {
-            IGNORE_RETURN(set_mode(mode_glide, ModeReason::RADIO_FAILSAFE));
+            failsafe_set_glide_mode(ModeReason::RADIO_FAILSAFE);
 
         } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
             IGNORE_RETURN(set_mode(mode_fbwb, ModeReason::RADIO_FAILSAFE));
@@ -81,7 +95,7 @@ void Plane::rc_failsafe_short_on_event()
         if (g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) { // if acton = 0(BESTGUESS) this group of modes take no action
             failsafe.saved_mode_number = control_mode->mode_number();
             if (g.fs_action_short == FS_ACTION_SHORT_GLIDE) {
-                IGNORE_RETURN(set_mode(mode_glide, ModeReason::RADIO_FAILSAFE));
+                failsafe_set_glide_mode(ModeReason::RADIO_FAILSAFE);
             } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
                 IGNORE_RETURN(set_mode(mode_fbwb, ModeReason::RADIO_FAILSAFE));
             } else {
@@ -142,7 +156,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 
         // emergency landing switch overrides normal action to allow out of range landing
         if (plane.emergency_landing || (g.fs_action_long == FS_ACTION_LONG_GLIDE)) {
-            IGNORE_RETURN(set_mode(mode_glide, reason));
+            failsafe_set_glide_mode(reason);
 
         } else if (g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if HAL_PARACHUTE_ENABLED
@@ -202,7 +216,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             parachute_release();
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            IGNORE_RETURN(set_mode(mode_glide, reason));
+            failsafe_set_glide_mode(reason);
 
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
             IGNORE_RETURN(set_mode(mode_auto, reason));
