@@ -392,6 +392,32 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''Check extended sys state works'''
         self.EXTENDED_SYS_STATE_SLT()
 
+    def QRTLDistanceHandoff(self):
+        """Keep flying in RTL while outbound inside the QRTL stopping radius."""
+        self.set_parameters({
+            "FENCE_ENABLE": 0,
+            "FENCE_AUTOENABLE": 0,
+            "Q_RTL_MODE": 1,
+            "Q_RTL_ALT": 20,
+            "RTL_ALTITUDE": 80,
+            "RTL_RADIUS": 80,
+            "Q_TRANS_DECEL": 0.8,
+        })
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1200, 0, 80),
+        ])
+        self.wait_distance_to_home(195, 220, timeout=100)
+        self.change_mode('RTL')
+
+        # The distance trigger is eligible after one second, while the
+        # aircraft is still turning back toward home.
+        self.delay_sim_time(2, reason="Give the outbound QRTL distance check time to run")
+        self.assert_mode_is('RTL')
+
+        self.wait_mode('QRTL', timeout=60)
+        self.wait_disarmed(timeout=180)
+
     def QRTLGradualAltDescent(self):
         '''check gradual descent to RTL_ALTITUDE in QRTL'''
         qrtl_alt = 20
@@ -4712,6 +4738,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestMotorMask,
             self.ParameterChecks,
             self.TestLogDownload,
+            self.QRTLDistanceHandoff,
             self.QRTLGradualAltDescent,
             self.QAssist,
             self.CopterTailsitter,
