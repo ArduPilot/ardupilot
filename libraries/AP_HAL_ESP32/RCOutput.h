@@ -126,7 +126,7 @@ private:
 
     uint32_t constrain_freq(pwm_group &group);
 
-    void set_group_mode(pwm_group &group);
+    esp_err_t set_group_mode(pwm_group &group);
 
     void write_int(uint8_t chan, uint16_t period_us);
 

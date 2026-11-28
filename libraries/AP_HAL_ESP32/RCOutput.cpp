@@ -47,6 +47,8 @@ gpio_num_t outputs_pins[] = {};
 
 #endif
 
+#define MAX_CHANNELS ARRAY_SIZE(outputs_pins)
+
 /*
  * The MCPWM (motor control PWM) peripheral is used to generate PWM signals for
  * RC output. It is divided up into the following blocks:
@@ -77,11 +79,7 @@ gpio_num_t outputs_pins[] = {};
  */
 
 // each of our PWM groups has its own timer
-#define MAX_GROUPS (SOC_MCPWM_GROUPS*SOC_MCPWM_TIMERS_PER_GROUP)
-// we connect one timer to one operator
-static_assert(SOC_MCPWM_OPERATORS_PER_GROUP >= SOC_MCPWM_TIMERS_PER_GROUP);
-// and one generator to one comparator
-static_assert(SOC_MCPWM_GENERATORS_PER_OPERATOR >= SOC_MCPWM_COMPARATORS_PER_OPERATOR);
+#define MAX_GROUPS (MAX_CHANNELS > 0 ? MAX_CHANNELS : 1)
 
 // default settings for PWM ("normal") and brushed mode. carefully understand
 // the prescaler update logic in set_group_mode before changing resolution!
@@ -90,15 +88,13 @@ static_assert(SOC_MCPWM_GENERATORS_PER_OPERATOR >= SOC_MCPWM_COMPARATORS_PER_OPE
 
 #define SERVO_DEFAULT_FREQ_HZ 50 // the rest of ArduPilot assumes this!
 
-#define MAX_CHANNELS ARRAY_SIZE(outputs_pins)
-static_assert(MAX_CHANNELS < 12, "overrunning _pending and safe_pwm"); // max for current chips
-static_assert(MAX_CHANNELS < 32, "overrunning bitfields");
+static_assert(MAX_CHANNELS <= 12, "overrunning _pending and safe_pwm"); // max for current chips
+static_assert(MAX_CHANNELS <= 32, "overrunning bitfields");
 
-#define NEEDED_GROUPS ((MAX_CHANNELS+SOC_MCPWM_COMPARATORS_PER_OPERATOR-1)/SOC_MCPWM_COMPARATORS_PER_OPERATOR)
-static_assert(NEEDED_GROUPS <= MAX_GROUPS, "not enough hardware PWM groups");
-
-RCOutput::pwm_group RCOutput::pwm_group_list[NEEDED_GROUPS];
+RCOutput::pwm_group RCOutput::pwm_group_list[MAX_GROUPS];
 RCOutput::pwm_chan RCOutput::pwm_chan_list[MAX_CHANNELS];
+
+static uint8_t pwm_group_count = 0;
 
 void RCOutput::init()
 {
@@ -115,19 +111,22 @@ void RCOutput::init()
 
     _initialized = true; // assume we are initialized, any error will call abort()
 
-    RCOutput::pwm_group *curr_group = &pwm_group_list[0];
-    RCOutput::pwm_chan *curr_ch = &pwm_chan_list[0];
+    pwm_group_count = 0;
     int chan = 0;
 
-    // loop through all the hardware blocks and set them up. returns when we run
-    // out of GPIO pins (each of which is assigned in order to a PWM channel)
-    for (int mcpwm_group_id=0; mcpwm_group_id<SOC_MCPWM_GROUPS; mcpwm_group_id++) {
-        for (int timer_num=0; timer_num<SOC_MCPWM_TIMERS_PER_GROUP; timer_num++) {
-            RCOutput::pwm_group &group = *curr_group++;
+    bool invalid_group_id = false;
+
+    // Probe MCPWM group IDs until the driver rejects an invalid one
+    for (int mcpwm_group_id=0; chan < MAX_CHANNELS; mcpwm_group_id++) {
+
+        // Allocate as many operators/timers as needed/possible in this group
+        while (chan < MAX_CHANNELS) {
+            pwm_group &group = pwm_group_list[pwm_group_count];
 
             // set up the group to use the default frequency and mode
             group.mcpwm_group_id = mcpwm_group_id;
             group.h_timer = nullptr; // no timer yet
+            group.h_oper = nullptr;
             group.rc_frequency = SERVO_DEFAULT_FREQ_HZ;
             group.ch_mask = 0;
             group.current_mode = MODE_PWM_NORMAL;
@@ -136,36 +135,87 @@ void RCOutput::init()
             mcpwm_operator_config_t operator_config {
                 .group_id = mcpwm_group_id,
             };
-            ESP_ERROR_CHECK(mcpwm_new_operator(&operator_config, &group.h_oper));
+
+            esp_err_t err = mcpwm_new_operator(&operator_config, &group.h_oper);
+
+            if (err == ESP_ERR_INVALID_ARG) {
+                // No more valid MCPWM group IDs
+                invalid_group_id = true;
+                break;
+            }
+
+            if (err == ESP_ERR_NOT_FOUND) {
+                // No more operators in this group
+                break;
+            }
+
+            ESP_ERROR_CHECK(err);
 
             // set the mode, which creates the timer and connects the operator
-            set_group_mode(group);
+            err = set_group_mode(group);
 
-            // set up comparators/generators
-            for (int comparator_num=0; comparator_num<SOC_MCPWM_COMPARATORS_PER_OPERATOR; comparator_num++) {
-                RCOutput::pwm_chan &ch = *curr_ch++;
+            if (err == ESP_ERR_NOT_FOUND) {
+                // No more timers in this group
+                ESP_ERROR_CHECK(mcpwm_del_operator(group.h_oper));
+                group.h_oper = nullptr;
+                break;
+            }
 
-                // set up the output to be a part of the current group
-                ch.group = &group;
-                ch.gpio_num = outputs_pins[chan];
-                ch.value = 0;
-                group.ch_mask |= (1U << chan);
+            ESP_ERROR_CHECK(err);
+
+            const uint8_t first_chan = chan;
+
+            // Allocate comparator/generator pairs for this operator
+            while (chan < MAX_CHANNELS) {
+
+                pwm_chan &ch = pwm_chan_list[chan];
+
+                ch.h_cmpr = nullptr;
+                ch.h_gen = nullptr;
 
                 // create and connect comparator
                 mcpwm_comparator_config_t comparator_config {
                     // grab new comparator value when timer is zero
                     .flags { .update_cmp_on_tez = true },
                 };
-                ESP_ERROR_CHECK(mcpwm_new_comparator(group.h_oper, &comparator_config, &ch.h_cmpr));
-                ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(ch.h_cmpr, 0)); // zero the output
+
+                err = mcpwm_new_comparator(group.h_oper, &comparator_config, &ch.h_cmpr);
+
+                if (err == ESP_ERR_NOT_FOUND) {
+                    break;
+                }
+
+                ESP_ERROR_CHECK(err);
 
                 // create and connect generator
                 mcpwm_generator_config_t generator_config {
                     .gen_gpio_num = outputs_pins[chan],
                 };
-                ESP_ERROR_CHECK(mcpwm_new_generator(group.h_oper, &generator_config, &ch.h_gen));
 
-                // configure it to go low on compare threshold (takes priority over going high)
+                err = mcpwm_new_generator(
+                    group.h_oper,
+                    &generator_config,
+                    &ch.h_gen
+                );
+
+                if (err == ESP_ERR_NOT_FOUND) {
+                    // Comparator was allocated but generator wasn't
+                    ESP_ERROR_CHECK(mcpwm_del_comparator(ch.h_cmpr));
+                    ch.h_cmpr = nullptr;
+                    break;
+                }
+
+                ESP_ERROR_CHECK(err);
+
+                // Configure channel
+                ch.group = &group;
+                ch.gpio_num = outputs_pins[chan];
+                ch.value = 0;
+
+                ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(
+                    ch.h_cmpr, 0));
+
+                // Low on compare threshold
                 ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(ch.h_gen,
                     MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP,
                         ch.h_cmpr, MCPWM_GEN_ACTION_LOW)));
@@ -174,12 +224,46 @@ void RCOutput::init()
                     MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP,
                         MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
 
-                if (++chan == MAX_CHANNELS) {
-                    return; // finished all channels; done setting up the hardware
-                }
+                group.ch_mask |= (1U << chan);
+
+                chan++;
             }
+
+            if (chan == first_chan) {
+                // This operator couldn't provide any usable output.
+                // Release its resources before trying another operator.
+
+                ESP_ERROR_CHECK(mcpwm_timer_disable(group.h_timer));
+                ESP_ERROR_CHECK(mcpwm_del_operator(group.h_oper));
+                ESP_ERROR_CHECK(mcpwm_del_timer(group.h_timer));
+
+                group.h_oper = nullptr;
+                group.h_timer = nullptr;
+
+                continue;
+            }
+
+            // This PWM group is now in use
+            pwm_group_count++;
+        }
+
+        if (invalid_group_id) {
+            break;
         }
     }
+
+    if (chan != MAX_CHANNELS) {
+        ESP_LOGE(TAG,
+                 "MCPWM resources insufficient: initialized %u of %u channels",
+                 (unsigned)chan,
+                 (unsigned)MAX_CHANNELS);
+
+        ESP_ERROR_CHECK(ESP_ERR_NOT_FOUND);
+    }
+
+    ESP_LOGI(TAG, "MCPWM initialized: %u channels, %u PWM groups",
+             (unsigned)chan,
+             (unsigned)pwm_group_count);
 }
 
 // constrain the frequency for the group given its current mode and return the
@@ -207,7 +291,8 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         return;
     }
 
-    for (auto &group : pwm_group_list) {
+    for (uint8_t i = 0; i < pwm_group_count; i++) {
+        auto &group = pwm_group_list[i];
         if ((group.ch_mask & chmask) != 0) { // group has channels to set?
             group.rc_frequency = freq_hz; // set frequency and corresponding period
             ESP_ERROR_CHECK(mcpwm_timer_set_period(group.h_timer, constrain_freq(group)));
@@ -226,7 +311,8 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
         return;
     }
 
-    for (auto &group : pwm_group_list) {
+    for (uint8_t i = 0; i < pwm_group_count; i++) {
+        auto &group = pwm_group_list[i];
         // only set frequency of groups without fast channels
         if (!(group.ch_mask & fast_channel_mask) && group.ch_mask) {
             set_freq(group.ch_mask, freq_hz);
@@ -239,10 +325,10 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
 /*
   setup output mode for a group, using group.current_mode.
  */
-void RCOutput::set_group_mode(pwm_group &group)
+esp_err_t RCOutput::set_group_mode(pwm_group &group)
 {
     if (!_initialized) {
-        return;
+        return ESP_ERR_INVALID_STATE;
     }
 
     // calculate group timer resolution
@@ -282,6 +368,7 @@ void RCOutput::set_group_mode(pwm_group &group)
     if (group.h_timer) {
         ESP_ERROR_CHECK(mcpwm_timer_disable(group.h_timer));
         ESP_ERROR_CHECK(mcpwm_del_timer(group.h_timer));
+        group.h_timer = nullptr;
     }
 
     // build new timer config with the correct resolution and period
@@ -295,7 +382,11 @@ void RCOutput::set_group_mode(pwm_group &group)
 
     // create a "new" timer with the correct settings for this mode (if already
     // allocated this need not reuse the same hardware unit, but likely will)
-    ESP_ERROR_CHECK(mcpwm_new_timer(&timer_config, &group.h_timer));
+    esp_err_t err = mcpwm_new_timer(&timer_config, &group.h_timer);
+
+    if (err != ESP_OK) {
+        return err;
+    }
     ESP_ERROR_CHECK(mcpwm_timer_enable(group.h_timer));
 
     // convincing the hardware unit, if reused, to use the new prescaler value
@@ -344,6 +435,7 @@ void RCOutput::set_group_mode(pwm_group &group)
     // oh, and connect the operator, in case we are using a new timer (it can
     // only connect to one timer so this will clear out any old connection)
     ESP_ERROR_CHECK(mcpwm_operator_connect_timer(group.h_oper, group.h_timer));
+    return ESP_OK;
 }
 
 
@@ -357,7 +449,7 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
 
         pwm_group &group = *pwm_chan_list[chan].group;
         group.current_mode = mode;
-        set_group_mode(group);
+        ESP_ERROR_CHECK(set_group_mode(group));
 
         // acknowledge the setting of any channels sharing this group
         for (chan=0; chan<MAX_CHANNELS; chan++) {
