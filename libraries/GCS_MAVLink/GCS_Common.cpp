@@ -4868,6 +4868,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_in
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Bootloader not signed");
         break;
 #endif
+    case AP_HAL::Util::FlashBootloader::AIRFRAME_MISMATCH:
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Bootloader airframe ID mismatch");
+        break;
     default:
         break;
     }

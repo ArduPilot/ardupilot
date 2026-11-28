@@ -1,0 +1,11 @@
+include ../ZeroOneX6/hwdef.dat
+
+# example airframe: a hexacopter built around the ZeroOneX6. It keeps
+# the ZeroOneX6 board ID; the airframe ID stops this firmware arming on
+# a ZeroOneX6 whose bootloader belongs to a different airframe
+define AP_AIRFRAME_ID 2
+
+# this airframe is only ever an X hexa
+define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
+define AP_MOTORS_FRAME_HEXA_ENABLED 1
+define HAL_FRAME_TYPE_DEFAULT 1

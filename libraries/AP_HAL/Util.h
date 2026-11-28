@@ -112,6 +112,7 @@ public:
         FAIL=2,
         NOT_AVAILABLE=3,
         NOT_SIGNED=4,
+        AIRFRAME_MISMATCH=5,
     };
 
     // overwrite bootloader (probably with one from ROMFS)

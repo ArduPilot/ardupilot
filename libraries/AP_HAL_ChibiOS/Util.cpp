@@ -26,6 +26,7 @@
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
+#include <AP_CheckFirmware/AP_AirframeID.h>
 #if AP_CRASHDUMP_FATFS_ENABLED
 #include "CrashDump.h"
 #endif
@@ -254,6 +255,19 @@ Util::FlashBootloader Util::flash_bootloader()
         return FlashBootloader::NOT_SIGNED;
     }
 #endif
+
+#if AP_AIRFRAME_ID_ENABLED
+    // never move a board to a different airframe, or remove its airframe
+    uint16_t installed_airframe_id;
+    if (AP_AirframeID::installed(installed_airframe_id)) {
+        uint16_t new_airframe_id;
+        if (!AP_AirframeID::find(fw, fw_size, new_airframe_id) ||
+            new_airframe_id != installed_airframe_id) {
+            AP_ROMFS::free(fw);
+            return FlashBootloader::AIRFRAME_MISMATCH;
+        }
+    }
+#endif // AP_AIRFRAME_ID_ENABLED
 
     // make sure size is multiple of 32
     fw_size = (fw_size + 31U) & ~31U;
