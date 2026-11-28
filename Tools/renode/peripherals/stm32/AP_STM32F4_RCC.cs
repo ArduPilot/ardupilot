@@ -52,7 +52,15 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         }
 
         public long Size => 0x400;
+        public enum ResetCause
+        {
+            PowerOn,
+            Software,
+            Watchdog
+        }
 
+        public ResetCause NextResetCause { get; set; } = ResetCause.PowerOn;
+        
         public uint HseFrequency
         {
             get { return hseFrequency; }
@@ -85,7 +93,22 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             registers[PLLCFGR] = 0x24003010;
             registers[PLLI2SCFGR] = 0x20003000;
             registers[PLLSAICFGR] = 0x24003000;
-            registers[CSR] = PORRSTF | PINRSTF | BORRSTF;
+                uint resetFlags;
+    switch(NextResetCause)
+    {
+        case ResetCause.Software:
+        resetFlags = SFTRSTF | PINRSTF;
+            break;
+        case ResetCause.Watchdog:
+            resetFlags = IWDGRSTF | PINRSTF;
+            break;
+        case ResetCause.PowerOn:
+        default:
+            resetFlags = PORRSTF | PINRSTF | BORRSTF;
+            break;
+    }
+    registers[CSR] = resetFlags;
+    NextResetCause = ResetCause.Software;;
             appliedFrequencies.Clear();
             UpdateClocks();
         }
@@ -486,11 +509,14 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const uint SW_MASK = 0x3;
         private const uint SWS_MASK = 0xC;
         private const uint CR_READ_ONLY_MASK = HSIRDY | HSERDY | PLLRDY | PLLI2SRDY | PLLSAIRDY;
-        private const uint PORRSTF = 1u << 27;
-        private const uint PINRSTF = 1u << 26;
-        private const uint BORRSTF = 1u << 25;
+        private const uint LPWRRSTF = 1u << 31;
+        private const uint WWDGRSTF = 1u << 30;
+        private const uint IWDGRSTF = 1u << 29;
+        private const uint SFTRSTF  = 1u << 28;
+        private const uint PORRSTF  = 1u << 27;
+        private const uint PINRSTF  = 1u << 26;
+        private const uint BORRSTF  = 1u << 25;
         private const uint RESET_FLAGS = 0xFE000000;
-
         private const ulong HsiFrequency = 16000000;
         private const ulong LsiFrequency = 32000;
         private const uint DefaultHseFrequency = 8000000;
