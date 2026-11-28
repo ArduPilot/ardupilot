@@ -1152,7 +1152,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         return {
             "FRSkyPassThrough": "Currently failing",
             "ConfigErrorLoop": "failing because RC values not settable",
-            "ShipLandingEarlyQRTL": "lands off the deck with Q_OPTIONS bit 16 set, issue #35394",
         }
 
     def BootInAUTO(self):
