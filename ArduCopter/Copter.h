@@ -879,6 +879,8 @@ private:
     void update_land_and_crash_detectors();
     void update_land_detector();
     void set_land_complete(bool b);
+    // tell AHRS whether the vehicle is on the ground
+    void update_vehicle_landed();
     void set_land_complete_maybe(bool b);
     void update_throttle_mix();
     bool get_force_flying() const;
