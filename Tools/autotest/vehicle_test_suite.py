@@ -17430,6 +17430,14 @@ return update, 1000
         if m.fix_type != mavutil.mavlink.GPS_FIX_TYPE_NO_GPS:
             raise NotAchievedException("Incorrect fix type")
 
+        self.start_subtest("Ensure setting GSOF without serial port does not crash")
+        self.set_parameter("GPS2_TYPE", 11)  # GSOF
+        self.delay_sim_time(2, reason="GPS to attempt GSOF detection without crashing")
+        m = self.assert_receive_message("GPS2_RAW")
+        if m.fix_type != mavutil.mavlink.GPS_FIX_TYPE_NO_GPS:
+            raise NotAchievedException("Incorrect fix type")
+        self.set_parameter("GPS2_TYPE", 1)
+
         self.start_subtest("Ensure detection when sim gps connected")
         self.set_parameter("SIM_GPS2_TYPE", 1)
         self.set_parameter("SIM_GPS2_ENABLE", 1)
