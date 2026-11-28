@@ -110,9 +110,9 @@ void Rover::init_ardupilot()
 
 #if AP_MISSION_ENABLED
     // initialise mission library
-    mode_auto.mission.init();
+    mission.init();
 #if HAL_LOGGING_ENABLED
-    mode_auto.mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+    mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
 #endif
 #endif
 
@@ -189,7 +189,10 @@ bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
         (uint8_t)Mode::Number::SMART_RTL,
         (uint8_t)Mode::Number::GUIDED,
 #if MODE_DOCK_ENABLED
-        (uint8_t)Mode::Number::DOCK
+        (uint8_t)Mode::Number::DOCK,
+#endif
+#if MODE_AUTORTL_ENABLED
+        (uint8_t)Mode::Number::AUTO_RTL,
 #endif
     };
 
@@ -213,6 +216,9 @@ uint32_t Rover::get_available_mode_enabled_mask() const
         &rover.mode_auto,
         &rover.mode_rtl,
         &rover.mode_smartrtl,
+#if MODE_AUTORTL_ENABLED
+        &rover.mode_auto_rtl,
+#endif
         &rover.mode_guided,
         &rover.mode_initializing,
 #if MODE_DOCK_ENABLED
@@ -270,7 +276,11 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 #endif
 
 #if AP_CAMERA_ENABLED
-    camera.set_is_auto_mode(control_mode->mode_number() == Mode::Number::AUTO);
+    camera.set_is_auto_mode(control_mode->mode_number() == Mode::Number::AUTO
+#if MODE_AUTORTL_ENABLED
+                            || control_mode->mode_number() == Mode::Number::AUTO_RTL
+#endif
+    );
 #endif
 
     old_mode.exit();

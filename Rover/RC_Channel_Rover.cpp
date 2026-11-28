@@ -45,6 +45,9 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::ROLL:
     case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::RTL:
+#if MODE_AUTORTL_ENABLED
+    case AUX_FUNC::AUTO_RTL:
+#endif
     case AUX_FUNC::SAILBOAT_TACK:
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
     case AUX_FUNC::SAVE_WP:
@@ -125,8 +128,8 @@ void RC_Channel_Rover::add_waypoint_for_current_loc()
     cmd.id = MAV_CMD_NAV_WAYPOINT;
 
     // save command
-    if (rover.mode_auto.mission.add_cmd(cmd)) {
-        hal.console->printf("Added waypoint %u", (unsigned)rover.mode_auto.mission.num_commands());
+    if (rover.mission.add_cmd(cmd)) {
+        hal.console->printf("Added waypoint %u", (unsigned)rover.mission.num_commands());
     }
 }
 
@@ -156,13 +159,17 @@ bool RC_Channel_Rover::do_aux_function(const AuxFuncTrigger &trigger)
     case AUX_FUNC::SAVE_WP:
         if (ch_flag == AuxSwitchPos::HIGH) {
             // do nothing if in AUTO mode
-            if (rover.control_mode == &rover.mode_auto) {
+            if (rover.control_mode == &rover.mode_auto
+#if MODE_AUTORTL_ENABLED
+                || rover.control_mode == &rover.mode_auto_rtl
+#endif
+            ) {
                 break;
             }
 
             // if disarmed clear mission and set home to current location
             if (!rover.arming.is_armed()) {
-                rover.mode_auto.mission.clear();
+                rover.mission.clear();
                 GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "SaveWP: Mission cleared!");
                 if (!rover.set_home_to_current_location(false)) {
                     // ignored
@@ -209,6 +216,13 @@ bool RC_Channel_Rover::do_aux_function(const AuxFuncTrigger &trigger)
     case AUX_FUNC::RTL:
         do_aux_function_change_mode(rover.mode_rtl, ch_flag);
         break;
+
+#if MODE_AUTORTL_ENABLED
+    // set mode to Auto RTL (DO_RETURN_PATH_START corridor)
+    case AUX_FUNC::AUTO_RTL:
+        do_aux_function_change_mode(rover.mode_auto_rtl, ch_flag);
+        break;
+#endif
 
     // set mode to SmartRTL
     case AUX_FUNC::SMART_RTL:

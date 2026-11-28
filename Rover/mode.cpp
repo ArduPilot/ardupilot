@@ -551,6 +551,11 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::SMART_RTL:
         ret = &mode_smartrtl;
         break;
+#if MODE_AUTORTL_ENABLED
+    case Mode::Number::AUTO_RTL:
+        ret = &mode_auto_rtl;
+        break;
+#endif
     case Mode::Number::GUIDED:
         ret = &mode_guided;
         break;

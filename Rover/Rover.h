@@ -99,6 +99,9 @@ public:
     friend class ModeManual;
     friend class ModeRTL;
     friend class ModeSmartRTL;
+#if MODE_AUTORTL_ENABLED
+    friend class ModeAutoRTL;
+#endif
 #if MODE_FOLLOW_ENABLED
     friend class ModeFollow;
 #endif
@@ -241,6 +244,9 @@ private:
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
+#if MODE_AUTORTL_ENABLED
+    ModeAutoRTL mode_auto_rtl;
+#endif
 #if MODE_FOLLOW_ENABLED
     ModeFollow mode_follow;
 #endif
@@ -248,6 +254,11 @@ private:
 #if MODE_DOCK_ENABLED
     ModeDock mode_dock;
 #endif
+
+    AP_Mission mission{
+        FUNCTOR_BIND_MEMBER(&Rover::start_command_callback, bool, const AP_Mission::Mission_Command&),
+        FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
+        FUNCTOR_BIND_MEMBER(&Rover::exit_mission_callback, void)};
 
     // cruise throttle and speed learning
     typedef struct {
@@ -384,8 +395,17 @@ private:
     bool set_mode(Mode::Number new_mode, ModeReason reason);
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
     bool current_mode_requires_mission() const override {
-        return control_mode == &mode_auto;
+        return control_mode == &mode_auto
+#if MODE_AUTORTL_ENABLED
+            || control_mode == &mode_auto_rtl
+#endif
+        ;
     }
+
+    // mission callbacks dispatched to the active auto mode
+    bool start_command_callback(const AP_Mission::Mission_Command &cmd);
+    bool verify_command_callback(const AP_Mission::Mission_Command &cmd);
+    void exit_mission_callback();
 
     // Return mask of enabled modes, order does not matter, its just for tracking changes
     uint32_t get_available_mode_enabled_mask() const override;

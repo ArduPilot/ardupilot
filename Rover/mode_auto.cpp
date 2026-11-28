@@ -5,7 +5,7 @@
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
-    if (!mission.present()) {
+    if (!rover.mission.present()) {
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
         return false;
     }
@@ -36,9 +36,20 @@ bool ModeAuto::_enter()
 
 void ModeAuto::_exit()
 {
-    // stop running the mission
-    if (mission.state() == AP_Mission::MISSION_RUNNING) {
-        mission.stop();
+    // stop running the mission unless transitioning to another mission mode
+    if (rover.control_mode != &rover.mode_auto &&
+#if MODE_AUTORTL_ENABLED
+        rover.control_mode != &rover.mode_auto_rtl &&
+#endif
+        rover.mission.state() == AP_Mission::MISSION_RUNNING) {
+        rover.mission.stop();
+    }
+}
+
+void ModeAuto::init_reversed_flag()
+{
+    if (!rover.mission.is_resume()) {
+        set_reversed(false);
     }
 }
 
@@ -47,7 +58,7 @@ void ModeAuto::update()
     // check if mission exists (due to being cleared while disarmed in AUTO,
     // if no mission, then stop...needs mode change out of AUTO, mission load,
     // and change back to AUTO to run a mission at this point
-    if (!rover.arming.is_armed_and_safety_off() && !mission.present()) {
+    if (!rover.arming.is_armed_and_safety_off() && !rover.mission.present()) {
         start_stop();
     }
     // start or update mission
@@ -56,7 +67,7 @@ void ModeAuto::update()
         Location loc;
         if (ahrs.get_origin(loc)) {
             // start/resume the mission (based on MIS_RESTART parameter)
-            mission.start_or_resume();
+            rover.mission.start_or_resume();
             waiting_to_start = false;
 
             // initialise mission change check
@@ -66,8 +77,8 @@ void ModeAuto::update()
         // check for mission changes
         if (mis_change_detector.check_for_mission_change()) {
             // if mission is running restart the current command if it is a waypoint command
-            if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_submode == SubMode::WP)) {
-                if (mission.restart_current_nav_cmd()) {
+            if ((rover.mission.state() == AP_Mission::MISSION_RUNNING) && (_submode == SubMode::WP)) {
+                if (rover.mission.restart_current_nav_cmd()) {
                     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Auto mission changed, restarted command");
                 } else {
                     // failed to restart mission for some reason
@@ -76,7 +87,7 @@ void ModeAuto::update()
             }
         }
 
-        mission.update();
+        rover.mission.update();
     }
 
     switch (_submode) {
@@ -593,6 +604,10 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_guided_limits(cmd);
         break;
 
+    case MAV_CMD_DO_RETURN_PATH_START:  // MAV ID: 188 - return path marker, treated as a no-op in start_command
+    case MAV_CMD_DO_LAND_START:         // MAV ID: 189 - land start marker, treated as a no-op in start_command
+        break;
+
     default:
         // return false for unhandled commands
         return false;
@@ -707,6 +722,8 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_REVERSE:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_GUIDED_LIMITS:
+    case MAV_CMD_DO_RETURN_PATH_START:  // MAV ID: 188 - return path marker, always immediately complete
+    case MAV_CMD_DO_LAND_START:         // MAV ID: 189 - land start marker, always immediately complete
         return true;
 
     default:
@@ -742,7 +759,7 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
 
     // do not add next wp if there are no more navigation commands
     AP_Mission::Mission_Command next_cmd;
-    if (always_stop_at_destination || !mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
+    if (always_stop_at_destination || !rover.mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
         // single destination
         if (!set_desired_location(cmdloc)) {
             return false;

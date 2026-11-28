@@ -176,9 +176,13 @@ bool AP_Arming_Rover::disarm(const AP_Arming::Method method, bool do_disarm_chec
     if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
-    if (rover.control_mode != &rover.mode_auto) {
+    if (rover.control_mode != &rover.mode_auto
+#if MODE_AUTORTL_ENABLED
+        && rover.control_mode != &rover.mode_auto_rtl
+#endif
+    ) {
         // reset the mission on disarm if we are not in auto
-        rover.mode_auto.mission.reset();
+        rover.mission.reset();
     }
 
 #if HAL_LOGGING_ENABLED
