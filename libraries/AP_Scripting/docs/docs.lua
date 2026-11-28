@@ -3119,11 +3119,23 @@ function gcs:get_allow_param_set() end
 ---@param new_allow_value boolean
 function gcs:set_allow_param_set(new_allow_value) end
 
--- call a MAVLink MAV_CMD_xxx command via command_int interface
+-- call a MAVLink MAV_CMD_xxx command via command_int interface.
+-- PREFLIGHT_CALIBRATION, FLASH_BOOTLOADER and an arm (COMPONENT_ARM_DISARM with p1 = 1) run later on the
+-- main thread: they return 5 (MAV_RESULT_IN_PROGRESS), or 1 (MAV_RESULT_TEMPORARILY_REJECTED) while another
+-- such command is waiting, and gcs:command_int_result() gives their result once they have one. A command
+-- sent after one of them may run first. Any other command that returns 5, such as STORAGE_FORMAT, reports
+-- its result the same way
 ---@param command integer -- MAV_CMD_xxx
 ---@param params table -- parameters of p1, p2, p3, p4, x, y and z and frame. Any not specified taken as zero
 ---@return integer -- MAV_RESULT
 function gcs:run_command_int(command, params) end
+
+-- get the result of a command gcs:run_command_int() returned 5 (MAV_RESULT_IN_PROGRESS) for.
+-- Returns nil until the command has finished, then its MAV_RESULT once. Only the last command's result is
+-- kept, and any script can take it, so nil can also mean it was taken or replaced: stop asking after a timeout
+---@param command integer -- MAV_CMD_xxx
+---@return integer|nil -- MAV_RESULT
+function gcs:command_int_result(command) end
 
 -- The relay library provides access to controlling relay outputs.
 relay = {}

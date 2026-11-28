@@ -133,6 +133,10 @@ GCS *GCS::_singleton = nullptr;
 
 GCS_MAVLINK_InProgress GCS_MAVLINK_InProgress::in_progress_tasks[1];
 uint32_t GCS_MAVLINK_InProgress::last_check_ms;
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+bool GCS_MAVLINK_InProgress::running_for_script;
+GCS_MAVLINK_InProgress::ScriptResult GCS_MAVLINK_InProgress::script_result;
+#endif
 
 GCS_MAVLINK::GCS_MAVLINK(AP_HAL::UARTDriver &uart)
 {
@@ -1485,11 +1489,24 @@ bool GCS_MAVLINK_InProgress::send_ack(MAV_RESULT result)
 
 bool GCS_MAVLINK_InProgress::send_in_progress()
 {
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+    if (for_script) {
+        // a script asks for the result when it wants it
+        return true;
+    }
+#endif
     return send_ack(MAV_RESULT_IN_PROGRESS);
 }
 
 bool GCS_MAVLINK_InProgress::conclude(MAV_RESULT result)
 {
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+    if (for_script) {
+        set_script_result(mav_cmd, result);
+        task = Type::NONE;
+        return true;
+    }
+#endif
     if (!send_ack(result)) {
         return false;
     }
@@ -1521,10 +1538,117 @@ GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MA
         _task.mav_cmd = mav_cmd;
         _task.requesting_sysid = sysid;
         _task.requesting_compid = compid;
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+        // a script's command carries no sender; a ground station's command
+        // handled while the main thread runs a script's, from the delay
+        // callback, reports to the ground station
+        _task.for_script = running_for_script && sysid == 0 && compid == 0;
+#endif
         return &_task;
     }
     return nullptr;
 }
+
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+/*
+  hand a script's command to the main thread, which runs it in
+  run_script_command(). Returns MAV_RESULT_IN_PROGRESS, after which the
+  script takes the command's result with take_script_result(), or
+  MAV_RESULT_TEMPORARILY_REJECTED if there is no free task or the same
+  command from a script is still waiting. The caller holds the scheduler
+  semaphore, as the main thread does when it uses the tasks
+*/
+MAV_RESULT GCS_MAVLINK_InProgress::start_script_command(const mavlink_command_int_t &packet)
+{
+    GCS_MAVLINK_InProgress *task = get_task(MAV_CMD(packet.command), Type::SCRIPT_COMMAND, 0, 0, MAVLINK_COMM_0);
+    if (task == nullptr) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    clear_script_result(MAV_CMD(packet.command));
+    task->script_packet = packet;
+    return MAV_RESULT_IN_PROGRESS;
+}
+
+/*
+  run the command of a SCRIPT_COMMAND task, if there is one, as the main
+  thread runs a ground station's. The task is freed first, as the
+  command may start a task of its own, which then reports to the script.
+  Not from the delay callback, which would run it in the middle of
+  another command, such as a ground station's calibration
+*/
+void GCS_MAVLINK_InProgress::run_script_command()
+{
+    if (hal.scheduler->in_delay_callback()) {
+        return;
+    }
+    for (auto &task : in_progress_tasks) {
+        if (task.task != Type::SCRIPT_COMMAND) {
+            continue;
+        }
+        const mavlink_command_int_t packet = task.script_packet;
+        task.task = Type::NONE;
+        const MAV_RESULT result = run_command_for_script(packet);
+        if (result != MAV_RESULT_IN_PROGRESS) {
+            set_script_result(MAV_CMD(packet.command), result);
+        }
+    }
+}
+
+/*
+  run a command for a script. A task the command starts concludes by
+  keeping its result for the script, which has no channel to send an ack
+  to. The caller is the main thread or holds the scheduler semaphore
+*/
+MAV_RESULT GCS_MAVLINK_InProgress::run_command_for_script(const mavlink_command_int_t &packet)
+{
+    clear_script_result(MAV_CMD(packet.command));
+    const bool was_running_for_script = running_for_script;
+    running_for_script = true;
+    const MAV_RESULT result = gcs().run_command_int_on_chan0(packet);
+    running_for_script = was_running_for_script;
+    return result;
+}
+
+/*
+  keep the result of a script's command until the script takes it with
+  take_script_result(). Only the last command's result is kept
+*/
+void GCS_MAVLINK_InProgress::set_script_result(MAV_CMD cmd, MAV_RESULT result)
+{
+    WITH_SEMAPHORE(script_result.sem);
+    script_result.cmd = cmd;
+    script_result.result = result;
+    script_result.valid = true;
+}
+
+/*
+  drop a result of cmd that no script has taken, as cmd is starting
+  again and its result must not be mistaken for the new one's
+*/
+void GCS_MAVLINK_InProgress::clear_script_result(MAV_CMD cmd)
+{
+    WITH_SEMAPHORE(script_result.sem);
+    if (script_result.cmd == cmd) {
+        script_result.valid = false;
+    }
+}
+
+/*
+  take the result of a script's command cmd that returned
+  MAV_RESULT_IN_PROGRESS. Returns false while it is still running, or if
+  its result has already been taken or replaced by a later command's
+*/
+bool GCS_MAVLINK_InProgress::take_script_result(MAV_CMD cmd, MAV_RESULT &result)
+{
+    WITH_SEMAPHORE(script_result.sem);
+    if (!script_result.valid || script_result.cmd != cmd) {
+        return false;
+    }
+    script_result.valid = false;
+    result = script_result.result;
+    return true;
+}
+#endif  // AP_EXTERNAL_BINDING_ENABLED && !HAL_BUILD_AP_PERIPH
 
 
 void GCS_MAVLINK_InProgress::check_tasks()
@@ -1581,6 +1705,9 @@ void GCS_MAVLINK_InProgress::check_tasks()
                 break;
             }
 #endif
+            break;
+        case Type::SCRIPT_COMMAND:
+            // run_script_command() runs it from GCS::update_receive()
             break;
         }
     }
@@ -2821,6 +2948,11 @@ void GCS::update_send()
 
 void GCS::update_receive(void)
 {
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+    // a command a script has handed to the main thread, run first so its
+    // task does not hold off a ground station's command in this update
+    GCS_MAVLINK_InProgress::run_script_command();
+#endif
     for (uint8_t i=0; i<num_gcs(); i++) {
         chan(i)->update_receive();
     }

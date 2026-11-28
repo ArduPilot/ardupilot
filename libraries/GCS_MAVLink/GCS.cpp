@@ -719,16 +719,74 @@ bool GCS_MAVLINK::check_payload_size(uint16_t max_payload_len)
     return true;
 }
 
-#if AP_EXTERNAL_BINDING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
 /*
-  lua access to command_int
+  run a command_int for a script, which runs on its own thread.
 
-  Note that this is called with the AP_Scheduler lock, ensuring the
-  main thread does not race with a lua command_int
+  Most commands run here with the scheduler semaphore held, so the main
+  thread cannot race them. The main thread releases it while it waits
+  for each IMU sample, so such a command runs within a main loop.
+
+  A few commands can keep the main thread waiting far longer: a
+  calibration can take seconds, flashing the bootloader takes several,
+  and arming waits up to a second for the logger to open a file. Their
+  EXPECT_DELAY_MS only takes effect on the main thread, so held off the
+  semaphore that long the main loop trips the stuck-loop monitor, which
+  raises main_loop_stuck and force-releases the semaphore with the
+  command still running. Those commands are handed to the main thread,
+  which runs them as it runs a ground station's; this returns
+  MAV_RESULT_IN_PROGRESS, and the script takes the result with
+  take_command_int_result_for_script() once there is one. A disarm does
+  not wait, and runs at once
 */
-MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
+MAV_RESULT GCS::run_command_int_for_script(const mavlink_command_int_t &packet)
 {
-    // for now we assume channel 0. In the future we may create a dedicated channel
+    WITH_SEMAPHORE(AP::scheduler().get_semaphore());
+    if (runs_on_main_thread_for_script(packet)) {
+        return GCS_MAVLINK_InProgress::start_script_command(packet);
+    }
+    return GCS_MAVLINK_InProgress::run_command_for_script(packet);
+}
+
+/*
+  true if a script's command can hold the main loop too long to run on
+  the scripting thread, so is handed to the main thread
+*/
+bool GCS::runs_on_main_thread_for_script(const mavlink_command_int_t &packet) const
+{
+    switch (packet.command) {
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+    case MAV_CMD_FLASH_BOOTLOADER:
+        return true;
+    case MAV_CMD_COMPONENT_ARM_DISARM:
+        return is_equal(packet.param1, 1.0f);
+    default:
+        return false;
+    }
+}
+
+/*
+  take the result of a script's command that run_command_int_for_script()
+  returned MAV_RESULT_IN_PROGRESS for. Returns false until it has one,
+  and once it has been taken
+*/
+bool GCS::take_command_int_result_for_script(uint16_t command, uint8_t &result)
+{
+    MAV_RESULT mav_result;
+    if (!GCS_MAVLINK_InProgress::take_script_result(MAV_CMD(command), mav_result)) {
+        return false;
+    }
+    result = uint8_t(mav_result);
+    return true;
+}
+
+/*
+  run a command_int as if received on channel 0. The caller must be the
+  main thread or hold the scheduler semaphore, so the command's handler
+  cannot race the main loop
+*/
+MAV_RESULT GCS::run_command_int_on_chan0(const mavlink_command_int_t &packet)
+{
     auto *ch = chan(0);
     if (ch == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
@@ -738,7 +796,7 @@ MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
 
     return ch->handle_command_int_packet(packet, msg);
 }
-#endif // AP_EXTERNAL_BINDING_ENABLED
+#endif  // AP_EXTERNAL_BINDING_ENABLED && !HAL_BUILD_AP_PERIPH
 
 /*
   return true if a MAVLink system ID is a GCS for this vehicle

@@ -1186,10 +1186,9 @@ int lua_GCS_command_int(lua_State *L)
     }
     lua_pop(L, 1);
     
-    // call the interface with scheduler lock
-    WITH_SEMAPHORE(AP::scheduler().get_semaphore());
-
-    auto result = _gcs->lua_command_int_packet(pkt);
+    // the GCS takes the scheduler lock itself, and hands a long command to
+    // the main thread
+    auto result = _gcs->run_command_int_for_script(pkt);
 
     // Return the resulting MAV_RESULT
     lua_pushinteger(L, result);

@@ -26835,6 +26835,112 @@ return update()
             if reply.get_payload().ljust(10, b'\0')[8] != (255 if wide else target):
                 raise NotAchievedException("Incorrect Lua payload target")
 
+    def ScriptingCommandIntCalibration(self):
+        '''Test calibrations and arming a script runs with gcs:run_command_int complete'''
+        # A calibration run on the scripting thread with the scheduler lock
+        # held stops the main thread, and with it SITL's clock. SITL has no
+        # stuck-loop monitor, so this shows the lock is no longer held, not
+        # the main_loop_stuck a board raises.
+        self.install_script_content_context("calibrate.lua", """
+local MAV_CMD_COMPONENT_ARM_DISARM = 400
+local MAV_CMD_PREFLIGHT_CALIBRATION = 241
+local MAV_RESULT_IN_PROGRESS = 5
+local commands = {
+    {"arm", MAV_CMD_COMPONENT_ARM_DISARM, {p1 = 1}},
+    -- its result is left untaken, and must not be given for the next one
+    {"untaken gyro", MAV_CMD_PREFLIGHT_CALIBRATION, {p1 = 1}},
+    {"gyro", MAV_CMD_PREFLIGHT_CALIBRATION, {p1 = 1}},
+    {"simple accel", MAV_CMD_PREFLIGHT_CALIBRATION, {x = 4}},
+    {"trim", MAV_CMD_PREFLIGHT_CALIBRATION, {x = 2}},
+}
+local index = 0
+local polls = nil
+
+local function update()
+    if polls == nil then
+        local c = commands[index + 1]
+        if c == nil then
+            return
+        end
+        if c[2] == MAV_CMD_COMPONENT_ARM_DISARM and not arming:pre_arm_checks() then
+            return update, 1000
+        end
+        index = index + 1
+        local result = gcs:run_command_int(c[2], c[3])
+        if result ~= MAV_RESULT_IN_PROGRESS then
+            gcs:send_text(6, string.format("%s started %d", c[1], result))
+            return
+        end
+        if c[1] == "untaken gyro" then
+            return update, 3000
+        end
+        -- the untaken result of an earlier run is not given for this one
+        local stale = gcs:command_int_result(c[2])
+        if stale ~= nil then
+            gcs:send_text(6, string.format("%s stale %d", c[1], stale))
+            return
+        end
+        polls = 0
+        return update, 10
+    end
+    local c = commands[index]
+    local result = gcs:command_int_result(c[2])
+    if result == nil then
+        polls = polls + 1
+        return update, 10
+    end
+    -- a result is given once
+    local again = gcs:command_int_result(c[2])
+    local text = string.format("%s %d after %d polls, %s", c[1], result, polls, tostring(again))
+    if c[2] == MAV_CMD_COMPONENT_ARM_DISARM then
+        -- a disarm runs at once
+        text = text .. string.format(", disarm %d", gcs:run_command_int(MAV_CMD_COMPONENT_ARM_DISARM, {p1 = 0}))
+    end
+    gcs:send_text(6, text)
+    polls = nil
+    -- an accel cal is refused within 5s of the last
+    return update, 6000
+end
+-- give the vehicle time to boot before checking it can arm
+return update, 5000
+""")
+        self.set_parameter("SCR_ENABLE", 1)
+        # the calibrations save these themselves
+        self.context_preserve_parameters(
+            ["AHRS_TRIM_%s" % axis for axis in "XYZ"] +
+            ["INS_%s%s%s_%s" % (sensor, instance, kind, axis)
+             for (sensor, kind) in (("ACC", "OFFS"), ("ACC", "SCAL"), ("GYR", "OFFS"))
+             for instance in ("", "2", "3")
+             for axis in "XYZ"] +
+            ["INS_%s%u_CALTEMP" % (sensor, instance) for sensor in ("ACC", "GYR") for instance in (1, 2, 3)])
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        # the timeouts are wall-clock, as a script holding the scheduler
+        # lock stops SITL's clock
+        m = self.wait_statustext(r"arm (started|stale|\d+ after)", regex=True, check_context=True, timeout=60,
+                                 wallclock_timeout=True)
+        match = re.match(r"arm (\d+) after \d+ polls, nil, disarm (\d+)$", m.text)
+        if match is None:
+            raise NotAchievedException("arm: %s" % m.text)
+        if int(match.group(1)) != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+            raise NotAchievedException("arm result %s" % match.group(1))
+        if int(match.group(2)) != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+            raise NotAchievedException("disarm result %s" % match.group(2))
+
+        for cal in "gyro", "simple accel", "trim":
+            m = self.wait_statustext(r"%s (started|stale|\d+ after)" % cal, regex=True, check_context=True, timeout=30,
+                                     wallclock_timeout=True)
+            match = re.match(r"%s (\d+) after (\d+) polls, nil$" % cal, m.text)
+            if match is None:
+                raise NotAchievedException("%s cal: %s" % (cal, m.text))
+            (result, polls) = (int(match.group(1)), int(match.group(2)))
+            if result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+                raise NotAchievedException("%s cal result %u" % (cal, result))
+            # the script runs on while the main thread calibrates the gyros
+            if cal == "gyro" and polls == 0:
+                raise NotAchievedException("No polls while the gyros calibrated")
+
     def LuaParamLockdown(self):
         '''test param-lockdown.lua applet'''
         self.set_parameters({
@@ -27503,6 +27609,7 @@ return update, 1000
             self.mission_NAV_LOITER_TURNS_direction,
             self.LuaMAVLinkTarget,
             self.LuaParamLockdown,
+            self.ScriptingCommandIntCalibration,
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             self.CRSF,
