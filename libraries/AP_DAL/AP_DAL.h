@@ -64,6 +64,8 @@ public:
         setSourceSet0             = 13,
         setSourceSet1             = 14,
         setSourceSet2             = 15,
+        setInhibitAccelBiasLearning   = 16,
+        unsetInhibitAccelBiasLearning = 17,
     };
 
     // must remain the same as AP_AHRS_VehicleClass numbers-wise
@@ -94,7 +96,10 @@ public:
     void log_SetOriginLLH2(const Location &loc);
     void log_writeDefaultAirSpeed2(const float aspeed, const float uncertainty);
 
-    void log_event3(Event event);
+    // returns false if the event should be written again later: logging has not started, or the logger refused it
+    bool log_event3(Event event);
+    // true while the DAL is logging; it writes all its records again each time this becomes true
+    bool is_logging() const { return logging_started; }
     void log_SetOriginLLH3(const Location &loc);
     void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
 
@@ -114,6 +119,7 @@ public:
 
     enum class RFRNFlags2 {
         VEHICLE_LANDED = (1U<<0),
+        HOVER_Z_BIAS_ENABLED = (1U<<1),
     };
 
     // EKF ID for timing checks
@@ -207,6 +213,10 @@ public:
         return _RFRN.vehicle_landed;
     }
 
+    bool get_hover_z_bias_enabled(void) const {
+        return _RFRN.hover_z_bias_enabled;
+    }
+
     // for EKF usage to enable takeoff expected to true
     void set_takeoff_expected();
 
@@ -280,6 +290,9 @@ public:
         _ins.handle_message(msg);
     }
     void handle_message(const log_RISJ &msg) {
+        _ins.handle_message(msg);
+    }
+    void handle_message(const log_RISK &msg) {
         _ins.handle_message(msg);
     }
 
@@ -380,7 +393,7 @@ public:
 #if HAL_LOGGING_ENABLED
     // write out a DAL log message. If old_msg is non-null, then
     // only write if the content has changed
-    static void WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size);
+    static bool WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size);
 #endif
 
 private:
