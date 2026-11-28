@@ -2237,8 +2237,10 @@ def _platform(root, board, app, bootloader, outdir, fram_path, is_periph, warnin
             'rcc:',
             '    hseFrequency: %u' % app.get_config(
                 'OSCILLATOR_HZ', type=int),
-            '',
         ]
+        if family['name'] == 'h757':
+            lines.append('    hasCpu1Registers: true')
+        lines.append('')
     hwdef_h = outdir / 'hwdef' / 'hwdef.h'
     defines = _defines(hwdef_h)
     defaults = _default_parameters(

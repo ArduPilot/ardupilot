@@ -21,10 +21,6 @@ FLASH_RESERVE_START_KB 128
 # flash size
 FLASH_SIZE_KB 2048
 
-# to be compatible with the px4 bootloader we need
-# to use a different RAM_MAP
-env USE_ALT_RAM_MAP 1
-
 MCU_CLOCKRATE_MHZ 480
 
 
