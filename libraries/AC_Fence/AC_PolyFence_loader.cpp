@@ -1129,16 +1129,21 @@ bool AC_PolyFence_loader::load_from_storage()
         return true;
     }
 
+    // each of these arrays is left as nullptr if the fence holds no items
+    // of that type; the matching _num_loaded_... count is then zero, and
+    // asking new[] for a zero-length array is meaningless
     { // allocate array to hold offsets-from-origin
         const uint16_t count = sum_of_polygon_point_counts_and_returnpoint();
-        Debug("Fence: Allocating %u bytes for points",
-              (unsigned)(count * sizeof(Vector2f)));
-        _loaded_offsets_from_origin = NEW_NOTHROW Vector2f[count];
-        _loaded_points_lla = NEW_NOTHROW Vector2l[count];
-        if (_loaded_offsets_from_origin == nullptr || _loaded_points_lla == nullptr) {
-            unload();
-            get_loaded_fence_semaphore().give();
-            return false;
+        if (count > 0) {
+            Debug("Fence: Allocating %u bytes for points",
+                  (unsigned)(count * sizeof(Vector2f)));
+            _loaded_offsets_from_origin = NEW_NOTHROW Vector2f[count];
+            _loaded_points_lla = NEW_NOTHROW Vector2l[count];
+            if (_loaded_offsets_from_origin == nullptr || _loaded_points_lla == nullptr) {
+                unload();
+                get_loaded_fence_semaphore().give();
+                return false;
+            }
         }
     }
 
@@ -1146,25 +1151,29 @@ bool AC_PolyFence_loader::load_from_storage()
 
     { // allocate storage for inclusion polyfences:
         const auto count = index_fence_count(AC_PolyFenceType::POLYGON_INCLUSION);
-        Debug("Fence: Allocating %u bytes for inc. fences",
-              (unsigned)(count * sizeof(InclusionBoundary)));
-        _loaded_inclusion_boundary = NEW_NOTHROW InclusionBoundary[count];
-        if (_loaded_inclusion_boundary == nullptr) {
-            unload();
-            get_loaded_fence_semaphore().give();
-            return false;
+        if (count > 0) {
+            Debug("Fence: Allocating %u bytes for inc. fences",
+                  (unsigned)(count * sizeof(InclusionBoundary)));
+            _loaded_inclusion_boundary = NEW_NOTHROW InclusionBoundary[count];
+            if (_loaded_inclusion_boundary == nullptr) {
+                unload();
+                get_loaded_fence_semaphore().give();
+                return false;
+            }
         }
     }
 
     { // allocate storage for exclusion polyfences:
         const auto count = index_fence_count(AC_PolyFenceType::POLYGON_EXCLUSION);
-        Debug("Fence: Allocating %u bytes for exc. fences",
-              (unsigned)(count * sizeof(ExclusionBoundary)));
-        _loaded_exclusion_boundary = NEW_NOTHROW ExclusionBoundary[count];
-        if (_loaded_exclusion_boundary == nullptr) {
-            unload();
-            get_loaded_fence_semaphore().give();
-            return false;
+        if (count > 0) {
+            Debug("Fence: Allocating %u bytes for exc. fences",
+                  (unsigned)(count * sizeof(ExclusionBoundary)));
+            _loaded_exclusion_boundary = NEW_NOTHROW ExclusionBoundary[count];
+            if (_loaded_exclusion_boundary == nullptr) {
+                unload();
+                get_loaded_fence_semaphore().give();
+                return false;
+            }
         }
     }
 
@@ -1174,13 +1183,15 @@ bool AC_PolyFence_loader::load_from_storage()
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         count += index_fence_count(AC_PolyFenceType::CIRCLE_INCLUSION_INT);
 #endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
-        Debug("Fence: Allocating %u bytes for circ. inc. fences",
-              (unsigned)(count * sizeof(InclusionCircle)));
-        _loaded_circle_inclusion_boundary = NEW_NOTHROW InclusionCircle[count];
-        if (_loaded_circle_inclusion_boundary == nullptr) {
-            unload();
-            get_loaded_fence_semaphore().give();
-            return false;
+        if (count > 0) {
+            Debug("Fence: Allocating %u bytes for circ. inc. fences",
+                  (unsigned)(count * sizeof(InclusionCircle)));
+            _loaded_circle_inclusion_boundary = NEW_NOTHROW InclusionCircle[count];
+            if (_loaded_circle_inclusion_boundary == nullptr) {
+                unload();
+                get_loaded_fence_semaphore().give();
+                return false;
+            }
         }
     }
 
@@ -1189,13 +1200,15 @@ bool AC_PolyFence_loader::load_from_storage()
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         count += index_fence_count(AC_PolyFenceType::CIRCLE_EXCLUSION_INT);
 #endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
-        Debug("Fence: Allocating %u bytes for circ. exc. fences",
-              (unsigned)(count * sizeof(ExclusionCircle)));
-        _loaded_circle_exclusion_boundary = NEW_NOTHROW ExclusionCircle[count];
-        if (_loaded_circle_exclusion_boundary == nullptr) {
-            unload();
-            get_loaded_fence_semaphore().give();
-            return false;
+        if (count > 0) {
+            Debug("Fence: Allocating %u bytes for circ. exc. fences",
+                  (unsigned)(count * sizeof(ExclusionCircle)));
+            _loaded_circle_exclusion_boundary = NEW_NOTHROW ExclusionCircle[count];
+            if (_loaded_circle_exclusion_boundary == nullptr) {
+                unload();
+                get_loaded_fence_semaphore().give();
+                return false;
+            }
         }
     }
 

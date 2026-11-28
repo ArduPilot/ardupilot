@@ -34,23 +34,42 @@
 */
 
 /*
+  a zero-byte request means the caller is asking for an object or an
+  array it cannot then use, which is a bug in the caller.  Rounding the
+  request up to one byte hides that, so in SITL refuse it instead: a
+  loud failure costs us nothing there, and the stack trace names the
+  caller.
+
+  Other boards keep the one byte.  Handing back nullptr there would
+  look like an out-of-memory failure to every caller which checks for
+  one - and ChibiOS's allocator does refuse a zero-size request - so
+  being strict on hardware would turn a harmless bug into a real one.
+ */
+static size_t checked_allocation_size(size_t size)
+{
+    if (size < 1) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        // the stack trace panic() dumps names both the operator and the caller
+        AP_HAL::panic("zero byte allocation");
+#else
+        return 1;
+#endif
+    }
+    return size;
+}
+
+/*
   variant for new(std::nothrow), which is all that should be used in
   ArduPilot
  */
 void * operator new(size_t size, std::nothrow_t const &nothrow)
 {
-    if (size < 1) {
-        size = 1;
-    }
-    return(calloc(size, 1));
+    return(calloc(checked_allocation_size(size), 1));
 }
 
 void * operator new[](size_t size, std::nothrow_t const &nothrow)
 {
-    if (size < 1) {
-        size = 1;
-    }
-    return(calloc(size, 1));
+    return(calloc(checked_allocation_size(size), 1));
 }
 
 /*
@@ -59,19 +78,13 @@ void * operator new[](size_t size, std::nothrow_t const &nothrow)
  */
 void * operator new(size_t size)
 {
-    if (size < 1) {
-        size = 1;
-    }
-    return(calloc(size, 1));
+    return(calloc(checked_allocation_size(size), 1));
 }
 
 
 void * operator new[](size_t size)
 {
-    if (size < 1) {
-        size = 1;
-    }
-    return(calloc(size, 1));
+    return(calloc(checked_allocation_size(size), 1));
 }
 
 void operator delete(void *p)
