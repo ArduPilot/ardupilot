@@ -170,6 +170,42 @@ TEST(BetterStream, PrintfFloatExponent)
     EXPECT_STREQ(fmt_result("%f", 100000000.0), "1.000000e+08");
 }
 
+/*
+  ftoa_engine produces at most 8 significant digits.  Precisions
+  beyond that used to emit NUL bytes in place of the missing digits;
+  they must be padded with zeros instead, as %f already does
+ */
+TEST(BetterStream, PrintfFloatExponentHighPrecision)
+{
+    // EXPECT_STREQ stops at the first NUL, so also check the length
+#define EXPECT_FMT(expected, fmt, val) do {                       \
+        EXPECT_STREQ(fmt_result(fmt, val), expected);             \
+        EXPECT_EQ(strlen(expected), stream.output_len);           \
+    } while (0)
+
+    EXPECT_FMT("1.2345678e+00", "%.7e", 1.2345678);
+    EXPECT_FMT("1.23456780e+00", "%.8e", 1.2345678);
+    EXPECT_FMT("1.234567800e+00", "%.9e", 1.2345678);
+    EXPECT_FMT("1.2345678000e+00", "%.10e", 1.2345678);
+    // precision is limited to 10
+    EXPECT_FMT("1.2345678000e+00", "%.12e", 1.2345678);
+    EXPECT_FMT("-2.4999999000E-03", "%.10E", -0.0025);
+    EXPECT_FMT("[  1.5000000000e+20]", "[%18.10e]", 1.5e20);
+    EXPECT_FMT("0.0000000000e+00", "%.10e", 0.0);
+
+    // %g strips the padding zeros like any other trailing zeros
+    EXPECT_FMT("1.5e+20", "%.10g", 1.5e20);
+    EXPECT_FMT("1.2345678e+20", "%.10g", 1.2345678e20);
+    EXPECT_FMT("1.2345678", "%.10g", 1.2345678);
+
+    // fixed-form %g used to stop at the first NUL and drop digits
+    EXPECT_FMT("1000000000", "%.10g", 1e9);
+    EXPECT_FMT("12345678", "%.14g", 12345678.0);
+    EXPECT_FMT("0", "%.10g", 0.0);
+
+#undef EXPECT_FMT
+}
+
 TEST(BetterStream, PrintfFloatSpecials)
 {
     EXPECT_STREQ(fmt_result("%f", (double)INFINITY), "inf");
