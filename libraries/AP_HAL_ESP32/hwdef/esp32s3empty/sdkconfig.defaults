@@ -1,0 +1,14 @@
+# This file is intended to allow a board specific adaption of the sdkconfig.defaults in AP_HAL_ESP32/targets/
+# Configurations in this file take precedence over the ones in the targets folder
+
+# Example: Execute in place (XIP) from PSRAM.
+# This improved the measured loop rate on esp32s3empty from approximately
+# 150 Hz to 270 Hz. Actual results depend on the board and configuration.
+# Check if your board features PSRAM, which size and if its octal/quad SPI
+# Note that some pins will be used by this
+# Quad SPI: GPIO 26–32
+# Octal SPI: GPIO 26–37
+#CONFIG_SPIRAM=y
+#CONFIG_SPIRAM_MODE_OCT=y
+#CONFIG_SPIRAM_XIP_FROM_PSRAM=y
+#CONFIG_SPIRAM_SPEED_80M=y
