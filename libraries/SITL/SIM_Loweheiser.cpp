@@ -157,7 +157,7 @@ void Loweheiser::update_receive()
         return;
     }
     for (uint16_t i=0; i<bytes_read; i++) {
-        if (mavlink_frame_char_buffer(
+        if (mavlink_parse_char_buffer(
                 &rxmsg,
                 &rxstatus,
                 buf[i],
