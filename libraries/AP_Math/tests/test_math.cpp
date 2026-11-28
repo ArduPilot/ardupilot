@@ -549,6 +549,21 @@ TEST(MathWrapTest, Angle2PI)
     EXPECT_NEAR(1,    wrap_2PI(1.0), accuracy);
 }
 
+TEST(MathWrapTest, TinyNegativeStaysBelowPeriod)
+{
+    // fmod(-tiny, P) + P rounds to exactly P; the result must stay in [0, P)
+    for (const float x : {-1e-10f, -1e-6f, -1e-5f}) {
+        EXPECT_LT(wrap_360(x), 360.0f);
+        EXPECT_GE(wrap_360(x), 0.0f);
+        EXPECT_LT(wrap_360_cd(x), 36000.0f);
+        EXPECT_GE(wrap_360_cd(x), 0.0f);
+        EXPECT_LT(wrap_2PI(x), float(M_2PI));
+        EXPECT_GE(wrap_2PI(x), 0.0f);
+    }
+    EXPECT_LT(wrap_360_cd(-1e-3f), 36000.0f);
+    EXPECT_LT(wrap_2PI(-1e-20), M_2PI);
+}
+
 TEST(MathTest, ASin)
 {
     const float accuracy = 1.0e-5;
