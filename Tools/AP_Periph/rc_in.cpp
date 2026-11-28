@@ -50,10 +50,10 @@ const AP_Param::GroupInfo Parameters_RCIN::var_info[] {
     // @Units: Hz
     AP_GROUPINFO("_MSGRATE", 2, Parameters_RCIN, rcin_rate_hz, 50),
 
-    // @Param: 1_PORT
+    // @Param: _PORT
     // @DisplayName: RC input port
-    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to RC input.
-    // @Range: 0 10
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to RC input. Set to -1 to disable.
+    // @Range: -1 10
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
@@ -63,8 +63,8 @@ const AP_Param::GroupInfo Parameters_RCIN::var_info[] {
     // @DisplayName: RC input port serial options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.
     // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 3:SwapTXRX, 4: RX_PullDown, 5: RX_PullUp, 6: TX_PullDown, 7: TX_PullUp, 8: RX_NoDMA, 9: TX_NoDMA, 10: Don't forward mavlink to/from, 11: DisableFIFO, 12: Ignore Streamrate
-    AP_GROUPINFO("1_PORT_OPTIONS", 4, Parameters_RCIN, rcin1_port_options, AP_PERIPH_RC1_PORT_OPTIONS_DEFAULT),
     // @RebootRequired: True
+    AP_GROUPINFO("1_PORT_OPTIONS", 4, Parameters_RCIN, rcin1_port_options, AP_PERIPH_RC1_PORT_OPTIONS_DEFAULT),
 
     AP_GROUPEND
 };
