@@ -1,0 +1,26 @@
+# parameters for the generic high altitude balloon model
+# the outputs of the model are passed through from RC inputs
+
+# vent valve from RC input 9
+SERVO1_FUNCTION 59
+SERVO1_MIN      1000
+SERVO1_MAX      2000
+SERVO1_TRIM     1000
+
+# ballast dispenser from RC input 10
+SERVO2_FUNCTION 60
+SERVO2_MIN      1000
+SERVO2_MAX      2000
+SERVO2_TRIM     1000
+
+# flight termination from RC input 7
+SERVO3_FUNCTION 57
+SERVO3_MIN      1000
+SERVO3_MAX      2000
+SERVO3_TRIM     1000
+
+# launch release from RC input 8
+SERVO4_FUNCTION 58
+SERVO4_MIN      1000
+SERVO4_MAX      2000
+SERVO4_TRIM     1000

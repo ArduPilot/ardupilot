@@ -383,6 +383,133 @@ class AutoTestBlimp(TestSuite):
             p3=1, # p3, baro
         )
 
+    HAB_RC_TERMINATE = 7
+    HAB_RC_RELEASE = 8
+    HAB_RC_VENT = 9
+    HAB_RC_BALLAST = 10
+
+    def start_hab(self, extra_parameters=None):
+        '''start the high altitude balloon model, with its vent, ballast,
+        termination and launch release driven from RC inputs'''
+        # the balloon is released as soon as the release input is high
+        for chan in self.HAB_RC_VENT, self.HAB_RC_BALLAST, self.HAB_RC_TERMINATE, self.HAB_RC_RELEASE:
+            self.set_rc(chan, 1000)
+        self.customise_SITL_commandline(
+            [],
+            model='hab',
+            defaults_filepath=self.model_defaults_filepath('hab'),
+        )
+        if extra_parameters is not None:
+            self.set_parameters(extra_parameters)
+            self.reboot_sitl()
+
+    def get_altitude(self, relative=False, timeout=30, altitude_source=None):
+        '''returns the altitude in metres. The streamed position is used,
+        as asking for the message each time fails on a busy machine in
+        the thousands of times a long balloon flight looks at it'''
+        if altitude_source is None:
+            m = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=timeout)
+            if relative:
+                return m.relative_alt * 0.001
+            return m.alt * 0.001
+        return super(AutoTestBlimp, self).get_altitude(relative=relative, timeout=timeout, altitude_source=altitude_source)
+
+    def release_hab(self):
+        self.context_collect('STATUSTEXT')
+        self.progress("Releasing balloon")
+        self.set_rc(self.HAB_RC_RELEASE, 2000)
+        self.wait_statustext("SIM HAB released", timeout=30, check_context=True)
+
+    def HABFloat(self):
+        '''test buoyancy, venting and ballast on the high altitude balloon model'''
+        self.start_hab()
+
+        def velocity_east():
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            return m.vy * 0.01
+
+        # wind from the west near the ground, from the east in the stratosphere
+        self.set_parameters({
+            'SIM_HAB_WND_ENA': 1,
+            'SIM_HAB_W1_ALT': 0,
+            'SIM_HAB_W1_SPD': 5,
+            'SIM_HAB_W1_DIR': 270,
+            'SIM_HAB_W2_ALT': 10000,
+            'SIM_HAB_W2_SPD': 8,
+            'SIM_HAB_W2_DIR': 90,
+        })
+
+        self.wait_ready_to_arm()
+        launch_alt = self.get_altitude()
+        self.release_hab()
+
+        self.progress("Checking ascent rate and low level wind")
+        self.wait_altitude(launch_alt + 300, launch_alt + 600, timeout=300)
+        self.wait_climbrate(2.5, 3.5, timeout=60, minimum_duration=10)
+        if velocity_east() < 3:
+            raise NotAchievedException("Not drifting east in the low level wind")
+
+        # a zero pressure envelope floats where the air it displaces
+        # when full matches the mass of the system including lift gas
+        # the gas arrives colder than the air around it and the balloon
+        # keeps rising slowly as it warms, so allow time to settle.
+        self.progress("Waiting for float")
+        self.wait_altitude(17100, 17500, timeout=9000, minimum_duration=1800)
+        self.wait_climbrate(-0.2, 0.2, timeout=600)
+        float_alt = self.get_altitude()
+        if velocity_east() > -5:
+            raise NotAchievedException("Not drifting west in the upper level wind")
+
+        self.progress("Venting gas to descend")
+        self.set_rc(self.HAB_RC_VENT, 2000)
+        self.delay_sim_time(180, reason="gas to vent")
+        self.set_rc(self.HAB_RC_VENT, 1000)
+        self.wait_climbrate(-2.5, -0.6, timeout=300, minimum_duration=10)
+
+        # with the envelope no longer full the gas volume does not
+        # recover as the balloon sinks, so the descent continues until
+        # ballast is released
+        self.wait_altitude(float_alt - 1000, float_alt - 300, timeout=1800)
+        self.wait_climbrate(-2.5, -0.6, timeout=60, minimum_duration=10)
+
+        self.progress("Releasing ballast to climb")
+        self.set_rc(self.HAB_RC_BALLAST, 2000)
+        self.delay_sim_time(80, reason="ballast to drop")
+        self.set_rc(self.HAB_RC_BALLAST, 1000)
+        self.wait_climbrate(1, 3, timeout=300, minimum_duration=10)
+
+        self.progress("Waiting for float at a higher ceiling")
+        self.wait_altitude(float_alt + 200, float_alt + 600, timeout=5400, minimum_duration=1800)
+        self.wait_climbrate(-0.2, 0.2, timeout=600)
+
+        self.progress("Terminating flight")
+        self.set_rc(self.HAB_RC_TERMINATE, 2000)
+        self.wait_statustext("SIM HAB terminated", timeout=30, check_context=True)
+        self.wait_climbrate(-30, -15, timeout=120, minimum_duration=10)
+
+    def HABSealed(self):
+        '''test a sealed envelope holding altitude as its gas cools'''
+        self.start_hab(extra_parameters={
+            'SIM_HAB_ENV_TYPE': 1,
+        })
+        self.wait_ready_to_arm()
+        self.release_hab()
+
+        # the relief valve leaves the envelope holding more gas than a
+        # zero pressure envelope, so it floats a little lower
+        self.progress("Waiting for float")
+        self.wait_altitude(16900, 17400, timeout=9000, minimum_duration=1800)
+        self.wait_climbrate(-0.2, 0.2, timeout=600)
+        float_alt = self.get_altitude()
+
+        self.progress("Cooling the gas within the superpressure margin")
+        self.set_parameter('SIM_HAB_SUPERHT', -5)
+        self.wait_altitude(float_alt - 50, float_alt + 50, timeout=2000, minimum_duration=1800)
+
+        self.progress("Cooling the gas until superpressure is lost")
+        self.set_parameter('SIM_HAB_SUPERHT', -25)
+        self.wait_altitude(float_alt - 1500, float_alt - 500, timeout=3600)
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -394,6 +521,8 @@ class AutoTestBlimp(TestSuite):
             self.SIMCompare,
             self.PREFLIGHT_Pressure,
             self.UTMGlobalPosition,
+            self.HABFloat,
+            self.HABSealed,
         ])
         return ret
 

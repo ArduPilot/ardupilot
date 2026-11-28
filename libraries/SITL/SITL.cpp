@@ -38,6 +38,7 @@
 #endif // SFML_JOYSTICK
 
 #include "SIM_StratoBlimp.h"
+#include "SIM_HAB.h"
 #include "SIM_Glider.h"
 #include "SIM_FlightAxis.h"
 #include "SIM_Frame.h"
@@ -1640,6 +1641,12 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     // @Group: FRM_
     // @Path: ./SIM_Frame.cpp
     AP_SUBGROUPPTR(simframe_ptr, "FRM_", 8, SIM::ModelParm, Frame),
+
+#if AP_SIM_HAB_ENABLED
+    // @Group: HAB_
+    // @Path: ./SIM_HAB.cpp
+    AP_SUBGROUPPTR(hab_ptr, "HAB_", 9, SIM::ModelParm, HAB),
+#endif
 
     AP_GROUPEND
 };

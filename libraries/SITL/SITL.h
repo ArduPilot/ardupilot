@@ -54,6 +54,7 @@ struct float_array {
 };
 
 class StratoBlimp;
+class HAB;
 class Glider;
 class FlightAxis;
 
@@ -415,6 +416,9 @@ public:
 #endif
         // multicopter/quadplane VTOL frame model
         class Frame *simframe_ptr;
+#if AP_SIM_HAB_ENABLED
+        HAB *hab_ptr;
+#endif
 #if AP_SIM_SLUNGPAYLOAD_ENABLED
         SlungPayloadSim slung_payload_sim;
 #endif

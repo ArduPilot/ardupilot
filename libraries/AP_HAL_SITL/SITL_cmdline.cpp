@@ -42,6 +42,7 @@
 #include <SITL/SIM_Blimp.h>
 #include <SITL/SIM_NoVehicle.h>
 #include <SITL/SIM_StratoBlimp.h>
+#include <SITL/SIM_HAB.h>
 
 #include <AP_Filesystem/AP_Filesystem.h>
 
@@ -247,6 +248,9 @@ static const struct {
     { "novehicle",          NoVehicle::create },
 #if AP_SIM_STRATOBLIMP_ENABLED
     { "stratoblimp",        StratoBlimp::create },
+#endif
+#if AP_SIM_HAB_ENABLED
+    { "hab",                HAB::create },
 #endif
 };
 
