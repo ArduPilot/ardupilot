@@ -42,6 +42,26 @@ void LR_MsgHandler_RFRH::process_message(uint8_t *msgbytes)
     AP::dal().handle_message(msg);
 }
 
+/*
+  RSO2/RSO3 record each origin given to an EKF.  The EKFs no longer
+  choose their own origin, so these are the only way a replayed EKF
+  gets one.  Logs recorded before that change have no record of the
+  origin the EKF chose, so the replayed EKF has no origin; replay them
+  with a Replay built from the commit which recorded them (the GH
+  field of the log's VER message).
+
+  Replay plays AP_AHRS's part: it holds the origin the log gave each
+  EKF, and gives it again after each frame as AP_AHRS does after each
+  update.  An EKF logs its origin only when a core takes it, or when
+  logging starts after it had it, so a core which is reset, or an EKF
+  which starts after the record (as in a log started after arming),
+  still gets it back.
+ */
+static Location replay_origin2;
+static bool replay_origin2_ok;
+static Location replay_origin3;
+static bool replay_origin3_ok;
+
 void LR_MsgHandler_RFRF::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RFRF, msgbytes);
@@ -61,6 +81,15 @@ void LR_MsgHandler_RFRF::process_message(uint8_t *msgbytes)
     }
 #undef MAP_FLAG
     AP::dal().handle_message(msg, ekf2, ekf3);
+
+    // give the EKFs their origin again after each frame; see
+    // replay_origin2 above:
+    if (replay_origin2_ok) {
+        ekf2.setOriginLLH(replay_origin2);
+    }
+    if (replay_origin3_ok) {
+        ekf3.setOriginLLH(replay_origin3);
+    }
 }
 
 void LR_MsgHandler_RFRN::process_message(uint8_t *msgbytes)
@@ -142,9 +171,13 @@ void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
     loc.lat = msg.lat;
     loc.lng = msg.lng;
     loc.alt = msg.alt;
+    replay_origin2 = loc;
+    replay_origin2_ok = true;
     ekf2.setOriginLLH(loc);
 
     if (replay_force_ekf3) {
+        replay_origin3 = loc;
+        replay_origin3_ok = true;
         ekf3.setOriginLLH(loc);
     }
 }
@@ -175,8 +208,12 @@ void LR_MsgHandler_RSO3::process_message(uint8_t *msgbytes)
     loc.lat = msg.lat;
     loc.lng = msg.lng;
     loc.alt = msg.alt;
+    replay_origin3 = loc;
+    replay_origin3_ok = true;
     ekf3.setOriginLLH(loc);
     if (replay_force_ekf2) {
+        replay_origin2 = loc;
+        replay_origin2_ok = true;
         ekf2.setOriginLLH(loc);
     }
 }
