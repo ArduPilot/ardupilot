@@ -29,6 +29,7 @@ AP_FLAKE8_CLEAN
 
 """
 
+import copy
 import glob
 import json
 import os
@@ -437,7 +438,7 @@ def generate_metadata(vehicle):
     return metadata
 
 
-def get_metadata(vehicles):
+def get_metadata(vehicles, cache: dict | None = None):
     """Generates merged metadata for multiple vehicles.
 
     Generates metadata for each vehicle in the provided list and merges them
@@ -445,13 +446,22 @@ def get_metadata(vehicles):
     multiple vehicle types.
     Args:
         vehicles (list): A list of vehicle types to load metadata for.
+        cache (dict | None): Optional per-vehicle cache mapping vehicle name
+            to its unmerged metadata dictionary.
     Returns:
         dict: A dictionary containing the merged metadata for all specified
         vehicles. See generate_metadata for details.
     """
     metadata = {}
     for vehicle in vehicles:
-        meta2 = generate_metadata(vehicle)
+        if cache is not None:
+            if vehicle not in cache:
+                cache[vehicle] = generate_metadata(vehicle)
+            # Deep-copy cached single-vehicle metadata before merging so
+            # nested dicts (e.g. Bitmask, Values) are never mutated in place.
+            meta2 = copy.deepcopy(cache[vehicle])
+        else:
+            meta2 = generate_metadata(vehicle)
         for param, meta in meta2.items():
             if param not in metadata:
                 metadata[param] = meta

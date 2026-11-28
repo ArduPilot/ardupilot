@@ -214,6 +214,34 @@ class TestParamCheck(unittest.TestCase):
         for param in ['PARAM1', 'PARAM2', 'PARAM3', 'PARAM4']:
             self.assertTrue(merged[param]['Description'])
 
+    @patch('param_check.generate_metadata')
+    def test_get_metadata_cache_isolated(self, mock_generate_metadata):
+        mock_generate_metadata.side_effect = [
+            {
+                'PARAM1': {
+                    'Description': 'plane PARAM1',
+                    'Bitmask': {'0': 'bit0', '1': 'bit1'},
+                },
+            },
+            {
+                'PARAM1': {
+                    'Description': 'copter PARAM1',
+                    'Bitmask': {'0': 'bit0copter', '2': 'bit2'},
+                },
+            },
+        ]
+        cache = {}
+        merged = get_metadata(['Plane', 'Copter'], cache=cache)
+        self.assertEqual(mock_generate_metadata.call_count, 2)
+        self.assertIn('2', merged['PARAM1']['Bitmask'])
+
+        # Cached single-vehicle lookup must reuse cached data without inheriting
+        # merged entries from the earlier multi-vehicle call.
+        plane_only = get_metadata(['Plane'], cache=cache)
+        self.assertEqual(mock_generate_metadata.call_count, 2)
+        self.assertEqual(plane_only['PARAM1']['Bitmask'], {'0': 'bit0', '1': 'bit1'})
+        self.assertEqual(plane_only['PARAM1']['Description'], 'plane PARAM1')
+
     def test_check_param(self):
         metadata = {
             'Description': 'This is a test parameter',
