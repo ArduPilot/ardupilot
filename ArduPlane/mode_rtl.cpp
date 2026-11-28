@@ -151,14 +151,12 @@ bool ModeRTL::switch_QRTL()
         qrtl_radius = abs(plane.aparm.loiter_radius);
     }
 
+    // The stopping distance uses total groundspeed, so check that we are closing on the destination.
+    const Vector2f to_destination_ne = plane.current_loc.get_distance_NE(plane.next_WP_loc);
+    const bool closing = is_positive(plane.ahrs.groundspeed_vector() * to_destination_ne);
     if (plane.nav_controller->reached_loiter_target() ||
          plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc) ||
-         plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance_m())) {
-        /*
-          for a quadplane in RTL mode we switch to QRTL when we
-          are within the maximum of the stopping distance and the
-          RTL_RADIUS
-         */
+         (closing && plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance_m()))) {
         IGNORE_RETURN(plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL));
         return true;
     }
