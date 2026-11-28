@@ -386,6 +386,7 @@ AP_HW_SKYDROID-S3                    1300
 
 AP_HW_CBUnmanned-CM405-FC            1301
 AP_HW_CBU_H753-SOM                   1302
+AP_HW_ZP-MH743                       1303
 
 AP_HW_KHA_ETH                        1315
 AP_HW_SAAMPIXV1_1                    1316
