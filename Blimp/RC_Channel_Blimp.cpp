@@ -46,7 +46,7 @@ bool RC_Channels_Blimp::has_valid_input() const
     if (blimp.failsafe.radio) {
         return false;
     }
-    if (blimp.failsafe.radio_counter != 0) {
+    if (!input_valid()) {
         return false;
     }
     return RC_Channels::has_valid_input();
