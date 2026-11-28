@@ -125,7 +125,7 @@ void GPS_Trimble::publish(const GPS_Data *d)
                 GSOF_POS_LEN,
                 gsof_pack_double(d->latitude * DEG_TO_RAD_DOUBLE),
                 gsof_pack_double(d->longitude * DEG_TO_RAD_DOUBLE),
-                gsof_pack_double(static_cast<double>(d->altitude))
+                gsof_pack_double(static_cast<double>(d->altitude + d->geoid_separation))  // WGS84 ellipsoid height
             };
             static_assert(sizeof(gsof_pos) - (sizeof(gsof_pos::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos::RECORD_LEN)) == GSOF_POS_LEN, "Trimble size check failed");
 

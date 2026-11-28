@@ -6259,14 +6259,12 @@ void GCS_MAVLINK::send_utm_global_position() const
     }
 
 #if AP_GPS_ENABLED
-    // the message is very specific about wanting geoid altitude.  At
-    // the moment the only place you can get one of those in ArduPilot
-    // is in the AP_GPS library.
-    float undulation_m = NaNf;
-    if (AP::gps().get_undulation(undulation_m)) {
-        // make the assumption that GLOBAL_POSITION_INT.alt is AMSL:
-        alt_mm = global_position_int_alt();
-        alt_mm -= undulation_m * 1000;  // m -> mm
+    // the message wants the height above the WGS84 ellipsoid.  The
+    // vehicle's altitude is AMSL or the ellipsoid height, and only
+    // AP_GPS knows which and how to convert between them:
+    float ellipsoid_m;
+    if (AP::gps().location_alt_to_ellipsoid(global_position_int_alt() * 0.001, ellipsoid_m)) {
+        alt_mm = ellipsoid_m * 1000;  // m -> mm
         flags |= UTM_DATA_AVAIL_FLAGS_ALTITUDE_AVAILABLE;
     }
 #endif  // AP_GPS_ENABLED
@@ -6301,17 +6299,17 @@ void GCS_MAVLINK::send_utm_global_position() const
     int32_t next_lat = 0;
     int32_t next_lon = 0;
     int32_t next_alt_mm = 0;
-    // the altitude must be wgs84, need undulation for that:
+    // the altitude must be wgs84, which AP_GPS converts to:
 #if AP_GPS_ENABLED
     Location next_loc;
-    if (!isnan(undulation_m) &&
-        get_target_location(next_loc) && next_loc.initialised()) {
+    if (get_target_location(next_loc) && next_loc.initialised()) {
         float next_alt_m;
-        if (next_loc.get_alt_m(Location::AltFrame::ABSOLUTE, next_alt_m)) {
+        float next_ellipsoid_m;
+        if (next_loc.get_alt_m(Location::AltFrame::ABSOLUTE, next_alt_m) &&
+            AP::gps().location_alt_to_ellipsoid(next_alt_m, next_ellipsoid_m)) {
             next_lat = next_loc.lat;
             next_lon = next_loc.lng;
-            next_alt_mm = (int32_t)(next_alt_m * 1000.0f);
-            next_alt_mm -= undulation_m * 1000;  // m -> mm
+            next_alt_mm = (int32_t)(next_ellipsoid_m * 1000.0f);
             flags |= UTM_DATA_AVAIL_FLAGS_NEXT_WAYPOINT_AVAILABLE;
         }
     }

@@ -61,6 +61,7 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
 #endif
 
     state.location = loc;
+    set_heights(state, pkt.msl_altitude * 0.01, NaNf);
     state.hdop = pkt.hdop;
     state.vdop = pkt.vdop;
 

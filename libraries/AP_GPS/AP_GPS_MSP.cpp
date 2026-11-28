@@ -49,6 +49,7 @@ void AP_GPS_MSP::handle_msp(const MSP::msp_gps_data_message_t &pkt)
         pkt.msl_altitude,
         Location::AltFrame::ABSOLUTE
     };
+    set_heights(state, pkt.msl_altitude * 0.01, NaNf);
     state.hdop = pkt.hdop;
     state.vdop = GPS_UNKNOWN_DOP;
 

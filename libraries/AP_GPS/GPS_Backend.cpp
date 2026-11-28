@@ -481,15 +481,30 @@ good_yaw:
   set altitude in location structure, honouring the driver option for
   MSL vs ellipsoid height
  */
-void AP_GPS_Backend::set_alt_amsl_cm(AP_GPS::GPS_State &_state, int32_t alt_amsl_cm)
+void AP_GPS_Backend::set_heights(AP_GPS::GPS_State &_state, float amsl_m, float ellipsoid_m)
 {
-    if (option_set(AP_GPS::HeightEllipsoid) && _state.have_undulation) {
-        // user has asked ArduPilot to use ellipsoid height in the
-        // canonical height for mission and navigation
-        _state.location.alt = alt_amsl_cm - _state.undulation*100;
-    } else {
-        _state.location.alt = alt_amsl_cm;
+    _state.have_height_amsl = !isnan(amsl_m);
+    _state.have_height_ellipsoid = !isnan(ellipsoid_m);
+    if (_state.have_height_amsl) {
+        _state.height_amsl = amsl_m;
     }
+    if (_state.have_height_ellipsoid) {
+        _state.height_ellipsoid = ellipsoid_m;
+    }
+
+    // location.alt is the height used for mission and navigation:
+    // AMSL, or the ellipsoid height if the user has asked for it.  If
+    // the receiver reported only one of them then that one is used
+    float alt_m;
+    if (_state.have_height_ellipsoid &&
+        (option_set(AP_GPS::HeightEllipsoid) || !_state.have_height_amsl)) {
+        alt_m = ellipsoid_m;
+    } else if (_state.have_height_amsl) {
+        alt_m = amsl_m;
+    } else {
+        return;
+    }
+    _state.location.alt = roundf(alt_m * 100);  // m -> cm
 }
 
 #if AP_GPS_DEBUG_LOGGING_ENABLED

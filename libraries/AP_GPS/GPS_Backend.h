@@ -180,7 +180,9 @@ protected:
 #endif
 
     // set alt in location, honouring GPS driver option for ellipsoid height
-    void set_alt_amsl_cm(AP_GPS::GPS_State &_state, int32_t alt_amsl_cm);
+    // set the heights the receiver reported, in metres, NaN for one
+    // it did not report, and location.alt from them
+    void set_heights(AP_GPS::GPS_State &_state, float amsl_m, float ellipsoid_m);
 
 private:
     // itow from previous message

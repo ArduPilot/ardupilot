@@ -210,9 +210,8 @@ AP_GPS_NOVA::process_message(void)
 
         state.location.lat = (int32_t) (bestposu.lat * (double)1e7);
         state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
-        state.have_undulation = true;
-        state.undulation = -bestposu.undulation;
-        set_alt_amsl_cm(state, bestposu.hgt * 100);
+        // the undulation is the height of the geoid above the ellipsoid:
+        set_heights(state, bestposu.hgt, bestposu.hgt + bestposu.undulation);
 
         state.num_sats = bestposu.svsused;
 

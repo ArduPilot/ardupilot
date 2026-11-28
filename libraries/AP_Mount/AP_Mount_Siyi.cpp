@@ -1198,18 +1198,21 @@ void AP_Mount_Siyi::send_attitude_position(void)
     } position;
     Location loc;
     Vector3f velocity_ned;
-    float undulation = 0;
     if (!ahrs.get_location(loc) ||
         !ahrs.get_velocity_NED(velocity_ned)) {
         return;
     }
-    AP::gps().get_undulation(undulation);
 
     position.time_boot_ms = now_ms;
     position.lat = loc.lat;
     position.lon = loc.lng;
-    position.alt_msl = loc.alt;
-    position.alt_ellipsoid = position.alt_msl - undulation*100;
+    // the vehicle's altitude is AMSL or the ellipsoid height; AP_GPS
+    // converts from whichever it is.  Without the undulation both
+    // carry the vehicle's altitude
+    const float alt_m = loc.alt * 0.01;
+    float height_m;
+    position.alt_msl = AP::gps().location_alt_to_amsl(alt_m, height_m) ? height_m * 100 : loc.alt;
+    position.alt_ellipsoid = AP::gps().location_alt_to_ellipsoid(alt_m, height_m) ? height_m * 100 : loc.alt;
 
     // convert velocity to int32 and scale to mm/s
     position.velocity_ned_int32.x = velocity_ned.x * 1000;

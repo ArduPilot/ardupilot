@@ -176,6 +176,8 @@ public:
     enum class GPSOptions : uint32_t {
         UBX_IS_F9P = 1U << 0,
         UBX_NO_BACKUP = 1U << 1,
+        SBF_UNDULATION_DNU = 1U << 2,
+        NMEA_NO_GEOID_SEPARATION = 1U << 3,
     };
 
     struct sitl_fdm state;
@@ -373,6 +375,7 @@ public:
         AP_Float noise_horizontal; // horizontal noise radius in meters
         AP_Vector3f vel_glitch; // glitch offsets in NED velocity (m/s)
         AP_Int8 ubx_model; // see enum SITL::GPS_UBlox::Model
+        AP_Float geoid_separation; // height of the geoid (MSL) above the WGS84 ellipsoid (m)
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 

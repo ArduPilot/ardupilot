@@ -107,14 +107,23 @@ void GPS_SBF::publish_PVTGeodetic(const GPS_Data *d)
         uint8_t wacorrinfo;
         uint16_t referenceid;
         uint16_t meancorrage;
-        uint64_t signalinfo;
+        uint32_t signalinfo;
         uint8_t alertflag;
-        uint8_t __PADDING__[3];  // packets must be zero-mod-4
+        // revision 1:
+        uint8_t nrbases;
+        uint16_t pppinfo;
+        // revision 2:
+        uint16_t latency;
+        uint16_t haccuracy;  // 2DRMS, 0.01m
+        uint16_t vaccuracy;  // 2-sigma, 0.01m
+        uint8_t misc;
+        uint8_t __PADDING__[1];  // packets must be zero-mod-4
     } pvtGeod_buf {} ;
-    assert_storage_size<sbf_pvtGeod_t, 84> assert_storage_size_pvt_Geod_buf;
+    assert_storage_size<sbf_pvtGeod_t, 88> assert_storage_size_pvt_Geod_buf;
     (void)assert_storage_size_pvt_Geod_buf;
 
-    const uint16_t PVTGEO_0_MSG_ID = 0x0FA7;    
+    // PVTGeodetic, revision 2 (in the top three bits):
+    const uint16_t PVTGEO_0_MSG_ID = 0x0FA7 | (2U << 13);
 
     const auto gps_tow = gps_time();
     pvtGeod_buf.time_stamp.tow = gps_tow.ms;
@@ -124,8 +133,12 @@ void GPS_SBF::publish_PVTGeodetic(const GPS_Data *d)
     pvtGeod_buf.error= 0; //Error: no error
     pvtGeod_buf.latitude = radians(d->latitude);
     pvtGeod_buf.longitude = radians(d->longitude);
-    pvtGeod_buf.height = d->altitude;
-    pvtGeod_buf.undulation = DNU_DOUBLE;
+    pvtGeod_buf.height = d->altitude + d->geoid_separation;  // ellipsoidal
+    if (_sitl->gps[instance].options & uint32_t(SITL::SIM::GPSOptions::SBF_UNDULATION_DNU)) {
+        pvtGeod_buf.undulation = DNU_FLOAT;
+    } else {
+        pvtGeod_buf.undulation = d->geoid_separation;
+    }
     pvtGeod_buf.vn = d->speedN;
     pvtGeod_buf.ve = d->speedE;
     pvtGeod_buf.vu = -d->speedD;
@@ -140,6 +153,11 @@ void GPS_SBF::publish_PVTGeodetic(const GPS_Data *d)
     pvtGeod_buf.meancorrage = DNU_UINT16; 
     pvtGeod_buf.signalinfo = 0;
     pvtGeod_buf.alertflag = 0;
+    pvtGeod_buf.nrbases = 0;
+    pvtGeod_buf.pppinfo = 0;
+    pvtGeod_buf.latency = 0;
+    pvtGeod_buf.haccuracy = MIN(d->horizontal_acc * 200, 65534);
+    pvtGeod_buf.vaccuracy = MIN(d->vertical_acc * 200, 65534);
 
     send_sbf(PVTGEO_0_MSG_ID, (uint8_t*)&pvtGeod_buf, sizeof(pvtGeod_buf));
 }

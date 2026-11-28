@@ -95,12 +95,12 @@ void AP_Periph_FW::can_gps_update(void)
         }
         pkt.longitude_deg_1e8 = uint64_t(loc.lng) * 10ULL;
         pkt.latitude_deg_1e8 = uint64_t(loc.lat) * 10ULL;
-        pkt.height_ellipsoid_mm = loc.alt * 10;
-        pkt.height_msl_mm = loc.alt * 10;
-        float undulation;
-        if (gps.get_undulation(undulation)) {
-            pkt.height_ellipsoid_mm -= undulation*1000;
-        }
+        // send the heights the receiver reported.  Fix2 cannot say a
+        // height is unknown: a missing one takes the other's value, and
+        // equal heights tell the autopilot there is no ellipsoid height
+        float height_m;
+        pkt.height_msl_mm = gps.get_height_amsl(gps.primary_sensor(), height_m) ? height_m * 1000 : loc.alt * 10;
+        pkt.height_ellipsoid_mm = gps.get_height_ellipsoid(gps.primary_sensor(), height_m) ? height_m * 1000 : pkt.height_msl_mm;
         for (uint8_t i=0; i<3; i++) {
             pkt.ned_velocity[i] = vel[i];
         }
