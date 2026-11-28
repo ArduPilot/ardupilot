@@ -259,7 +259,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     uint8_t new_argv_offset = 0;
     // leave room for the nullptr that ends the list for execv()
     for (uint8_t i=0; i<ARRAY_SIZE(new_argv)-1 && i<argc; i++) {
-        if (!strcmp(argv[i], "-w")) {
+        if (!strcmp(argv[i], "-w") || !strcmp(argv[i], "--wipe")) {
             // don't wipe params on reboot
             continue;
         }

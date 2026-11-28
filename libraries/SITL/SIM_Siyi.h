@@ -150,8 +150,8 @@ protected:
 
     class PACKED GimbalRotation : public BaseMessage {
     public:
-        uint8_t yaw_rate_pct;
-        uint8_t pitch_rate_pct;
+        int8_t yaw_rate_pct;    // -100 to +100
+        int8_t pitch_rate_pct;  // -100 to +100
     };
     virtual void handle_message(const PackedMessage<GimbalRotation> &request) {
         AP_HAL::panic("Unhandled GimbalRotation message");

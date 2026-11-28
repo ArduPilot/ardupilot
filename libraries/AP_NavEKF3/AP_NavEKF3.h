@@ -337,8 +337,8 @@ public:
      */
     void requestYawReset(void);
 
-    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void setPosVelYawSourceSet(uint8_t source_set_idx);
+    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary, returning false if not selected
+    bool setPosVelYawSourceSet(uint8_t source_set_idx);
 
     // write EKF information to on-board logs
     void Log_Write();

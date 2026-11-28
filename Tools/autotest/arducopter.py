@@ -5132,6 +5132,306 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.fly_generic_mission("CMAC-copter-navtest.txt")
 
+    def OpticalFlowTiltNoTimeout(self):
+        '''flow withheld by the tilt check does not time a flow lane out'''
+        # core 0 on GPS, core 1 on optical flow alone
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_SRC_OPTIONS": 8,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "ACRO_TRAINER": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.takeoff(10, mode='LOITER')
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("Flow that stops still times out")
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.wait_statustext("IMU1 stopped aiding", timeout=30, check_context=True)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_statustext("IMU1 fusing optical flow", timeout=30, check_context=True)
+
+        self.start_subtest("A bank past 45 degrees held longer than the flow timeout")
+        self.set_rc(3, 1800)
+        self.wait_altitude(55, 65, relative=True, timeout=120)
+        self.set_rc(3, 1500)
+        hold = {"active": False, "forbid_timeout": True, "min_roll_deg": 180.0}
+
+        def check_bank(mav, m):
+            if hold["forbid_timeout"] and m.get_type() == 'STATUSTEXT' and "IMU1 stopped aiding" in m.text:
+                raise NotAchievedException("flow lane timed out while banked: %s" % m.text)
+            if hold["active"] and m.get_type() == 'ATTITUDE':
+                hold["min_roll_deg"] = min(hold["min_roll_deg"], math.degrees(m.roll))
+
+        self.install_message_hook_context(check_bank)
+        self.change_mode('ACRO')
+        self.set_rc(3, 1700)
+        self.set_rc(1, 1550)
+        self.wait_roll(55, 5)
+        self.set_rc(1, 1500)
+        hold["active"] = True
+        # the bank is the stimulus: flow is withheld for as long as it lasts, and
+        # it has to outlast the 5 s flow timeout
+        self.delay_sim_time(7, "hold the bank past the flow timeout")
+
+        self.start_subtest("Flow that stops while banked still times out")
+        hold["forbid_timeout"] = False
+        self.context_clear_collection('STATUSTEXT')
+        tstart = self.get_sim_time_cached()
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.wait_statustext("IMU1 stopped aiding", timeout=10, check_context=True)
+        stopped_after_s = self.get_sim_time_cached() - tstart
+        hold["active"] = False
+        self.progress("flow lane timed out %.1f s after its flow stopped, roll at least %.1f deg" %
+                      (stopped_after_s, hold["min_roll_deg"]))
+        if hold["min_roll_deg"] < 47:
+            raise NotAchievedException("bank not held past the flow tilt limit: roll fell to %.1f deg" %
+                                       hold["min_roll_deg"])
+        if stopped_after_s < 4:
+            raise NotAchievedException("flow lane timed out %.1f s after its flow stopped, not about 5 s" %
+                                       stopped_after_s)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()  # reset to starting position
+
+    def OpticalFlowTiltTurnRecovery(self):
+        '''a flow lane keeps its velocity through a banked turn longer than the flow timeout'''
+        # core 0 on GPS flies the vehicle; core 1 on optical flow alone
+        # dead-reckons through each turn, as the tilt check withholds its flow
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC_OPTIONS": 8,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "ATC_ANGLE_MAX": 70,
+            # a 1% yaw gyro scale error on the flow core's IMU, which only a yaw source corrects
+            "SIM_GYR2_SCALE_Z": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+
+        bank_deg = 55
+        turn_rate_degs = 70
+        target = {"att": None}
+        timeouts = []
+
+        def hook(mav, m):
+            if m.get_type() == 'STATUSTEXT' and "IMU1 stopped aiding" in m.text:
+                timeouts.append(self.get_sim_time_cached())
+            if target["att"] is None or m.get_type() != 'ATTITUDE':
+                return
+            # GUIDED drops an attitude target after 3 s, so it is resent with each ATTITUDE
+            roll_deg, pitch_deg, yaw0, rate_degs, t0 = target["att"]
+            rate = math.radians(rate_degs)
+            yaw = yaw0 + rate * (m.time_boot_ms * 1e-3 - t0)
+            self.mav.mav.set_attitude_target_send(
+                0, 1, 1, 0,
+                mavextra.euler_to_quat([math.radians(roll_deg), math.radians(pitch_deg), yaw]),
+                0,
+                rate * math.sin(math.radians(roll_deg)),
+                rate * math.cos(math.radians(roll_deg)),
+                0.5)
+
+        def turn(name, turn_s):
+            '''from an 11 m/s run-up, turn banked past the flow tilt limit for turn_s, then level'''
+            self.change_mode('LOITER')
+            self.wait_groundspeed(0, 1, timeout=60)
+            self.change_mode('GUIDED')
+            yaw0 = self.assert_receive_message('ATTITUDE').yaw
+            target["att"] = (0, -40, yaw0, 0, self.get_sim_time_cached())
+            self.wait_groundspeed(11, 100, timeout=20)
+            t_turn = self.get_sim_time_cached()
+            target["att"] = (bank_deg, 0, yaw0, turn_rate_degs, t_turn)
+            # the turn is the stimulus: it has to outlast the 5 s flow timeout
+            self.delay_sim_time(turn_s, "%s: banked turn" % name)
+            t_level = self.get_sim_time_cached()
+            target["att"] = (0, 0, self.assert_receive_message('ATTITUDE').yaw, 0, t_level)
+            # long enough for flow rejected after levelling to time the lane out
+            self.delay_sim_time(6, "%s: level" % name)
+            target["att"] = None
+            self.change_mode('LOITER')
+            return {"name": name, "t_turn": t_turn, "t_level": t_level, "t_end": self.get_sim_time_cached()}
+
+        legs = []
+        self.install_message_hook_context(hook)
+        self.takeoff(12, mode='LOITER')
+        legs.append(turn("compass yaw, 8 s turn", 8))
+        self.set_parameter("EK3_SRC2_YAW", 0)
+        # core 1's velocity is not on MAVLink, so there is no event for a lane
+        # left wrong by the first turn having recovered at rest
+        self.delay_sim_time(8, "flow lane settles")
+        legs.append(turn("no yaw source, 15 s turn", 15))
+        self.disarm_vehicle(force=True)
+        log_path = self.current_onboard_log_filepath()
+        # close the log before reading it
+        self.reboot_sitl()
+
+        # core 1 against SITL truth, each in its own yaw frame so that a heading
+        # error with no yaw source does not count against the lane
+        flow_core = []
+        truth = []
+        truth_yaw = []
+        dfreader = self.dfreader_for_path(log_path)
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'SIM', 'SIM2'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            if m.get_type() == 'XKF1' and m.C == 1:
+                flow_core.append((t, math.cos(math.radians(m.Roll)) * math.cos(math.radians(m.Pitch)),
+                                  math.radians(m.Yaw), m.VN, m.VE))
+            elif m.get_type() == 'SIM':
+                truth_yaw.append((t, math.radians(m.Yaw)))
+            elif m.get_type() == 'SIM2':
+                truth.append((t, m.VN, m.VE))
+
+        def at(series, t):
+            return [x for x in series if x[0] <= t][-1]
+
+        def body(vn, ve, yaw):
+            return (vn * math.cos(yaw) + ve * math.sin(yaw), -vn * math.sin(yaw) + ve * math.cos(yaw))
+
+        failures = []
+        for leg in legs:
+            # the flow tilt check is cos(roll)cos(pitch) past 0.71, on core 1's own attitude
+            tilted = [x[0] for x in flow_core if leg["t_turn"] - 1 <= x[0] <= leg["t_level"] + 3 and x[1] <= 0.71]
+            if len(tilted) == 0 or tilted[-1] - tilted[0] < 5.5:
+                raise NotAchievedException("%s: flow not withheld for longer than the flow timeout" % leg["name"])
+            t_check = tilted[-1] + 2
+            core = at(flow_core, t_check)
+            sim = at(truth, t_check)
+            core_body = body(core[3], core[4], core[2])
+            sim_body = body(sim[1], sim[2], at(truth_yaw, t_check)[1])
+            verr = math.hypot(core_body[0] - sim_body[0], core_body[1] - sim_body[1])
+            stopped = [t for t in timeouts if leg["t_turn"] <= t <= leg["t_end"]]
+            self.progress("%s: flow withheld %.1f s, flow core velocity %.2f m/s off 2 s after levelling, %u timeouts" %
+                          (leg["name"], tilted[-1] - tilted[0], verr, len(stopped)))
+            if len(stopped):
+                failures.append("%s: flow lane timed out" % leg["name"])
+            if verr > 2:
+                failures.append("%s: flow core velocity %.2f m/s off 2 s after levelling" % (leg["name"], verr))
+        if len(failures):
+            raise NotAchievedException("; ".join(failures))
+
+    def OpticalFlowTiltTimeoutNotFlying(self):
+        '''flow withheld by the tilt check still times a flow lane out while the vehicle is not flying'''
+        # core 0 on GPS, core 1 on optical flow alone.  The IMUs are rolled 90 deg from boot, so the
+        # vehicle sits on the ground with the tilt check withholding every flow sample, as one held on
+        # its side by hand would.  It is not flying, so the lane times out 5 s after it starts relative
+        # aiding, as if the flow were rejected, where in flight the tilt would hold it in relative aiding.
+        # The lane starts at boot: with the IMUs rolled 90 deg its gyro bias takes over 30 s to settle for a
+        # later start, so the armed run arms just after it.  An arm before the timeout is what matters: a
+        # gate on the armed state would count every withheld second from the arm on and never time out
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_SRC_OPTIONS": 8,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "SIM_IMU_ORIENT": 16,  # ROTATION_ROLL_90
+            "DISARM_DELAY": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.context_collect('STATUSTEXT')
+
+        def check_timeout(armed):
+            if armed:
+                # the arm has to land within the 5 s the lane runs after it starts, so it is
+                # not left to how many MAVLink round trips a loaded host fits into them
+                self.context_set_speedup(2)
+            # cleared before the reboot: the boot's messages are kept, the last boot's are not
+            self.context_clear_collection('STATUSTEXT')
+            self.reboot_sitl()
+            if armed:
+                # armed is not flying: at zero throttle the land detector holds the vehicle
+                # landed, as THROW does until it detects the throw
+                self.change_mode('STABILIZE')
+                self.set_rc(3, 1000)
+            self.wait_statustext("IMU1 started relative aiding", timeout=60, check_context=True)
+            if armed:
+                self.arm_vehicle(force=True)
+            self.wait_statustext("IMU1 stopped aiding", timeout=15, check_context=True)
+            if armed:
+                self.assert_armed()
+                self.disarm_vehicle(force=True)
+
+            # the timings come from the log, in the vehicle's own time
+            self.delay_sim_time(2, reason="flush the log")
+            dfreader = self.dfreader_for_current_onboard_log()
+            t_start = t_stop = t_arm = t_takeoff = None
+            rolls_deg = []
+            flow_times = []
+            dropped = 0
+            while True:
+                m = dfreader.recv_match(type=['MSG', 'ARM', 'EV', 'XKF1', 'OF', 'DSF'])
+                if m is None:
+                    break
+                mtype = m.get_type()
+                if mtype == 'DSF':
+                    dropped = max(dropped, m.Dp)
+                    continue
+                t = m.TimeUS * 1e-6
+                if mtype == 'MSG':
+                    # the harness echoes its own text into the log, so match the EKF message whole
+                    if t_start is None and m.Message == "EKF3 IMU1 started relative aiding":
+                        t_start = t
+                    elif t_start is not None and t_stop is None and m.Message == "EKF3 IMU1 stopped aiding":
+                        t_stop = t
+                elif mtype == 'ARM' and m.ArmState == 1 and t_arm is None:
+                    t_arm = t
+                elif t_start is None or t_stop is not None:
+                    continue
+                elif mtype == 'EV' and m.Id == 28:  # NOT_LANDED
+                    t_takeoff = t
+                elif mtype == 'XKF1' and m.C == 1:
+                    rolls_deg.append(abs(m.Roll))
+                elif mtype == 'OF':
+                    flow_times.append(t)
+            if t_start is None or t_stop is None:
+                raise NotAchievedException("relative aiding start and timeout not both in the log")
+            if dropped != 0:
+                raise NotAchievedException("the log dropped %u blocks, so it cannot show the wait" % dropped)
+            if len(rolls_deg) < 10:
+                raise NotAchievedException("only %u core 1 attitude records in the wait" % len(rolls_deg))
+            # core 1 was tilted past the flow limit and its flow kept arriving throughout, so the tilt
+            # check withheld it: no flow went missing and none was rejected
+            flow_gaps = [b - a for a, b in zip([t_start] + flow_times, flow_times + [t_stop])]
+            self.progress("flow lane timed out %.2f s after it started relative aiding%s; core 1 roll at least "
+                          "%.1f deg over %u records, longest flow gap %.2f s" %
+                          (t_stop - t_start,
+                           ", %.2f s after arming" % (t_stop - t_arm) if t_arm is not None else "",
+                           min(rolls_deg), len(rolls_deg), max(flow_gaps)))
+            if not 4.5 <= t_stop - t_start <= 6:
+                raise NotAchievedException("flow lane timed out %.2f s after it started, not about 5 s" %
+                                           (t_stop - t_start))
+            if min(rolls_deg) < 60:
+                raise NotAchievedException("core 1 roll fell to %.1f deg, inside the flow tilt limit" %
+                                           min(rolls_deg))
+            if max(flow_gaps) > 0.5:
+                raise NotAchievedException("flow stopped arriving for %.2f s" % max(flow_gaps))
+            if t_takeoff is not None:
+                raise NotAchievedException("the vehicle took off at %.2f s" % t_takeoff)
+            if armed and (t_arm is None or t_stop - t_arm < 1):
+                raise NotAchievedException("not armed at least 1 s before the timeout")
+
+        self.start_subtest("Disarmed")
+        check_timeout(armed=False)
+        self.start_subtest("Armed on the ground at zero throttle")
+        check_timeout(armed=True)
+
     def OpticalFlowLimits(self):
         '''test EKF navigation limiting'''
         self.set_parameters({
@@ -5906,6 +6206,80 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Unexpected high SH in core 1 (VICON) during BARO glitch")
         if max_SH_core0 < 0.9:
             raise NotAchievedException("BARO glitch did not raise SH in core 0")
+
+    def EKF3SRCPerCoreSelection(self):
+        '''a source set selection is refused while each EKF core runs its own set'''
+        # core 1 runs the second set, so give it the first set's sources for the cores to agree before arming
+        self.set_parameters({
+            "EK3_SRC_OPTIONS": 8,  # UsePerCoreEKFSources
+            "EK3_SRC2_POSXY": 3,  # GPS
+            "EK3_SRC2_VELXY": 3,  # GPS
+            "EK3_SRC2_POSZ": 1,  # baro
+            "EK3_SRC2_VELZ": 3,  # GPS
+            "EK3_SRC2_YAW": 1,  # compass
+            "RC9_OPTION": 90,  # EKF Source Set
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        def wait_logged_source_set(source_set, since_s):
+            '''wait for XKFS to log the selected set on core 0 after since_s, and only that set'''
+            tstart = self.get_sim_time()
+            while True:
+                dfreader = self.dfreader_for_current_onboard_log()
+                logged = []
+                while True:
+                    m = dfreader.recv_match(type='XKFS', condition='XKFS.C==0')
+                    if m is None:
+                        break
+                    if m.TimeUS * 1.0e-6 >= since_s:
+                        logged.append(m.SS)
+                if len(logged) >= 5:
+                    break
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("XKFS not logged after %.1f s" % since_s)
+                self.delay_sim_time(1, "XKFS to reach the log")
+            if any(ss != source_set for ss in logged[2:]):
+                raise NotAchievedException("source set %s logged after %.1f s, want %u" % (str(logged), since_s, source_set))
+
+        self.context_collect('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        # low selects the first set, which no switch move below waits on, so its message cannot answer one
+        self.run_auxfunc(90, 0, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        # each switch position has to be held through the debounce, so wait for its own message
+        for pwm, source_set in (2000, 3), (1500, 2):
+            self.context_clear_collection('STATUSTEXT')
+            self.set_rc(9, pwm)
+            self.wait_statustext("EKF Source Set %u refused" % source_set, check_context=True)
+
+        self.start_subtest("Without a set per core the same selections are made")
+        # with the bit clear core 0 runs the selected set, which the refusals must have left on the first
+        self.set_parameter("EK3_SRC_OPTIONS", 0)
+        wait_logged_source_set(0, self.get_sim_time())
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        wait_logged_source_set(1, self.get_sim_time())
+        self.run_auxfunc(90, 0)  # low selects the first set
+        wait_logged_source_set(0, self.get_sim_time())
+
+        # the source set library logs each selection it makes, and the EKF each one for Replay, so
+        # the log holds only these two. Their absence means something only in a complete log
+        self.assert_log_has_no_dropped_blocks(self.current_onboard_log_filepath())
+        dfreader = self.dfreader_for_current_onboard_log()
+        events = []
+        replay_events = []
+        while True:
+            m = dfreader.recv_match(type=['EV', 'REV3'])
+            if m is None:
+                break
+            if m.get_type() == 'EV' and m.Id in (85, 86, 87):  # LogEvent::EK3_SOURCES_SET_TO_PRIMARY to TERTIARY
+                events.append(m.Id)
+            elif m.get_type() == 'REV3' and m.Event in (13, 14, 15):  # AP_DAL::Event::setSourceSet0 to 2
+                replay_events.append(m.Event)
+        if events != [86, 85] or replay_events != [14, 13]:
+            raise NotAchievedException("expected the second and first sets selected, logged EV %s, REV3 %s" %
+                                       (str(events), str(replay_events)))
 
     def AutoTuneSwitch(self):
         """Test autotune on a switch with gains being saved"""
@@ -7148,6 +7522,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                      p1=-2,
                      timeout=1,
                      want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+
+        # MISSION_SET_CURRENT is a message rather than a command, so a
+        # rejection cannot be carried in a COMMAND_ACK.  The mission protocol
+        # asks for a broadcast STATUSTEXT instead.
+        self.context_collect('STATUSTEXT')
+        for seq in failed_indices:
+            # failed_indices comes from MIS_TOTAL, so these are floats; the
+            # sequence number is packed as a uint16 and must be an int.
+            seq = int(seq)
+            self.context_clear_collection('STATUSTEXT')
+            self.set_current_waypoint_using_mission_set_current(seq, check_afterwards=False)
+            self.wait_statustext("Mission: unable to set current to %u" % seq, check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
 
     def MAV_CMD_DO_SET_MISSION_CURRENT_no_nav_command(self):
         '''Test setting the current command in a mission whose loop holds no nav command'''
@@ -10101,6 +10488,70 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         settings = self.poll_message('CAMERA_SETTINGS')
         if settings.camera_device_id != 2:
             raise NotAchievedException("Mount-backed settings use the mount ID: %s" % settings)
+
+        # The gimbal must move directly to a lower pitch angle and to a yaw angle to
+        # the left, while the vehicle holds a roll, a pitch and a yaw angle.
+        self.takeoff(10, mode="ALT_HOLD")
+        self.set_rc(4, 1600)
+        self.wait_heading(45, accuracy=10)
+        self.set_rc(4, 1500)
+        self.set_rc(1, 1800)    # roll to the right
+        self.set_rc(2, 1200)    # pitch forward
+        self.wait_attitude(desroll=18, despitch=-18, tolerance=5, timeout=10)
+        for (axis, pitch, yaw) in ("pitch", -30, 0), ("yaw", 0, -30):
+            self.progress("Checking that the gimbal moves directly to %s -30" % axis)
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                p1=0,               # pitch angle in degrees
+                p2=0,               # yaw angle in degrees
+                p3=float('nan'),    # pitch rate in degrees/s (NaN for no limit)
+                p4=float('nan'),    # yaw rate in degrees/s (NaN for no limit)
+            )
+            self.wait_mount_roll_pitch_yaw_deg(r=0, p=0, y=0, tolerance=2, minimum_duration=1)
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                p1=pitch,
+                p2=yaw,
+                p3=float('nan'),
+                p4=float('nan'),
+            )
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("Mount did not get to %s -30" % axis)
+                mount_roll, mount_pitch, mount_yaw, _ = self.get_mount_roll_pitch_yaw_deg()
+                angle = mount_pitch if axis == "pitch" else mount_yaw
+                if angle > 5:
+                    raise NotAchievedException("Mount %s moved away from the target (%f)" % (axis, angle))
+                # the gimbal stabilizes the roll relative to the earth
+                if abs(mount_roll) > 5:
+                    raise NotAchievedException("Mount roll is not level (%f)" % mount_roll)
+                if abs(angle - -30) < 1:
+                    break
+        # A movement in pitch and yaw together must not add roll. The roll error
+        # of one movement is small, so repeat the movement to let the error add up.
+        self.progress("Checking that movements in pitch and yaw together do not add roll")
+        for i in range(10):
+            # A roll error changes the pitch and yaw that the test reads at a
+            # large pitch angle, so use a large tolerance there.
+            for (pitch, yaw, tolerance) in (-60, -60, 10), (0, 0, 2):
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                    p1=pitch,
+                    p2=yaw,
+                    p3=float('nan'),
+                    p4=float('nan'),
+                )
+                self.wait_mount_roll_pitch_yaw_deg(p=pitch, y=yaw, tolerance=tolerance, minimum_duration=1)
+            mount_roll, _, _, _ = self.get_mount_roll_pitch_yaw_deg()
+            self.progress("Mount roll after %u movements: %f" % (2 * (i + 1), mount_roll))
+            if abs(mount_roll) > 2:
+                raise NotAchievedException("Mount roll is not level after %u movements (%f)" % (2 * (i + 1), mount_roll))
+        # the vehicle must still hold its roll and pitch angles
+        self.wait_attitude(desroll=18, despitch=-18, tolerance=5)
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+        self.land_and_disarm()
 
     def MountTopotek(self):
         '''test Topotek gimbal using SIM_Topotek simulator'''
@@ -22198,6 +22649,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.OpticalFlow,
             self.OpticalFlowLimits,
             self.OpticalFlowFocusAlt,
+            self.OpticalFlowTiltNoTimeout,
+            self.OpticalFlowTiltTurnRecovery,
+            self.OpticalFlowTiltTimeoutNotFlying,
             self.BodyFrameOdom,
             self.BodyFrameOdomDelay,
             self.RTLSpeed,
@@ -22300,6 +22754,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_NAV_TAKEOFF_no_location,
             self.DualTuningChannels,
             self.AutoRTL,
+            self.AutoRTLReturnPathTrack,
             self.GripperReleaseOnThrustLoss,
             self.ScriptingAHRSSource,
             self.CompassLearnCopyFromSIM,
@@ -23765,10 +24220,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('GUIDED')
         self.fly_guided_move_to(return_path_test, timeout=100)
 
-        # check the mission is joined further along
+        # check the mission is joined further along, part way along the
+        # leg from waypoint 4 so waypoint 4 may be current briefly
         self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
-        self.drain_mav()
-        self.assert_current_waypoint(5)
+        self.wait_current_waypoint(5, timeout=30)
 
         # fly over home
         home = self.home_position_as_location()
@@ -23783,6 +24238,256 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # Done
         self.land_and_disarm()
+
+    def AutoRTLReturnPathTrack(self):
+        '''Test Auto RTL rejoins a return path at the closest point and then follows the track'''
+        alt = 50
+        self.context_set_message_rate_hz('LOCAL_POSITION_NED', 10)
+
+        # pymavlink does not understand the new return path command yet, at some point it will
+        cmd_return_path_start = 188 # mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START
+
+        def fly_return_path_from(north, east, track_north_max=None, no_backtrack=False, min_alt=None, edit_mission=None,
+                                 track_alt=None):
+            # the return path runs down the north axis towards home, so any
+            # east offset south of track_north_max is a cross track error
+            start_loc = self.offset_location_ne(self.home_position_as_location(), north, east)
+            start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+            self.change_mode('GUIDED')
+            self.fly_guided_move_to(start_loc, timeout=240)
+
+            self.change_mode('AUTO_RTL')
+            max_cross_track = 0
+            max_alt_error = 0
+            max_north = north
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 300:
+                    raise NotAchievedException("Did not fly the return path")
+                if edit_mission is not None and self.get_sim_time_cached() - tstart > 2:
+                    edit_mission()
+                    edit_mission = None
+                m = self.assert_receive_message('LOCAL_POSITION_NED')
+                if m.x < 100:
+                    break
+                max_north = max(max_north, m.x)
+                if min_alt is not None and -m.z < min_alt:
+                    raise NotAchievedException(f"Descended to {-m.z:.1f}m before the end of the leg")
+                if track_north_max is not None and m.x < track_north_max:
+                    max_cross_track = max(max_cross_track, abs(m.y))
+                    if track_alt is not None:
+                        max_alt_error = max(max_alt_error, abs(-m.z - track_alt(m.x)))
+            if no_backtrack and max_north > north + 20:
+                raise NotAchievedException(f"Flew back up the return path to {max_north:.0f}m north")
+            if track_north_max is not None:
+                self.progress(f"maximum cross track error {max_cross_track:.1f}m")
+                if max_cross_track > 10:
+                    raise NotAchievedException(f"Did not follow the return path track (cross track {max_cross_track:.1f}m)")
+            if track_alt is not None:
+                self.progress(f"maximum altitude error {max_alt_error:.1f}m")
+                if max_alt_error > 5:
+                    raise NotAchievedException(f"Did not follow the return path altitude (error {max_alt_error:.1f}m)")
+
+        self.takeoff(alt, mode='GUIDED')
+
+        # the closest point on the mission is part way along the leg
+        # from waypoint 3 to waypoint 4, not either waypoint.  Nothing
+        # is placed exactly at home as a zero offset uploads as a zero
+        # latitude and longitude, which means the current location
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 4
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 6
+        ])
+        fly_return_path_from(600, 200, 450)
+        self.wait_current_waypoint(4)
+
+        # a located command that is not navigated to, such as an ROI,
+        # is not part of the track.  Leave AUTO so the upload does not
+        # restart the running mission
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION, 400, 400, alt), # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 5
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 6
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 7
+        ])
+        fly_return_path_from(400, 300, 350)
+        self.wait_current_waypoint(5)
+
+        # a repeated waypoint starts the next leg, so the vehicle does not
+        # fly back up the path to it after the rejoin point
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 5
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 6
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 7
+        ])
+        fly_return_path_from(400, 200, 350, no_backtrack=True)
+        self.wait_current_waypoint(5)
+
+        # moving the leg start during the rejoin continues to the leg end
+        # rather than flying back up the path to the moved leg start
+        def return_path_mission(leg_start_north):
+            return [
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+                self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, leg_start_north, 0, alt),  # 3
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 4
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 5
+                (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 6
+            ]
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        fly_return_path_from(600, 200, no_backtrack=True,
+                             edit_mission=lambda: self.upload_simple_relhome_mission(return_path_mission(850)))
+        self.wait_current_waypoint(4)
+
+        # leaving AUTO during the rejoin and flying past the rejoin point
+        # continues to the leg end rather than back to the rejoin point
+        start_loc = self.offset_location_ne(self.home_position_as_location(), 300, 150)
+        start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        past_loc = self.offset_location_ne(self.home_position_as_location(), 200, 0)
+        past_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        self.change_mode('GUIDED')
+        self.fly_guided_move_to(past_loc, timeout=120)
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(4, timeout=5)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 3:
+            m = self.assert_receive_message('LOCAL_POSITION_NED')
+            if m.x > 210:
+                raise NotAchievedException(f"Flew back to the rejoin point, {m.x:.0f}m north")
+
+        # a rejected MISSION_SET_CURRENT during the rejoin keeps the rejoin, so
+        # leaving and re-entering AUTO continues to the leg end, not the leg start
+        start_loc = self.offset_location_ne(self.home_position_as_location(), 600, 200)
+        start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        self.mav.mav.mission_set_current_send(1, 1, 99)
+        self.delay_sim_time(2, reason="let the rejected request be handled")
+        self.change_mode('GUIDED')
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(4, timeout=5)
+
+        # removing the leg end in AUTO during the rejoin leaves Auto RTL, as any
+        # mission edit does, and leaving and re-entering AUTO then restarts the new mission
+        start_loc = self.offset_location_ne(self.home_position_as_location(), 150, 150)
+        start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        self.upload_simple_relhome_mission(return_path_mission(800)[:3])
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            m = self.assert_receive_message('LOCAL_POSITION_NED')
+            if m.x > 170:
+                raise NotAchievedException(f"Flew back up the return path to {m.x:.0f}m north")
+        self.assert_mode_is('AUTO')
+        self.change_mode('GUIDED')
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(1, timeout=10)
+
+        # a return path whose only located command is a DO_LAND_START has no
+        # track, so DO_RETURN_PATH_START is refused, and Auto RTL falls back
+        # to the landing sequence
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 50, 0, 0),    # 3
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 4
+        ])
+        self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_mode_is('GUIDED')
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(4, timeout=10)
+
+        # a leg end with a zero latitude and longitude is flown at the current
+        # position, so the rejoin point is not interpolated towards 0,0
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, alt),    # 4
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 6
+        ])
+        fly_return_path_from(600, -200, no_backtrack=True)
+
+        # a waypoint after one with a zero latitude and longitude has no leg to
+        # rejoin part way along, so it is joined directly rather than through a
+        # rejoin point on an earlier leg
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 0, alt),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, alt),    # 5
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 6
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 7
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 8
+        ])
+        start_loc = self.offset_location_ne(self.home_position_as_location(), 600, 200)
+        start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(6, timeout=5)
+
+        # a leg into a landing is flown at the current altitude, so the
+        # rejoin altitude is not interpolated down towards the landing
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 4
+        ])
+        fly_return_path_from(400, 200, min_alt=alt - 5)
+
+        # a leg between waypoints in different altitude frames is rejoined
+        # part way along at the altitude interpolated in the leg end's frame
+        end_alt = 30
+        home_amsl = self.home_position_as_location().get_alt_m(AltFrame.ABSOLUTE)
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, home_amsl + end_alt,
+             {'frame': mavutil.mavlink.MAV_FRAME_GLOBAL}),        # 4
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 6
+        ])
+        fly_return_path_from(600, 200, 450,
+                             track_alt=lambda n: end_alt + (alt - end_alt) * (n - 50) / (800 - 50))
+        self.wait_current_waypoint(4)
+
+        # the test must finish at home
+        self.do_RTL()
 
     def EK3_OGN_HGT_MASK(self):
         '''test baraometer-alt-compensation based on long-term GPS readings'''
@@ -26762,6 +27467,7 @@ return update, 1000
             self.OSDFirstBackendFails,
             self.TestEKF3CompassFailover,
             self.EKF3SRCPerCore,
+            self.EKF3SRCPerCoreSelection,
             self.ToyModeDescentLimit,
         ])
         return ret
@@ -26800,6 +27506,7 @@ return update, 1000
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             self.CRSF,
+            self.CRSFLinkRate,
             self.SerialPassthroughRCIN,
             self.CRSFParameterMenu,
             self.CRSFParameterMenuScripted,

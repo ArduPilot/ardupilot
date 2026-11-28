@@ -6,8 +6,11 @@ Build the pinned Picolibc sources directly with Waf.
 """
 
 import os
+import shlex
 import subprocess
 
+from ardupilotwaf import host_path
+from ardupilotwaf import tool_path
 from waflib import Errors
 from waflib import Utils
 from waflib.TaskGen import after_method
@@ -341,7 +344,7 @@ def _compiler_include_dirs(program, abi_flags, language):
         if in_search_list:
             path = line.strip()
             if path and not path.startswith('('):
-                includes.append(os.path.normpath(path))
+                includes.append(os.path.normpath(host_path(path)))
     if not includes:
         raise Errors.WafError('Unable to determine %s system include paths' % language)
     return includes
@@ -469,9 +472,9 @@ def configure(cfg):
     if board_class == 'ChibiOS':
         cfg.env.PICOLIBC_LIB = board_build.make_node('modules/picolibc/libc.a').abspath()
         abi_flags = _abi_flags(cfg.env)
-        libm = subprocess.check_output(
+        libm = host_path(subprocess.check_output(
             _program(cfg.env, 'CC') + abi_flags + ['-print-file-name=libm.a'],
-            text=True).strip()
+            text=True).strip())
         if not os.path.isfile(libm):
             cfg.fatal('Unable to locate toolchain libm.a for the board ABI')
         cfg.env.NEWLIB_LIBM = os.path.realpath(libm)
@@ -484,8 +487,8 @@ def configure(cfg):
             _compiler_include_dirs(_program(cfg.env, 'CC'), abi_flags, 'c')) + public_include_dirs
         cxx_system_dirs = _without_toolchain_libc(
             _compiler_include_dirs(_program(cfg.env, 'CXX'), abi_flags, 'c++')) + public_include_dirs
-        c_system_flags = ['-nostdinc'] + ['-isystem%s' % path for path in c_system_dirs]
-        cxx_system_flags = ['-nostdinc'] + ['-isystem%s' % path for path in cxx_system_dirs]
+        c_system_flags = ['-nostdinc'] + ['-isystem%s' % tool_path(path) for path in c_system_dirs]
+        cxx_system_flags = ['-nostdinc'] + ['-isystem%s' % tool_path(path) for path in cxx_system_dirs]
         cfg.env.prepend_value('CFLAGS', c_system_flags)
         cfg.env.prepend_value('CXXFLAGS', cxx_system_flags)
         cfg.env.PICOLIBC_C_SYSTEM_FLAGS = c_system_flags
@@ -493,8 +496,9 @@ def configure(cfg):
         cfg.env.CHIBIOS_BUILD_FLAGS = (
             cfg.env.get_flat('CHIBIOS_BUILD_FLAGS') +
             ' PICOLIBC_C_INCLUDE_FLAGS="%s"' %
-            ' '.join(c_system_flags) +
-            ' PICOLIBC_CXX_INCLUDE_FLAGS="%s"' % ' '.join(cxx_system_flags)
+            ' '.join(shlex.quote(flag) for flag in c_system_flags) +
+            ' PICOLIBC_CXX_INCLUDE_FLAGS="%s"' %
+            ' '.join(shlex.quote(flag) for flag in cxx_system_flags)
         )
     else:
         cfg.env.PICOLIBC_LIB = board_build.make_node('modules/picolibc-sitl/libpicolibc.a').abspath()
@@ -626,7 +630,7 @@ def build(bld):
         bld.env.LIBPATH += [os.path.dirname(bld.env.PICOLIBC_LIB)]
         bld.env.LIB += ['picolibc']
     else:
-        bld.env.LIBPATH += [os.path.dirname(bld.env.PICOLIBC_LIB)]
+        bld.env.LIBPATH += [tool_path(os.path.dirname(bld.env.PICOLIBC_LIB))]
     return task_gen
 
 

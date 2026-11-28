@@ -56,7 +56,7 @@ void NavEKF3_core::SelectFlowFusion()
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
     if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
         // Estimate the terrain offset (runs a one state EKF)
-        EstimateTerrainOffset(ofDataDelayed);
+        EstimateTerrainOffset(ofDataDelayed, flowDataToFuse);
     }
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
@@ -67,12 +67,21 @@ void NavEKF3_core::SelectFlowFusion()
 #endif
 
     // Fuse optical flow data into the main filter
+    const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index);
     if (flowDataToFuse && tiltOK) {
-        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index);
         // Set the flow noise used by the fusion processes
         R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
         // Fuse the optical flow X and Y axis data into the main filter sequentially
         FuseOptFlow(ofDataDelayed, fuse_optflow);
+    } else if (flowDataToFuse && fuse_optflow && flowSampleTime_ms != 0) {
+        // a gap longer than the flow valid time is missing flow, not withheld flow
+        const uint32_t flowGap_ms = imuSampleTime_ms - flowSampleTime_ms;
+        if (flowGap_ms < 1000) {
+            flowWithheld_ms += flowGap_ms;
+        }
+    }
+    if (flowDataToFuse) {
+        flowSampleTime_ms = imuSampleTime_ms;
     }
 }
 
@@ -81,15 +90,17 @@ Estimation of terrain offset using a single state EKF
 The filter can fuse motion compensated optical flow rates and range finder measurements
 Equations generated using https://github.com/PX4/ecl/tree/master/EKF/matlab/scripts/Terrain%20Estimator
 */
-void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
+void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed, bool flowDataToFuse)
 {
     // horizontal velocity squared
     ftype velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
 
+    // don't fuse flow data unless available
     // don't fuse flow data if LOS rate is misaligned, without GPS, or insufficient velocity, as it is poorly observable
     // don't fuse flow data if it exceeds validity limits
     // don't update terrain offset if ground is being used as the zero height datum in the main filter
-    bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
+    bool cantFuseFlowData = (!flowDataToFuse
+    || (frontend->_flowUse != FLOW_USE_TERRAIN)
     || !gpsIsInUse
     || PV_AidingMode == AID_RELATIVE 
     || velHorizSq < 25.0f 
@@ -706,6 +717,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         if (really_fuse && (flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
+            flowWithheld_ms = 0;
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;

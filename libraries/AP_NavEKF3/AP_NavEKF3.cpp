@@ -1154,12 +1154,14 @@ void NavEKF3::resetCoreErrors(void)
 }
 
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
+// returns false if the set was not selected; only a selection taken is logged for Replay
+bool NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
 {
-    if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
-        dal.log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
+    if (!sources.setPosVelYawSourceSet((AP_NavEKF_Source::SourceSetSelection)source_set_idx)) {
+        return false;
     }
-    sources.setPosVelYawSourceSet((AP_NavEKF_Source::SourceSetSelection)source_set_idx);
+    dal.log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
+    return true;
 }
 
 // Check basic filter health metrics and return a consolidated health status

@@ -135,7 +135,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: EKF Source Options
-    // @Description: EKF Source Options. Bit 0: Fuse all velocity sources present in EK3_SRCx_VEL_. Bit 1: Align external navigation position when using optical flow. Bit 3: Use SRC per core. By default, EKF source selection is controlled via the EK3_SRC parameters, allowing only one source to be active at a time across all cores (switchable via MAVLink, Lua, or RC). Enabling this bit maps EKF core 1 to SRC1, core 2 to SRC2, etc., allowing each core to run independently with a dedicated source.
+    // @Description: EKF Source Options. Bit 0: Fuse all velocity sources present in EK3_SRCx_VEL_. Bit 1: Align external navigation position when using optical flow. Bit 3: Use SRC per core. By default, EKF source selection is controlled via the EK3_SRC parameters, allowing only one source to be active at a time across all cores (switchable via MAVLink, Lua, or RC). Enabling this bit maps EKF core 1 to SRC1, core 2 to SRC2, etc., allowing each core to run independently with a dedicated source. A source set selection is then refused, as each core keeps its own set; EK3_PRIMARY sets the preferred core.
     // @Bitmask: 0:FuseAllVelocities, 1:AlignExtNavPosWhenUsingOptFlow, 3: UsePerCoreEKFSources
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 16, AP_NavEKF_Source, _options, 0),
@@ -149,8 +149,14 @@ AP_NavEKF_Source::AP_NavEKF_Source()
 }
 
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void AP_NavEKF_Source::setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelection source_set_idx)
+// returns false if the set was not selected, leaving the active set as it was
+bool AP_NavEKF_Source::setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelection source_set_idx)
 {
+    // each core runs the set with its own index, so a selection would change nothing the cores use
+    if (option_is_set(SourceOptions::SRC_PER_CORE)) {
+        return false;
+    }
+
     // sanity check source idx
     if ((uint8_t)source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
         active_source_set = (uint8_t)source_set_idx;
@@ -162,7 +168,9 @@ void AP_NavEKF_Source::setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelectio
         };
         AP::logger().Write_Event(evt[active_source_set]);
 #endif
+        return true;
     }
+    return false;
 }
 
 // true/false of whether velocity source should be used

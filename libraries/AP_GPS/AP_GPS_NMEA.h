@@ -92,6 +92,9 @@ private:
         _GPS_SENTENCE_OTHER = 0
     };
 
+    /// return the last term parsed for a sentence type, 0 if none
+    static uint8_t last_term_number(uint16_t sentence_type);
+
     /// Update the decode state machine with a new character
     ///
     /// @param	c		The next character in the NMEA input stream

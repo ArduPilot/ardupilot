@@ -2593,6 +2593,42 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if not self.current_onboard_log_contains_message("RFND"):
             raise NotAchievedException("No RFND messages in log")
 
+    def TerrainEstimatorWithoutFlowSensor(self):
+        '''Check EKF3's terrain estimator fuses no flow when no flow sensor is fitted'''
+        # with EK3_FLOW_USE at terrain, Plane's default, the estimator also runs on range finder
+        # samples alone, and must not treat the missing flow sample as a measured zero
+        self.set_parameter("EK3_FLOW_USE", 2)
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+
+        # the RangeFinder test's mission, flown at 10 m within the range finder's range
+        self.load_mission_from_filepath(
+            os.path.join(testdir, "ArduPlane_Tests", "RangeFinder", "plane-gripper-mission.txt"))
+        self.set_parameter("RTL_AUTOLAND", 1)
+        self.set_current_waypoint(1)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_statustext("Auto disarmed", timeout=120)
+
+        # AFI is the terrain estimator's flow innovation, set whenever it tests a flow sample.
+        # RI, its range innovation, is set only when it runs on a range finder sample, so
+        # rows with it show the estimator was running and found no flow to test
+        dfreader = self.dfreader_for_current_onboard_log()
+        ranged = 0
+        while True:
+            m = dfreader.recv_match(type='XKF5')
+            if m is None:
+                break
+            if m.AFI != 0:
+                raise NotAchievedException(
+                    "terrain estimator tested flow with no flow sensor (XKF5.AFI=%d at %u us)" % (m.AFI, m.TimeUS))
+            if m.RI != 0:
+                ranged += 1
+        if ranged == 0:
+            raise NotAchievedException("terrain estimator never ran on a range finder sample (XKF5.RI)")
+        self.progress("%u XKF5 rows with a range innovation, no flow tested" % ranged)
+
     def TemperatureSensorRangefinder(self):
         '''Test that AP_TemperatureSensor can push temperature into a rangefinder'''
         self.progress("Configure rangefinder and temperature sensor")
@@ -15748,6 +15784,52 @@ return update, 200
 
         self.fly_home_land_and_disarm()
 
+    def ReturnPathTrack(self):
+        '''RTL rejoins a return path at the closest point and then follows the track'''
+        self.set_parameter("RTL_AUTOLAND", 4)
+        self.context_set_message_rate_hz('LOCAL_POSITION_NED', 10)
+
+        # the leg from item 4 to item 5 runs south along the north axis
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),        # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 400, 100),  # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 100),   # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 100),    # 5
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+
+        # beside the middle of the leg from item 4 to item 5:
+        self.change_mode('GUIDED')
+        loc = self.offset_location_ne(self.home_position_as_location(), 1100, 400)
+        loc.set_alt_m(100, AltFrame.ABOVE_HOME)
+        self.send_do_reposition(loc)
+        self.wait_location(loc, accuracy=200, height_accuracy=None, timeout=120)
+
+        self.change_mode('RTL')
+        self.wait_mode('AUTO')
+        # the rejoin point part way along the leg carries the leg start index
+        self.assert_current_waypoint(4)
+
+        # flying straight to item 5 would be about 200m east of the track
+        # at 700m north, so any east offset there is a cross track error
+        max_cross_track = 0
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 180:
+                raise NotAchievedException("Did not fly the return path")
+            m = self.assert_receive_message('LOCAL_POSITION_NED')
+            if m.x < 300:
+                break
+            if m.x < 700:
+                max_cross_track = max(max_cross_track, abs(m.y))
+        self.progress(f"maximum cross track error {max_cross_track:.1f}m")
+        if max_cross_track > 20:
+            raise NotAchievedException(f"Did not follow the return path track (cross track {max_cross_track:.1f}m)")
+        self.assert_current_waypoint(5)
+
+        self.fly_home_land_and_disarm()
+
     def MAV_CMD_SET_HAGL(self):
         '''test height above ground from MAV_CMD_SET_HAGL is used for the landing flare'''
         self.start_flying_simple_relhome_mission([
@@ -16190,6 +16272,7 @@ return update, 200
             self.TestGripperMission,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,
+            self.TerrainEstimatorWithoutFlowSensor,
             self.FenceRTLRally,
             self.FenceMinAltEnableAutoland,
             self.FenceAutoEnableDisableSwitch,
@@ -16418,6 +16501,7 @@ return update, 200
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.GuidedOnlyOffboardControl,
             self.MAV_CMD_DO_RETURN_PATH_START,
+            self.ReturnPathTrack,
             self.MAV_CMD_SET_HAGL,
             self.MAV_CMD_DO_PARACHUTE_actions,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,

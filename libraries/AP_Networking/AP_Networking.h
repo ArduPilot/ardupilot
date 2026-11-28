@@ -311,7 +311,10 @@ private:
         uint16_t last_udp_connect_port;
         bool have_received;
         bool close_on_recv_error;
+        bool tcp_writes_enabled;
         uint32_t last_udp_srv_recv_time_ms;
+
+        void tcp_disconnect(const char *reason);
 
         // statistics
         uint32_t tx_stats_bytes;
