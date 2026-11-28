@@ -207,14 +207,27 @@ void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
     }
 
     // Iterate through fields of varying lengths in GNSS packet
-    for (uint8_t i = 0; i < packet.payload_length(); i += packet.payload[i]) {
+    for (uint8_t i = 0; i < packet.payload_length(); ) {
+        const uint8_t field_len = packet.payload[i];
+
+        // each field carries a length and a type byte and must fit in the payload
+        if (field_len < 2 || i + field_len > packet.payload_length()) {
+            break;
+        }
+
         switch ((GNSSPacketField) packet.payload[i+1]) {
         case GNSSPacketField::GPS_TIMESTAMP: {
+            if (field_len < 12) {
+                break;
+            }
             gnss_data[gnss_instance].tow_ms = double_to_uint32(be64todouble_ptr(packet.payload, i+2) * 1000); // Convert seconds to ms
             gnss_data[gnss_instance].week = be16toh_ptr(&packet.payload[i+10]);
             break;
         }
         case GNSSPacketField::FIX_INFO: {
+            if (field_len < 4) {
+                break;
+            }
             switch ((GNSSFixType) packet.payload[i+2]) {
             case (GNSSFixType::FIX_RTK_FLOAT): {
                 gnss_data[gnss_instance].fix_type = AP_GPS_FixType::RTK_FLOAT;
@@ -248,6 +261,9 @@ void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
             break;
         }
         case GNSSPacketField::LLH_POSITION: {
+            if (field_len < 42) {
+                break;
+            }
             gnss_data[gnss_instance].lat = be64todouble_ptr(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
             gnss_data[gnss_instance].lon = be64todouble_ptr(packet.payload, i+10) * 1.0e7;
             gnss_data[gnss_instance].msl_altitude = be64todouble_ptr(packet.payload, i+26) * 1.0e2; // Meters to cm
@@ -256,11 +272,17 @@ void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
             break;
         }
         case GNSSPacketField::DOP_DATA: {
+            if (field_len < 18) {
+                break;
+            }
             gnss_data[gnss_instance].hdop = be32tofloat_ptr(packet.payload, i+10);
             gnss_data[gnss_instance].vdop = be32tofloat_ptr(packet.payload, i+14);
             break;
         }
         case GNSSPacketField::NED_VELOCITY: {
+            if (field_len < 30) {
+                break;
+            }
             gnss_data[gnss_instance].ned_velocity_north = be32tofloat_ptr(packet.payload, i+2);
             gnss_data[gnss_instance].ned_velocity_east = be32tofloat_ptr(packet.payload, i+6);
             gnss_data[gnss_instance].ned_velocity_down = be32tofloat_ptr(packet.payload, i+10);
@@ -268,6 +290,7 @@ void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
             break;
         }
         }
+        i += field_len;
     }
 }
 
