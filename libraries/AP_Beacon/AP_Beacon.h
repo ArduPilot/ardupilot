@@ -49,9 +49,16 @@ public:
         Pozyx  = 1,
         Marvelmind = 2,
         Nooploop  = 3,
+        MAVlink   = 4,
 #if AP_BEACON_SITL_ENABLED
         SITL   = 10
 #endif
+    };
+
+    // origin that the beacon positions are relative to (used by _ORG_TYPE parameter)
+    enum class OriginType : uint8_t {
+        Own = 0,    // origin from the BCN_LATITUDE, BCN_LONGITUDE and BCN_ALT parameters
+        EKF = 1,    // EKF origin
     };
 
     // The AP_BeaconState structure is filled in by the backend driver
@@ -75,11 +82,17 @@ public:
     // update state of all beacons
     void update(void);
 
+    // handle mavlink message
+    void handle_msg(const struct __mavlink_message &msg);
+
     // return origin of position estimate system in lat/lon
     bool get_origin(Location &origin_loc) const;
 
     // return vehicle position in NED from position estimate system's origin in meters
     bool get_vehicle_position_ned(Vector3f& pos, float& accuracy_estimate) const;
+
+    // return the origin that the beacon positions are relative to
+    OriginType origin_type() const { return _origin_type; }
 
     // return the number of beacons
     uint8_t count() const;
@@ -136,6 +149,7 @@ private:
     AP_Float origin_lon;
     AP_Float origin_alt;
     AP_Int16 orient_yaw;
+    AP_Enum<OriginType> _origin_type;
 
     // external references
     AP_Beacon_Backend *_driver;

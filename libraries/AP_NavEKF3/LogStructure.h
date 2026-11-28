@@ -20,7 +20,9 @@
     LOG_XKV2_MSG, \
     LOG_XKY0_MSG, \
     LOG_XKY1_MSG, \
-    LOG_XKFA_MSG
+    LOG_XKFA_MSG, \
+    LOG_XKRP_MSG, \
+    LOG_XKRB_MSG
 
 // @LoggerMessage: XKF0
 // @Description: EKF3 beacon sensor diagnostics
@@ -56,6 +58,59 @@ struct PACKED log_XKF0 {
     int16_t posN;           // North position of receiver rel to EKF origin (cm)
     int16_t posE;           // East position of receiver rel to EKF origin (cm)
     int16_t posD;           // Down position of receiver rel to EKF origin (cm)
+};
+
+
+// @LoggerMessage: XKRB
+// @Description: EKF3 range beacon per-beacon measurement and innovation
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: BcnID: Beacon identifier
+// @Field: Rng: Measured beacon range
+// @Field: Innov: Beacon range innovation
+// @Field: BPN: Beacon north position relative to EKF origin
+// @Field: BPE: Beacon east position relative to EKF origin
+// @Field: BPD: Beacon down position relative to EKF origin
+// @Field: OK: Beacon range innovation consistency check passed (1=pass)
+struct PACKED log_XKRB {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  core;
+    uint8_t  bcnID;
+    float    rng;
+    float    innov;
+    float    bcnPN;
+    float    bcnPE;
+    float    bcnPD;
+    uint8_t  health;
+};
+
+// @LoggerMessage: XKRP
+// @Description: EKF3 range beacon receiver position estimate
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: PN: Receiver north position relative to EKF origin
+// @Field: PE: Receiver east position relative to EKF origin
+// @Field: PD: Receiver down position relative to EKF origin
+// @Field: CVN: Receiver position covariance, north (m^2)
+// @Field: CVE: Receiver position covariance, east (m^2)
+// @Field: CVD: Receiver position covariance, down (m^2)
+// @Field: Mode: Fusion mode (2=mlat, 1=range, 0=static)
+// @Field: HDOP: MLAT 2-D horizontal dilution of precision (LSB=0.1)
+// @Field: FailCnt: Cumulative failed innovation-gate checks since last position reset
+struct PACKED log_XKRP {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  core;
+    float    posN;
+    float    posE;
+    float    posD;
+    float    covN;
+    float    covE;
+    float    covD;
+    uint8_t  mode;
+    uint8_t  hdop;
+    uint16_t failCnt;
 };
 
 
@@ -482,7 +537,11 @@ struct PACKED log_XKV {
     { LOG_XKV1_MSG, sizeof(log_XKV), \
       "XKV1","QBffffffffffff","TimeUS,C,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s#------------", "F-------------" , true }, \
     { LOG_XKV2_MSG, sizeof(log_XKV), \
-      "XKV2","QBffffffffffff","TimeUS,C,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23", "s#------------", "F-------------" , true },
+      "XKV2","QBffffffffffff","TimeUS,C,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23", "s#------------", "F-------------" , true }, \
+    { LOG_XKRP_MSG, sizeof(log_XKRP), \
+      "XKRP","QBffffffBBH","TimeUS,C,PN,PE,PD,CVN,CVE,CVD,Mode,HDOP,FailCnt", "s#mmm------", "F-000000-A-" , true }, \
+    { LOG_XKRB_MSG, sizeof(log_XKRB), \
+      "XKRB","QBBfffffB","TimeUS,C,BcnID,Rng,Innov,BPN,BPE,BPD,OK", "s#-mmmmm-", "F--00000-" , true },
 #else
   #define LOG_STRUCTURE_FROM_NAVEKF3
 #endif

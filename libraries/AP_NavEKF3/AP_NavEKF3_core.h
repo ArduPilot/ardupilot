@@ -38,6 +38,7 @@
 #include <AP_NavEKF/EKF_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Beacon/AP_Beacon.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -760,10 +761,22 @@ private:
 #if EK3_FEATURE_BEACON_FUSION
     // fuse range beacon measurements
     void FuseRngBcn();
+
+    // multilateration position fix used to recover a dead ranging system
+    void DoRngBcnRecovery();
+
+    // gradient-descent multilateration solver, returns converged XY and mean-squared residual
+    Vector2F SolveMlat(const rng_bcn_elements *samples, uint8_t n, ftype& residualSq);
+
+    // compute 2-D HDOP from beacon geometry; returns false if geometry is degenerate
+    bool CalcRngBcnHdop(const rng_bcn_elements *samples, uint8_t n);
 #endif
 
     // use range beacon measurements to calculate a static position
     void FuseRngBcnStatic();
+
+    // return true if the range beacon positions are relative to the EKF origin
+    bool rngBcnUsesEkfOrigin() const;
 
     // calculate the offset from EKF vertical position datum to the range beacon system datum
     void CalcRangeBeaconPosDownOffset(ftype obsVar, Vector3F &vehiclePosNED, bool aligning);
@@ -1499,7 +1512,7 @@ private:
         bool health;                  // boolean true if range beacon measurements have passed innovation consistency check
         ftype varInnov;               // range beacon observation innovation variance (m^2)
         ftype innov;                  // range beacon observation innovation (m)
-        uint32_t lastTime_ms[4];      // last time we received a range beacon measurement (msec)
+        uint32_t lastTime_ms[AP_BEACON_MAX_BEACONS];    // last time we received a range beacon measurement (msec)
         bool dataToFuse;              // true when there is new range beacon data to fuse
         Vector3F vehiclePosNED;       // NED position estimate from the beacon system (NED)
         ftype vehiclePosErr;          // estimated position error from the beacon system (m)
@@ -1510,6 +1523,11 @@ private:
         ftype receiverPosCov[3][3];         // Receiver position covariance (m^2) - alignment 3 state filter (
         bool alignmentStarted;        // True when the initial position alignment using range measurements has started
         bool alignmentCompleted;      // True when the initial position alignment using range measurements has finished
+        enum class RngFusionMode : uint8_t { STATIC = 0, RANGE = 1, MLAT = 2 };
+        RngFusionMode fusionMode;     // active fusion path
+        uint8_t  recPassCount;        // consecutive successful recovery passes since dead detection
+        uint16_t failFusionCount;     // cumulative failed innovation-gate checks
+        ftype hdop;                   // last 2-D HDOP from geometry check
         uint8_t lastIndex;            // Range beacon index last read -  used during initialisation of the 3-state filter
         Vector3F posSum;              // Sum of range beacon NED position (m) - used during initialisation of the 3-state filter
         uint8_t numMeas;                 // Number of beacon measurements - used during initialisation of the 3-state filter
@@ -1767,6 +1785,8 @@ private:
     void Log_Write_XKFS(uint64_t time_us) const;
     void Log_Write_Quaternion(uint64_t time_us) const;
     void Log_Write_Beacon(uint64_t time_us);
+    void Log_Write_XKRB(uint64_t time_us);
+    void Log_Write_RngBcnPos(uint64_t time_us);
     void Log_Write_BodyOdom(uint64_t time_us);
     void Log_Write_State_Variances(uint64_t time_us);
     void Log_Write_Timing(uint64_t time_us);
