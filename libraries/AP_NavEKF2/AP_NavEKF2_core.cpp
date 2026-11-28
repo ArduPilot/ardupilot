@@ -494,7 +494,7 @@ void NavEKF2_core::CovarianceInit()
     // positions
     P[6][6]   = sq(frontend->_gpsHorizPosNoise);
     P[7][7]   = P[6][6];
-    P[8][8]   = sq(frontend->_baroAltNoise);
+    P[8][8]   = sq(frontend->get_effective_baro_alt_noise());
     // gyro delta angle biases
     P[9][9] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
     P[10][10] = P[9][9];

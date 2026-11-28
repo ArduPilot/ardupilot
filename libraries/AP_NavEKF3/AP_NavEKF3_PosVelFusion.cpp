@@ -1420,7 +1420,7 @@ void NavEKF3_core::selectHeightForFusion()
         // enable fusion
         fuseHgtData = true;
         // set the observation noise
-        posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.01f, 100.0f));
+        posDownObsNoise = sq(constrain_ftype(frontend->get_effective_baro_alt_noise(), 0.01f, 100.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
         if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;
@@ -1436,7 +1436,7 @@ void NavEKF3_core::selectHeightForFusion()
             posDownObsNoise = sq(2.0f);
         } else {
             // alow a larger value when flying to accomodate vertical maneouvres
-            posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 2.0f, 100.0f));
+            posDownObsNoise = sq(constrain_ftype(frontend->get_effective_baro_alt_noise(), 2.0f, 100.0f));
         }
     } else {
         fuseHgtData = false;
