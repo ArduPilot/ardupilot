@@ -9,6 +9,8 @@ import operator
 import os
 import re
 import signal
+import socket
+import sys
 import time
 
 from pymavlink import mavextra
@@ -15228,6 +15230,612 @@ return update, 200
 
         self.reboot_sitl()
 
+    def PlaneFollowApplet(self):
+        '''Test plane_follow.lua applet against a second live SITL target'''
+        FOLL_OFS_TYPE = 0  # north/east/down
+        FOLL_OFS_X = 50
+        FOLL_OFS_Y = 0
+        FOLL_OFS_Z = -10
+        FOLL_DIST_MAX = 1000
+        # Airspeed envelope both vehicles fly.  The defaults claim 10..30 but
+        # this airframe flies no slower than about 16.2m/s and tops out a
+        # little over 31, so state what it can really do -- see the comment
+        # where these are set below.  AIRSPEED_MIN and AIRSPEED_MAX are
+        # integer parameters.  Cruise sits at the midpoint so the follower has
+        # the same authority to fall back as it has to catch up.
+        AIRSPEED_MIN = 17
+        AIRSPEED_MAX = 31
+        AIRSPEED_CRUISE = (AIRSPEED_MIN + AIRSPEED_MAX) / 2
+        # Cruise the target below that midpoint.  The follower is the same
+        # airframe, so it only has speed in hand to close a gap while the
+        # target is flying slower than the speed the follower can reach.
+        TARGET_AIRSPEED_CRUISE = 22
+        MAX_FOLLOW_DISTANCE_M = FOLL_OFS_X + 400
+        OFFSET_CONVERGE_M = 30
+        # The target cannot hold a fixed heading during the staging loiter.
+        # Require the full tracking tolerance after releasing it onto a leg.
+        LOITER_ACQUIRE_M = 60
+        # OFFSET_VIOLATION_STREAK/DISTANCE_VIOLATION_STREAK: consecutive
+        # over-threshold reports required before failing; absorbs one-off
+        # timing/CPU-contention blips on loaded CI runners without masking
+        # real divergence
+        OFFSET_VIOLATION_STREAK = 2
+        DISTANCE_VIOLATION_STREAK = 2
+        REPORT_INTERVAL_S = 5       # periodic distance reports
+        MISSION_TIMEOUT_S = 1200    # max time to allow mission to run
+        ACQUIRE_TIME_S = 120
+        # a follower that is still closing keeps beating its best offset error;
+        # NO_PROGRESS_S without doing so by at least PROGRESS_MARGIN_M means it
+        # has stopped closing rather than merely being slow about it
+        NO_PROGRESS_S = 60
+        PROGRESS_MARGIN_M = 5
+        TCP_STREAMRATE_HZ = 4  # see set_streamrate() call below
+        # Wall-clock gap between reads.  A vehicle stops itself once 1024
+        # bytes are waiting on its serial0 queue, and at fifteen times
+        # realtime the two vehicles produce that in a few milliseconds, so
+        # this bounds how long either is left unread while we are not
+        # blocked on anything.  Measured on CI at 20ms: 26.3 stalls per
+        # simulated second and the target's clock still gaining 1.47x.
+        DRAIN_INTERVAL_S = 0.005
+        SETTLE_REPORTS = 4          # number of distance reports after a waypoint to use relaxed threshold
+
+        target_sitl = None
+        target_mav = None
+        target_sysid = 2
+        target_arm_attempted = False
+        follower_arm_attempted = False
+
+        try:
+            # ------------------------------------------------------------
+            # 1. Configure the PRIMARY autotest vehicle as the FOLLOWER
+            # ------------------------------------------------------------
+            # Mission upload ACKs can be dropped when SERIAL0 is busy.
+            # Set up both vehicles at a lower rate, then accelerate the flight.
+            follow_speedup = self.speedup
+            self.context_set_speedup(5)
+            self.progress("Configuring primary vehicle as FOLLOWER")
+            self.install_applet_script_context("plane_follow.lua")
+            self.install_script_module_context(
+                self.script_modules_source_path("pid.lua"), "pid.lua")
+            self.install_script_module_context(
+                self.script_modules_source_path("mavlink_attitude.lua"),
+                "mavlink_attitude.lua")
+            self.install_mavlink_module_context()
+
+            self.set_parameters({
+                "SERIAL5_PROTOCOL": 2,
+                "SCR_ENABLE": 1,
+                # The applet clamps the airspeed it commands to
+                # AIRSPEED_MIN..AIRSPEED_MAX, so those have to describe what
+                # the airframe can actually fly or it spends its time asking
+                # for speeds the vehicle never reaches.  Measured from the
+                # applet's own logs, this model flies no slower than about
+                # 16.2m/s and reaches a little over 31, where the defaults
+                # claim 10 and 30 -- it was commanding 10 and flying 16.
+                # These are read once when the script loads, so they have to
+                # be set before the reboot below.
+                "AIRSPEED_MIN": AIRSPEED_MIN,
+                "AIRSPEED_MAX": AIRSPEED_MAX,
+                "AIRSPEED_CRUISE": AIRSPEED_CRUISE,
+                "FOLL_ENABLE": 1,
+                "FOLL_SYSID": target_sysid,
+                "FOLL_OFS_TYPE": FOLL_OFS_TYPE,
+                "FOLL_OFS_X": FOLL_OFS_X,
+                "FOLL_OFS_Y": FOLL_OFS_Y,
+                "FOLL_OFS_Z": FOLL_OFS_Z,
+                "FOLL_ALT_TYPE": 1,
+                "FOLL_DIST_MAX": FOLL_DIST_MAX,
+                "RC7_OPTION": 301,
+            })
+
+            self.context_collect('STATUSTEXT')
+
+            # restart the primary vehicle with serial5 on multicast;
+            # this restarts SITL, so the script loads on this boot
+            self.customise_SITL_commandline(['--serial5=mcast:'])
+            self.progress("SIM_SPEEDUP after restart = %f" % self.get_parameter("SIM_SPEEDUP"))
+            self.set_parameter("MAV4_OPTIONS", 2)   # now the param exists
+
+            self.reboot_sitl()                       # MAVn_OPTIONS is RebootRequired
+
+            self.wait_text(
+                "Plane Follow .* script loaded",
+                timeout=30,
+                regex=True,
+                check_context=True,
+            )
+            # FOLLP_TIMEOUT is the applet's own grace period, in seconds,
+            # before it gives up on a lost target and switches to the failsafe
+            # mode -- a terminal state this test cannot recover from.  The
+            # default of 10 spends only a small part of the ACQUIRE_TIME_S
+            # budget below, so allow longer before abandoning the target and
+            # let the wait below decide when the test has actually failed.
+            self.set_parameter("FOLLP_TIMEOUT", 30)
+            # The follower streams telemetry at the *simulated* rate, so the
+            # default 10Hz becomes 150Hz of wall-clock traffic at fifteen
+            # times realtime.  When the harness cannot read that fast enough
+            # SITL stops the vehicle's main loop until its serial0 queue
+            # drains (SITL_State.cpp), which freezes this vehicle's clock
+            # while the target's keeps running -- the two then disagree about
+            # how much time has passed and the target flies away from a
+            # follower that cannot catch what it can no longer see moving.
+            # This test reads position every few seconds, so ask for less.
+            self.set_streamrate(TCP_STREAMRATE_HZ)
+
+            # ------------------------------------------------------------
+            # 2. Start the TARGET (sysid=2, instance 1)
+            # ------------------------------------------------------------
+            target_sitl, target_mav = self.start_additional_vehicle(
+                instance=1,
+                sysid=target_sysid,
+                model='plane',
+                rundir=self.buildlogs_path('PlaneFollowApplet-target'),
+                defaults_filepath=os.path.join(
+                    util.reltopdir('Tools/autotest/models'), 'plane.parm'),
+                customisations=['--serial5=mcast:'],
+                param_defaults={
+                    "SERIAL5_PROTOCOL": 2,
+                    # Same airspeed envelope as the follower, but cruising
+                    # slower than it so the follower can close a gap.
+                    "AIRSPEED_MIN": AIRSPEED_MIN,
+                    "AIRSPEED_MAX": AIRSPEED_MAX,
+                    "AIRSPEED_CRUISE": TARGET_AIRSPEED_CRUISE,
+                    # Keep the control link free for command and mission replies.
+                    **{f"MAV1_{stream}": TCP_STREAMRATE_HZ for stream in
+                       ("RAW_SENS", "EXT_STAT", "RC_CHAN", "RAW_CTRL",
+                        "POSITION", "EXTRA1", "EXTRA2", "EXTRA3")},
+                    # MAVn_ params are numbered by MAVLink channel, in
+                    # serial-port order: SERIAL0=MAV1, SERIAL1=MAV2,
+                    # SERIAL2=MAV3, SERIAL5=MAV4.  We want position and
+                    # attitude streamed on the multicast link (SERIAL5):
+                    "MAV4_POSITION": 10,
+                    "MAV4_EXTRA1": 10,
+                    "MAV4_EXTRA3": 2,
+                    "MAV4_OPTIONS": 2,
+                },
+            )
+
+            for pname in ("MAV4_POSITION", "MAV4_EXTRA1", "MAV4_OPTIONS", "SIM_SPEEDUP"):
+                self.progress("TARGET %s = %f" % (pname, self.get_parameter(pname, mav=target_mav)))
+
+            self.progress("Sniffing multicast for target telemetry")
+            group = "239.255.145.50"
+            interface = os.environ.get("SITL_MULTICAST_IF_ADDR", "0.0.0.0")
+            decoder = mavutil.mavlink.MAVLink(None)
+            decoder.robust_parsing = True
+            seen = set()
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as listener:
+                listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                listener.bind(("" if sys.platform == "cygwin" else group, 14550))
+                listener.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+                                    socket.inet_aton(group) + socket.inet_aton(interface))
+                listener.settimeout(DRAIN_INTERVAL_S)
+                deadline = time.monotonic() + 10
+                while target_sysid not in seen and time.monotonic() < deadline:
+                    self.drain_all_pexpects()
+                    self.drain_additional_connections()
+                    try:
+                        data = listener.recv(4096)
+                    except socket.timeout:
+                        continue
+                    for message in decoder.parse_buffer(data) or []:
+                        if message.get_type() == 'GLOBAL_POSITION_INT':
+                            seen.add(message.get_srcSystem())
+            if target_sysid not in seen:
+                raise NotAchievedException("No GLOBAL_POSITION_INT from target on multicast (seen %s)" % sorted(seen))
+            self.progress("mcast: GLOBAL_POSITION_INT from target seen")
+
+            # Mission files in Tools/autotest/ArduPlane_Tests/PlaneFollowApplet/:
+            #   ap1.txt        - follower's mission
+            #   ap1_target.txt - target's mission: TAKEOFF, then NAV_LOITER_UNLIM
+            #                    ~250m north of home at 100m AGL (item 2), then the
+            #                    original cross-country legs (items 3+).  The loiter
+            #                    is unlimited, so the target stays near home until
+            #                    the test explicitly releases it with
+            #                    DO_SET_MISSION_CURRENT.
+
+            def wait_airborne(mav_conn, label, min_alt_m=30, timeout=120):
+                tstart = self.get_sim_time(mav=mav_conn)
+                while True:
+                    if self.get_sim_time_cached(mav=mav_conn) - tstart > timeout:
+                        raise AutoTestTimeoutException(
+                            "%s did not reach %um AGL" % (label, min_alt_m))
+                    gpi = self.assert_receive_message(
+                        'GLOBAL_POSITION_INT',
+                        mav=mav_conn,
+                        timeout=5,
+                        delay_fn=self.drain_all_pexpects,
+                    )
+                    alt_rel_m = gpi.relative_alt * 1e-3
+                    self.progress("%s altitude: %.1fm AGL" % (label, alt_rel_m))
+                    if alt_rel_m >= min_alt_m:
+                        self.progress("%s is airborne" % label)
+                        return
+
+            # ------------------------------------------------------------
+            # 4. Launch TARGET into AUTO; it will take off and then loiter
+            #    ~250m from home until released
+            # ------------------------------------------------------------
+            self.start_subtest("Launch TARGET vehicle into AUTO (loiter near home)")
+            target_arm_attempted = True  # prearm timeout may attempt a diagnostic arm
+            self.wait_ready_to_arm(mav=target_mav, target_sysid=target_sysid)
+            self.load_mission_from_filepath(
+                os.path.join(testdir, self.current_test_name_directory, "ap1_target.txt"),
+                target_system=target_sysid,
+                target_component=1,
+                strict=True,
+                mav=target_mav,
+            )
+            self.change_mode("AUTO", mav=target_mav, mav_sysid=target_sysid)
+            self.arm_vehicle(mav=target_mav, target_sysid=target_sysid)
+            wait_airborne(target_mav, "TARGET")
+
+            # ------------------------------------------------------------
+            # 5. Launch FOLLOWER into AUTO
+            # ------------------------------------------------------------
+            self.start_subtest("Launch FOLLOWER vehicle into AUTO")
+            follower_arm_attempted = True
+            self.wait_ready_to_arm()
+            self.load_mission_from_filepath(
+                os.path.join(testdir, self.current_test_name_directory, "ap1.txt"),
+                target_system=self.sysid_thismav(),
+                target_component=1,
+                strict=True,
+            )
+            self.change_mode("AUTO")
+            self.arm_vehicle()
+            wait_airborne(self.mav, "FOLLOWER")
+
+            for _ in range(3):
+                target_mav.mav.param_set_send(target_sysid, target_mav.target_component,
+                                              b"SIM_SPEEDUP", follow_speedup,
+                                              mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+                if self.get_parameter("SIM_SPEEDUP", mav=target_mav) == follow_speedup:
+                    break
+            else:
+                raise NotAchievedException("Could not set TARGET SIM_SPEEDUP to %u" % follow_speedup)
+            self.context_set_speedup(follow_speedup)
+            self.progress("Both vehicles are now running at %ux" % follow_speedup)
+
+            def vehicle_separation_m():
+                follower_gpi = self.assert_receive_message(
+                    'GLOBAL_POSITION_INT', timeout=5)
+                target_gpi = self.assert_receive_message(
+                    'GLOBAL_POSITION_INT',
+                    mav=target_mav,
+                    timeout=5,
+                    delay_fn=self.drain_all_pexpects,
+                )
+                follower_loc = Location.latlon_only(
+                    follower_gpi.lat * 1e-7,
+                    follower_gpi.lon * 1e-7,
+                )
+                target_loc = Location.latlon_only(
+                    target_gpi.lat * 1e-7,
+                    target_gpi.lon * 1e-7,
+                )
+                return self.get_distance(follower_loc, target_loc)
+
+            # with the target loitering near home, separation must already
+            # be inside FOLL_DIST_MAX or follow cannot engage
+            sep = vehicle_separation_m()
+            self.progress("Separation at follow-enable: %.1fm" % sep)
+            if sep > FOLL_DIST_MAX:
+                raise NotAchievedException(
+                    "Separation %.1fm exceeds FOLL_DIST_MAX %.0fm at enable; "
+                    "loitering-target geometry is broken" % (sep, FOLL_DIST_MAX))
+
+            def latest_gpi(mav_conn):
+                '''return the most recently received GLOBAL_POSITION_INT on
+                mav_conn, discarding any older ones still queued.
+
+                Both vehicles emit position at the simulation rate, so at high
+                SIM_SPEEDUP they arrive far faster than this Python loop
+                consumes them.  Taking the next queued message would then
+                report where a vehicle was, not where it is, and that lag
+                grows without bound as the backlog builds -- the separation
+                computed below would climb steadily even while the two
+                vehicles are holding station perfectly.
+
+                Read from the connection's cache rather than returning what
+                the drain above saw: the suite drains the vehicles it is not
+                waiting on, so the stream may already have been consumed
+                elsewhere.  Returns None only until the first one arrives.
+                '''
+                while mav_conn.recv_match(
+                        type='GLOBAL_POSITION_INT', blocking=False) is not None:
+                    pass
+                return mav_conn.messages.get('GLOBAL_POSITION_INT', None)
+
+            def follow_offset_error_m():
+                follower_gpi = latest_gpi(self.mav)
+                if follower_gpi is None:
+                    follower_gpi = self.assert_receive_message(
+                        'GLOBAL_POSITION_INT', timeout=5)
+                target_gpi = latest_gpi(target_mav)
+                if target_gpi is None:
+                    target_gpi = self.assert_receive_message(
+                        'GLOBAL_POSITION_INT',
+                        mav=target_mav,
+                        timeout=5,
+                        delay_fn=self.drain_all_pexpects,
+                    )
+                follower_loc = Location.latlon_only(
+                    follower_gpi.lat * 1e-7,
+                    follower_gpi.lon * 1e-7,
+                )
+                target_loc = Location.latlon_only(
+                    target_gpi.lat * 1e-7,
+                    target_gpi.lon * 1e-7,
+                )
+                separation = self.get_distance(follower_loc, target_loc)
+                expected_loc = self.offset_location_ne(target_loc, FOLL_OFS_X, FOLL_OFS_Y)
+                follower_alt = follower_gpi.alt * 1e-3
+                target_alt = target_gpi.alt * 1e-3
+                vertical_error = follower_alt - (target_alt - FOLL_OFS_Z)
+                offset_error = math.hypot(self.get_distance(follower_loc, expected_loc), vertical_error)
+                return separation, offset_error, follower_alt, target_alt
+
+            # ------------------------------------------------------------
+            # 6. Enable Follow mode; target is loitering close by
+            # ------------------------------------------------------------
+            self.start_subtest("Enable Follow mode on FOLLOWER via RC7")
+            self.set_rc(7, 2000)
+            self.wait_text("PFollow: enabled", check_context=True, timeout=10)
+
+            self.progress("Waiting %us for follower to acquire loitering target" %
+                          ACQUIRE_TIME_S)
+
+            self.progress("Waiting for follower to get within %.0fm of the loitering offset" % LOITER_ACQUIRE_M)
+            tstart = self.get_sim_time()
+            last_update = tstart
+            # Poll cached time once both vehicles are flying. get_sim_time()
+            # pauses only the primary while draining, and the two clocks drift.
+
+            while True:
+                if self.get_sim_time_cached() - tstart > ACQUIRE_TIME_S:
+                    raise AutoTestTimeoutException(
+                        "Follower failed to acquire loitering target within %us" % ACQUIRE_TIME_S)
+                self.drain_all_pexpects()
+                now = self.get_sim_time_cached()
+                sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
+                if now - last_update >= 5:
+                    self.progress("Acquiring: separation=%.1fm offset_error=%.1fm (%.0fs elapsed)" % (
+                        sep, ofs_err, now - tstart))
+                    last_update = now
+                if ofs_err <= LOITER_ACQUIRE_M:
+                    self.progress("Follower acquired target: separation=%.1fm offset_error=%.1fm after %.0fs" % (
+                        sep, ofs_err, now - tstart))
+                    break
+                time.sleep(DRAIN_INTERVAL_S)
+
+            sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
+            self.progress("Separation after acquisition: %.1fm, offset error: %.1fm" %
+                          (sep, ofs_err))
+            if sep > FOLL_DIST_MAX:
+                raise NotAchievedException(
+                    "Follower failed to acquire loitering target "
+                    "(%.1fm > FOLL_DIST_MAX %.0fm)" % (sep, FOLL_DIST_MAX))
+
+            # ------------------------------------------------------------
+            # 7. Release target into cross-country mission and monitor
+            # ------------------------------------------------------------
+            self.start_subtest("Release TARGET into cross-country mission")
+
+            sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
+            self.progress("Separation at release: %.1fm offset_error=%.1fm" % (sep, ofs_err))
+
+            # skip the loiter item (item 2) and jump to the first nav leg
+            target_mav.mav.mission_set_current_send(target_sysid, 1, 3)
+
+            # flush stale MISSION_CURRENT messages buffered before the jump
+            tstart = time.time()
+            while time.time() - tstart < 2:
+                self.drain_all_pexpects()
+                target_mav.recv_match(type='MISSION_CURRENT', blocking=False)
+                time.sleep(DRAIN_INTERVAL_S)
+
+            # give the follower time to react to the target starting to move
+            # before we begin enforcing distance limits
+            self.progress("Waiting for follower to re-acquire moving target")
+            tstart = self.get_sim_time()
+            # Both vehicles are separate SITL processes, each free-running at
+            # whatever rate the host gives it, with nothing tying their clocks
+            # together.  If the target's simulated clock outruns the
+            # follower's it covers ground the follower cannot make up, and no
+            # amount of chasing closes the gap -- so measure the two clocks
+            # and say so, rather than reporting it as a failure to follow.
+            target_tstart = self.get_sim_time(mav=target_mav)
+            last_acquire_report = tstart
+            best_error = None
+            best_error_time = tstart
+            while self.get_sim_time_cached() - tstart < ACQUIRE_TIME_S:
+                self.drain_all_pexpects()
+                sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
+                if ofs_err <= OFFSET_CONVERGE_M:
+                    self.progress(
+                        "Follower re-acquired moving target: "
+                        "separation=%.1fm offset_error=%.1fm after %.0fs" % (
+                            sep, ofs_err, self.get_sim_time_cached() - tstart))
+                    break
+                now = self.get_sim_time_cached()
+                # A follower that is closing on the commanded offset will
+                # keep reducing its best offset error.  One that has stopped closing altogether -- for
+                # instance holding the target's heading and flying alongside
+                # rather than turning toward it -- will not, and would
+                # otherwise sit here until the timeout and report only that
+                # 120s had passed.  Say which of the two happened.
+                if best_error is None or ofs_err < best_error - PROGRESS_MARGIN_M:
+                    best_error = ofs_err
+                    best_error_time = now
+                elif now - best_error_time > NO_PROGRESS_S:
+                    follower_elapsed = now - tstart
+                    target_elapsed = self.get_sim_time_cached(mav=target_mav) - target_tstart
+                    skew = target_elapsed / follower_elapsed if follower_elapsed > 0 else 0
+                    raise NotAchievedException(
+                        "Follower stopped closing on the offset: error "
+                        "%.1fm, no improvement on its best of %.1fm for %us "
+                        "(wanted within %.0fm of the commanded offset). In that "
+                        "time the target's clock advanced %.0fs against the "
+                        "follower's %.0fs (%.2fx). The two vehicles are "
+                        "separate processes with nothing tying their clocks "
+                        "together, so a target whose simulated clock outruns "
+                        "the follower's covers ground the follower is never "
+                        "given the time to cover: anything much above 1.0x "
+                        "here is that, not a failure to follow" % (
+                            ofs_err, best_error, NO_PROGRESS_S, OFFSET_CONVERGE_M,
+                            target_elapsed, follower_elapsed, skew))
+                if now - last_acquire_report > REPORT_INTERVAL_S:
+                    last_acquire_report = now
+                    self.progress(
+                        "Re-acquiring: separation=%.1fm offset_error=%.1fm "
+                        "best=%.1fm elapsed=%.0fs" % (
+                            sep, ofs_err, best_error, now - tstart))
+                time.sleep(DRAIN_INTERVAL_S)
+            else:
+                raise AutoTestTimeoutException(
+                    "Follower failed to re-acquire moving target within %us" % ACQUIRE_TIME_S)
+
+            converged_reported = False
+            last_target_wp = 3
+            last_wp_time = None
+            reports_since_wp = 0
+            offset_violation_streak = 0
+            distance_violation_streak = 0
+            final_wp = 10
+
+            # drain all buffered messages from target before monitoring
+            while target_mav.recv_match(blocking=False) is not None:
+                pass
+
+            tstart = self.get_sim_time()
+            last_report = tstart
+            self.progress("Monitoring loop start: sim_time=%.1f" % tstart)
+            while True:
+                if self.get_sim_time_cached() - tstart >= MISSION_TIMEOUT_S:
+                    sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
+                    raise AutoTestTimeoutException(
+                        "Mission did not complete within %us: "
+                        "last_wp=%u final_wp=%u separation=%.1fm offset_error=%.1fm" % (
+                            MISSION_TIMEOUT_S, last_target_wp, final_wp, sep, ofs_err))
+                self.drain_all_pexpects()
+
+                # check for target waypoint advances
+                # cache, not the stream: the suite drains connections it
+                # is not waiting on, so a blocking wait elsewhere may have
+                # taken this message before we looked
+                while target_mav.recv_match(
+                        type='MISSION_CURRENT', blocking=False) is not None:
+                    pass
+                mav_wp = target_mav.messages.get('MISSION_CURRENT', None)
+                if mav_wp is not None and mav_wp.seq != last_target_wp:
+                    last_target_wp = mav_wp.seq
+                    last_wp_time = self.get_sim_time_cached()
+                    reports_since_wp = 0
+                    offset_violation_streak = 0
+                    distance_violation_streak = 0
+                    self.progress("TARGET reached waypoint %u (final_wp=%u)" % (mav_wp.seq, final_wp))
+                    if mav_wp.seq >= final_wp:
+                        self.progress("TARGET reached final waypoint, mission complete")
+                        break  # <-- normal successful exit
+
+                # print any statustext from follower as it arrives
+                st = self.mav.recv_match(type='STATUSTEXT', blocking=False)
+                if st is not None:
+                    self.progress("FOLLOWER: %s" % st.text)
+
+                # print any statustext from target
+                st_target = target_mav.recv_match(type='STATUSTEXT', blocking=False)
+                if st_target is not None:
+                    self.progress("TARGET: %s" % st_target.text)
+
+                # periodic distance report
+                now = self.get_sim_time_cached()
+                if now - last_report >= REPORT_INTERVAL_S:
+                    try:
+                        sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
+                    except AutoTestTimeoutException as e:
+                        self.progress("Distance report failed: %s" % str(e))
+                        last_report = now
+                        continue
+                    reports_since_wp += 1
+
+                    # settling window: relax threshold for first SETTLE_REPORTS
+                    # reports after each waypoint transition, and before the
+                    # first waypoint is reached
+                    settling = (last_wp_time is None or reports_since_wp <= SETTLE_REPORTS)
+                    effective_converge_m = OFFSET_CONVERGE_M * 3 if settling else OFFSET_CONVERGE_M
+
+                    self.progress(
+                        "Distance report: separation=%.1fm "
+                        "offset_error=%.1fm (threshold=%.0fm) "
+                        "alt follower=%.1fm target=%.1fm diff=%.1fm" % (
+                            sep, ofs_err, effective_converge_m,
+                            follower_alt, target_alt, follower_alt - target_alt))
+
+                    if ofs_err <= OFFSET_CONVERGE_M and not converged_reported:
+                        self.progress("FOLLOWER within %.0fm of commanded offset (%.1fm error)" %
+                                      (OFFSET_CONVERGE_M, ofs_err))
+                        converged_reported = True
+
+                    if sep > MAX_FOLLOW_DISTANCE_M:
+                        distance_violation_streak += 1
+                        self.progress(
+                            "Follow distance %.1fm exceeds %.0fm "
+                            "(%u/%u consecutive)" % (
+                                sep, MAX_FOLLOW_DISTANCE_M,
+                                distance_violation_streak, DISTANCE_VIOLATION_STREAK))
+                        if distance_violation_streak >= DISTANCE_VIOLATION_STREAK:
+                            raise NotAchievedException(
+                                "Follow distance %.1fm exceeds %.0fm for %u consecutive reports" % (
+                                    sep, MAX_FOLLOW_DISTANCE_M, distance_violation_streak))
+                    else:
+                        distance_violation_streak = 0
+
+                    if not settling and ofs_err > OFFSET_CONVERGE_M:
+                        offset_violation_streak += 1
+                        self.progress(
+                            "Offset error %.1fm exceeds threshold %.0fm "
+                            "(%u/%u consecutive)" % (
+                                ofs_err, OFFSET_CONVERGE_M,
+                                offset_violation_streak, OFFSET_VIOLATION_STREAK))
+                        if offset_violation_streak >= OFFSET_VIOLATION_STREAK:
+                            raise NotAchievedException(
+                                "Follower offset error %.1fm exceeds threshold %.0fm "
+                                "on leg to WP%u for %u consecutive reports" % (
+                                    ofs_err, OFFSET_CONVERGE_M, last_target_wp,
+                                    offset_violation_streak))
+                    else:
+                        offset_violation_streak = 0
+
+                    last_report = now
+
+                time.sleep(DRAIN_INTERVAL_S)
+
+            self.progress("FOLLOWER successfully tracked target through mission")
+
+            # ------------------------------------------------------------
+            # 8. Disengage and disarm
+            # ------------------------------------------------------------
+            self.set_rc(7, 1000)
+            self.wait_text("PFollow: disabled", check_context=True, timeout=10)
+            self.disarm_vehicle(force=True)
+            self.disarm_vehicle(mav=target_mav, force=True, target_sysid=target_sysid)
+        except Exception:
+            if follower_arm_attempted:
+                try:
+                    self.disarm_vehicle(force=True)
+                except Exception as cleanup_error:  # noqa: BLE001
+                    self.progress("FOLLOWER cleanup failed: %s" % cleanup_error)
+            if target_arm_attempted:
+                try:
+                    self.disarm_vehicle(mav=target_mav, force=True, target_sysid=target_sysid)
+                except Exception as cleanup_error:  # noqa: BLE001
+                    self.progress("TARGET cleanup failed: %s" % cleanup_error)
+            raise
+        finally:
+            self.stop_additional_vehicle(target_sitl, target_mav)
+
     def PreflightRebootComponent(self):
         '''Ensure that PREFLIGHT_REBOOT commands sent to components don't reboot Autopilot'''
         self.run_cmd_int(
@@ -16495,6 +17103,7 @@ return update, 200
             self.ScriptedArmingChecksApplet,
             self.ScriptedArmingChecksAppletEStop,
             self.ScriptedArmingChecksAppletRally,
+            Test(self.PlaneFollowApplet, speedup=15),
             self.AVAILABLE_MODES,
             self.MAVLinkCommandRejections,
             self.MAV_CMD_GUIDED_CHANGE_HEADING,
