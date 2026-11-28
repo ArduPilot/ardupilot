@@ -1,0 +1,149 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the Raspberry Pi Pico 2 module (RP2350A, QFN-60)
+
+# A stock Pico 2 or Pico 2 W with nothing attached. There are no sensors on the
+# module, so like the Nucleo boards this target runs Simulation-on-Hardware:
+# the flight code runs on the real MCU, on both cores, against a physics model
+# instead of an IMU and barometer. Only GPIO0-29 exist on this package.
+
+# MCU class and specific type
+MCU PICO2 PICO2
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_RASPBERRYPI_PICO2
+
+# 12 MHz crystal.
+# NOTE: on RP2350 this value is emitted as STM32_HSECLK and does NOT directly
+# drive the ChibiOS hardware - RP_XOSCCLK in board.h (hardcoded 12 MHz via an
+# #if !defined guard) is what the XOSC/PLL init actually uses.
+OSCILLATOR_HZ 12000000
+
+# 4MB boot/XIP flash, the only flash on the module.
+FLASH_SIZE_KB 4096
+# Flash layout:
+#   Bootloader: 0x10000000-0x10007FFF (32KB)
+#   Parameter storage: 0x10008000-0x1000FFFF (32KB)
+#   App: 0x10010000-0x103FFFFF
+FLASH_RESERVE_START_KB 64
+
+# USB setup
+USB_STRING_MANUFACTURER "ArduPilot"
+
+# order of UARTs (and USB)
+#   SERIAL0: USB CDC console / MAVLink
+#   SERIAL1: UART0 on GPIO12/13
+#   SERIAL2: UART1 on GPIO10/11
+#   SERIAL3: PIOUART0 on GPIO20/21
+#   SERIAL4: PIOUART1 on GPIO16/17
+SERIAL_ORDER OTG1 UART0 UART1 PIOUART0 PIOUART1
+
+# --------------------------------------------------------------------------
+# Pins
+# --------------------------------------------------------------------------
+
+# USB pins (virtual PB prefix used by chibios_hwdef.py for RP2350 USB)
+PB0 OTG_FS_DM OTG1
+PB1 OTG_FS_DP OTG1
+
+# SWD has dedicated pins on the Pico 2 debug header, not GPIOs.
+
+# UART0
+PA12 UART0_TX UART0
+PA13 UART0_RX UART0
+
+# UART1, on its auxiliary TX/RX function (F11)
+PA10 UART1_TX UART1
+PA11 UART1_RX UART1
+
+# PIOUARTs. PIOUART pins must be GPIO16 or above.
+PA20 PIOUART0_TX INPUT FLOATING
+# GPIO21 is shared: PPM RC input through the GPIO edge reader by default,
+# or the receiver's serial output when SERIAL3_PROTOCOL is set to 23
+PA21 PIOUART0_RX INPUT FLOATING
+
+define HAL_RCIN_IS_GPIO 1
+define HAL_RCIN_GPIO_LINE 21
+PA16 PIOUART1_TX INPUT FLOATING
+PA17 PIOUART1_RX INPUT FLOATING
+
+# PWM outputs (slices 0-3)
+PA0 PWM0_A TIM0 PWM(1) GPIO(50)
+PA1 PWM0_B TIM0 PWM(2) GPIO(51)
+PA2 PWM1_A TIM1 PWM(3) GPIO(52)
+PA3 PWM1_B TIM1 PWM(4) GPIO(53)
+PA4 PWM2_A TIM2 PWM(5) GPIO(54)
+PA5 PWM2_B TIM2 PWM(6) GPIO(55)
+PA6 PWM3_A TIM3 PWM(7) GPIO(56)
+PA7 PWM3_B TIM3 PWM(8) GPIO(57)
+
+# Onboard LED on GPIO25, active HIGH. The Pico 2 W drives its LED from the
+# wireless chip instead, so there it stays dark.
+PA25 LED OUTPUT LOW GPIO(90)
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+define AP_NOTIFY_GPIO_LED_1_PIN 90
+define HAL_GPIO_LED_ON 1
+
+# Analog inputs on the header ADC pins (GPIO26-28 = ADC0-2). GPIO29 is the
+# module's VSYS/3 divider and is left unbound.
+PA26 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA27 BATT_CURRENT_SENS ADC1 SCALE(1)
+PA28 RSSI_ADC ADC1 SCALE(1)
+
+# --------------------------------------------------------------------------
+# Feature defaults
+# --------------------------------------------------------------------------
+
+# Parameter storage lives in the 32KB region below the app, inside the 64KB
+# reserve at the bottom of the XIP flash.
+define HAL_STORAGE_SIZE 8192
+STORAGE_FLASH_PAGE 8
+define AP_FLASH_STORAGE_QUAD_PAGE 1
+
+# Only BOOTSEL or SWD changes the bootloader, crash dumps are off, and MCU
+# monitoring reads the temperature sensor. These stay here rather than in
+# PICO2.py, as the hwdef generator reads them itself.
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+define AP_CRASHDUMP_ENABLED 0
+define HAL_WITH_MCU_MONITORING 1
+
+# No microSD and no dataflash on the module. That leaves MAVLink as the only
+# log backend, which fails the logging pre-arm check until a GCS streams it,
+# so logging is off by default; LOG_BACKEND_TYPE 2 turns it on.
+define HAL_LOGGING_BACKENDS_DEFAULT 0
+
+# Battery and RSSI channels. Pin numbers are the ADC channel index.
+define HAL_BATT_VOLT_PIN 0
+define HAL_BATT_CURR_PIN 1
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+define BOARD_RSSI_ANA_PIN 2
+
+# DShot drives at most four channels from PIO2; this target has eight
+# outputs and no ESCs to talk to under simulation, so it is left off.
+define HAL_DSHOT_ENABLED                   0
+define HAL_SERIAL_ESC_COMM_ENABLED         0
+
+# SERIAL3 stays off: GPIO21 carries PPM RC input, and a floating RX on an
+# unconnected header can generate enough IRQ traffic to starve startup.
+define DEFAULT_SERIAL3_PROTOCOL            SerialProtocol_None
+define DEFAULT_SERIAL4_PROTOCOL            SerialProtocol_None
+
+# ChibiOS SMP across both cores, with the rate loop on core1. It stays here
+# rather than in the ChibiOS config because ArduPilot code that does not
+# include it, such as AP_HAL/board/chibios.h, tests it through hwdef.h.
+define CH_CFG_SMP_MODE TRUE
+
+# The firmware runs at the RP2350 port's 200 MHz operating point, with the
+# flash timing measured on RPI_UAVFC; rp2350/rp2350_mcuconf.h sets both, and
+# system.cpp checks this rate against the PLL. The timing is not yet swept on
+# a Pico 2, whose flash is a Winbond W25Q32RV (Pico 2 datasheet) with an
+# unchecked /CS deselect time; sweep the window before relying on it
+# (rp2350/DEVELOPMENT.md, "Clock and flash timing"). On a bench Pico 2 the
+# boot ROM sets Quad I/O (EBh) and continuous read engages: the whole 4 MB
+# read back correctly twice, and three parameter writes each survived a
+# reboot.
+MCU_CLOCKRATE_MHZ 200
+
+include ../include/SimOnHW.inc
+
+AUTOBUILD_TARGETS None

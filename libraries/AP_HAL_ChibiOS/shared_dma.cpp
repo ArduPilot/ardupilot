@@ -263,7 +263,11 @@ void Shared_DMA::dma_info(ExpandingString &str)
             && _contention_stats[i].transactions == 0) {
             continue;
         }
-#if STM32_DMA_ADVANCED
+#if defined(RP2350)
+    // RP2350 DMAv1 LLD has 12 channels, all in a single controller.
+    #define STREAM_MUX 12
+    #define STREAM_OFFSET 0
+#elif STM32_DMA_ADVANCED
 #define STREAM_MUX 8
 #define STREAM_OFFSET 0
 #else

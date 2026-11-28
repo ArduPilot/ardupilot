@@ -58,6 +58,16 @@ public:
     void crashdump_prepare_peripheral(void);
     void crashdump_restore_sck(void);
 
+#if defined(RP2350)
+    // apply a peripheral configuration, cycling the hardware only when
+    // something actually changed. acquire_bus() otherwise stops and restarts
+    // the bus on every transaction, which frees and reallocates both DMA
+    // channels under the global kernel spinlock. False if the peripheral
+    // could not be started.
+    bool apply_config(uint32_t sspcr0, uint32_t sspcpsr,
+                      ioportid_t ssport, uint16_t sspad);
+#endif  // defined(RP2350)
+
 private:
     bool spi_started;
 
@@ -149,6 +159,12 @@ public:
 
     bool acquire_bus(bool acquire, bool skip_cs);
 
+    /*
+      stop this device's bus peripheral through the SPIBus, so the bus's
+      started flag tracks the hardware. Callers must hold the bus semaphore.
+     */
+    void stop_bus_peripheral(void) { bus.stop_peripheral(); }
+
     SPIDriver * get_driver();
 
     void get_crashdump_config(bool high_speed, uint32_t &config1,
@@ -190,6 +206,10 @@ private:
     uint32_t derive_freq_flag(uint32_t _frequency);
     // low level transfer function
     bool do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len) WARN_IF_UNUSED;
+#if defined(RP2350)
+    // abort a transfer that timed out; false if it completed in the meantime
+    bool abandon_transfer(void);
+#endif  // defined(RP2350)
 };
 
 class SPIDeviceManager : public AP_HAL::SPIDeviceManager {

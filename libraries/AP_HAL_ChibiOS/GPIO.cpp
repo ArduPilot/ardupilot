@@ -44,7 +44,15 @@ struct gpio_entry {
     AP_HAL::GPIO::irq_handler_fn_t fn; // callback for GPIO interface
     thread_reference_t thd_wait;
     bool is_input;
+#if defined(RP2350)
+    // must hold a full PAL mode word: PAL_MODE_OUTPUT_PUSHPULL is 0x40800005 -
+    // the output enable is bit 23 and the pad input enable bit 30 - so a
+    // uint8_t truncated every mode to a bare FUNCSEL_SIO and left the pad high
+    // impedance, which also made every PAL_MODE_INPUT* compare equal
+    iomode_t mode;
+#else
     uint8_t mode;
+#endif  // defined(RP2350)
     uint16_t isr_quota;
     uint8_t isr_disabled_ticks;
     AP_HAL::GPIO::INTERRUPT_TRIGGER_TYPE isr_mode;
@@ -110,6 +118,15 @@ void GPIO::init()
 #endif // HAL_BOOTLOADER_BUILD
 #ifdef HAL_PIN_ALT_CONFIG
     setup_alt_config();
+#if defined(RP2350) && HAVE_GPIO_PINS && !defined(HAL_BOOTLOADER_BUILD)
+    // an output whose pin this config does not give to PWM cannot be a GPIO either
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+        struct gpio_entry *g = &_gpio_tab[i];
+        if (g->pwm_num != 0 && !alt_config_allows_pwm(g->pal_line)) {
+            g->enabled = false;
+        }
+    }
+#endif
 #endif
 }
 
@@ -122,7 +139,12 @@ uint8_t GPIO::alt_config;
  */
 static const struct alt_config {
     uint8_t alternate;
+#if defined(RP2350)
+    iomode_t mode;  // a full RP2350 PAL mode word, as in gpio_entry
+#else
     uint16_t mode;
+#endif
+
     ioline_t line;
     PERIPH_TYPE periph_type;
     uint8_t periph_instance;
@@ -201,6 +223,33 @@ ioline_t GPIO::resolve_alt_config(ioline_t base, PERIPH_TYPE ptype, uint8_t inst
     }
 #endif
     return base;
+}
+
+/*
+  true unless the active alternative config (BRD_ALT_CONFIG) takes a PWM
+  output's pin for something else, or the output is one that only exists
+  in another config, from a PWM() on an ALT() line
+*/
+bool GPIO::alt_config_allows_pwm(ioline_t line)
+{
+#ifdef HAL_PIN_ALT_CONFIG
+    bool pwm_in_other_config = false;
+    for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
+        const struct alt_config &alt = alternate_config[i];
+        if (alt.line != line) {
+            continue;
+        }
+        if (alt.alternate == alt_config) {
+            return alt.periph_type == PERIPH_TYPE::PWM_OUTPUT;
+        }
+        if (alt.periph_type == PERIPH_TYPE::PWM_OUTPUT) {
+            pwm_in_other_config = true;
+        }
+    }
+    return !pwm_in_other_config;
+#else
+    return true;
+#endif
 }
 
 
@@ -583,7 +632,7 @@ bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
     return false;
 }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS) || defined(RP2350)
 
 // allow for save and restore of pin settings
 bool GPIO::get_mode(uint8_t pin, uint32_t &mode)

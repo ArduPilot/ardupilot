@@ -64,6 +64,22 @@ public:
 #endif
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
     static uint8_t _toneAlarm_types;
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+    // the PWM slice the buzzer drives, which on RP2350 it can share with an output
+    static PWMDriver *toneAlarm_pwm_driver() { return _toneAlarm_pwm_group.pwm_drv; }
+    // an output that shares the buzzer's slice runs as PWM, so the buzzer leaves the slice alone
+    static void toneAlarm_release_pwm_slice() { _toneAlarm_pwm_slice_released = true; }
+    // that output turned out to be an LED strip, driven from the PIO, so the buzzer has the slice back
+    static void toneAlarm_reclaim_pwm_slice();
+#endif
+    // true once an output has taken the buzzer's PWM slice; the buzzer is then silent
+    static bool toneAlarm_pwm_slice_released() {
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+        return _toneAlarm_pwm_slice_released;
+#else
+        return false;
+#endif
+    }
 
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
@@ -125,6 +141,9 @@ private:
     };
 
     static ToneAlarmPwmGroup _toneAlarm_pwm_group;
+#endif
+#if defined(RP2350) && defined(HAL_PWM_ALARM)
+    static bool _toneAlarm_pwm_slice_released;  // written by RCOutput at init and when a strip is set up
 #endif
 
     /*
