@@ -1,0 +1,5 @@
+# Active-low VTX power control: relay ON keeps the 9 V supply enabled.
+RELAY1_INVERTED 1
+
+# Enable MSP DisplayPort alongside the onboard analog OSD.
+OSD_TYPE2 5
