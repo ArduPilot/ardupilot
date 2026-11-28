@@ -297,6 +297,7 @@ void NavEKF3_core::tryChangeCompass(uint8_t mag_index)
         learnedMagField.clear();
         return;
     }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 All compasses could not be switched");
 }
 
 // check for new magnetometer data and update store measurements if available
