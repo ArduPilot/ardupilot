@@ -163,6 +163,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(ToyMode,              &copter.g2.toy_mode,         update,          10,  50,  24),
 #endif
     SCHED_TASK(auto_disarm_check,     10,     50,  27),
+    SCHED_TASK(failsafe_check_disarm, 10,     50,  28),
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
     SCHED_TASK_CLASS(AHRSTrimming,       &copter.ahrs_trimming,       auto_run,        10,  75,  30),
 #endif
