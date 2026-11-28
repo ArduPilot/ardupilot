@@ -300,6 +300,13 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(beacon, "BCN", 33, AP_Vehicle, AP_Beacon),
 #endif  // AP_BEACON_ENABLED
 
+    // @Param: FW_VER_LAST
+    // @DisplayName: Last firmware version
+    // @Description: Firmware version that last ran on this board, encoded as major*65536+minor*256+patch. Automatically updated on boot.
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("FW_VER_LAST", 34, AP_Vehicle, _last_firmware_version, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
     AP_GROUPEND
 };
 
@@ -342,6 +349,8 @@ void AP_Vehicle::setup()
         AP::mount()->convert_params();
     }
 #endif
+
+    check_firmware_version();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_FILESYSTEM_FATFS_ENABLED
     if (AP_BoardConfig::get_sdcard_slowdown() != 0) {
