@@ -1250,6 +1250,12 @@ class chibios(Board):
     abstract = True
     toolchain = 'arm-none-eabi'
 
+    def native_path(self, cfg, node):
+        # the native Windows compiler used with Cygwin can't open /cygdrive paths
+        if Utils.unversioned_sys_platform() == 'cygwin':
+            return cfg.cmd_and_log(['cygpath', '-m', node.abspath()], quiet=Context.BOTH).strip()
+        return node.abspath()
+
     def configure_env(self, cfg, env):
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
@@ -1302,10 +1308,17 @@ class chibios(Board):
             '-fno-builtin-vprintf',
             '-fno-builtin-vfprintf',
             '-fno-builtin-puts',
+            '-fno-builtin-snprintf',
+            '-fno-builtin-vsnprintf',
+            '-fno-builtin-sprintf',
+            '-fno-builtin-vsprintf',
+            '-fno-builtin-scanf',
+            '-fno-builtin-sscanf',
             '-fno-math-errno',
             '-mno-thumb-interwork',
             '-mthumb',
             '-D__USE_CMSIS',
+            '-include', self.native_path(cfg, cfg.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/stdio.h')),
             '-DNDEBUG=1'
         ] + libc_specs
         if not cfg.options.Werror:
@@ -1734,6 +1747,7 @@ class WASMBoard(SITLBoard):
 
         # Output a .js ES module (the paired .wasm is emitted automatically)
         env.cxxprogram_PATTERN = '%s.js'
+        env.LINK_EXTRA_OUTPUTS = ['.wasm']
 
         env.LINKFLAGS += [
             '-sPROXY_TO_PTHREAD=1',

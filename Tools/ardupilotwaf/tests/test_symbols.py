@@ -350,8 +350,22 @@ def test_local_data_is_not_a_libc_function(checker, monkeypatch, kind):
     task.run()
 
 
+@pytest.mark.parametrize("symbol", ["time.cpp.bc0f6a62", "time.c.bc0f6a62"])
+def test_lto_debug_symbol_is_not_a_libc_function(checker, monkeypatch, symbol):
+    waf, task = checker
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.SYMBOLS_BLACKLIST = ["time"]
+    # GCC emits weak compilation-unit symbols in .debug_info with LTO.
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "01d5bc02 W %s\n" % symbol)
+    task.run()
+
+
 @pytest.mark.parametrize("entry", ["00001000 t time", "00001000 W time", " U time", " w time",
-                                   "00001000 i time", "00001000 D time"])
+                                   "00001000 i time", "00001000 D time",
+                                   "00001000 t time.constprop.0", "00001000 t time.isra.0",
+                                   "00001000 t time.part.0", "00001000 t time.cold",
+                                   "00001000 W time.lto_priv.0", "00001000 t time.llvm.12345678",
+                                   "00001000 t time.constprop.0.isra.0"])
 @pytest.mark.parametrize("data_first", [False, True])
 def test_local_data_cannot_hide_a_forbidden_symbol(checker, monkeypatch, entry, data_first):
     waf, task = checker

@@ -376,7 +376,10 @@ class check_elf_symbols(Task.Task):
             # checking global symbols, code and undefined/weak references.
             if symbol_type in ('b', 'd', 'g', 'r', 's'):
                 continue
-            name = symbol.split('@', 1)[0].split('.', 1)[0]
+            name = symbol.split('@', 1)[0]
+            # Strip function-clone suffixes, not LTO debug symbols such as
+            # time.cpp.<hash>, which nm reports as weak symbols.
+            name = re.split(r'\.(?:constprop|isra|part|cold|lto_priv|llvm)(?:\.|$)', name, maxsplit=1)[0]
             if check_blacklist and name in self.env.SYMBOLS_BLACKLIST:
                 raise Errors.WafError("Disallowed unwrapped symbol in %s: %s" % (elfpath, symbol))
 
@@ -481,7 +484,7 @@ class check_elf_symbols(Task.Task):
                 raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, symbol))
 
 @feature('post_link')
-@after_method('process_source')
+@after_method('process_source', 'chibios_firmware')
 def post_link(self):
     '''
     setup tasks to run after link stage
@@ -490,13 +493,19 @@ def post_link(self):
 
     map_path = None
     if self.env.BOARD_CLASS == 'ChibiOS':
-        map_path = link_output.abspath() + '.map'
+        # beside the linked ELF, where extract_features.py looks for it
+        map_node = link_output.parent.find_or_declare(link_output.name + '.map')
+        map_path = map_node.abspath()
         map_prefix = '-Wl,-Map,Linker.map,'
         self.link_task.env = self.link_task.env.derive()
         self.link_task.env.LINKFLAGS = [
             flag.replace(map_prefix, '-Wl,-Map,%s,' % tool_path(map_path))
             for flag in self.link_task.env.LINKFLAGS
         ]
+        self.link_task.outputs.append(map_node)
+    # additional files written by the linker, so they are rebuilt if missing
+    for ext in self.env.LINK_EXTRA_OUTPUTS:
+        self.link_task.outputs.append(link_output.change_ext(ext))
 
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
     if map_path is not None:

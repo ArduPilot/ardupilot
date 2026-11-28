@@ -190,7 +190,8 @@ static void memprotect_backtrace(struct port_extctx *ctx, uint32_t exc_return, t
   Anything else is left for the normal fatal fault path
  */
 uint32_t memprotect_handle_fault(struct port_extctx *ctx, uint32_t exc_return);
-uint32_t memprotect_handle_fault(struct port_extctx *ctx, uint32_t exc_return)
+// used: only called from the fault handler asm, keep it with LTO
+__attribute__((used)) uint32_t memprotect_handle_fault(struct port_extctx *ctx, uint32_t exc_return)
 {
     const uint32_t cfsr = SCB->CFSR;
 
