@@ -2533,6 +2533,11 @@ bool AP_InertialSensor::get_first_usable_accel_cal_sample_avg(uint8_t sample_num
 #if HAL_GCS_ENABLED
 bool AP_InertialSensor::calibrate_gyros()
 {
+    if (get_gyro_count() == 0) {
+        // no gyros yet, e.g. a request arriving before init(); there
+        // would be no samples for wait_for_sample() to wait for
+        return false;
+    }
     init_gyro();
     if (!gyro_calibrated_ok_all()) {
         return false;
@@ -2550,6 +2555,11 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
 {
     const uint32_t now = AP_HAL::millis();
     if ((now - last_accel_cal_ms) < 5000) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    // a request received during boot can arrive before init() has
+    // registered any accel; waiting for samples would then hang
+    if (get_accel_count() == 0) {
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
     last_accel_cal_ms = now;
