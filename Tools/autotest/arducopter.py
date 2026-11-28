@@ -881,7 +881,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.disarm_vehicle()
 
-        # this will move but won't arc (it should...):
+        # the arc follows a takeoff so is not preloaded; WPArcSplineDefinedStart checks it is flown as an arc
         self.start_subtest("Should move if no start waypoint")
         self.context_push()
         self.start_flying_simple_relhome_mission([
@@ -1119,6 +1119,262 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 90, 0, 20, {"p1": 90}),
             (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
         ])
+
+    def WPArcSplineDefinedStart(self):
+        '''arc and spline waypoints are curved only from a start the mission defines'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+
+        def offset_from_chord(pos, start, end):
+            '''distance from the chord, positive on the side a clockwise arc bulges to'''
+            chord = (end[0] - start[0], end[1] - start[1])
+            rel = (pos[0] - start[0], pos[1] - start[1])
+            return (chord[1] * rel[0] - chord[0] * rel[1]) / math.hypot(chord[0], chord[1])
+
+        def fly_checking_legs(items, legs, during_flight=None):
+            '''fly items and check the shape of each leg in legs.  legs maps seq to a list of
+            (name, kind, start NE, end NE), one per visit.  A start of None is the vehicle's
+            position when the item becomes current.  kind is "arc" for a clockwise 180 degree
+            arc, which must bulge to the clockwise side by close to half the chord length,
+            "spline" for a spline, which must leave the chord, or "straight" for a leg that
+            must stay on the chord.
+            during_flight, if given, is called once the vehicle is flying the mission'''
+            visits = {seq: [] for seq in legs}
+            current_seq = [None]
+            position = [None]
+
+            def record_offset(mav, m):
+                m_type = m.get_type()
+                if m_type == 'LOCAL_POSITION_NED':
+                    position[0] = (m.x, m.y)
+                    if current_seq[0] not in legs:
+                        return
+                    visit = visits[current_seq[0]][-1]
+                    if visit is None:
+                        return
+                    (start, end, max_offset, min_offset) = visit
+                    if start is None:
+                        start = position[0]
+                    offset = offset_from_chord(position[0], start, end)
+                    visits[current_seq[0]][-1] = (start, end, max(max_offset, offset), min(min_offset, offset))
+                    return
+                if m_type != 'MISSION_CURRENT' or m.seq == current_seq[0]:
+                    return
+                current_seq[0] = m.seq
+                if m.seq not in legs:
+                    return
+                visit = len(visits[m.seq])
+                if visit >= len(legs[m.seq]):
+                    visits[m.seq].append(None)
+                    return
+                (_, _, start, end) = legs[m.seq][visit]
+                visits[m.seq].append((start, end, 0.0, 0.0))
+
+            self.change_mode('STABILIZE')  # needed to ensure Copter mission state machine works
+            self.context_push()
+            self.install_message_hook_context(record_offset)
+            self.start_flying_simple_relhome_mission(items)
+            if during_flight is not None:
+                during_flight()
+            self.wait_disarmed(timeout=600)
+            self.context_pop()
+
+            failures = []
+            for (seq, expected) in legs.items():
+                for (visit, (name, kind, _, _)) in enumerate(expected):
+                    if visit >= len(visits[seq]) or visits[seq][visit] is None:
+                        failures.append(f"{name} was not flown")
+                        continue
+                    (start, end, max_offset, min_offset) = visits[seq][visit]
+                    chord = math.hypot(end[0] - start[0], end[1] - start[1])
+                    sagitta = 0.5 * chord
+                    peak = max(max_offset, -min_offset)
+                    self.progress(f"{name}: offset from chord {min_offset:.1f}m to {max_offset:.1f}m, chord {chord:.1f}m")
+                    if kind == "arc":
+                        if max_offset < 0.7 * sagitta:
+                            failures.append(f"{name} was flown straight or the wrong way")
+                        elif max_offset > 1.3 * sagitta:
+                            failures.append(f"{name} was flown too large")
+                    elif kind == "spline":
+                        if peak < 0.1 * chord:
+                            failures.append(f"{name} was flown straight")
+                    elif peak > 0.1 * sagitta:
+                        failures.append(f"{name} was not flown straight")
+            return failures
+
+        def loiter_turns(n, e, radius):
+            loc = self.offset_location_ne(self.home_position_as_location(), n, e)
+            return self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=1,
+                p3=radius,
+                x=int(loc.lat * 1e7),
+                y=int(loc.lng * 1e7),
+                z=20,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            )
+
+        failures = []
+
+        self.start_subtest("Arcs after each kind of navigation command")
+        failures.extend(fly_checking_legs([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 0, 40, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 60, 20, {"p1": 1}),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 40, 60, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT, 60, 60, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 60, 20, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME, 60, 0, 20,
+             {"p1": 1, "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT}),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 100, 0, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT, 120, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 120, 40, 30, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 120, 60, 20),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_DELAY, p1=1),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 80, 60, 20, {"p1": 180}),
+            loiter_turns(80, 80, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 80, 110, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {
+            2: [("arc after takeoff", "arc", (0, 0), (0, 40))],
+            4: [("arc after waypoint with a hold time", "arc", (0, 60), (40, 60))],
+            6: [("arc after spline", "arc", (60, 60), (60, 20))],
+            8: [("arc after loiter time", "arc", (60, 0), (100, 0))],
+            10: [("arc after loiter to alt", "arc", (120, 0), (120, 40))],
+            13: [("arc after waypoint then delay", "arc", (120, 60), (80, 60))],
+            15: [("arc after loiter turns", "arc", None, (80, 110))],
+        }))
+
+        # the hold before the jump stops the arc being preloaded, so the
+        # jump starts it from that waypoint, where the vehicle is
+        self.start_subtest("Jump to an arc")
+        failures.extend(fly_checking_legs([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 10, 40, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 40, 20, {"p1": 1}),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=3, p2=1),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {
+            3: [("arc after its waypoint", "arc", (10, 0), (10, 40)),
+                ("arc reached by a jump", "arc", (50, 40), (10, 40))],
+        }))
+
+        # Copter cannot fly NAV_ALTITUDE_WAIT so skips it, and the guided limit
+        # ends NAV_GUIDED_ENABLE where the vehicle holds; neither preloads the arc
+        self.start_subtest("Arcs after a skipped command and after guided")
+        failures.extend(fly_checking_legs([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 10, 20),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_ALTITUDE_WAIT, p1=20, p2=1),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 40, 10, 20, {"p1": 180}),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_GUIDED_LIMITS, p1=2),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, p1=1),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 40, 50, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {
+            4: [("arc after skipped command", "arc", (0, 10), (40, 10))],
+            7: [("arc after guided", "arc", None, (40, 50))],
+        }))
+
+        # setting the current command to an arc starts it from where the vehicle is holding
+        self.start_subtest("Set current to an arc")
+
+        def set_current_to_arc():
+            self.wait_current_waypoint(3, timeout=120)
+            self.delay_sim_time(5, reason="hold on the LOITER_TIME")
+            self.set_current_waypoint(5)
+
+        failures.extend(fly_checking_legs([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 10, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME, 20, 0, 20,
+             {"p1": 60, "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 40, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 60, 40, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {
+            5: [("arc after set current", "straight", None, (60, 40))],
+        }, during_flight=set_current_to_arc))
+
+        # the mission resumes on the arc from where the vehicle stopped in LOITER
+        self.start_subtest("Resume on an arc")
+
+        def resume_on_arc():
+            self.wait_current_waypoint(3, timeout=120)
+            self.change_mode('LOITER')
+            self.wait_groundspeed(0, 0.5, minimum_duration=3)
+            self.set_current_waypoint(4)
+            self.change_mode('AUTO')
+
+        failures.extend(fly_checking_legs([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 10, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 10, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 40, 50, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {
+            4: [("arc after resume", "straight", None, (40, 50))],
+        }, during_flight=resume_on_arc))
+
+        # restarting a completed mission on an arc starts it from where the vehicle loiters
+        self.start_subtest("Restart on an arc after the mission completed")
+
+        def wait_mission_complete():
+            self.wait_message_field_values('MISSION_CURRENT', {
+                'mission_state': mavutil.mavlink.MISSION_STATE_COMPLETE,
+            }, timeout=120)
+
+        def restart_on_arc():
+            wait_mission_complete()
+            self.wait_groundspeed(0, 0.5, minimum_duration=3)
+            self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=3, reset=1)
+            self.wait_current_waypoint(3, timeout=10)
+            self.wait_current_waypoint(4, timeout=120)
+            wait_mission_complete()
+            self.change_mode('RTL')
+
+        failures.extend(fly_checking_legs([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 10, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 40, 10, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 50, 20),
+        ], {
+            3: [("arc after its waypoint", "arc", (0, 10), (40, 10)),
+                ("arc after restart of a completed mission", "straight", None, (40, 10))],
+        }, during_flight=restart_on_arc))
+
+        # each spline is followed by a waypoint that a spline leg curves towards
+        self.start_subtest("Splines")
+
+        def set_current_to_spline():
+            self.wait_current_waypoint(8, timeout=240)
+            self.delay_sim_time(5, reason="hold on the LOITER_TIME")
+            self.set_current_waypoint(10)
+
+        failures.extend(fly_checking_legs([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 40, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT, 40, 40, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 20),
+            loiter_turns(40, -20, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT, 80, -10, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 80, 30, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME, 100, 30, 20,
+             {"p1": 60, "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 60, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT, 140, 60, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 140, 20, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {
+            3: [("spline after waypoint", "spline", (0, 40), (40, 40))],
+            6: [("spline after loiter turns", "spline", None, (80, -10))],
+            10: [("spline after set current", "straight", None, (140, 60))],
+        }, during_flight=set_current_to_spline))
+
+        if len(failures) > 0:
+            raise NotAchievedException(f"{failures}")
 
     # test circle speed - should be constant degrees/second:
     def CircleSpeed(self):
@@ -22447,6 +22703,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.SetModesViaModeSwitch,
             self.WPArcs2,
             self.WPArcDelay,
+            self.WPArcSplineDefinedStart,
             self.BatteryFailsafeBrakeLandNoGPS,
             self.AC_Avoidance_Proximity,
             self.AC_Avoidance_Fence,

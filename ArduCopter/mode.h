@@ -767,6 +767,10 @@ private:
     uint32_t nav_delay_time_max_ms;  // used for delaying the navigation commands (eg land,takeoff etc.)
     uint32_t nav_delay_time_start_ms;
 
+    // an arc or spline is only curved when the mission's own sequence brought the vehicle to the start of its leg
+    bool nav_cmd_completed;             // true from when the mission completes a nav command until the next nav command starts
+    bool nav_cmd_has_defined_start;     // true if the mission advanced to the current nav command from the previous one
+
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
