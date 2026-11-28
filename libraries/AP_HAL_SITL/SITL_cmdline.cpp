@@ -224,6 +224,8 @@ static const struct {
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
     { "vectored_6dof",      Submarine::create },
+    { "auv",                Submarine::create },
+    { "auv_single_thruster_4_fin", Submarine::create },
 #if AP_SIM_SILENTWINGS_ENABLED
     { "silentwings",        SilentWings::create },
 #endif  // AP_SIM_SILENTWINGS_ENABLED

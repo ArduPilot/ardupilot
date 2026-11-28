@@ -34,6 +34,11 @@ static Thruster vectored_thrusters[] =
 };
 
 
+static Thruster auv_thrusters[] =
+{      //       Motor #     Roll Factor     Pitch Factor    Yaw Factor      Throttle Factor     Forward Factor      Lateral Factor
+       Thruster(0,          0,              0,              0,              0,                  1.0f,               0),
+};
+
 static Thruster vectored_6dof_thrusters[] =
 {
        //       Motor #     Roll Factor     Pitch Factor    Yaw Factor      Throttle Factor     Forward Factor      Lateral Factor
@@ -57,10 +62,15 @@ Submarine::Submarine(const char *frame_str) :
     // default to vectored frame
     thrusters = vectored_thrusters;
     n_thrusters = 6;
+    is_auv = false;
 
     if (strstr(frame_str, "vectored_6dof")) {
         thrusters = vectored_6dof_thrusters;
         n_thrusters = 8;
+    } else if (strstr(frame_str, "auv") || strstr(frame_str, "AUV")) {
+        thrusters = auv_thrusters;
+        n_thrusters = 1;
+        is_auv = true;
     }
     lock_step_scheduled = true;
 
@@ -123,6 +133,40 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     // Add forces in body frame accel
     rot_accel -= angular_drag_torque / frame_property.moment_of_inertia;
     rot_accel += buoyancy_torque / frame_property.moment_of_inertia;
+
+    if (is_auv) {
+        // Forward flow speed over fins (body x velocity)
+        const float u = velocity_air_bf.x;
+        const float dyn_q = 0.5f * water_density * u * fabsf(u); // Signed dynamic pressure
+
+        // Elevator deflection from channels 2 & 3 (input.servos[1], input.servos[2])
+        float elev_rad = 0.0f;
+        const int16_t pwm_elev = input.servos[1];
+        if (pwm_elev >= 1000 && pwm_elev <= 2000) {
+            elev_rad = radians((pwm_elev - 1500) * 0.075f);
+        }
+
+        // Rudder deflection from channels 4 & 5 (input.servos[3], input.servos[4])
+        float rud_rad = 0.0f;
+        const int16_t pwm_rud = input.servos[3];
+        if (pwm_rud >= 1000 && pwm_rud <= 2000) {
+            rud_rad = radians((pwm_rud - 1500) * 0.075f);
+        }
+
+        // Fin hydrodynamic properties
+        const float fin_area = 0.02f;         // Effective fin area (m^2)
+        const float fin_arm = 0.45f;          // Moment arm from CG to tail fins (m)
+        const float lift_slope = 2.0f * M_PI; // Lift curve slope dCL/dalpha
+
+        // Pitch moment (negative deflection pitches vehicle down, positive pitches up)
+        const float pitch_moment = -dyn_q * fin_area * lift_slope * elev_rad * fin_arm;
+        // Yaw moment
+        const float yaw_moment = dyn_q * fin_area * lift_slope * rud_rad * fin_arm;
+
+        rot_accel.y += pitch_moment / frame_property.moment_of_inertia;
+        rot_accel.z += yaw_moment / frame_property.moment_of_inertia;
+    }
+
     add_shove_forces(rot_accel, body_accel);
 }
 
