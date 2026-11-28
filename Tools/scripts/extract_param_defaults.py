@@ -15,6 +15,7 @@ Amilcar do Carmo Lucas, IAV GmbH
 import argparse
 import re
 
+from decimal import Decimal
 from typing import Dict
 from typing import Tuple
 
@@ -149,6 +150,13 @@ def sort_params(defaults: Dict[str, float], sort_type: str = 'none') -> Dict[str
     return defaults
 
 
+def format_default(value: float) -> str:
+    """Format a logged float32 with enough digits to recover it on import."""
+    # Nine significant digits suffice for float32. Keep decimal notation
+    # so the output remains compatible with parameter file readers.
+    return format(Decimal(format(value, '.9g')), 'f')
+
+
 def output_params(defaults: Dict[str, float], format_type: str = 'missionplanner',
                   sysid: int = -1, compid: int = -1) -> None:
     """
@@ -185,16 +193,15 @@ def output_params(defaults: Dict[str, float], format_type: str = 'missionplanner
     for param_name, default_value in defaults.items():
         if format_type == "missionplanner":
             try:
-                default_value = format(default_value, '.6f').rstrip('0').rstrip('.')
+                default_value = format_default(default_value)
             except ValueError:
                 pass # preserve non-floating point strings, if present
             print(f"{param_name},{default_value}")
         elif format_type == "mavproxy":
-            print("%-15s %.6f" % (param_name, default_value))
+            print(f"{param_name:<15} {format_default(default_value)}")
         elif format_type == "qgcs":
             MAV_PARAM_TYPE_REAL32 = 9
-            print("%u %u %-15s %.6f %u" %
-                  (sysid, compid, param_name, default_value, MAV_PARAM_TYPE_REAL32))
+            print(f"{int(sysid)} {int(compid)} {param_name:<15} {format_default(default_value)} {MAV_PARAM_TYPE_REAL32}")
 
 
 def main():
