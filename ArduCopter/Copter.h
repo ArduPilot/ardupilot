@@ -154,10 +154,6 @@
   #error Brake mode requires AltHold; disable MODE_BRAKE_ENABLED or enable MODE_ALTHOLD_ENABLED
 #endif
 
-#if AP_AVOIDANCE_ENABLED && !AP_FENCE_ENABLED
-  #error AC_Avoidance relies on AP_FENCE_ENABLED which is disabled
-#endif
-
 #if AP_OAPATHPLANNER_ENABLED && !AP_FENCE_ENABLED
   #error AP_OAPathPlanner relies on AP_FENCE_ENABLED which is disabled
 #endif

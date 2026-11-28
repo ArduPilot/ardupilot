@@ -15388,6 +15388,119 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle(force=True)
 
+    def build_SITL_with_defines(self, name, extra_defines):
+        '''build this suite's vehicle with extra defines into its own
+        output directory, returning the path to the binary.  A separate
+        waf lock file keeps the main build directory as the configured
+        one'''
+        builddir = util.reltopdir(os.path.join('build', name))
+        build_opts = copy.copy(self.build_opts)
+        build_opts["clean"] = False
+        build_opts["configure"] = True
+        configure_args = list(build_opts.pop("extra_configure_args", None) or [])
+        configure_args += ['--out', builddir]
+        old_waflock = os.environ.get('WAFLOCK')
+        os.environ['WAFLOCK'] = '.lock-waf_%s' % name
+        try:
+            util.build_SITL(
+                'bin/arducopter',
+                extra_configure_args=configure_args,
+                extra_defines=extra_defines,
+                **build_opts,
+            )
+        finally:
+            if old_waflock is None:
+                del os.environ['WAFLOCK']
+            else:
+                os.environ['WAFLOCK'] = old_waflock
+        return os.path.join(builddir, 'sitl', 'bin', 'arducopter')
+
+    def AC_Avoidance_Proximity_NoFence(self):
+        '''Test proximity avoidance in Loiter with fence compiled out'''
+        self.progress("Building Copter without fence support")
+        binary = self.build_SITL_with_defines(
+            'sitl-avoidance-no-fence',
+            {'AP_FENCE_ENABLED': 0},
+        )
+
+        self.context_push()
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 11,
+            "PRX1_TYPE": 5,  # RPLidarA2
+        })
+        # a "magic" location SITL understands which has a grid of
+        # posts near it; posts are 1m in radius, at 10m spacing, with
+        # one at 3m north and 2m east of post_origin
+        post_origin = (51.8752066, 14.6487830)
+        home_string = "%s,%s,%s,%s" % (51.8752066, 14.6487840, 54.15, 0)
+        self.customise_SITL_commandline([
+            "--serial5=sim:rplidara2:",
+            "--home", home_string,
+        ], binary=binary)
+
+        try:
+            self.get_parameter("FENCE_ENABLE", timeout=5)
+        except NotAchievedException:
+            pass
+        else:
+            raise NotAchievedException("Fence is compiled in")
+        self.assert_parameter_value("AVOID_ENABLE", 3)
+        # stop rather than slide around the post:
+        self.set_parameter("AVOID_BEHAVE", 1)
+
+        self.takeoff(10, mode='GUIDED')
+        here_alt_amsl = self.get_location().get_alt_m(AltFrame.ABSOLUTE)
+
+        def grid_location(north, east):
+            '''location relative to post_origin at our altitude'''
+            origin = Location(*post_origin, here_alt_amsl, AltFrame.ABSOLUTE)
+            return self.offset_location_ne(origin, north, east)
+
+        # transit along the gaps between the posts to below the
+        # southern edge of the grid, in line with a column of posts:
+        for (north, east) in (-2, -3), (-115, -3), (-115, 2):
+            self.fly_guided_move_to(grid_location(north, east), timeout=60)
+        self.guided_achieve_heading(0)
+
+        post = grid_location(-97, 2)
+        self.set_rc(3, 1500)
+        self.change_mode('LOITER')
+        self.progress("Pushing north towards post")
+        self.set_rc(2, 1100)
+        max_speed = 0
+        min_post_distance = None
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 40:
+                break
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            loc = Location(m.lat*1e-7, m.lon*1e-7, 0, AltFrame.ABSOLUTE)
+            post_distance = self.get_distance(loc, post)
+            if m.relative_alt < 5000:
+                raise NotAchievedException("Lost altitude (%.1fm)" % (m.relative_alt*0.001))
+            speed = math.hypot(m.vx, m.vy) * 0.01
+            max_speed = max(max_speed, speed)
+            if min_post_distance is None or post_distance < min_post_distance:
+                min_post_distance = post_distance
+            if now - tstart > 30 and speed > 0.5:
+                raise NotAchievedException("Still moving (%.2fm/s)" % speed)
+        self.set_rc(2, 1500)
+        self.progress("max-speed=%.2fm/s min-post-distance=%.2fm" %
+                      (max_speed, min_post_distance))
+
+        if max_speed < 3:
+            raise NotAchievedException("Never got moving (%.2fm/s)" % max_speed)
+        # post radius is 1m, AVOID_MARGIN is 2m:
+        if min_post_distance < 2:
+            raise NotAchievedException("Got too close to post (%.2fm)" % min_post_distance)
+        if post_distance > 5:
+            raise NotAchievedException("Stopped too far from post (%.2fm)" % post_distance)
+
+        self.land_and_disarm()
+
+        self.context_pop()
+
     def AC_Avoidance_Fence(self):
         '''Test fence avoidance slide behaviour'''
         self.load_fence("copter-avoidance-fence.txt")
@@ -22591,6 +22704,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GCSFailsafe,
             self.StabilityPatch,
             self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
+            self.AC_Avoidance_Proximity_NoFence,
             self.SetpointGlobalPos,
             self.TakeoffCheck,
             self.MaxAltFenceAvoid,
