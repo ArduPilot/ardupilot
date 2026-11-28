@@ -148,14 +148,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Param: DDFP_BAT_V_MAX
     // @DisplayName: Battery voltage compensation maximum voltage
     // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.2 * cell count, 0 = Disabled
-    // @Range: 6 53
+    // @Range: 0 53
     // @Units: V
     // @User: Standard
 
     // @Param: DDFP_BAT_V_MIN
     // @DisplayName: Battery voltage compensation minimum voltage
     // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.3 * cell count, 0 = Disabled
-    // @Range: 6 42
+    // @Range: 0 42
     // @Units: V
     // @User: Standard
     AP_SUBGROUPINFO(thr_lin, "DDFP_", 22, AP_MotorsHeli_Single, Thrust_Linearization),

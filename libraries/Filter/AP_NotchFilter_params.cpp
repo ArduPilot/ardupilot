@@ -11,7 +11,7 @@ const AP_Param::GroupInfo AP_NotchFilter_params::var_info[] = {
     // @Param: NOTCH_FREQ
     // @DisplayName: Notch Filter center frequency
     // @Description: Notch Filter center frequency in Hz.
-    // @Range: 10 495
+    // @Range: 0 495
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("NOTCH_FREQ", 1, AP_NotchFilter_params, _center_freq_hz, 0),

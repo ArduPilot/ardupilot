@@ -38,7 +38,7 @@ const AP_Param::GroupInfo Gripper_EPM::var_info[] = {
     // @Param: PIN
     // @DisplayName: Gripper emp pin
     // @Description: The pin number that the gripper emp is connected to. (start at 1)
-    // @Range: 0 15
+    // @Range: -1 15
     // @User: Advanced
     AP_GROUPINFO("PIN", 1, Gripper_EPM, gripper_emp_servo_pin, -1),
 

@@ -36,7 +36,7 @@ const AP_Param::GroupInfo Parachute::var_info[] = {
     // @Param: PIN
     // @DisplayName: Parachute pin
     // @Description: The pin number that the Parachute pyrotechnics are connected to. (start at 1)
-    // @Range: 0 15
+    // @Range: -1 15
     // @User: Advanced
     AP_GROUPINFO("PIN", 1, Parachute, parachute_pin, -1),
 
