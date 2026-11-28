@@ -8,6 +8,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
+#include <GCS_MAVLink/GCS_config.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_BattMonitor_Params.h"
 
@@ -175,6 +176,10 @@ public:
     /// current_amps - returns the instantaneous current draw in amperes
     bool current_amps(float &current, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
 
+#if HAL_GCS_ENABLED
+    int8_t gcs_current_smooth_sec() const { return constrain_int16(_gcs_current_smooth_sec.get(), 0, 20); }
+#endif
+
     /// consumed_mah - returns total current drawn since start-up in milliampere.hours
     bool consumed_mah(float &mah, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
 
@@ -296,6 +301,10 @@ protected:
 
 private:
     static AP_BattMonitor *_singleton;
+
+#if HAL_GCS_ENABLED
+    AP_Int8 _gcs_current_smooth_sec;
+#endif
 
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];
