@@ -398,14 +398,14 @@ AP_GPS_UBLOX::_request_next_config(void)
     }
 
     case STEP_L5: {
-        if (supports_l5 && option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
+        if (supports_l5 && gps_option_is_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
             const config_list *list = config_L5_ovrd_ena;
             const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_ena);
             static_assert(sizeof(active_config.done_mask)*8 > ARRAY_SIZE(config_L5_ovrd_ena), "done_mask too small, L5 enable");
             if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                 _next_message--;
             }
-        } else if (supports_l5 && !option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
+        } else if (supports_l5 && !gps_option_is_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
             const config_list *list = config_L5_ovrd_dis;
             const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_dis);
             static_assert(sizeof(active_config.done_mask)*8 > ARRAY_SIZE(config_L5_ovrd_dis), "done_mask too small, L5 disable");
