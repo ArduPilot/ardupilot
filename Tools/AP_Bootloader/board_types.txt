@@ -73,6 +73,28 @@ TARGET_HW_SYRO_V6X                     110
 # values from external vendors
 EXT_HW_RADIOLINK_MINI_PIX               3
 
+# The PRIVATE_USE_ONLY IDs below are for development and testing
+#  only.  Do *not* manufacture boards that use them or distribute such
+#  boards to customers.  Patches that allocate one of these IDs to a
+#  specific board will never be accepted, even if boards using it have
+#  already shipped.  Ground Control Stations will never use these IDs
+#  to suggest firmware for a board, and should warn clearly when the
+#  user tries to flash a board using one of them, to help prevent
+#  mistakes.
+
+PRIVATE_USE_ONLY_950                    950
+PRIVATE_USE_ONLY_951                    951
+PRIVATE_USE_ONLY_952                    952
+PRIVATE_USE_ONLY_953                    953
+PRIVATE_USE_ONLY_954                    954
+PRIVATE_USE_ONLY_955                    955
+PRIVATE_USE_ONLY_956                    956
+PRIVATE_USE_ONLY_957                    957
+PRIVATE_USE_ONLY_958                    958
+PRIVATE_USE_ONLY_959                    959
+PRIVATE_USE_ONLY_960                    960
+PRIVATE_USE_ONLY_961                    961
+
 # NOTE: the full range from 1000 to 19999 (inclusive) is reserved for
 # use by the ArduPilot bootloader. Do not allocate IDs in this range
 # except via changes to the ArduPilot code
@@ -89,6 +111,9 @@ EXT_HW_RADIOLINK_MINI_PIX               3
 # https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader
 # the values come from the APJ_BOARD_ID in the hwdef files here:
 # https://github.com/ArduPilot/ardupilot/tree/master/libraries/AP_HAL_ChibiOS/hwdef
+
+# If your board is a personal project that will not be manufactured
+#  or distributed, use one of the PRIVATE_USE_ONLY IDs above instead.
 
 AP_HW_CUBEYELLOW                      120
 AP_HW_OMNIBUSF7V2                     121
