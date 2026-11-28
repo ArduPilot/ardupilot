@@ -65,8 +65,13 @@ void Copter::failsafe_radio_on_event()
         announce_failsafe("Radio", "Continuing Auto");
         desired_action = FailsafeAction::NONE;
 
-    } else if ((flightmode->in_guided_mode()) && failsafe_option(FailsafeOption::RC_CONTINUE_IF_GUIDED)) {
-        // Allow guided mode to continue when FS_OPTIONS is set to continue in guided mode
+    } else if ((flightmode->mode_number() == Mode::Number::FOLLOW) && failsafe_option(FailsafeOption::RC_CONTINUE_IF_GUIDED_OR_FOLLOW)) {
+        // Allow follow mode to continue when FS_OPTIONS is set to continue in guided or follow mode
+        announce_failsafe("Radio", "Continuing Follow Mode");
+        desired_action = FailsafeAction::NONE;
+
+    } else if ((flightmode->in_guided_mode()) && failsafe_option(FailsafeOption::RC_CONTINUE_IF_GUIDED_OR_FOLLOW)) {
+        // Allow guided mode to continue when FS_OPTIONS is set to continue in guided or follow mode
         announce_failsafe("Radio", "Continuing Guided Mode");
         desired_action = FailsafeAction::NONE;
 
