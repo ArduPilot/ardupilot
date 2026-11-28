@@ -19589,6 +19589,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LOG_REPLAY": 1,
             "LOG_DISARMED": 1,
+            # faster than EKF3 fuses flow, so Replay has to average the samples as the vehicle did
+            "SIM_FLOW_RATE": 100,
         })
 
         old_onboard_logs = sorted(self.log_list())
@@ -20503,6 +20505,64 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
+
+    def EK3_FlowSamplesAveraged(self):
+        '''EKF3 averages the optical flow samples a fast sensor gives between its measurements'''
+        # EKF3 takes a flow measurement at most every 50 ms, and a sensor faster than that has its
+        # samples averaged into the next one, so their noise falls by the square root of the number
+        # averaged. SITL's flow noise is uniform in +/-SIM_FLOW_RND, a standard deviation of
+        # SIM_FLOW_RND/sqrt(3); at 100 Hz five samples are averaged, leaving 0.45 of it. A 10 Hz sensor
+        # gives one sample per measurement, so its innovations show the noise the limit is set against.
+        # The flow innovations of a hover are that noise plus the little the prediction adds: over three
+        # runs 56.5-58.1 mrad/s at 10 Hz and 24.1-27.6 at 100 Hz against limits of 46.2 and 34.6, and
+        # 57.7 at 100 Hz without the averaging.
+        noise_rads = 0.1
+        single_sample_sd_mrads = 1000 * noise_rads / math.sqrt(3)
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "SIM_FLOW_RND": noise_rads,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        def hover_flow_innovation_sd(rate_hz):
+            '''standard deviation of the primary core's flow innovations in a hover (mrad/s)'''
+            self.set_parameter("SIM_FLOW_RATE", rate_hz)
+            self.reboot_sitl()
+            self.takeoff(altitude_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+            self.change_mode('LOITER')
+            self.set_rc(3, 1500)
+            # the climb's flow would otherwise count as noise
+            self.wait_climbrate(-0.2, 0.2, minimum_duration=3)
+            tstart = self.get_sim_time()
+            self.delay_sim_time(20, "hover, logging the flow innovations")
+            self.disarm_vehicle(force=True)
+            innovations = []
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type='XKF5', condition='XKF5.C==0')
+                if m is None:
+                    break
+                if m.TimeUS * 1e-6 >= tstart:
+                    innovations.extend([m.FIX, m.FIY])
+            if len(innovations) < 100:
+                raise NotAchievedException("only %u flow innovation values logged" % len(innovations))
+            mean = sum(innovations) / len(innovations)
+            sd = math.sqrt(sum((x - mean) ** 2 for x in innovations) / len(innovations))
+            self.progress("%u Hz flow: innovation sd %.1f mrad/s, single sample noise %.1f" %
+                          (rate_hz, sd, single_sample_sd_mrads))
+            return sd
+
+        self.start_subtest("A 10 Hz sensor: one sample per measurement")
+        if hover_flow_innovation_sd(10) < 0.8 * single_sample_sd_mrads:
+            raise NotAchievedException("a 10 Hz sensor's innovations are quieter than one sample's noise")
+
+        self.start_subtest("A 100 Hz sensor: its samples are averaged")
+        if hover_flow_innovation_sd(100) > 0.6 * single_sample_sd_mrads:
+            raise NotAchievedException("a 100 Hz sensor's samples are not averaged")
 
     def EK3_OptflowTerrainScaleHeight(self):
         '''optical flow scale height from the terrain database is right over slopes'''
@@ -22639,6 +22699,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.NoRCOnBootPreArmFailure,
             self.BatteryFailsafeOptionsContinueLanding,
             self.EK3AccelBias,
+            self.EK3_FlowSamplesAveraged,
             self.EK3_OptflowTerrainScaleHeight,
             self.EK3_AccelBiasZeroVelOptFlow,
             self.ThrowDoubleDrop,

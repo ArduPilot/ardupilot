@@ -216,6 +216,11 @@ void NavEKF3_core::InitialiseVariables()
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
+    flowRatesSum.zero();
+    flowGyroRatesSum.zero();
+    flowBodyRateZSum = 0.0f;
+    flowSampleCount = 0;
+    flowSampleRecvTime_ms = 0;
     prevFlowFuseTime_ms = 0;
     flowWithheld_ms = 0;
     flowSampleTime_ms = 0;

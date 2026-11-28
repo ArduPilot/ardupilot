@@ -1422,6 +1422,11 @@ private:
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
+    Vector2f flowRatesSum;          // sum of the usable flow rates received since the last flow measurement taken (rad/sec)
+    Vector2f flowGyroRatesSum;      // sum of the flow sensor body rates over the same samples (rad/sec)
+    ftype flowBodyRateZSum;         // sum of the latest IMU Z body rate at each of the same samples (rad/sec)
+    uint8_t flowSampleCount;        // number of samples in flowRatesSum, flowGyroRatesSum and flowBodyRateZSum
+    uint32_t flowSampleRecvTime_ms; // time stamp of the latest flow sample received, taken or not (msec)
     bool flowFusionActive;          // true when optical flow fusion is active
 
     Vector3F accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
