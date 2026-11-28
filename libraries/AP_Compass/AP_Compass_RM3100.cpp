@@ -208,14 +208,17 @@ void AP_Compass_RM3100::timer()
     // some RM3100 builds get the polarity wrong on one or more of the
     // elements. By setting AP_RM3100_REVERSAL_MASK in hwdef.dat you
     // can fix it without modifying the hardware
-    if (AP_RM3100_REVERSAL_MASK & 1U) {
-        magx = -magx;
-    }
-    if (AP_RM3100_REVERSAL_MASK & 2U) {
-        magy = -magy;
-    }
-    if (AP_RM3100_REVERSAL_MASK & 4U) {
-        magz = -magz;
+    // Apply polarity correction only to onboard RM3100 sensors, not external ones.
+    if (!force_external) {
+        if (AP_RM3100_REVERSAL_MASK & 1U) {
+            magx = -magx;
+        }
+        if (AP_RM3100_REVERSAL_MASK & 2U) {
+            magy = -magy;
+        }
+        if (AP_RM3100_REVERSAL_MASK & 4U) {
+            magz = -magz;
+        }
     }
 #endif
 

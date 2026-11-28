@@ -1,0 +1,32 @@
+# AD-TALON V6 BASE IOMCU hardware definition.
+# STM32F103C8T6 with a 12MHz HSE.
+
+MCU STM32F103 STM32F103xB
+APJ_BOARD_ID AP_HW_IOMCU_F103
+
+include ../iomcu/hwdef.inc
+
+undef OSCILLATOR_HZ
+OSCILLATOR_HZ 12000000
+
+# PB4 is an SWO test point, not an SBUS output enable.
+undef PB4
+PB4 IO_SWO_TESTPOINT INPUT
+
+# PC14 and PC15 are unused spare GPIOs.
+undef PC14
+undef PC15
+PC14 SPARE_GPIO3 INPUT FLOATING
+PC15 SPARE_GPIO4 INPUT FLOATING
+
+# PB14 drives the active-low blue LED.
+# Retain HEATER as required by the IOMCU LED implementation.
+undef PB14
+PB14 HEATER OUTPUT HIGH OPENDRAIN
+
+# PA11 is a spare GPIO, not a ring LED.
+undef PA11
+PA11 SPARE_GPIO5 INPUT
+
+# STM32F103 static DMA channel mapping.
+DMA_NOMAP 1
