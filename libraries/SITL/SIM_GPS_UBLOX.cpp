@@ -1181,11 +1181,17 @@ void GPS_UBlox::handle_valset(const uint8_t *payload, uint16_t len)
     for (uint16_t ofs=4; ofs<len; ofs+=5) {
         uint32_t key;
         memcpy(&key, &payload[ofs], 4);
+        uint8_t *ram_value = config_value(ram, key);
+        uint8_t *saved_value = config_value(saved, key);
+        if (ram_value == nullptr || saved_value == nullptr) {
+            // every key was checked above
+            continue;
+        }
         if (layers & 0x01) {
-            *config_value(ram, key) = payload[ofs+4];
+            *ram_value = payload[ofs+4];
         }
         if (layers & 0x06) {
-            *config_value(saved, key) = payload[ofs+4];
+            *saved_value = payload[ofs+4];
         }
     }
     if (layers & 0x06) {
