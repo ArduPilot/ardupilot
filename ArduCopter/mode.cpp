@@ -534,8 +534,8 @@ void Copter::exit_mode(Mode *&old_flightmode,
     old_flightmode->exit();
 
 #if FRAME_CONFIG == HELI_FRAME
-    //last collective output
-    input_manager.set_last_coll_output(motors->get_throttle());
+    // last collective output
+    input_manager.set_last_coll_output(motors->get_collective_out());
 
     // if we are changing from a mode that did not use manual throttle,
     // collective ramp functions should be called to blend the transition

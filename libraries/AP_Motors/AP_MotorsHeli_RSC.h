@@ -80,6 +80,9 @@ public:
     // set_collective. collective for throttle curve calculation
     void        set_collective(float collective) { _collective_in = collective; }
 
+    // get collective last passed to RSC
+    float       get_collective() const { return _collective_in; }
+
     // true if we are considered to be autorotating or bailing out of an autorotation
     bool        in_autorotation(void) const;
 
