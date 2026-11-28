@@ -62,7 +62,7 @@ local function create_number_entry(name, value, min, max, default, dpoint, step,
     local packed_max = math.floor(max * scale + 0.5)
     local packed_default = math.floor(default * scale + 0.5)
     local packed_step = math.floor(step * scale + 0.5)
-    return string.pack(">BzllllBlz", CRSF_PARAM_TYPE.FLOAT, name, packed_value, packed_min, packed_max, packed_default, dpoint or 0, packed_step, unit or "")
+    return string.pack(">Bzi4i4i4i4Bi4z", CRSF_PARAM_TYPE.FLOAT, name, packed_value, packed_min, packed_max, packed_default, dpoint or 0, packed_step, unit or "")
 end
 
 -- Creates a CRSF menu info item
@@ -137,28 +137,41 @@ end
 -- ####################
 local idle_backoff = 0
 
+-- The C++ pairs each answer from any menu script with the oldest popped event,
+-- so every event this script pops must be answered exactly once, even when
+-- handling it fails: one left unanswered puts every later answer one behind
+local awaiting_answer = false
+
+-- the last error reported by protected_event_loop, so each is reported once
+local last_error = nil
+
+-- Answers the event this script popped
+local function answer(packed_data)
+    awaiting_answer = false
+    crsf:send_write_response(packed_data)
+end
+
+-- Answers a popped event nothing else has answered: a READ gets the item's
+-- stored entry and a WRITE has its payload sent back
+local function answer_unanswered()
+    if awaiting_answer then
+        awaiting_answer = false
+        crsf:send_response()
+    end
+end
+
+-- every menu item read waits for this loop, so keep it fast when armed too
+local IDLE_DELAY = 200  -- 5.0 Hz idle polling
+local ACTIVE_DELAY = 20   -- 50 Hz active polling
+
 -- This function runs as an independent loop for each script.
 -- It uses the peek/pop API to safely coexist with other menu scripts.
 local function event_loop()
-    -- Add dynamic polling delays based on arming state
-    local IDLE_DELAY
-    local ACTIVE_DELAY
-
-    -- Use the correct arming check from the 'arming' object
-    if arming:is_armed() then
-        -- Vehicle is ARMED: prioritize flight code, slow down UI polling
-        IDLE_DELAY = 500  -- 2.0 Hz idle polling
-        ACTIVE_DELAY = 100 -- 10 Hz active polling
-    else
-        -- Vehicle is DISARMED: prioritize UI responsiveness for setup
-        IDLE_DELAY = 200  -- 5.0 Hz idle polling
-        ACTIVE_DELAY = 20   -- 50 Hz active polling
-    end
-
     -- ## 1. Peek at the event queue to see if there's anything to do ##
     local count, param_id, payload, events = crsf:peek_menu_event()
 
-    -- If the queue is empty, reschedule with the (now dynamic) idle delay.
+    -- If the queue is empty, keep polling fast for a second while the TX may
+    -- still be browsing, then drop to the idle rate.
     if count == 0 then
         idle_backoff = idle_backoff + 1
         if idle_backoff > (1000/ACTIVE_DELAY) then -- no events in a second so switch to idle
@@ -180,6 +193,7 @@ local function event_loop()
     -- ## 3. Pop the event from the queue ##
     -- This is critical: pop the event before handling it.
     crsf:pop_menu_event()
+    awaiting_answer = true
 
     -- ## 4. Process the event (it's ours) ##
 
@@ -187,23 +201,21 @@ local function event_loop()
     if (events & CRSF_EVENT.PARAMETER_READ) ~= 0 then
         if item_def.type == 'SELECTION' then
             local packed_data = create_selection_entry(item_def.name, item_def.options, item_def.current_idx, item_def.unit)
-            crsf:send_write_response(packed_data)
+            answer(packed_data)
         elseif item_def.type == 'COMMAND' then
             -- Respond with the command's *current* state
             local packed_data = create_command_entry(item_def.name, item_def.status, item_def.info)
-            crsf:send_write_response(packed_data)
+            answer(packed_data)
         elseif item_def.type == 'INFO' then
             local packed_data = create_info_entry(item_def.name, item_def.info)
-            crsf:send_write_response(packed_data)
+            answer(packed_data)
         elseif item_def.type == 'NUMBER' then
             -- Respond with the number's *current* state
             local packed_data = create_number_entry(item_def.name, item_def.current_val, item_def.min, item_def.max, item_def.default, item_def.dpoint, item_def.step, item_def.unit)
-            crsf:send_write_response(packed_data)
+            answer(packed_data)
         else
-            -- Send generic response if type not handled explicitly for read
-            -- Note: send_response() is deprecated, but kept for potential backward compatibility
-            -- or if a generic case is truly needed. It uses the popped context.
-            crsf:send_response()
+            -- Any other type is answered with its stored entry
+            answer_unanswered()
         end
     end
 
@@ -214,33 +226,45 @@ local function event_loop()
             if item_def.type == 'COMMAND' then
                  -- Respond with current state even if no callback
                  local packed_data = create_command_entry(item_def.name, item_def.status, item_def.info)
-                 crsf:send_write_response(packed_data)
+                 answer(packed_data)
             elseif item_def.type == 'SELECTION' then
                  local packed_data = string.pack('>B', item_def.current_idx - 1)
-                 crsf:send_write_response(packed_data)
+                 answer(packed_data)
             elseif item_def.type == 'NUMBER' then
                  local scale = 10^(item_def.dpoint or 0)
                  local packed_value = math.floor(item_def.current_val * scale + 0.5)
-                 local packed_data = string.pack('>l', packed_value)
-                 crsf:send_write_response(packed_data)
+                 local packed_data = string.pack('>i4', packed_value)
+                 answer(packed_data)
             end
             goto reschedule -- Skip callback logic
         end
 
         local new_value = nil
 
-        -- Determine the new value from the payload and call the user's callback
+        -- Determine the new value from the payload and call the user's callback.
+        -- The payload comes from the transmitter: a short payload or an
+        -- out-of-range selection is ignored and the current state sent back,
+        -- and a number is clamped to the item's range.
         if item_def.type == 'SELECTION' then
-            local selected_index_zero_based = string.unpack(">B", payload)
-            item_def.current_idx = selected_index_zero_based + 1
-            new_value = item_def.options[item_def.current_idx]
+            if #payload >= 1 then
+                local selected_idx = string.unpack(">B", payload) + 1
+                if selected_idx <= #item_def.options then
+                    item_def.current_idx = selected_idx
+                    new_value = item_def.options[selected_idx]
+                end
+            end
         elseif item_def.type == 'NUMBER' then
-            local raw_value = string.unpack(">l", payload)
-            local scale = 10^(item_def.dpoint or 0)
-            new_value = raw_value / scale
+            if #payload >= 4 then
+                local raw_value = string.unpack(">i4", payload)
+                local scale = 10^(item_def.dpoint or 0)
+                new_value = math.max(item_def.min, math.min(item_def.max, raw_value / scale))
+            end
         elseif item_def.type == 'COMMAND' then
             -- Pass the specific command action to the callback
-            local command_action = string.unpack(">B", payload)
+            local command_action = nil
+            if #payload >= 1 then
+                command_action = string.unpack(">B", payload)
+            end
             -- Check for START, CONFIRM, CANCEL, or POLL
             if command_action == CRSF_COMMAND_STATUS.POLL or
                command_action == CRSF_COMMAND_STATUS.START or
@@ -285,24 +309,42 @@ local function event_loop()
         if item_def.type == 'COMMAND' then
             -- Respond with the current item_def status/info
             local packed_data = create_command_entry(item_def.name, item_def.status, item_def.info)
-            crsf:send_write_response(packed_data)
+            answer(packed_data)
         elseif item_def.type == 'SELECTION' then
             -- The value is the 0-based index of the selection
             local packed_data = string.pack('>B', item_def.current_idx - 1)
-            crsf:send_write_response(packed_data)
+            answer(packed_data)
         elseif item_def.type == 'NUMBER' then
             -- The value is the 4-byte int32_t
             local scale = 10^(item_def.dpoint or 0)
             local packed_value = math.floor(item_def.current_val * scale + 0.5)
-            local packed_data = string.pack('>l', packed_value)
-            crsf:send_write_response(packed_data)
+            local packed_data = string.pack('>i4', packed_value)
+            answer(packed_data)
         end
     end
 
     ::reschedule::
+    -- an item with no WRITE handling, such as INFO, still needs its answer
+    answer_unanswered()
+
     -- ## 5. Reschedule the loop ##
-    -- Use the (now dynamic) active delay.
     return event_loop, ACTIVE_DELAY
+end
+
+-- Runs event_loop under pcall, so an error is reported and the menu keeps
+-- running instead of the error stopping the whole script. The event it was
+-- handling is still answered, by answer_unanswered().
+local function protected_event_loop()
+    local success, result, delay = pcall(event_loop)
+    if not success then
+        answer_unanswered()
+        if result ~= last_error then
+            gcs:send_text(MAV_SEVERITY.ERROR, "CRSF menu error: " .. tostring(result))
+            last_error = result
+        end
+        return protected_event_loop, ACTIVE_DELAY
+    end
+    return protected_event_loop, delay
 end
 
 -- ####################
@@ -329,7 +371,7 @@ function helper.register_menu(menu_definition)
     end
 
     -- Start this script's independent, persistent event loop.
-    return event_loop, 2000
+    return protected_event_loop, 2000
 end
 
 return helper
