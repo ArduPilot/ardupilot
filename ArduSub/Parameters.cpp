@@ -30,7 +30,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Units: cm
     // @Range: -100 0
     // @User: Standard
-    GSCALAR(surface_depth, "SURFACE_DEPTH", SURFACE_DEPTH_DEFAULT),
+    GSCALAR(surface_depth_cm, "SURFACE_DEPTH", SURFACE_DEPTH_DEFAULT_CM),
 
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
@@ -229,7 +229,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 20 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_speed_up,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX),
+    GSCALAR(pilot_speed_up_cms,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX_CMS),
 
     // @Param: PILOT_SPEED_DN
     // @DisplayName: Pilot maximum vertical descending speed
@@ -238,7 +238,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 20 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_speed_dn,     "PILOT_SPEED_DN",   0),
+    GSCALAR(pilot_speed_dn_cms,     "PILOT_SPEED_DN",   0),
 
     // @Param: PILOT_SPEED
     // @DisplayName: Pilot maximum horizontal speed
@@ -247,7 +247,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 10 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_speed,     "PILOT_SPEED",   PILOT_SPEED_DEFAULT),
+    GSCALAR(pilot_speed_cms,     "PILOT_SPEED",   PILOT_SPEED_DEFAULT_CMS),
 
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
@@ -256,7 +256,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_accel_z,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
+    GSCALAR(pilot_accel_z_cmss,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT_CMSS),
 
     // @Param: THR_DZ
     // @DisplayName: Throttle deadzone
@@ -680,7 +680,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Minimum depth to engage SURFTRAK mode
     // @Units: cm
     // @User: Standard
-    GSCALAR(surftrak_depth, "SURFTRAK_DEPTH", SURFTRAK_DEPTH_DEFAULT),
+    GSCALAR(surftrak_depth_cm, "SURFTRAK_DEPTH", SURFTRAK_DEPTH_DEFAULT_CM),
 #endif
 
 #if AP_TERRAIN_AVAILABLE

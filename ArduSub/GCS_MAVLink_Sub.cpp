@@ -129,7 +129,7 @@ int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
 
 float GCS_MAVLINK_Sub::vfr_hud_alt() const
 {
-    return sub.get_alt_msl();
+    return sub.get_alt_msl_m();
 }
 
 // Work around to get temperature sensor data out
@@ -769,11 +769,11 @@ void GCS_MAVLINK_Sub::handle_message_set_position_target_local_ned(const mavlink
 
         // send request
         if (!pos_ignore && !vel_ignore) {
-            sub.mode_guided.guided_set_posvelaccel(pos_vector_neu_cm, vel_vector_neu_cms, acc_vector_neu_cmss, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            sub.mode_guided.guided_set_posvelaccel_NEU_cm(pos_vector_neu_cm, vel_vector_neu_cms, acc_vector_neu_cmss, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_velocity(vel_vector_neu_cms, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            sub.mode_guided.guided_set_velocity_NEU_cms(vel_vector_neu_cms, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_destination(pos_vector_neu_cm, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            sub.mode_guided.guided_set_destination_NEU_cm(pos_vector_neu_cm, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         }
 }
 
@@ -841,9 +841,9 @@ void GCS_MAVLINK_Sub::handle_message_set_position_target_global_int(const mavlin
             if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
                 return;
             }
-            sub.mode_guided.guided_set_posvelaccel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), acc_vector_neu_cmss);
+            sub.mode_guided.guided_set_posvelaccel_NEU_cm(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), acc_vector_neu_cmss);
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            sub.mode_guided.guided_set_velocity_NEU_cms(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
             sub.mode_guided.guided_set_destination(loc);
         }
@@ -891,12 +891,12 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_int_
 
 int32_t GCS_MAVLINK_Sub::global_position_int_alt() const
 {
-    return static_cast<int32_t>(sub.get_alt_msl() * 1000.0f);
+    return static_cast<int32_t>(sub.get_alt_msl_m() * 1000.0f);
 }
 
 int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const
 {
-    return static_cast<int32_t>(sub.get_alt_rel() * 1000.0f);
+    return static_cast<int32_t>(sub.get_alt_rel_m() * 1000.0f);
 }
 
 #if HAL_HIGH_LATENCY2_ENABLED

@@ -107,8 +107,8 @@ void ModeGuided::guided_vel_control_start()
 
     // initialize vertical maximum speeds and acceleration
     // All limits must be positive
-    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
+    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
 
     // initialise velocity controller
     position_control->D_init_controller();
@@ -204,10 +204,10 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
     return true;
 }
 
-// guided_set_destination - sets guided mode's target destination and target heading
+// guided_set_destination_NEU_cm - sets guided mode's target destination and target heading
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::guided_set_destination(const Vector3f& destination_neu_cm, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::guided_set_destination_NEU_cm(const Vector3f& destination_neu_cm, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -240,8 +240,8 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination_neu_cm, bool
     return true;
 }
 
-// guided_set_velocity - sets guided mode's target velocity
-void ModeGuided::guided_set_velocity(const Vector3f& velocity_neu_cms)
+// guided_set_velocity_NEU_cms - sets guided mode's target velocity
+void ModeGuided::guided_set_velocity_NEU_cms(const Vector3f& velocity_neu_cms)
 {
     // check we are in velocity control mode
     if (sub.guided_mode != Guided_Velocity) {
@@ -254,8 +254,8 @@ void ModeGuided::guided_set_velocity(const Vector3f& velocity_neu_cms)
     position_control->set_vel_desired_NEU_cms(velocity_neu_cms);
 }
 
-// guided_set_velocity - sets guided mode's target velocity
-void ModeGuided::guided_set_velocity(const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+// guided_set_velocity_NEU_cms - sets guided mode's target velocity
+void ModeGuided::guided_set_velocity_NEU_cms(const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
    // check we are in velocity control mode
     if (sub.guided_mode != Guided_Velocity) {
@@ -274,17 +274,17 @@ void ModeGuided::guided_set_velocity(const Vector3f& velocity_neu_cms, bool use_
 
 // expose the current Guided_PosVelAccel position target so the GCS layer can
 // report POSITION_TARGET_GLOBAL_INT in that submode.
-bool ModeGuided::get_posvelaccel_target_NEU_cm(Vector3f &pos) const
+bool ModeGuided::get_posvelaccel_target_NEU_cm(Vector3f &pos_neu_cm) const
 {
     if (sub.guided_mode != Guided_PosVelAccel) {
         return false;
     }
-    pos = posvelaccel_pos_target_neu_cm.tofloat();
+    pos_neu_cm = posvelaccel_pos_target_neu_cm.tofloat();
     return true;
 }
 
 // set guided mode posvelaccel target
-bool ModeGuided::guided_set_posvelaccel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss)
+bool ModeGuided::guided_set_posvelaccel_NEU_cm(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -307,9 +307,9 @@ bool ModeGuided::guided_set_posvelaccel(const Vector3f& destination_neu_cm, cons
     posvelaccel_accel_target_neu_cmss = accel_neu_cmss;
 
     position_control->input_pos_vel_accel_NE_cm(posvelaccel_pos_target_neu_cm.xy(), posvelaccel_vel_target_neu_cms.xy(), posvelaccel_accel_target_neu_cmss.xy());
-    float dz = posvelaccel_pos_target_neu_cm.z;
-    position_control->input_pos_vel_accel_U_cm(dz, posvelaccel_vel_target_neu_cms.z, posvelaccel_accel_target_neu_cmss.z);
-    posvelaccel_pos_target_neu_cm.z = dz;
+    float pos_u_cm = posvelaccel_pos_target_neu_cm.z;
+    position_control->input_pos_vel_accel_U_cm(pos_u_cm, posvelaccel_vel_target_neu_cms.z, posvelaccel_accel_target_neu_cmss.z);
+    posvelaccel_pos_target_neu_cm.z = pos_u_cm;
 
 #if HAL_LOGGING_ENABLED
     // log target
@@ -320,7 +320,7 @@ bool ModeGuided::guided_set_posvelaccel(const Vector3f& destination_neu_cm, cons
 }
 
 // set guided mode posvelaccel target
-bool ModeGuided::guided_set_posvelaccel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::guided_set_posvelaccel_NEU_cm(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -347,9 +347,9 @@ bool ModeGuided::guided_set_posvelaccel(const Vector3f& destination_neu_cm, cons
     posvelaccel_accel_target_neu_cmss = accel_neu_cmss;
 
     position_control->input_pos_vel_accel_NE_cm(posvelaccel_pos_target_neu_cm.xy(), posvelaccel_vel_target_neu_cms.xy(), posvelaccel_accel_target_neu_cmss.xy());
-    float dz = posvelaccel_pos_target_neu_cm.z;
-    position_control->input_pos_vel_accel_U_cm(dz, posvelaccel_vel_target_neu_cms.z, posvelaccel_accel_target_neu_cmss.z);
-    posvelaccel_pos_target_neu_cm.z = dz;
+    float pos_u_cm = posvelaccel_pos_target_neu_cm.z;
+    position_control->input_pos_vel_accel_U_cm(pos_u_cm, posvelaccel_vel_target_neu_cms.z, posvelaccel_accel_target_neu_cmss.z);
+    posvelaccel_pos_target_neu_cm.z = pos_u_cm;
 
 #if HAL_LOGGING_ENABLED
     // log target
@@ -627,9 +627,9 @@ void ModeGuided::guided_posvelaccel_control_run()
 
     // send position and velocity targets to position controller
     position_control->input_pos_vel_accel_NE_cm(posvelaccel_pos_target_neu_cm.xy(), posvelaccel_vel_target_neu_cms.xy(), posvelaccel_accel_target_neu_cmss.xy());
-    float pz = posvelaccel_pos_target_neu_cm.z;
-    position_control->input_pos_vel_accel_U_cm(pz, posvelaccel_vel_target_neu_cms.z, posvelaccel_accel_target_neu_cmss.z);
-    posvelaccel_pos_target_neu_cm.z = pz;
+    float pos_u_cm = posvelaccel_pos_target_neu_cm.z;
+    position_control->input_pos_vel_accel_U_cm(pos_u_cm, posvelaccel_vel_target_neu_cms.z, posvelaccel_accel_target_neu_cmss.z);
+    posvelaccel_pos_target_neu_cm.z = pos_u_cm;
 
     // run position controller
     position_control->NE_update_controller();
@@ -836,9 +836,9 @@ void ModeGuided::guided_limit_init_time_and_pos()
     guided_limit.start_time_ms = AP_HAL::millis();
 
     // initialise start position from current position
-    Vector3f pos_cm = (position_control->get_pos_estimate_NED_m() * 100.0f).tofloat();
-    pos_cm.z = -pos_cm.z;
-    guided_limit.start_pos_neu_cm = pos_cm;
+    Vector3f pos_neu_cm = (position_control->get_pos_estimate_NED_m() * 100.0f).tofloat();
+    pos_neu_cm.z = -pos_neu_cm.z;
+    guided_limit.start_pos_neu_cm = pos_neu_cm;
 }
 
 // guided_limit_check - returns true if guided mode has breached a limit

@@ -9,8 +9,8 @@ bool ModeAlthold::init(bool ignore_checks) {
     // initialize vertical maximum speeds and acceleration
     // sets the maximum speed up and down returned by position controller
     // All limits must be positive
-    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
+    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
 
     // initialise position and desired velocity
     position_control->D_init_controller();
@@ -35,7 +35,7 @@ void ModeAlthold::run_pre()
 
     // initialize vertical speeds and acceleration
     // All limits must be positive
-    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms, g.pilot_accel_z_cmss);
 
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
@@ -108,18 +108,18 @@ void ModeAlthold::run_post()
 void ModeAlthold::control_depth() {
     // return 0.2f when at the surface to p
     // scale linearly between 0.2f and 1.0f as we approach the surface
-    float distance_to_surface = (g.surface_depth - position_control->get_pos_estimate_U_m() * 100.0f) * 0.01f;
-    distance_to_surface = constrain_float(distance_to_surface, 0.0f, 1.0f);
-    motors.set_max_throttle(g.surface_max_throttle + (1.0f - g.surface_max_throttle) * distance_to_surface);
+    float distance_to_surface_m = (g.surface_depth_cm - position_control->get_pos_estimate_U_m() * 100.0f) * 0.01f;
+    distance_to_surface_m = constrain_float(distance_to_surface_m, 0.0f, 1.0f);
+    motors.set_max_throttle(g.surface_max_throttle + (1.0f - g.surface_max_throttle) * distance_to_surface_m);
 
-    float target_climb_rate_cms = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
+    float target_climb_rate_cms = sub.get_pilot_desired_climb_rate_cms(channel_throttle->get_control_in());
+    target_climb_rate_cms = constrain_float(target_climb_rate_cms, -sub.get_pilot_speed_dn_cms(), g.pilot_speed_up_cms);
 
     // desired_climb_rate returns 0 when within the deadzone.
     //we allow full control to the pilot, but as soon as there's no input, we handle being at surface/bottom
     if (fabsf(target_climb_rate_cms) < 0.05f)  {
         if (sub.ap.at_surface) {
-            position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), g.surface_depth)); // set target to 5 cm below surface level
+            position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), g.surface_depth_cm)); // set target to 5 cm below surface level
         } else if (sub.ap.at_bottom) {
             position_control->set_pos_desired_U_cm(MAX(position_control->get_pos_estimate_U_m() * 100.0f + 10.0f, position_control->get_pos_desired_U_cm())); // set target to 10 cm above bottom
         }

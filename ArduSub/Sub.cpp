@@ -383,10 +383,10 @@ bool Sub::control_check_barometer()
 }
 
 // vehicle specific waypoint info helpers
-bool Sub::get_wp_distance_m(float &distance) const
+bool Sub::get_wp_distance_m(float &distance_m) const
 {
     // see GCS_MAVLINK_Sub::send_nav_controller_output()
-    distance = sub.wp_nav.get_wp_distance_to_destination_cm() * 0.01;
+    distance_m = sub.wp_nav.get_wp_distance_to_destination_cm() * 0.01;
     return true;
 }
 
@@ -399,10 +399,10 @@ bool Sub::get_wp_bearing_deg(float &bearing) const
 }
 
 // vehicle specific waypoint info helpers
-bool Sub::get_wp_crosstrack_error_m(float &xtrack_error) const
+bool Sub::get_wp_crosstrack_error_m(float &xtrack_error_m) const
 {
     // no crosstrack error reported, see GCS_MAVLINK_Sub::send_nav_controller_output()
-    xtrack_error = 0;
+    xtrack_error_m = 0;
     return true;
 }
 
@@ -417,20 +417,20 @@ void Sub::stats_update(void)
 #endif
 
 // get the altitude relative to the home position or the ekf origin
-float Sub::get_alt_rel() const
+float Sub::get_alt_rel_m() const
 {
     if (!ap.depth_sensor_present) {
         return 0;
     }
 
     // get relative position
-    float posD;
-    ahrs.get_relative_position_D_home(posD);
-    return -posD;
+    float pos_d_m;
+    ahrs.get_relative_position_D_home(pos_d_m);
+    return -pos_d_m;
 }
 
 // get the altitude above mean sea level
-float Sub::get_alt_msl() const
+float Sub::get_alt_msl_m() const
 {
     if (!ap.depth_sensor_present) {
         return 0;
@@ -442,17 +442,17 @@ float Sub::get_alt_msl() const
     }
 
     // get relative position
-    float posD;
-    if (!ahrs.get_relative_position_D_origin_float(posD)) {
+    float pos_d_m;
+    if (!ahrs.get_relative_position_D_origin_float(pos_d_m)) {
         // fall back to the barometer reading
-        posD = -AP::baro().get_altitude();
+        pos_d_m = -AP::baro().get_altitude();
     }
 
     // add in the ekf origin altitude
-    posD -= static_cast<float>(origin.alt) * 0.01f;
+    pos_d_m -= static_cast<float>(origin.alt) * 0.01f;
 
     // convert down to up
-    return -posD;
+    return -pos_d_m;
 }
 
 #if AP_SUB_RC_ENABLED
@@ -478,7 +478,7 @@ bool Sub::set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const Vec
     const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
     const Vector3f accel_neu_cmss(target_accel_ned_mss.x * 100.0f, target_accel_ned_mss.y * 100.0f, -target_accel_ned_mss.z * 100.0f);
 
-    return mode_guided.guided_set_posvelaccel(pos_neu_cm, vel_neu_cms, accel_neu_cmss, use_yaw, yaw_deg * 100.0f, use_yaw_rate, yaw_rate_degs * 100.0f, yaw_relative);
+    return mode_guided.guided_set_posvelaccel_NEU_cm(pos_neu_cm, vel_neu_cms, accel_neu_cmss, use_yaw, yaw_deg * 100.0f, use_yaw_rate, yaw_rate_degs * 100.0f, yaw_relative);
 }
 #endif
 

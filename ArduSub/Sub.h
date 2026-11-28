@@ -141,13 +141,13 @@ private:
     struct {
         bool enabled;
         bool alt_healthy; // true if we can trust the altitude from the rangefinder
-        float alt;     // tilt compensated altitude from rangefinder
-        float min;     // min rangefinder distance
-        float max;     // max rangefinder distance
+        float alt_m;     // tilt compensated altitude from rangefinder
+        float min_m;     // min rangefinder distance
+        float max_m;     // max rangefinder distance
         uint32_t last_healthy_ms;
-        float inertial_alt_cm;                  // inertial alt at time of last rangefinder sample
-        float rangefinder_terrain_offset_cm;    // terrain height above EKF origin
-        LowPassFilterFloat alt_filt;         // altitude filter
+        float inertial_alt_u_cm;                // inertial alt at time of last rangefinder sample
+        float rangefinder_terrain_offset_u_cm;  // terrain height above EKF origin
+        LowPassFilterFloat alt_filt_m;       // altitude filter
     } rangefinder_state = { false, false, 0, 0, 0, 0, 0, 0 };
 
     // Mission library
@@ -394,8 +394,8 @@ private:
     void check_ekf_yaw_reset();
     float get_roi_yaw();
     float get_look_ahead_yaw();
-    float get_pilot_desired_climb_rate(float throttle_control);
-    float get_pilot_desired_horizontal_rate(RC_Channel *channel) const;
+    float get_pilot_desired_climb_rate_cms(float throttle_control);
+    float get_pilot_desired_horizontal_rate_cms(RC_Channel *channel) const;
     void rotate_body_frame_to_NE(float &x, float &y);
 #if HAL_LOGGING_ENABLED
     // methods for AP_Vehicle:
@@ -425,8 +425,8 @@ private:
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
-    float get_alt_rel() const WARN_IF_UNUSED;
-    float get_alt_msl() const WARN_IF_UNUSED;
+    float get_alt_rel_m() const WARN_IF_UNUSED;
+    float get_alt_msl_m() const WARN_IF_UNUSED;
     void exit_mission();
     void set_origin(const Location& loc);
     bool verify_loiter_unlimited();
@@ -551,7 +551,7 @@ private:
 
     void stats_update();
 
-    uint16_t get_pilot_speed_dn() const;
+    uint16_t get_pilot_speed_dn_cms() const;
 
 
 #if LEAKDETECTOR_MAX_INSTANCES > 0
@@ -573,9 +573,9 @@ private:
     bool control_check_barometer();
 
     // vehicle specific waypoint info helpers
-    bool get_wp_distance_m(float &distance) const override;
+    bool get_wp_distance_m(float &distance_m) const override;
     bool get_wp_bearing_deg(float &bearing) const override;
-    bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
+    bool get_wp_crosstrack_error_m(float &xtrack_error_m) const override;
 
     enum Failsafe_Action {
         Failsafe_Action_None    = 0,

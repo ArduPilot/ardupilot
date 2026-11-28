@@ -71,12 +71,12 @@ float Sub::get_roi_yaw()
 
 float Sub::get_look_ahead_yaw()
 {
-    Vector3f vel = (pos_control.get_vel_estimate_NED_ms() * 100.0f).tofloat();
-    vel.z = -vel.z;
-    const float speed_sq = vel.xy().length_squared();
+    Vector3f vel_neu_cms = (pos_control.get_vel_estimate_NED_ms() * 100.0f).tofloat();
+    vel_neu_cms.z = -vel_neu_cms.z;
+    const float speed_sq_cms2 = vel_neu_cms.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
-    if (position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
-        yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
+    if (position_ok() && (speed_sq_cms2 > (YAW_LOOK_AHEAD_MIN_SPEED_CMS * YAW_LOOK_AHEAD_MIN_SPEED_CMS))) {
+        yaw_look_ahead_bearing = degrees(atan2f(vel_neu_cms.y, vel_neu_cms.x))*100.0f;
     }
     return yaw_look_ahead_bearing;
 }
@@ -85,9 +85,9 @@ float Sub::get_look_ahead_yaw()
  *  throttle control
  ****************************************************************/
 
-// get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
+// get_pilot_desired_climb_rate_cms - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
-float Sub::get_pilot_desired_climb_rate(float throttle_control)
+float Sub::get_pilot_desired_climb_rate_cms(float throttle_control)
 {
     // throttle failsafe check
     if (failsafe.pilot_input) {
@@ -107,18 +107,18 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        return get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
+        return get_pilot_speed_dn_cms() * (throttle_control-deadband_bottom) / deadband_bottom;
     } else if (throttle_control > deadband_top) {
         // above the deadband
-        return g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
+        return g.pilot_speed_up_cms * (throttle_control-deadband_top) / (1000.0f-deadband_top);
     } else {
         // must be in the deadband
         return 0.0f;
     }
 }
 
-// behavior is similar to Sub::get_pilot_desired_climb_rate
-float Sub::get_pilot_desired_horizontal_rate(RC_Channel *channel) const
+// behavior is similar to Sub::get_pilot_desired_climb_rate_cms
+float Sub::get_pilot_desired_horizontal_rate_cms(RC_Channel *channel) const
 {
     if (failsafe.pilot_input) {
         return 0;
@@ -134,10 +134,10 @@ float Sub::get_pilot_desired_horizontal_rate(RC_Channel *channel) const
 
     if (control < deadband_bottom) {
         // below the deadband
-        return (float)g.pilot_speed * (control - deadband_bottom);
+        return (float)g.pilot_speed_cms * (control - deadband_bottom);
     } else if (control > deadband_top) {
         // above the deadband
-        return (float)g.pilot_speed * (control - deadband_top);
+        return (float)g.pilot_speed_cms * (control - deadband_top);
     } else {
         // must be in the deadband
         return 0;
@@ -154,10 +154,10 @@ void Sub::rotate_body_frame_to_NE(float &x, float &y)
 }
 
 // It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.
-uint16_t Sub::get_pilot_speed_dn() const
+uint16_t Sub::get_pilot_speed_dn_cms() const
 {
-    if (g.pilot_speed_dn == 0) {
-        return abs(g.pilot_speed_up);
+    if (g.pilot_speed_dn_cms == 0) {
+        return abs(g.pilot_speed_up_cms);
     }
-    return abs(g.pilot_speed_dn);
+    return abs(g.pilot_speed_dn_cms);
 }

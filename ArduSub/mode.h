@@ -226,7 +226,7 @@ private:
     float rangefinder_target_cm;
 
     bool pilot_in_control;            // pilot is moving up/down
-    float pilot_control_start_z_cm;   // alt when pilot took control
+    float pilot_control_start_u_cm;   // alt when pilot took control
 };
 
 class ModeGuided : public Mode
@@ -247,19 +247,19 @@ public:
     bool guided_limit_check();
     void guided_limit_init_time_and_pos();
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
-    void guided_set_angle(const Quaternion&, float);
+    void guided_set_angle(const Quaternion &q, float climb_rate_cms);
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    bool guided_set_posvelaccel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss);
-    bool guided_set_posvelaccel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    bool guided_set_posvelaccel_NEU_cm(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss);
+    bool guided_set_posvelaccel_NEU_cm(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
     bool guided_set_destination(const Location&);
-    bool guided_set_destination(const Vector3f& destination_neu_cm, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
-    void guided_set_velocity(const Vector3f& velocity_neu_cms);
-    void guided_set_velocity(const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    bool guided_set_destination_NEU_cm(const Vector3f& destination_neu_cm, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    void guided_set_velocity_NEU_cms(const Vector3f& velocity_neu_cms);
+    void guided_set_velocity_NEU_cms(const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
     void guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
-    // fills pos with the current Guided_PosVelAccel position target (NEU cm
+    // fills pos_neu_cm with the current Guided_PosVelAccel position target (NEU cm
     // relative to EKF origin). returns false if not in Guided_PosVelAccel.
     // velocity target not exposed; base GCS sends 0 with VX/VY/VZ_IGNORE.
-    bool get_posvelaccel_target_NEU_cm(Vector3f &pos) const;
+    bool get_posvelaccel_target_NEU_cm(Vector3f &pos_neu_cm) const;
     float get_auto_heading();
     void guided_limit_clear();
     void set_auto_yaw_mode(autopilot_yaw_mode yaw_mode);
@@ -300,7 +300,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
     bool auto_loiter_start();
-    void auto_wp_start(const Vector3f& destination_neu_cm);
+    void auto_wp_start_NEU_cm(const Vector3f& destination_neu_cm);
     void auto_wp_start(const Location& dest_loc);
     void auto_circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
     void auto_circle_start();

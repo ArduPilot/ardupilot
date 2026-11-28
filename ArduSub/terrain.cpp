@@ -9,9 +9,9 @@ void Sub::terrain_update()
     // tell the rangefinder our height, so it can go into power saving
     // mode if available
 #if AP_RANGEFINDER_ENABLED
-    float height;
-    if (terrain.height_above_terrain(height, true)) {
-        rangefinder.set_estimated_terrain_height(height);
+    float height_m;
+    if (terrain.height_above_terrain(height_m, true)) {
+        rangefinder.set_estimated_terrain_height(height_m);
     }
 #endif
 #endif
