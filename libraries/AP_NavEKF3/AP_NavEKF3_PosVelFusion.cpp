@@ -1227,6 +1227,11 @@ void NavEKF3_core::selectHeightForFusion()
     // This data is used by both height and optical flow fusion processing
     readRangeFinder();
     rangeDataToFuse = storedRange.recall(rangeDataDelayed,imuDataDelayed.time_ms);
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    if (rangeDataToFuse && !rangeDataDelayed.repeated) {
+        rngNewReadingTime_ms = imuSampleTime_ms;
+    }
+#endif
 
     // correct range data for the body frame position offset relative to the IMU
     // the corrected reading is the reading that would have been taken if the sensor was
