@@ -6,7 +6,7 @@ processor. It uses a solderless, plug-and-play connector layout for the main
 peripherals while still breaking out exposed solder pads for advanced custom
 wiring.
 
-![Agam MegH7](agam-robotics_megh7-top.png "Agam MegH7 Top")
+![Agam MegH7](agam-robotics_megh7-bot.png "Agam MegH7 Bottom")
 
 ## Where to Buy
 
@@ -33,6 +33,7 @@ More details at [Product Page](https://www.agamrobotics.com/agammegh7).
 - Interfaces
 
   - Full-size MicroSD card slot (Blackbox logging)
+  - 16MB W25Q128 SPI dataflash (assembly option, not fitted on every board)
   - USB-C
   - 9 PWM/DShot outputs (8 motor outputs + 1 LED)
   - 7 UARTs, one with flow control
@@ -60,12 +61,12 @@ More details at [Product Page](https://www.agamrobotics.com/agammegh7).
 
 ## Pinout
 
-![Agam MegH7 exposed pads](agam-robotics_megh7-bot.png "Agam MegH7 Bottom")
+![Agam MegH7 exposed pads](agam-robotics_megh7-top.png "Agam MegH7 Top")
 
-All plug-and-play connectors are on the top of the board and are labelled on
+All plug-and-play connectors are on the bottom of the board and are labelled on
 the silkscreen: ESC, TELEM, GPS, CAN, I2C4, DIGI VTX, SPI4, RX and B/LD.
 
-The bottom of the board exposes solder pads for the same signals plus the
+The top of the board exposes solder pads for the same signals plus the
 analog camera and VTX pads, the analog inputs, and the spare user IO pads. The
 signal pads are labelled on the silkscreen and are described in the sections
 below; the remaining pads are power and ground.
@@ -235,7 +236,7 @@ channel in that group must use DShot. The groups are:
 
 |Group |Timer |Outputs         |
 |------|------|----------------|
-|1     |TIM8  |M1, M2          |
+|1     |TIM3  |M1, M2          |
 |2     |TIM5  |M3, M4, M5, M6  |
 |3     |TIM4  |M7, M8          |
 |4     |TIM1  |M9 (LED pad)    |
@@ -243,6 +244,20 @@ channel in that group must use DShot. The groups are:
 Note that the timer groups do not line up with the M1-M4 / M5-M8 physical pad
 layout: M5 and M6 share TIM5 with M3 and M4, so M1-M4 cannot be driven at a
 different rate/protocol from M5-M6.
+
+Set `SERVO_BLH_MASK` to the motor outputs in use and `SERVO_BLH_OTYPE` to 6
+(DShot600) - 15 for a quad on the ESC connector, 63 for a hexa, 255 for an
+octa. Do not set bits for outputs with no ESC on them: on a quad, adding M5 and
+M6 desynchronises M3 and M4.
+
+ESC RPM telemetry arrives on SERIAL7, the ESC connector, which is configured
+for it by default.
+
+For bi-directional DShot on a quad, set `SERVO_BLH_BDMASK` to 15 and
+`SERVO5_FUNCTION` and `SERVO6_FUNCTION` to -1.
+
+To reverse a motor, set `SERVO_DSHOT_ESC` to match the ESC (1 for BLHeli_32, 2
+for BLHeli_S) and set the channel's bit in `SERVO_BLH_RVMASK`.
 
 The 9th output is set up for an addressable LED strip by default:
 `SERVO9_FUNCTION` is 120 (NeoPixel1) and `NTF_LED_TYPES` includes the
@@ -289,6 +304,9 @@ The CC pin is a GPIO (pin 88) and is assigned by default to RELAY2
 functionality. This pin can be controlled via GCS, or by RC transmitter using
 the [Auxiliary Function](https://ardupilot.org/copter/docs/common-auxiliary-functions.html)
 feature (`RCx_OPTION` = 34).
+
+To drive a camera with `CAM1_TYPE` = 1 (Servo/Relay), set `RELAY2_FUNCTION`
+to 4 (Camera).
 
 ## HD VTX Support
 
@@ -358,13 +376,14 @@ Set `FLOW_TYPE` to 2 (Pixart) to enable it.
 ## Buzzer and LED Strip Port
 
 The `B/LD` connector (see Connectors above) carries both the buzzer and the
-addressable LED strip. The same signals are broken out on the bottom of the
+addressable LED strip. The same signals are broken out on the top of the
 board as the `B5V`, `BZ+`, `BZ-`, `LED` and `G` pads. `BZ+` is the 5V rail and
 `BZ-` is the switched side, so a buzzer connects between the two.
 
 The buzzer is driven by GPIO 32 through a transistor that switches the low
 side, and is enabled by default. The LED strip output is PWM 9, set up for
-WS2812 by default (see PWM Outputs above).
+WS2812 by default (see PWM Outputs above). Both are powered from the 5V BEC,
+so neither is active when the board is powered from USB alone.
 
 ## LEDs
 
@@ -460,6 +479,19 @@ The default battery parameters are:
   sensor is attached)
 
 Rated input: 2S-8S LiPo.
+
+## Logging
+
+Logs are written to the microSD card by default. Where the optional W25Q128
+dataflash is fitted, set `LOG_BACKEND_TYPE` to 4 to log to it instead, or 5 to
+log to both.
+
+The dataflash is much smaller than a microSD card. With fast IMU logging it
+takes about 40KB/s and fills in about seven minutes, after which the oldest
+logs are overwritten.
+
+> **Warning:** logging to the dataflash alone can drop log messages, most
+> often while the chip is erasing. Keep the microSD card as a log backend.
 
 ## Firmware
 
