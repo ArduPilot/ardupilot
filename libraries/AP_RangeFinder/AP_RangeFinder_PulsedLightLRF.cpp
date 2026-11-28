@@ -49,6 +49,8 @@ AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus,
     , _dev(hal.i2c_mgr->get_device(bus, LL40LS_ADDR))
     , rftype(_rftype)
 {
+    // LIDAR-Lite v3: 40m at 70% reflectivity
+    params.max_distance.set_default(35.0f);
 }
 
 /*

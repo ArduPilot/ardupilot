@@ -34,7 +34,12 @@ public:
     }
 
 protected:
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_DTS6012M(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // DTS6012M datasheet: 20m maximum
+        params.max_distance.set_default(20.0f);
+    }
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override { return MAV_DISTANCE_SENSOR_LASER; }
 

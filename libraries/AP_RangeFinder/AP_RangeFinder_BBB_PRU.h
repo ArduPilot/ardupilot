@@ -28,7 +28,12 @@ public:
         constructor is not called until detect() returns true, so we
         already know that we should setup the rangefinder
     */
-    using AP_RangeFinder_Backend::AP_RangeFinder_Backend;
+    AP_RangeFinder_BBB_PRU(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend(_state, _params)
+    {
+        // HC-SR04 on the PRU; its firmware flags readings outside 2cm to 400cm
+        params.max_distance.set_default(4.0f);
+    }
 
     // static detection function
     static bool detect();

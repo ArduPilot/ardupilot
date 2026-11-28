@@ -12,7 +12,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     AP_RangeFinder_Params(void);
-    void convert_min_max_params();
+    bool convert_min_max_params();
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_RangeFinder_Params);
