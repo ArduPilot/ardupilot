@@ -1,6 +1,7 @@
-// Physics-driven MS4525 differential-pressure sensor. The DLVR backend uses
-// the same four-byte pressure and temperature layout at address 0x28; writes
-// trigger a conversion on MS4525 and are harmless for DLVR.
+// Physics-driven MS4525 differential-pressure sensor. The DLVR and SM9541
+// backends use the same four-byte pressure and temperature layout at address
+// 0x28 and differ only in the pressure transfer function; writes trigger a
+// conversion on MS4525 and are harmless for the other two.
 using System;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Peripherals.I2C;
@@ -91,21 +92,22 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public ulong ReadCount { get; private set; }
         public ulong WriteCount { get; private set; }
 
-        private void UpdateSample()
+        protected virtual double RawPressure(double differentialPressurePa)
         {
-            var differentialPressurePa = AP_AirspeedPhysics.DifferentialPressurePa(physics);
-            double rawPressure;
             if(dlvrRangeInH2O > 0.0)
             {
                 var pressureInH2O = differentialPressurePa / InchH2OToPa;
-                rawPressure = DlvrOffset + pressureInH2O * DlvrScale /
+                return DlvrOffset + pressureInH2O * DlvrScale /
                     (2.5 * dlvrRangeInH2O);
             }
-            else
-            {
-                rawPressure = PressureMidpoint - differentialPressurePa /
-                    PsiToPa * PressureSpan / SensorRangePsi;
-            }
+            return PressureMidpoint - differentialPressurePa /
+                PsiToPa * PressureSpan / SensorRangePsi;
+        }
+
+        private void UpdateSample()
+        {
+            var differentialPressurePa = AP_AirspeedPhysics.DifferentialPressurePa(physics);
+            var rawPressure = RawPressure(differentialPressurePa);
             pressure = (ushort)Math.Max(1, Math.Min(0x3FFE, Math.Round(rawPressure)));
             var temperatureC = AP_AirspeedPhysics.TemperatureC(physics);
             var rawTemperature = (temperatureC + 50.0) * 2047.0 / 200.0;
@@ -135,6 +137,26 @@ namespace Antmicro.Renode.Peripherals.Sensors
         }
 
         private const double RangeInH2O = 5.0;
+    }
+
+    public class AP_Airspeed_SM9541 : AP_Airspeed
+    {
+        public AP_Airspeed_SM9541(IMachine machine) : base(machine)
+        {
+        }
+
+        // the part reads OutMin counts at -RangeCmH2O and OutMax at +RangeCmH2O
+        protected override double RawPressure(double differentialPressurePa)
+        {
+            var pressureCmH2O = differentialPressurePa / CmH2OToPa;
+            return OutMin + (pressureCmH2O + RangeCmH2O) * (OutMax - OutMin) /
+                (2.0 * RangeCmH2O);
+        }
+
+        private const double CmH2OToPa = 98.0665;
+        private const double RangeCmH2O = 100.0;
+        private const double OutMin = 1638.0;
+        private const double OutMax = 14745.0;
     }
 
     // MS5525DSO pressure sensor at 0x76. The PROM coefficients deliberately
