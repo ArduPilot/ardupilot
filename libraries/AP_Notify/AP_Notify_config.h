@@ -139,3 +139,8 @@
 #ifndef AP_NOTIFY_BUZZER_ENABLED
 #define AP_NOTIFY_BUZZER_ENABLED 0
 #endif
+
+// RGB LEDs also show a position from non-GPS sources such as optical flow
+#ifndef AP_NOTIFY_RGBLED_NONGPS_POSITION_ENABLED
+#define AP_NOTIFY_RGBLED_NONGPS_POSITION_ENABLED 0
+#endif
