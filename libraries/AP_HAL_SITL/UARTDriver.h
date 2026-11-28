@@ -36,6 +36,9 @@ public:
     // on reboot, just before exec(): get queued output to the peer
     void drain_before_exec(uint32_t timeout_ms, uint64_t deadline_ms);
 
+    // true if the sim stalls while this port's output queue is full
+    bool pacing() const { return _pace_sim; }
+
     bool tx_pending() override {
         return false;
     }
@@ -44,6 +47,7 @@ public:
     uint32_t txspace() override;
 
     bool _unbuffered_writes;
+    bool _pace_sim;
 
     enum flow_control get_flow_control(void) override;
 
