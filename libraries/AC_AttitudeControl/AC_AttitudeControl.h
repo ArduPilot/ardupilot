@@ -390,6 +390,9 @@ public:
     // Copy the body-frame rate target (in rad/s) if it has been published since seq
     bool get_ang_vel_body_rads(Vector3f& ang_vel_body_rads, uint32_t& seq) const;
 
+    // Rotate a vector from the AHRS body frame into this controller's AHRS view, the frame rate_controller_run_dt() takes its gyro in
+    void rotate_into_view(Vector3f &vec) const { _ahrs.rotate(vec); }
+
     // return the angular velocity of the target (setpoint) attitude rad/s
     const Vector3f& get_rate_ef_target_rads() const { return _euler_rate_target_rads; }
 

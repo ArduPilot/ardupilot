@@ -128,7 +128,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     EXPECT_DELAY_MS(5000);
 
     // enable motors and pass through throttle
-    if (!using_rate_thread) {
+    if (!using_rate_thread()) {
         motors->output_min();  // output lowest possible value to motors
     }
     motors->armed(true);
@@ -153,7 +153,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         read_radio();
 
         // this loop blocks the main loop, so without the rate thread nothing else outputs
-        if (!using_rate_thread) {
+        if (!using_rate_thread()) {
             motors_output();
         }
 
@@ -248,7 +248,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     // stop motors
     motors->armed(false);
     hal.util->set_soft_armed(false);
-    if (!using_rate_thread) {
+    if (!using_rate_thread()) {
         motors->output_min();
     }
 

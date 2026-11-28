@@ -193,6 +193,15 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
         }
     }
 
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // the rate thread stays off for tailsitters and tiltrotors, which would otherwise fly without the rate controller the user asked for
+    if (plane.quadplane.fast_rate_enable != 0 &&
+        (plane.quadplane.tailsitter.enabled() || plane.quadplane.tiltrotor.enabled())) {
+        check_failed(Check::PARAMETERS, display_failure, "Q_FSTRATE_ENABLE: set 0 on tailsitter/tilt");
+        ret = false;
+    }
+#endif
+
     // ensure controllers are OK with us arming:
     if (!plane.quadplane.pos_control->pre_arm_checks("Q_P", failure_msg, ARRAY_SIZE(failure_msg))) {
         check_failed(Check::PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);

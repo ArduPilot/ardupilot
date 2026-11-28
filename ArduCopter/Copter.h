@@ -48,6 +48,7 @@
 #include <AP_Motors/AP_Motors.h>            // AP Motors library
 #include <Filter/Filter.h>                  // Filter library
 #include <AP_Vehicle/AP_Vehicle.h>          // needed for AHRS build
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 #include <AC_WPNav/AC_WPNav.h>              // ArduCopter waypoint navigation library
 #include <AC_WPNav/AC_Loiter.h>             // ArduCopter Loiter Mode Library
 #include <AC_WPNav/AC_Circle.h>             // circle navigation library
@@ -625,16 +626,6 @@ private:
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
     };
 
-    // type of fast rate attitude controller in operation
-    enum class FastRateType : uint8_t {
-        FAST_RATE_DISABLED            = 0,
-        FAST_RATE_DYNAMIC             = 1,
-        FAST_RATE_FIXED_ARMED         = 2,
-        FAST_RATE_FIXED               = 3,
-    };
-
-    FastRateType get_fast_rate_type() const { return FastRateType(g2.att_enable.get()); }
-
     // returns true if option is enabled for this vehicle
     bool option_is_enabled(FlightOption option) const {
         return (g2.flight_options & uint32_t(option)) != 0;
@@ -740,23 +731,14 @@ private:
     float get_pilot_speed_dn_adjusted_ms() const;
     void run_rate_controller_main();
 
-    // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
-    struct RateControllerRates {
-        uint8_t fast_logging_rate;
-        uint8_t medium_logging_rate;
-        uint8_t filter_rate;
-        uint8_t main_loop_rate;
-    };
-
-    uint8_t calc_gyro_decimation(uint8_t gyro_decimation, uint16_t rate_hz);
-    void rate_controller_thread();
-    void rate_controller_filter_update();
-    void rate_controller_log_update();
-    void rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high);
-    void enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates& rates);
-    void disable_fast_rate_loop(RateControllerRates& rates);
-    void update_dynamic_notch_at_specified_rate_main();
-    // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // AP_Vehicle's rate thread, run from FSTRATE_ENABLE and FSTRATE_DIV
+    FastRateType get_rate_thread_type() const override { return FastRateType(g2.att_enable.get()); }
+    uint8_t get_rate_thread_decimation() const override { return uint8_t(MAX(g2.att_decimation.get(), 1)); }
+    void rate_thread_motors_output(bool full_push) override { motors_output(full_push); }
+    RateThreadLogging get_rate_thread_logging() override;
+    void rate_thread_log_update() override;
+#endif
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     void run_custom_controller() { custom_control.update(); }
@@ -939,7 +921,6 @@ private:
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq_hz, float angle_x_degs, float angle_y_degs, float angle_z_degs, float accel_x_mss, float accel_y_mss, float accel_z_mss);
     void Log_Write_Vehicle_Startup_Messages();
-    void Log_Write_Rate_Thread_Dt(float dt, float dtAvg, float dtMax, float dtMin);
 #endif  // HAL_LOGGING_ENABLED
 
     // mode.cpp
@@ -1130,9 +1111,6 @@ private:
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
-
-    bool started_rate_thread;
-    bool using_rate_thread;
 
 public:
     void failsafe_check();      // failsafe.cpp

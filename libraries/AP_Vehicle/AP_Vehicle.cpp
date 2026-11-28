@@ -670,7 +670,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50, 205),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50, 210),
 #endif
-#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED && !AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     SCHED_TASK(update_dynamic_notch_at_specified_rate,      LOOP_RATE,                    200, 215),
 #endif
 #if AP_VIDEOTX_ENABLED
@@ -956,6 +956,12 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
 // run notch update at either loop rate or 200Hz
 void AP_Vehicle::update_dynamic_notch_at_specified_rate()
 {
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // the rate thread updates the notches at its own rate
+    if (using_rate_thread()) {
+        return;
+    }
+#endif
     for (auto &notch : ins.harmonic_notches) {
         if (notch.params.hasOption(HarmonicNotchFilterParams::Options::LoopRateUpdate)) {
             update_dynamic_notch(notch);
@@ -1209,6 +1215,9 @@ void AP_Vehicle::one_Hz_update(void)
     }
 #endif
 
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    start_rate_thread();
+#endif
 }
 
 void AP_Vehicle::check_motor_noise()

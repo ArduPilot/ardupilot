@@ -60,6 +60,7 @@
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 #include <AP_TECS/AP_TECS.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
@@ -1202,6 +1203,12 @@ private:
     void airbrake_update(void);
     void landing_neutral_control_surface_servos(void);
     void servos_output(void);
+#if HAL_QUADPLANE_ENABLED && AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // AP_Vehicle's rate thread, which runs QuadPlane's VTOL rate controller
+    FastRateType get_rate_thread_type() const override;
+    uint8_t get_rate_thread_decimation() const override;
+    void rate_thread_motors_output(bool full_push) override;
+#endif
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
     void force_flare();
