@@ -32,29 +32,31 @@ I2CDeviceManager::I2CDeviceManager(void)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(i2c_bus_desc); i++) {
         if (i2c_bus_desc[i].soft) {
+#if defined(__XTENSA__) // software I2C is only supported for XTENSA
             businfo[i].sw_handle.sda = i2c_bus_desc[i].sda;
             businfo[i].sw_handle.scl = i2c_bus_desc[i].scl;
             //TODO make modular
             businfo[i].sw_handle.speed = I2C_SPEED_FAST;
             businfo[i].soft = true;
             i2c_init(&(businfo[i].sw_handle));
-        } else {
-            i2c_config_t i2c_bus_config;
-            i2c_bus_config.mode = I2C_MODE_MASTER;
-            i2c_bus_config.sda_io_num = i2c_bus_desc[i].sda;
-            i2c_bus_config.scl_io_num = i2c_bus_desc[i].scl;
-            i2c_bus_config.sda_pullup_en = GPIO_PULLUP_ENABLE;
-            i2c_bus_config.scl_pullup_en = GPIO_PULLUP_ENABLE;
-            i2c_bus_config.master.clk_speed = i2c_bus_desc[i].speed;
-            i2c_bus_config.clk_flags = 0;
-            i2c_port_t p = i2c_bus_desc[i].port;
-            businfo[i].port = p;
-            businfo[i].bus_clock = i2c_bus_desc[i].speed;
-            businfo[i].soft = false;
-            i2c_param_config(p, &i2c_bus_config);
-            i2c_driver_install(p, I2C_MODE_MASTER, 0, 0, ESP_INTR_FLAG_IRAM);
-            i2c_filter_enable(p, 7);
+            continue;
+#endif // defined(__XTENSA__)
         }
+        i2c_config_t i2c_bus_config;
+        i2c_bus_config.mode = I2C_MODE_MASTER;
+        i2c_bus_config.sda_io_num = i2c_bus_desc[i].sda;
+        i2c_bus_config.scl_io_num = i2c_bus_desc[i].scl;
+        i2c_bus_config.sda_pullup_en = GPIO_PULLUP_ENABLE;
+        i2c_bus_config.scl_pullup_en = GPIO_PULLUP_ENABLE;
+        i2c_bus_config.master.clk_speed = i2c_bus_desc[i].speed;
+        i2c_bus_config.clk_flags = 0;
+        i2c_port_t p = i2c_bus_desc[i].port;
+        businfo[i].port = p;
+        businfo[i].bus_clock = i2c_bus_desc[i].speed;
+        businfo[i].soft = false;
+        i2c_param_config(p, &i2c_bus_config);
+        i2c_driver_install(p, I2C_MODE_MASTER, 0, 0, ESP_INTR_FLAG_IRAM);
+        i2c_filter_enable(p, 7);
     }
 }
 
@@ -85,6 +87,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
 
     bool result = false;
     if (bus.soft) {
+#if defined(__XTENSA__) // software I2C is only supported for XTENSA
         uint8_t flag_wr = (recv_len == 0 || recv == nullptr) ? I2C_NOSTOP : 0;
         if (send_len != 0 && send != nullptr) {
             //tx with optional rx (after tx)
@@ -102,6 +105,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                            (uint8_t *)recv, recv_len, 0);
         }
         result = true; //TODO check all
+#endif // defined(__XTENSA__)
     } else {
         i2c_cmd_handle_t cmd = i2c_cmd_link_create();
         if (send_len != 0 && send != nullptr) {

@@ -26,8 +26,12 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..
 import esp32_hwdef
 
 def configure(cfg):
-    mcu_esp32s3 = True if (cfg.variant[0:7] == "esp32s3") else False
-    target = "esp32s3" if mcu_esp32s3 else "esp32"
+    if cfg.variant[0:8] == "esp32s31":
+        target = "esp32s31"
+    elif cfg.variant[0:7] == "esp32s3":
+        target = "esp32s3"
+    else:
+        target = "esp32"
     bldnode = cfg.bldnode.make_node(cfg.variant)
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()

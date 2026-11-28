@@ -777,8 +777,9 @@ def add_dynamic_boards_esp32():
             continue
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
-            mcu_esp32s3 = True if (d[0:7] == "esp32s3") else False
-            if mcu_esp32s3:
+            if d[0:8] == "esp32s31":
+                newclass = type(d, (esp32s31,), {'name': d})
+            elif d[0:7] == "esp32s3":
                 newclass = type(d, (esp32s3,), {'name': d})
             else:
                 newclass = type(d, (esp32,), {'name': d})
@@ -1181,15 +1182,17 @@ class esp32(Board):
 
         add_optimisation(env, '-Os')
 
+        is_xtensa = cfg.env.TOOLCHAIN.startswith('xtensa-')
+
         env.CFLAGS += [
             '-fno-inline-functions',
-            '-mlongcalls',
             '-fsingle-precision-constant',
         ]
+        if is_xtensa:
+            env.CFLAGS += ['-mlongcalls']
         env.CFLAGS.remove('-Werror=undef')
 
-        env.CXXFLAGS += ['-mlongcalls',
-                         '-g',
+        env.CXXFLAGS += ['-g',
                          '-ffunction-sections',
                          '-fdata-sections',
                          '-fno-exceptions',
@@ -1198,9 +1201,10 @@ class esp32(Board):
                          '-fstrict-volatile-bitfields',
                          '-Wno-sign-compare',
                          '-fno-inline-functions',
-                         '-mlongcalls',
                          '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f 
                          '-fno-threadsafe-statics']
+        if is_xtensa:
+            env.CXXFLAGS += ['-mlongcalls']
         env.CXXFLAGS.remove('-Werror=undef')
         env.CXXFLAGS.remove('-Werror=shadow')
 
@@ -1245,6 +1249,24 @@ class esp32s3(esp32):
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
         super(esp32s3, self).configure_env(cfg, env)
+
+class esp32s31(esp32):
+    abstract = True
+    toolchain = 'riscv32-esp-elf'
+
+    def configure_env(self, cfg, env):
+        if hasattr(self, 'hwdef'):
+            cfg.env.HWDEF = self.hwdef
+
+        super(esp32s31, self).configure_env(cfg, env)
+
+        riscv_flags = [
+            '-march=rv32imafcb_zicsr_zifencei_zcb_zcmp_zcmt_xesploop_xespv',
+            '-mabi=ilp32f',
+        ]
+
+        env.append_value('CFLAGS', riscv_flags)
+        env.append_value('CXXFLAGS', riscv_flags)
 
 class chibios(Board):
     abstract = True

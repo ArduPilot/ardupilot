@@ -10,7 +10,18 @@
 #include <dirent.h>
 #include "esp_err.h"
 #include "esp_log.h"
+// FatFS requires MIN and MAX macros from sys/param.h.
+// AP_Math undefines these macros and provides C++ alternatives.
+// Restore them temporarily for the FatFS headers.
+#ifndef MIN
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef MAX
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
 #include "esp_vfs_fat.h"
+#undef MAX
+#undef MIN
 #include "driver/sdmmc_host.h"
 #include "driver/sdspi_host.h"
 #include "sdmmc_cmd.h"
