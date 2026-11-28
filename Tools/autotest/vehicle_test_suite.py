@@ -14399,6 +14399,17 @@ switch value'''
                                        (count, event_id, found))
         self.progress("Found %u EV.Id=%u as expected" % (found, event_id))
 
+    def max_dfreader_field(self, msg_type, field):
+        '''largest value a field of msg_type reached in the current onboard log'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        ret = 0
+        while True:
+            m = dfreader.recv_match(type=msg_type)
+            if m is None:
+                break
+            ret = max(ret, getattr(m, field))
+        return ret
+
     def assert_log_has_no_dropped_blocks(self, path):
         '''check the DSF.Dp (dropped-block) counter in a dataflash log is
         zero throughout.  A non-zero count means the logging backend could
@@ -14438,8 +14449,8 @@ switch value'''
         current_onboard_log_contains_message().'''
         self.wait_current_onboard_log_contains_message(messagetype)
 
-    def wait_current_onboard_log_contains_message(self, messagetype, timeout=30):
-        '''wait for messagetype to appear in the current onboard log.
+    def wait_current_onboard_log_contains_message(self, messagetype, timeout=30, condition=None):
+        '''wait for messagetype, meeting condition if one is given, to appear in the current onboard log.
 
         Checking once is at the mercy of whatever the logger has put
         on disk by then.  The vehicle buffers its dataflash writes and
@@ -14459,7 +14470,7 @@ switch value'''
         while True:
             dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
             try:
-                found = dfreader.recv_match(type=messagetype) is not None
+                found = dfreader.recv_match(type=messagetype, condition=condition) is not None
             finally:
                 dfreader.close()
                 if dfreader in self.dfreaders:
@@ -14468,8 +14479,8 @@ switch value'''
                 return
             if time.monotonic() - tstart > timeout:
                 raise NotAchievedException(
-                    "Current onboard log does not contain message %s "
-                    "(waited %us)" % (messagetype, timeout))
+                    "Current onboard log does not contain message %s%s "
+                    "(waited %us)" % (messagetype, "" if condition is None else " with %s" % condition, timeout))
             self.delay_sim_time(0.5, reason="let the logger flush %s" % messagetype)
 
     def run_tests(self, tests) -> List[Result]:
