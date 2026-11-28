@@ -317,6 +317,8 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
             ('AP_FOLLOW_ENABLED', 'AP_Follow::AP_Follow'),
             ('AP_GROUNDEFFECT_ENABLED', 'AP_GroundEffect::AP_GroundEffect'),
+            ('AP_INVERTED_FLIGHT_ENABLED', r'Plane::fly_inverted'),
+            ('AP_INVERTED_FLIGHT_ENABLED', r'AC_AttitudeControl(_Heli)?::set_inverted_flight'),
 
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
             ('AP_ROVER_AUTO_ARM_ONCE_ENABLED', r'Rover::handle_auto_arm_once'),

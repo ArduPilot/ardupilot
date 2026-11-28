@@ -87,11 +87,13 @@ public:
     // Heading slew is constrained based on configured limits.
     void input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_angle_rad, float heading_rate_rads) override;
 
+#if AP_INVERTED_FLIGHT_ENABLED
     // enable/disable inverted flight
     void set_inverted_flight(bool inverted) override { _inverted_flight = inverted; }
 
     // accessor for inverted flight flag
     bool get_inverted_flight() override { return _inverted_flight; }
+#endif  // AP_INVERTED_FLIGHT_ENABLED
 
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;
@@ -106,8 +108,10 @@ private:
         uint8_t leaky_i             :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
     } _flags_heli;
 
+#if AP_INVERTED_FLIGHT_ENABLED
     // true in inverted flight mode
     bool _inverted_flight;
+#endif  // AP_INVERTED_FLIGHT_ENABLED
 
     //
     // body-frame rate controller

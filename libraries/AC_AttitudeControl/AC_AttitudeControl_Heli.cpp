@@ -499,9 +499,11 @@ float AC_AttitudeControl_Heli::get_roll_trim_cd()
 // Applies acceleration-limited input shaping for smooth transitions and computes body-frame angular velocity targets.
 void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_rate_rads)
 {
+#if AP_INVERTED_FLIGHT_ENABLED
     if (_inverted_flight) {
         euler_roll_angle_rad = wrap_PI(euler_roll_angle_rad + M_PI);
     }
+#endif  // AP_INVERTED_FLIGHT_ENABLED
     AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_rate_rads);
 }
 
@@ -510,9 +512,11 @@ void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_euler_rate_yaw_rad(fl
 // Outputs are passed to the rate controller via shaped angular velocity targets.
 void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_angle_rad, bool slew_yaw)
 {
+#if AP_INVERTED_FLIGHT_ENABLED
     if (_inverted_flight) {
         euler_roll_angle_rad = wrap_PI(euler_roll_angle_rad + M_PI);
     }
+#endif  // AP_INVERTED_FLIGHT_ENABLED
     AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(euler_roll_angle_rad, euler_pitch_angle_rad, euler_yaw_angle_rad, slew_yaw);
 }
 
@@ -531,17 +535,18 @@ void AC_AttitudeControl_Heli::set_notch_sample_rate(float sample_rate)
 // while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
 void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw)
 {
+#if AP_INVERTED_FLIGHT_ENABLED
+    if (_inverted_flight) {
+        // convert thrust vector to a roll and pitch angles
+        // this negates the advantage of using thrust vector control, but works just fine
+        Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
 
-    if (!_inverted_flight) {
-        AC_AttitudeControl::input_thrust_vector_rate_heading_rads(thrust_vector, heading_rate_rads, slew_yaw);
+        angle_target.x = wrap_PI(angle_target.x + M_PI);
+        AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(angle_target.x, angle_target.y, heading_rate_rads);
         return;
     }
-    // convert thrust vector to a roll and pitch angles
-    // this negates the advantage of using thrust vector control, but works just fine
-    Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
-
-    angle_target.x = wrap_PI(angle_target.x + M_PI);
-    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(angle_target.x, angle_target.y, heading_rate_rads);
+#endif  // AP_INVERTED_FLIGHT_ENABLED
+    AC_AttitudeControl::input_thrust_vector_rate_heading_rads(thrust_vector, heading_rate_rads, slew_yaw);
 }
 
 
@@ -550,14 +555,16 @@ void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading_rads(const Vector
 // Heading slew is constrained based on configured limits.
 void AC_AttitudeControl_Heli::input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_angle_rad, float heading_rate_rads)
 {
-    if (!_inverted_flight) {
-        AC_AttitudeControl::input_thrust_vector_heading_rad(thrust_vector, heading_angle_rad, heading_rate_rads);
+#if AP_INVERTED_FLIGHT_ENABLED
+    if (_inverted_flight) {
+        // convert thrust vector to a roll and pitch angles
+        // this negates the advantage of using thrust vector control, but works just fine
+        Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
+
+        angle_target.x = wrap_PI(angle_target.x + M_PI);
+        AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(angle_target.x, angle_target.y, heading_angle_rad, true);
         return;
     }
-    // convert thrust vector to a roll and pitch angles
-    // this negates the advantage of using thrust vector control, but works just fine
-    Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
-
-    angle_target.x = wrap_PI(angle_target.x + M_PI);
-    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(angle_target.x, angle_target.y, heading_angle_rad, true);
+#endif  // AP_INVERTED_FLIGHT_ENABLED
+    AC_AttitudeControl::input_thrust_vector_heading_rad(thrust_vector, heading_angle_rad, heading_rate_rads);
 }

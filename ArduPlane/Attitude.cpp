@@ -129,9 +129,12 @@ bool Plane::stick_mixing_enabled(void)
  */
 void Plane::stabilize_roll()
 {
+#if AP_INVERTED_FLIGHT_ENABLED
     if (fly_inverted()) {
         nav_roll_cd += 18000;
     }
+#endif  // AP_INVERTED_FLIGHT_ENABLED
+
     float roll_out = stabilize_roll_get_roll_out();
 
 #if AP_PLANE_SYSTEMID_ENABLED
@@ -345,9 +348,11 @@ void Plane::stabilize_stick_mixing_fbw()
     } else if (pitch_input < -0.5f) {
         pitch_input = (3*pitch_input + 1);
     }
+#if AP_INVERTED_FLIGHT_ENABLED
     if (fly_inverted()) {
         pitch_input = -pitch_input;
     }
+#endif
     const float pitch_range = aparm.pitch_limit_max.get() - pitch_limit_min;
     nav_pitch_cd += pitch_input * (pitch_range / 2.0f) * 100;
     nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min*100, aparm.pitch_limit_max.get()*100);
@@ -701,10 +706,13 @@ void Plane::apply_load_factor_roll_limits(void)
         // stall prevention is disabled
         return;
     }
+#if AP_INVERTED_FLIGHT_ENABLED
     if (fly_inverted()) {
         // no roll limits when inverted
         return;
     }
+#endif  // AP_INVERTED_FLIGHT_ENABLED
+
 #if AP_PLANE_TAILSITTER_ENABLED
     if (quadplane.tailsitter.active()) {
         // no limits while hovering
