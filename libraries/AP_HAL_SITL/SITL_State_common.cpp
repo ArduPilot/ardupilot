@@ -314,6 +314,13 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         inertiallabs = NEW_NOTHROW SITL::InertialLabs();
         return inertiallabs;
 
+    } else if (streq(name, "SBG")) {
+        if (sbg != nullptr) {
+            AP_HAL::panic("Only one SBG INS at a time");
+        }
+        sbg = NEW_NOTHROW SITL::SBG();
+        return sbg;
+
     } else if (streq(name, "SensAItion")) {
         if (sensaition != nullptr) {
             AP_HAL::panic("Only one SensAItion at a time");
@@ -524,6 +531,7 @@ void SITL_State_Common::sim_update(void)
     if (microstrain7 != nullptr) {
         microstrain7->update();
     }
+
     if (inertiallabs != nullptr) {
         inertiallabs->update();
     }
@@ -533,6 +541,10 @@ void SITL_State_Common::sim_update(void)
         aeron->update();
     }
 #endif  // AP_SIM_AERON_ENABLED
+
+    if (sbg != nullptr) {
+        sbg->update();
+    }
 
 #if AP_SIM_AIS_ENABLED
     if (ais != nullptr) {
