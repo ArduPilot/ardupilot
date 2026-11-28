@@ -287,6 +287,9 @@ void RCOutput_PCA9685::push()
 
 uint16_t RCOutput_PCA9685::read(uint8_t ch)
 {
+    if (ch >= (PWM_CHAN_COUNT - _channel_offset)) {
+        return 0;
+    }
     return _pulses_buffer[ch];
 }
 
