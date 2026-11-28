@@ -394,6 +394,17 @@ void AP_Arming::check_failed(bool report, const char *fmt, ...) const
 bool AP_Arming::barometer_checks(bool report)
 {
 #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
+    // a board which may have no barometer skips the barometer checks,
+    // except that a barometer it does have must have been calibrated.
+    // Calibration finishes after startup, so this is what stops the
+    // vehicle arming before it has
+    if (check_enabled(Check::BARO)) {
+        char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+        if (!AP::baro().calibration_arming_checks(sizeof(buffer), buffer)) {
+            check_failed(Check::BARO, report, "Baro: %s", buffer);
+            return false;
+        }
+    }
     return true;
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

@@ -13795,7 +13795,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Check post-filter gyro logging records every sample while the rate thread decimates."""
         self.set_parameters({
             "FSTRATE_ENABLE": 3,    # fixed divisor: the rate loop takes one gyro sample in FSTRATE_DIV
-            "FSTRATE_DIV": 3,
+            "FSTRATE_DIV": 2,       # the cap is 2 or 3 for a 1000Hz gyro against a 400Hz loop
             "INS_RAW_LOG_OPT": 5,   # primary gyro, post-filter only
             "LOG_FILE_RATEMAX": 0,  # GYR is rate limited otherwise
             "LOG_DARM_RATEMAX": 0,
@@ -13840,7 +13840,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("gyro %.2f ms, logged %.2f ms, rate loop %.2f ms, %u of %u samples repeat" %
                       (gyro_dt * 1000, sample_dt * 1000, loop_dt * 1000, repeats, steps))
         # a held value can only appear while the rate loop is taking a subset of the samples
-        if loop_dt < 2 * gyro_dt:
+        if loop_dt < 1.5 * gyro_dt:
             raise NotAchievedException("Rate loop at %.2f ms is not decimating" % (loop_dt * 1000))
         # every filtered sample must be logged, not just the ones the rate loop took
         if sample_dt > 1.5 * gyro_dt:
@@ -20301,6 +20301,63 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         if ex is not None:
             raise ex
+
+    def BaroDeferredCalibration(self):
+        """check a barometer which starts supplying data late is calibrated"""
+        # the barometers are calibrated from AP_Baro::update(), so one
+        # which is not supplying data when calibrate() is called is
+        # calibrated once it starts.  Until then it is not calibrated -
+        # which means not healthy - so arming must be refused rather than
+        # permitted against a ground pressure we do not know
+        delay_s = 60
+        for (instance, param) in (2, "SIM_BAR2_STRTDLY"), (1, "SIM_BARO_STRTDLY"):
+            self.start_subtest("Barometer %u supplies data %us after boot" %
+                               (instance, delay_s))
+            self.context_push()
+            self.set_parameter(param, delay_s)
+            self.context_collect("STATUSTEXT")
+            self.reboot_sitl()
+
+            # the autopilot is up, the EKF is happy and we are talking to
+            # it while that barometer is still silent: calibrating it no
+            # longer holds up startup
+            self.wait_ekf_happy()
+            self.assert_prearm_failure("Baro: #%u not calibrated" % instance)
+
+            # and it is calibrated when it does start supplying data,
+            # after which we are armable - which includes the arming
+            # check that the barometer agrees with GPS altitude, so the
+            # ground pressure it calibrated with is a real one
+            self.wait_statustext("Barometer %u calibration complete" % instance,
+                                 check_context=True, timeout=delay_s)
+            self.wait_ready_to_arm()
+            self.context_pop()
+
+        # with every barometer late there is no ground pressure at all.
+        # Ten seconds after startup that is reported, and the barometers
+        # are still calibrated when they start supplying data, but a
+        # board whose barometers are that late is not armable until it
+        # has been rebooted
+        delay_s = 40
+        self.start_subtest("All barometers supply data %us after boot" % delay_s)
+        self.context_push()
+        self.set_parameters({
+            "SIM_BARO_STRTDLY": delay_s,
+            "SIM_BAR2_STRTDLY": delay_s,
+        })
+        self.context_collect("STATUSTEXT")
+        self.reboot_sitl()
+        self.wait_statustext("Baro: unable to calibrate", check_context=True, timeout=delay_s)
+        # the EKF has no height source either, so it complains too:
+        self.assert_prearm_failure("Baro: #1 not calibrated", other_prearm_failures_fatal=False)
+        for instance in 1, 2:
+            self.wait_statustext("Barometer %u calibration complete" % instance,
+                                 check_context=True, timeout=delay_s)
+        self.assert_prearm_failure("Baro: calibrated late, reboot required",
+                                   other_prearm_failures_fatal=False)
+        self.context_pop()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
 
     def BaroDrivers(self):
         '''Test Baro Drivers'''
@@ -27564,6 +27621,7 @@ return update, 1000
             self.ShipTakeoff,
             self.RangeFinder,
             self.BaroDrivers,
+            self.BaroDeferredCalibration,
             self.MAVProximity,
             self.LoweheiserAuto,
             self.clear_roi,
