@@ -19,4 +19,5 @@ def build(bld):
     bld.ap_program(
         use='AP_FW_Controller_test_libs',
         program_groups=['examples'],
+        ap_build_type='UNKNOWN',
     )

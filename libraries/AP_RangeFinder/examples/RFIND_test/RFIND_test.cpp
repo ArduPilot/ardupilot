@@ -6,6 +6,8 @@
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 GCS_Dummy _gcs;
 
 void setup();

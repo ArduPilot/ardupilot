@@ -6,6 +6,8 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_AHRS ahrs{AP_AHRS::FLAG_ALWAYS_USE_EKF};

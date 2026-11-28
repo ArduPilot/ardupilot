@@ -11,6 +11,8 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 GCS_Dummy _gcs;
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();

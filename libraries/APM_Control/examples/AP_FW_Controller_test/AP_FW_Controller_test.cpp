@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_SITL/AP_HAL_SITL.h>
+#include <AP_Common/ExampleFirmwareVersion.h>
 
 #include <AP_Math/chirp.h>
 #include <APM_Control/AP_RollController.h>

@@ -14,6 +14,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RTC/AP_RTC.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
+#include <AP_Common/ExampleFirmwareVersion.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

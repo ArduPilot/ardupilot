@@ -14,6 +14,8 @@
 #include <SITL/SITL.h>
 #endif
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 static AP_InertialSensor ins;
